@@ -18,7 +18,7 @@ def get(name: str) -> None:
         secret = get_secret(name=name)
         click.echo(secret)
     except (ValueError, EnvironmentError) as e:
-        click.secho(f'Failed to get secret: {e}', fg='red')
+        click.echo(f'Error: {e}')
         exit(1)
 
 
@@ -33,13 +33,13 @@ def set(name: str, value: str | None) -> None:
     try:
         set_secret(name=name, value=value)
     except ValueError as e:
-        click.secho(f'Failed to set secret: {e}', fg='red')
+        click.echo(f'Error: {e}')
         exit(1)
     except EnvironmentError as e:
-        click.secho(f'Failed to set secret: {e}', fg='red')
+        click.echo(f'Error: {e}')
         exit(1)
     else:
-        click.secho('Done', fg='green')
+        click.echo('Done')
 
 
 @cli.command()
@@ -49,13 +49,13 @@ def remove(name: str) -> None:
     try:
         remove_secret(name=name)
     except ValueError as e:
-        click.secho(f'Failed to remove secret: {e}', fg='red')
+        click.echo(f'Error: {e}')
         exit(1)
     except EnvironmentError as e:
-        click.secho(f'Failed to remove secret: {e}', fg='red')
+        click.echo(f'Error: {e}')
         exit(1)
     else:
-        click.secho('Done', fg='green')
+        click.echo('Done')
 
 
 if __name__ == '__main__':
