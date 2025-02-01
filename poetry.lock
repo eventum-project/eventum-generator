@@ -1024,6 +1024,20 @@ pycodestyle = ">=2.12.0,<2.13.0"
 pyflakes = ">=3.2.0,<3.3.0"
 
 [[package]]
+name = "flatten-dict"
+version = "0.4.2"
+description = "A flexible utility for flattening and unflattening dict-like objects in Python."
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+files = [
+    {file = "flatten-dict-0.4.2.tar.gz", hash = "sha256:506a96b6e6f805b81ae46a0f9f31290beb5fa79ded9d80dbe1b7fa236ab43076"},
+    {file = "flatten_dict-0.4.2-py2.py3-none-any.whl", hash = "sha256:7e245b20c4c718981212210eec4284a330c9f713e632e98765560e05421e48ad"},
+]
+
+[package.dependencies]
+six = ">=1.12,<2.0"
+
+[[package]]
 name = "fonttools"
 version = "4.55.3"
 description = "Tools to manipulate font files"
@@ -1196,6 +1210,20 @@ files = [
     {file = "frozenlist-1.5.0-py3-none-any.whl", hash = "sha256:d994863bba198a4a518b467bb971c56e1db3f180a25c6cf7bb1949c267f748c3"},
     {file = "frozenlist-1.5.0.tar.gz", hash = "sha256:81d5af29e61b9c8348e876d442253723928dce6433e0e76cd925cd83f1b4b817"},
 ]
+
+[[package]]
+name = "griffe"
+version = "1.4.0"
+description = "Signatures for entire Python programs. Extract the structure, the frame, the skeleton of your project, to generate API documentation or find breaking changes in your API."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "griffe-1.4.0-py3-none-any.whl", hash = "sha256:e589de8b8c137e99a46ec45f9598fc0ac5b6868ce824b24db09c02d117b89bc5"},
+    {file = "griffe-1.4.0.tar.gz", hash = "sha256:8fccc585896d13f1221035d32c50dec65830c87d23f9adb9b1e6f3d63574f7f5"},
+]
+
+[package.dependencies]
+colorama = ">=0.4"
 
 [[package]]
 name = "h11"
@@ -2495,21 +2523,25 @@ files = [
 
 [[package]]
 name = "pydanclick"
-version = "0.3.0"
+version = "0.4.0"
 description = "Use Pydantic models as Click options"
 optional = false
-python-versions = "<4.0,>=3.8"
+python-versions = "<4.0,>=3.9"
 files = [
-    {file = "pydanclick-0.3.0-py3-none-any.whl", hash = "sha256:ab50fc1cf49f942831ae1a6987a830199bfa3cec6a3957abd6efe1f57daf9d62"},
-    {file = "pydanclick-0.3.0.tar.gz", hash = "sha256:52829e651c93d018c3c74abf9897e40432a3505e80fb28517d26c843a5f7d801"},
+    {file = "pydanclick-0.4.0-py3-none-any.whl", hash = "sha256:acd9f4db2f2221c73e2272b420dc7ab4d74559373319fa293be12e7b1e9b7e29"},
+    {file = "pydanclick-0.4.0.tar.gz", hash = "sha256:866709df4e92d94d74c200f67438d929d83e608c0724a78b7cb1c781a71acc60"},
 ]
 
 [package.dependencies]
 annotated-types = ">=0.6.0,<0.7.0"
 click = ">=8.1.7,<9.0.0"
+griffe = {version = ">=1.0,<=1.4.0", optional = true, markers = "extra == \"griffe\""}
 pydantic = ">=2.6.1,<3.0.0"
 pydantic-core = ">=2.16.2,<3.0.0"
 typing-extensions = ">=4.9.0,<5.0.0"
+
+[package.extras]
+griffe = ["griffe (>=1.0,<=1.4.0)"]
 
 [[package]]
 name = "pydantic"
@@ -3795,4 +3827,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "24e2a72a565cc16ab07dacc571d7fb411ec27cb38e07265e702c013540b0853b"
+content-hash = "ec3ee2cfcba5fd4f0e3de176e8cf1e4c1afac4a72b0fabaaf7657bbb487d871d"
