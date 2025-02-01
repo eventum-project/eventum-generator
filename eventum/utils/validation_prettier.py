@@ -19,16 +19,21 @@ def prettify_validation_errors(errors: Iterable[ErrorDetails]) -> str:
     """
 
     def _loc(location: Iterable[str | int]) -> str:
-        return '.'.join(map(str, location))
+        return '.'.join(
+            loc if isinstance(loc, str) else f'[{loc}]'
+            for loc in location
+        )
 
     messages: list[str] = []
 
     for error in errors:
-        match error:
-            case {'type': 'extra_forbidden', 'loc': loc}:
-                msg = 'Unknown field'
-                messages.append(f'Field \"{_loc(loc)}\" - {msg}')
-            case {'msg': msg, 'loc': loc}:
-                messages.append(f'Field \"{_loc(loc)}\" - {msg}')
+        loc = error['loc']
+        input = error['input']
+        msg = error['msg']
+        type = error['type']
+
+        messages.append(
+            f'"{_loc(loc)}": {input!r} - {msg.lower()} ({type})'
+        )
 
     return '; '.join(messages)
