@@ -22,12 +22,17 @@ class GeneratorParameters(GenerationParameters, frozen=True):
         by timestamp values or sample mode to generate all events at a
         time
 
+    skip_past : bool, default=True
+        Whether to skip past timestamps when starting generation in
+        live mode
+
     params: dict[str, Any], default={}
         Parameters that can be used in generator configuration file
     """
     id: str = Field(min_length=1)
     path: str = Field(min_length=1)
     time_mode: Literal['live', 'sample'] = 'live'
+    skip_past: bool = Field(default=True)
     params: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator('path')

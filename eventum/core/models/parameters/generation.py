@@ -12,8 +12,8 @@ class BatchParameters(BaseModel, extra='forbid', frozen=True):
     size : int | None, default=10000
         Batch size for generating events
 
-    timeout : float | None, default=1.0
-        Batch timeout (in seconds) for generating events
+    delay : float | None, default=1.0
+        Batch delay (in seconds) for generating events
 
     Notes
     -----
@@ -64,10 +64,6 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
         Maximum number of concurrent write operations performed by
         output plugins
 
-    skip_past : bool, default=True
-        Whether to skip past timestamps when starting generation in
-        live mode
-
     metrics_interval : float, default=5.0
         Time interval (in seconds) of metrics gauging
     """
@@ -76,7 +72,6 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
     queue: QueueParameters = Field(default_factory=lambda: QueueParameters())
     keep_order: bool = Field(default=False)
     max_concurrency: int = Field(default=100)
-    skip_past: bool = Field(default=True)
     metrics_interval: float = Field(default=5.0, ge=1.0)
 
     @field_validator('timezone')
