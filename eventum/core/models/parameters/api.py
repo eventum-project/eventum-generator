@@ -32,7 +32,7 @@ class SSLParameters(BaseModel, extra='forbid', frozen=True):
     cert: str | None = Field(default=None, min_length=1)
     cert_key: str | None = Field(default=None, min_length=1)
 
-    @field_validator('ca_cert', 'server_cert', 'server_cert_key')
+    @field_validator('ca_cert', 'cert', 'cert_key')
     def validate_absolute_paths(cls, v: str | None):
         if not isinstance(v, str):
             return v
