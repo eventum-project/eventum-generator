@@ -4,7 +4,7 @@ from io import TextIOWrapper
 import click
 import structlog
 import yaml
-from flatten_dict import unflatten
+from flatten_dict import unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError
 
 from eventum.cli.pydantic.converter import from_model
