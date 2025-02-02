@@ -52,7 +52,7 @@ class App:
 
         self._termination_event.wait()
 
-    @ validate_call
+    @validate_call
     def _validate_generators_list(
         self,
         object: list[dict]
