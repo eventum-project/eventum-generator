@@ -4,7 +4,7 @@ from typing import Iterable
 
 import structlog
 import yaml
-from flatten_dict import flatten, unflatten
+from flatten_dict import flatten, unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError, validate_call
 
 from eventum.core.manager import GeneratorManager, ManagingError
