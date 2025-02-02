@@ -2,6 +2,7 @@ import os
 from io import TextIOWrapper
 
 import click
+import structlog
 import yaml
 from flatten_dict import unflatten
 from pydantic import ValidationError
@@ -11,6 +12,8 @@ from eventum.core.main import App, AppError
 from eventum.core.models.parameters.generator import GeneratorParameters
 from eventum.core.models.settings import Settings
 from eventum.utils.validation_prettier import prettify_validation_errors
+
+logger = structlog.stdlib.get_logger()
 
 
 @click.group('eventum')
@@ -54,6 +57,7 @@ def run(config: TextIOWrapper) -> None:
     try:
         app.start()
     except AppError as e:
+        logger.error(str(e), **e.context)
         click.echo(
             f'Error: App exited with error: {e} (see logs for more info)',
             err=True
