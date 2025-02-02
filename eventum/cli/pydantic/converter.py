@@ -328,7 +328,6 @@ def from_model(model: type[BaseModel]) -> Callable[[Callable], Callable]:
                 _patch_error_locations(errors)
 
                 echo('Error: Failed to validate options:')
-                echo()
                 echo(prettify_validation_errors(errors, sep=os.linesep))
 
                 exit(1)
