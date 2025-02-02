@@ -3,7 +3,10 @@ from typing import Iterable
 from pydantic_core import ErrorDetails
 
 
-def prettify_validation_errors(errors: Iterable[ErrorDetails]) -> str:
+def prettify_validation_errors(
+    errors: Iterable[ErrorDetails],
+    sep: str = '; '
+) -> str:
     """Prettify pydantic validation errors gotten from
     `e.errors()` to user-friendly description string.
 
@@ -11,6 +14,9 @@ def prettify_validation_errors(errors: Iterable[ErrorDetails]) -> str:
     ----------
     errors : Iterable[ErrorDetails]
         Iterable of error details
+
+    sep : str, default='; '
+        Separator for errors message
 
     Returns
     -------
@@ -36,4 +42,4 @@ def prettify_validation_errors(errors: Iterable[ErrorDetails]) -> str:
             f'"{_loc(loc)}": {input!r} - {msg.lower()} ({type})'
         )
 
-    return '; '.join(messages)
+    return sep.join(messages)
