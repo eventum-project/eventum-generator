@@ -4,6 +4,7 @@ from typing import Iterable
 
 import structlog
 import yaml
+from flatten_dict import flatten, unflatten
 from pydantic import ValidationError, validate_call
 
 from eventum.core.manager import GeneratorManager, ManagingError
@@ -79,7 +80,10 @@ class App:
 
         base_params = self._settings.generation.model_dump()
         for params in object:
+            base_params = flatten(base_params, reducer='dot')
             params = base_params | params
+            params = unflatten(params, splitter='dot')
+
             generators_parameters.append(
                 GeneratorParameters.model_validate(params)
             )
