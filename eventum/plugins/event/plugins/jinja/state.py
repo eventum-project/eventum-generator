@@ -71,7 +71,13 @@ class State(ABC):
 
 
 class SingleThreadState(State):
-    """Key-value state for single thread."""
+    """Key-value state for single thread.
+
+    Parameters
+    ----------
+    initial : dict[str, Any] | None = None
+        Initial state
+    """
 
     __slots__ = ('_state', )
 
@@ -102,19 +108,8 @@ class MultiProcessState(State):
 
     Parameters
     ----------
-    name : str
-        Name that enables one process to create a state shared across
-        processes so that a different processes can attach to that same
-        shared state using that same name
-
-    create : bool
-        Whether to create new state or connect to existing state
-
-    max_bytes : int
-        Maximum size of state in bytes
-
-    lock : RLock
-        Lock for synchronization across processes
+    initial : dict[str, Any] | None = None
+        Initial state
 
     Raises
     ------
