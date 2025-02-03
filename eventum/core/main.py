@@ -81,7 +81,10 @@ class App:
         base_params = self._settings.generation.model_dump()
         for params in object:
             base_params = flatten(base_params, reducer='dot')
+            params = flatten(params, reducer='dot')
+
             params = base_params | params
+
             params = unflatten(params, splitter='dot')
 
             generators_parameters.append(
