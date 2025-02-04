@@ -6,6 +6,7 @@ import structlog
 import yaml
 from flatten_dict import unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError
+from setproctitle import setproctitle
 
 from eventum.cli.pydantic.converter import from_model
 from eventum.core.main import App, AppError
@@ -13,6 +14,7 @@ from eventum.core.models.parameters.generator import GeneratorParameters
 from eventum.core.models.settings import Settings
 from eventum.utils.validation_prettier import prettify_validation_errors
 
+setproctitle('eventum')
 logger = structlog.stdlib.get_logger()
 
 

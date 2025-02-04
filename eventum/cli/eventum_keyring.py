@@ -1,7 +1,10 @@
 import click
 from pwinput import pwinput  # type: ignore[import-untyped]
+from setproctitle import setproctitle
 
 from eventum.security.manage import get_secret, remove_secret, set_secret
+
+setproctitle('eventum-keyring')
 
 
 @click.group('eventum-keyring')
