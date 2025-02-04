@@ -32,9 +32,15 @@ def start(params: GeneratorParameters, metrics: DictProxy) -> None:
     metrics : DictProxy
         Metrics dict that should be periodically updated
     """
-    setproctitle(title=f'{getproctitle()} ({params.id})')
+    setproctitle(title=f'eventum[{params.id}]')
 
-    logger.info('Loading configuration')
+    logger.info(
+        'Generator process is started',
+        process_name=getproctitle(),
+        process_id=os.getpid()
+    )
+
+    logger.info('Loading configuration', file_path=params.path)
     init_start_time = time.time()
 
     try:

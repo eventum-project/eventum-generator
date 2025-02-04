@@ -99,6 +99,16 @@
     <th>Description</th>
     <th>Data type</th>
     <tr>
+        <td>process_name</td>
+        <td>Name of the process</td>
+        <td>str</td>
+    </tr>
+    <tr>
+        <td>process_id</td>
+        <td>ID of the process</td>
+        <td>int</td>
+    </tr>
+    <tr>
         <td>thread_name</td>
         <td>Name of the thread</td>
         <td>str</td>
