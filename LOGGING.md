@@ -92,6 +92,24 @@
     </tr>
 </table>
 
+## Threads and Processes
+
+<table>
+    <th>Name</th>
+    <th>Description</th>
+    <th>Data type</th>
+    <tr>
+        <td>thread_name</td>
+        <td>Name of the thread</td>
+        <td>str</td>
+    </tr>
+    <tr>
+        <td>thread_id</td>
+        <td>ID of the thread</td>
+        <td>int</td>
+    </tr>
+</table>
+
 ## App
 
 <table>
