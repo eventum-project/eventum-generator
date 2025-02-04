@@ -34,9 +34,6 @@ class App:
         self._manager = GeneratorManager()
         self._termination_event = Event()
 
-        signal.signal(signal.SIGINT, lambda _, __: self._handle_termination())
-        signal.signal(signal.SIGTERM, lambda _, __: self._handle_termination())
-
     def start(self) -> None:
         """Start the app.
 
@@ -51,6 +48,8 @@ class App:
         if self._settings.api.enabled:
             self._start_api()
 
+        signal.signal(signal.SIGINT, lambda _, __: self._handle_termination())
+        signal.signal(signal.SIGTERM, lambda _, __: self._handle_termination())
         self._termination_event.wait()
 
     @validate_call
@@ -195,6 +194,12 @@ class App:
 
     def _handle_termination(self) -> None:
         """Handle termination signal."""
+        logger.info('Termination signal is received')
+
+        logger.info('Stopping API')
         self._stop_api()
+
+        logger.info('Stopping generators')
         self._stop_generators()
+
         self._termination_event.set()
