@@ -10,6 +10,8 @@ class ExitCode(IntEnum):
 
     UNEXPECTED_ERROR = 125
 
+    TERMINATED = 143
+
 
 def get_exit_code_description(code: ExitCode) -> str:
     """Get description of exit code.
@@ -35,5 +37,7 @@ def get_exit_code_description(code: ExitCode) -> str:
             return 'Execution error'
         case ExitCode.UNEXPECTED_ERROR:
             return 'Unexpected error'
+        case ExitCode.TERMINATED:
+            return 'Terminated by signal'
         case v:
             assert_never(v)
