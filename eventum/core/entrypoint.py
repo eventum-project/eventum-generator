@@ -5,7 +5,7 @@ import time
 from contextlib import suppress
 from multiprocessing.managers import DictProxy
 from threading import Event, Thread
-from typing import Iterable
+from typing import Iterable, NoReturn
 
 import structlog
 from setproctitle import getproctitle, setproctitle
@@ -21,7 +21,7 @@ from eventum.core.models.parameters.generator import GeneratorParameters
 logger = structlog.stdlib.get_logger()
 
 
-def start(params: GeneratorParameters, metrics: DictProxy) -> None:
+def start(params: GeneratorParameters, metrics: DictProxy) -> NoReturn:
     """Start generator execution.
 
     Parameters
@@ -31,6 +31,10 @@ def start(params: GeneratorParameters, metrics: DictProxy) -> None:
 
     metrics : DictProxy
         Metrics dict that should be periodically updated
+
+    Notes
+    -----
+    This function handles proper termination of generator process
     """
     setproctitle(title=f'eventum[{params.id}]')
 
@@ -191,7 +195,7 @@ def handle_termination(
     threads: Iterable[Thread],
     timeout: float = 1.0,
     exit_code: ExitCode = ExitCode.SUCCESS
-) -> None:
+) -> NoReturn:
     """Handle termination of generator by setting all provided events,
     joining all provided threads and running callbacks registered with
     `atexit.register` in corresponding order within a provided timeout.
