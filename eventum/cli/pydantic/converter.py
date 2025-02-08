@@ -4,6 +4,7 @@ from types import NoneType, UnionType
 from typing import Any, Callable, Literal, Sequence, get_args, get_origin
 
 import click.types as click_types
+from caseconverter import snakecase  # type: ignore[import-untyped]
 from click import Command, Option, echo
 from flatten_dict import unflatten  # type: ignore[import-untyped]
 from griffe import (Docstring, DocstringAttribute, DocstringSectionAttributes,
@@ -315,14 +316,24 @@ def from_model(model: type[BaseModel]) -> Callable[[Callable], Callable]:
     model.
     """
     options = _convert_to_options(fields_stack=[], model=model)
+    param_name = snakecase(model.__name__)
 
     def wrapper(f: Callable) -> Callable:
         @add_options(options)
         @functools.wraps(f)
         def wrapped(**kwargs: Any) -> Any:
             object = build_object_from_args(**kwargs)
+
+            model_kwargs: dict[str, Any] = dict()
+            other_kwargs: dict[str, Any] = dict()
+            for k, v in object.items():
+                if k in model.__pydantic_fields__:
+                    model_kwargs[k] = v
+                else:
+                    other_kwargs[k] = v
+
             try:
-                validated = model.model_validate(object)
+                validated = model.model_validate(model_kwargs)
             except ValidationError as e:
                 errors = e.errors()
                 _patch_error_locations(errors)
@@ -332,7 +343,9 @@ def from_model(model: type[BaseModel]) -> Callable[[Callable], Callable]:
 
                 exit(1)
 
-            return f(validated)
+            other_kwargs[param_name] = validated
+
+            return f(**other_kwargs)
 
         return wrapped
 
