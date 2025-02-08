@@ -16,11 +16,6 @@
         <td>Reason of event (e.g. exception message)</td>
         <td>str</td>
     </tr>
-    <tr>
-        <td>parameters</td>
-        <td>Parameters dictionary (e.g. generator parameters)</td>
-        <td>dict</td>
-    </tr>
 </table>
 
 ## Network
@@ -140,6 +135,16 @@
         <td>non_running_generators</td>
         <td>IDs of non running generators</td>
         <td>list[str]</td>
+    </tr>
+    <tr>
+        <td>parameters</td>
+        <td>Parameters dictionary</td>
+        <td>dict</td>
+    </tr>
+    <tr>
+        <td>metrics</td>
+        <td>Metrics dictionary</td>
+        <td>dict</td>
     </tr>
 </table>
 
