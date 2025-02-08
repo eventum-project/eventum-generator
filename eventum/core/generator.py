@@ -28,6 +28,19 @@ class Generator:
 
         self._process.terminate()
 
+    def join(self, timeout: float | None = None) -> None:
+        """Wait until generator terminates.
+
+        Parameters
+        ----------
+        timeout : float | None, default=None
+            Timeout of generator joining
+        """
+        if not self.is_running:
+            return None
+
+        self._process.join(timeout)
+
     def get_metrics(self) -> Metrics | None:
         """Get generator metrics if available.
 
