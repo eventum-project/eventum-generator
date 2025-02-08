@@ -186,7 +186,7 @@ def _gauge_metrics(
 
     # To the moment of stop event metrics proxy might be already closed
     # But anyway we try to actualize eventual metrics if it's possible
-    with suppress(EOFError):
+    with suppress(OSError):
         metrics.update(gauge.gauge_metrics())
 
 
