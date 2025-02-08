@@ -420,6 +420,17 @@ files = [
 cffi = ">=1.0.0"
 
 [[package]]
+name = "case-converter"
+version = "1.1.0"
+description = "A string case conversion package."
+optional = false
+python-versions = "*"
+files = [
+    {file = "case-converter-1.1.0.tar.gz", hash = "sha256:2ed3fc6e3ffa8d601f9a31ffcbc8fbd19eaeb48671a79a8ef16394672824510e"},
+    {file = "case_converter-1.1.0-py3-none-any.whl", hash = "sha256:d0fbc665a4fd410e454630bcf5168dce62e147a98512647ed48b0a6b556986e3"},
+]
+
+[[package]]
 name = "certifi"
 version = "2024.12.14"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -3805,4 +3816,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "3245210bbbc3968315466fde3e2a20a51b2f84f3df36898e9e2134750b2692b2"
+content-hash = "180fd9c018bec22692d7391d9b9be8e6a6ba61b2f2644431029d73c6eaebd1bf"
