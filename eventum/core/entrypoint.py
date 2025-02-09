@@ -45,7 +45,7 @@ def start(params: GeneratorParameters, metrics: DictProxy) -> NoReturn:
     )
 
     logger.info('Loading configuration', file_path=params.path)
-    init_start_time = time.time()
+    init_start_time = time.monotonic()
 
     try:
         config = load(params.path, params.params)
@@ -122,7 +122,7 @@ def start(params: GeneratorParameters, metrics: DictProxy) -> NoReturn:
         )
     )
 
-    init_time = round(time.time() - init_start_time, 3)
+    init_time = round(time.monotonic() - init_start_time, 3)
     logger.info('Initialization completed', seconds=init_time)
 
     logger.info('Starting execution', parameters=params.model_dump())
@@ -217,10 +217,10 @@ def handle_termination(
     for event in events:
         event.set()
 
-    start_time = time.time()
+    start_time = time.monotonic()
 
     for thread in threads:
-        spent = time.time() - start_time
+        spent = time.monotonic() - start_time
         available_time = max(timeout - spent, 0)
         thread.join(available_time)
 
