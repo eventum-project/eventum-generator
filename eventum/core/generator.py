@@ -35,18 +35,26 @@ class Generator:
 
         self._process.kill()
 
-    def join(self, timeout: float | None = None) -> None:
+    def join(self, timeout: float | None = None) -> bool:
         """Wait until generator terminates.
 
         Parameters
         ----------
         timeout : float | None, default=None
             Timeout of generator joining
+
+        Returns
+        -------
+        bool
+            `True` if generator was joined in time, and `False` if
+            timeout is expired
         """
         if not self.is_running:
-            return None
+            return True
 
         self._process.join(timeout)
+
+        return not self.is_running
 
     def get_metrics(self) -> Metrics | None:
         """Get generator metrics if available.
