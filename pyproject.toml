@@ -71,5 +71,5 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-eventum = "eventum.cli.eventum:cli"
-eventum-keyring = "eventum.cli.eventum_keyring:cli"
+eventum = "eventum.cli.commands.eventum:cli"
+eventum-keyring = "eventum.cli.commands.eventum_keyring:cli"
