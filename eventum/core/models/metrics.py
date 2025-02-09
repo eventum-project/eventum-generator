@@ -39,6 +39,25 @@ class CommonMetrics(TypedDict):
     parameters: dict
 
 
+class ThroughputMetric(TypedDict):
+    """Throughput metrics.
+
+    Attributes
+    ----------
+    input : float
+        Input throughput (per second)
+
+    event_throughput : float
+        Event throughput (per second)
+
+    output_throughput : float
+        Output throughput (per second)
+    """
+    input: float
+    event: float
+    output: float
+
+
 class Metrics(TypedDict):
     """Metrics of generator.
 
@@ -49,6 +68,10 @@ class Metrics(TypedDict):
 
     plugins: PluginsMetrics
         Plugins metrics
+
+    throughput : ThroughputMetric
+        Throughput metrics
     """
     common: CommonMetrics
     plugins: PluginsMetrics
+    throughput: ThroughputMetric
