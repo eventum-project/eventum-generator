@@ -105,7 +105,10 @@ def generate(
             generator.force_stop()
 
         metrics = generator.get_metrics()
-        logger.info('Publishing eventual metrics', metrics=metrics)
+        if metrics is not None:
+            logger.info('Publishing eventual metrics', metrics=metrics)
+        else:
+            logger.info('No eventual metrics to publish')
 
         exit(generator.exit_code)
 
@@ -120,7 +123,10 @@ def generate(
         if (current_time - last_metrics_time) > interval:
             last_metrics_time = current_time
             metrics = generator.get_metrics()
-            logger.info('Publishing actual metric', metrics=metrics)
+            if metrics is not None:
+                logger.info('Publishing actual metric', metrics=metrics)
+            else:
+                logger.info('No metric to publish yet')
 
         time.sleep(0.1)
 
