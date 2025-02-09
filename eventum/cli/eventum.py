@@ -1,4 +1,6 @@
 import os
+import signal
+import time
 from io import TextIOWrapper
 
 import click
@@ -9,6 +11,7 @@ from pydantic import ValidationError
 from setproctitle import setproctitle
 
 from eventum.cli.pydantic.converter import from_model
+from eventum.core.generator import Generator
 from eventum.core.main import App, AppError
 from eventum.core.models.parameters.generator import GeneratorParameters
 from eventum.core.models.settings import Settings
@@ -66,13 +69,62 @@ def run(config: TextIOWrapper) -> None:
         )
         exit(1)
 
+    def handle_termination():
+        logger.info('Termination signal is received')
+        app.stop()
+        exit(0)
+
+    signal.signal(signal.SIGINT, lambda _, __: handle_termination())
+    signal.signal(signal.SIGTERM, lambda _, __: handle_termination())
+    signal.pause()
+
 
 @cli.command
 @from_model(GeneratorParameters)
-def generate(generator_parameters: GeneratorParameters) -> None:
+@click.option(
+    '-v', '--verbose',
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help='Whether to show generator logs'
+)
+def generate(
+    generator_parameters: GeneratorParameters,
+    verbose: bool = False
+) -> None:
     """Generate events using single generator."""
-    print(generator_parameters)
-    # TODO: implement
+    generator = Generator(generator_parameters)
+    generator.start()
+
+    def handle_termination():
+        logger.info('Termination signal is received')
+        generator.stop()
+        generator.join(timeout=1)
+
+        if generator.is_running:
+            generator.force_stop()
+
+        metrics = generator.get_metrics()
+        logger.info('Publishing eventual metrics', metrics=metrics)
+
+        exit(generator.exit_code)
+
+    signal.signal(signal.SIGINT, lambda _, __: handle_termination())
+    signal.signal(signal.SIGTERM, lambda _, __: handle_termination())
+
+    last_metrics_time = time.monotonic()
+    interval = generator_parameters.metrics_interval
+
+    while generator.is_running:
+        current_time = time.monotonic()
+        if (current_time - last_metrics_time) > interval:
+            last_metrics_time = current_time
+            metrics = generator.get_metrics()
+            logger.info('Publishing actual metric', metrics=metrics)
+
+        time.sleep(0.1)
+
+    logger.info('Generator ended execution')
 
 
 if __name__ == '__main__':
