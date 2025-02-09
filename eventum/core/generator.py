@@ -22,11 +22,18 @@ class Generator:
         self._process.start()
 
     def stop(self) -> None:
-        """Stop generator"""
+        """Stop generator."""
         if not self.is_running:
             return
 
         self._process.terminate()
+
+    def force_stop(self) -> None:
+        """Stop generator using kill signal."""
+        if not self.is_running:
+            return
+
+        self._process.kill()
 
     def join(self, timeout: float | None = None) -> None:
         """Wait until generator terminates.
