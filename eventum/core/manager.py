@@ -1,7 +1,12 @@
+import time
 from typing import Iterable
+
+import structlog
 
 from eventum.core.generator import Generator
 from eventum.core.models.parameters.generator import GeneratorParameters
+
+logger = structlog.stdlib.get_logger()
 
 
 class ManagingError(Exception):
@@ -147,6 +152,63 @@ class GeneratorManager:
 
                 if generator.is_running:
                     generator.stop()
+
+    def bulk_join(
+        self,
+        generator_ids: Iterable[str],
+        timeout: float | None = None,
+        force: bool = True
+    ) -> bool:
+        """Wait until all running generator terminates.
+
+        Parameters
+        ----------
+        generator_ids : Iterable[str]
+            ID of generators to join
+
+        timeout : float | None, default=None
+            Timeout of generator joining
+
+        force : bool, default=True
+            Whether to force stop the generator if it was not joined
+            within timeout
+
+        Returns
+        -------
+        bool
+            `True` if all generators were joined in time, and `False`
+            if timeout is expired
+        """
+        start_time = time.monotonic()
+
+        joined_on_time = True
+
+        for id in generator_ids:
+            if id in self._generators:
+                generator = self._generators[id]
+
+                if generator.is_running:
+                    if timeout:
+                        spent = time.monotonic() - start_time
+                        available_time = max(timeout - spent, 0)
+                        generator.join(available_time)
+                    else:
+                        generator.join()
+
+                if generator.is_running:
+                    if force:
+                        generator.force_stop()
+                        logger.warning(
+                            (
+                                'Generator was not joined in time and '
+                                'therefore was force stopped'
+                            ),
+                            generator_id=id
+                        )
+
+                    joined_on_time = False
+
+        return joined_on_time
 
     def get_generator(self, generator_id: str) -> Generator:
         """Get generator from list of managed generators.
