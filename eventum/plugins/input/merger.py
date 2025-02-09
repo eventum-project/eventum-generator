@@ -60,7 +60,7 @@ class InputPluginsMerger(
             Number of timestamps to read from each generator
 
         skip_past : bool
-            Wether to skip past timestamps before starting slicing
+            Whether to skip past timestamps before starting slicing
 
         Yields
         ------

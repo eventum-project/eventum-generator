@@ -18,7 +18,7 @@ class GeneratorParameters(GenerationParameters, frozen=True):
         Absolute path to configuration
 
     time_mode : Literal['live', 'sample'], default='live'
-        Wether to use live mode and generate events at moments defined
+        Whether to use live mode and generate events at moments defined
         by timestamp values or sample mode to generate all events at a
         time
 

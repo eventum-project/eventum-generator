@@ -71,7 +71,7 @@ class Generator:
 
     @property
     def is_running(self) -> bool:
-        """Wether the generator is running."""
+        """Whether the generator is running."""
         return self._process.is_alive()
 
     @property

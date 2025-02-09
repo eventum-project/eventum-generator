@@ -86,7 +86,7 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
             timestamps then they must be chunked
 
         skip_past : bool, default=True
-            Wether to skip past timestamps before starting generation
+            Whether to skip past timestamps before starting generation
 
         Yields
         -------
@@ -120,7 +120,7 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
 
     @property
     def is_interactive(self) -> bool:
-        """Wether the plugin is interactive."""
+        """Whether the plugin is interactive."""
         return getattr(self, '_interactive')
 
     @property

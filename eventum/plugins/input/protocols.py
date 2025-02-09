@@ -30,7 +30,7 @@ class SupportsIdentifiedTimestampsSizedIterate(Protocol):
             of `InputPlugin` for details
 
         skip_past : bool, default=True
-            Wether to skip past timestamps before starting iteration
+            Whether to skip past timestamps before starting iteration
 
         Yields
         ------
@@ -60,7 +60,7 @@ class SupportsIdentifiedTimestampsIterate(Protocol):
         Parameters
         ----------
         skip_past : bool, default=True
-            Wether to skip past timestamps before starting iteration
+            Whether to skip past timestamps before starting iteration
 
         Yields
         ------
