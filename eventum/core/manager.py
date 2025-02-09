@@ -191,22 +191,22 @@ class GeneratorManager:
                     if timeout:
                         spent = time.monotonic() - start_time
                         available_time = max(timeout - spent, 0)
-                        generator.join(available_time)
+                        joined = generator.join(available_time)
                     else:
-                        generator.join()
+                        joined = generator.join()
 
-                if generator.is_running:
-                    if force:
-                        generator.force_stop()
-                        logger.warning(
-                            (
-                                'Generator was not joined in time and '
-                                'therefore was force stopped'
-                            ),
-                            generator_id=id
-                        )
+                    if not joined:
+                        if force:
+                            generator.force_stop()
+                            logger.warning(
+                                (
+                                    'Generator was not joined in time and '
+                                    'therefore was force stopped'
+                                ),
+                                generator_id=id
+                            )
 
-                    joined_on_time = False
+                        joined_on_time = False
 
         return joined_on_time
 
