@@ -2,14 +2,13 @@ import itertools
 import json
 from typing import Iterable, Iterator, Sequence
 
-import aiohttp
-from yarl import URL
+import httpx
 
 from eventum.plugins.exceptions import (PluginConfigurationError,
                                         PluginRuntimeError)
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
-from eventum.plugins.output.http_session import (create_session,
-                                                 create_ssl_context)
+from eventum.plugins.output.http_client import (create_client,
+                                                create_ssl_context)
 from eventum.plugins.output.plugins.opensearch.config import \
     OpensearchOutputPluginConfig
 
@@ -41,10 +40,10 @@ class OpensearchOutputPlugin(
                 context=dict(self.instance_info, reason=str(e))
             )
 
-        self._session: aiohttp.ClientSession
+        self._client: httpx.AsyncClient
 
     async def _open(self) -> None:
-        self._session = create_session(
+        self._client = create_client(
             ssl_context=self._ssl_context,
             username=self._config.username,
             password=self._config.password,
@@ -53,21 +52,26 @@ class OpensearchOutputPlugin(
                 'Content-Type': 'application/json'
             },
             connect_timeout=self._config.connect_timeout,
-            request_timeout=self._config.request_timeout
+            request_timeout=self._config.request_timeout,
+            proxy_url=(
+                str(self._config.proxy_url) if self._config.proxy_url
+                else None
+            )
         )
 
     async def _close(self) -> None:
-        await self._session.close()
+        await self._client.aclose()
 
-    def _choose_host(self) -> Iterator[URL]:
+    def _choose_host(self) -> Iterator[httpx.URL]:
         """Choose host from hosts list specified in config.
 
         Yields
         ------
-        yarl.URL
+        httpx.URL
             Chosen host URL
         """
-        host_urls = [URL(str(host)) for host in self._config.hosts]
+
+        host_urls = [httpx.URL(str(host)) for host in self._config.hosts]
 
         for host in itertools.cycle(host_urls):
             yield host
@@ -162,16 +166,11 @@ class OpensearchOutputPlugin(
         host = next(self._hosts)
 
         try:
-            response = await self._session.post(
-                url=host.with_path('_bulk'),
-                data=self._create_bulk_data(events),
-                proxy=(
-                    str(self._config.proxy_url)
-                    if self._config.proxy_url else None
-                )
+            response = await self._client.post(
+                url=host.join('/_bulk'),
+                content=self._create_bulk_data(events)
             )
-            text = await response.text()
-        except aiohttp.ClientError as e:
+        except httpx.RequestError as e:
             raise PluginRuntimeError(
                 'Failed to perform bulk indexing',
                 context=dict(
@@ -181,19 +180,19 @@ class OpensearchOutputPlugin(
                 )
             ) from e
 
-        if response.status != 200:
+        if response.status_code != 200:
             raise PluginRuntimeError(
                 'Failed to perform bulk indexing',
                 context=dict(
                     self.instance_info,
-                    reason=text,
-                    http_status=response.status,
+                    reason=response.text,
+                    http_status=response.status_code,
                     url=host.host
                 )
             )
 
         try:
-            result = json.loads(text)
+            result = json.loads(response.text)
         except json.JSONDecodeError as e:
             raise PluginRuntimeError(
                 'Failed to decode bulk response',
@@ -245,16 +244,11 @@ class OpensearchOutputPlugin(
         host = next(self._hosts)
 
         try:
-            response = await self._session.post(
-                url=host.with_path(f'{self._config.index}/_doc'),
-                data=event,
-                proxy=(
-                    str(self._config.proxy_url)
-                    if self._config.proxy_url else None
-                )
+            response = await self._client.post(
+                url=host.join(f'/{self._config.index}/_doc'),
+                content=event
             )
-            text = await response.text()
-        except aiohttp.ClientError as e:
+        except httpx.RequestError as e:
             raise PluginRuntimeError(
                 'Failed to post document',
                 context=dict(
@@ -264,13 +258,13 @@ class OpensearchOutputPlugin(
                 )
             ) from e
 
-        if response.status != 201:
+        if response.status_code != 201:
             raise PluginRuntimeError(
                 'Failed to post document',
                 context=dict(
                     self.instance_info,
-                    reason=text,
-                    http_status=response.status,
+                    reason=response.text,
+                    http_status=response.status_code,
                     url=host.host
                 )
             )
