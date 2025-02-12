@@ -16,7 +16,7 @@ def prettify_validation_errors(
         Iterable of error details
 
     sep : str, default='; '
-        Separator for errors message
+        Separator of error messages
 
     Returns
     -------
@@ -38,8 +38,11 @@ def prettify_validation_errors(
         msg = error['msg']
         type = error['type']
 
-        messages.append(
-            f'"{_loc(loc)}": {input!r} - {msg.lower()} ({type})'
-        )
+        if not loc:
+            message = f'{input!r} - {msg.lower()} ({type})'
+        else:
+            message = f'"{_loc(loc)}": {input!r} - {msg.lower()} ({type})'
+
+        messages.append(message)
 
     return sep.join(messages)
