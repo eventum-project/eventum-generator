@@ -180,19 +180,22 @@ class OpensearchOutputPlugin(
                 )
             ) from e
 
+        content = await response.aread()
+        text = content.decode()
+
         if response.status_code != 200:
             raise PluginRuntimeError(
                 'Failed to perform bulk indexing',
                 context=dict(
                     self.instance_info,
-                    reason=response.text,
+                    reason=text,
                     http_status=response.status_code,
                     url=host.host
                 )
             )
 
         try:
-            result = json.loads(response.text)
+            result = json.loads(text)
         except json.JSONDecodeError as e:
             raise PluginRuntimeError(
                 'Failed to decode bulk response',
@@ -259,11 +262,13 @@ class OpensearchOutputPlugin(
             ) from e
 
         if response.status_code != 201:
+            content = await response.aread()
+            text = content.decode()
             raise PluginRuntimeError(
                 'Failed to post document',
                 context=dict(
                     self.instance_info,
-                    reason=response.text,
+                    reason=text,
                     http_status=response.status_code,
                     url=host.host
                 )

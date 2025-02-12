@@ -86,12 +86,14 @@ class HttpOutputPlugin(
             ) from e
 
         if response.status_code != self._config.success_code:
+            content = await response.aread()
+            text = content.decode()
             raise PluginRuntimeError(
                 'Server returned not expected status code',
                 context=dict(
                     self.instance_info,
                     http_status=response.status_code,
-                    reason=response.text,
+                    reason=text,
                     url=self._config.url
                 )
             )
