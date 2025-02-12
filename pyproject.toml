@@ -47,6 +47,7 @@ flatten-dict = "^0.4.2"
 griffe = "^1.5.6"
 case-converter = "^1.1.0"
 httpx = "^0.28.1"
+pytest-httpx = "^0.35.0"
 
 [tool.poetry.group.dev.dependencies]
 isort = "^5.12.0"
@@ -56,12 +57,12 @@ types-aiofiles = "^23.2.0.20240403"
 types-croniter = "^2.0.0.20240423"
 types-pytz = "^2024.1.0.20240417"
 pytest-asyncio = "^0.23.7"
-aioresponses = "^0.7.6"
 flake8 = "^7.0.0"
 types-dateparser = "^1.2.0.20240420"
 matplotlib = "^3.9.2"
 rich = "^13.9.4"
 requests = "^2.32.3"
+pytest-httpx = "^0.35.0"
 
 
 [build-system]
