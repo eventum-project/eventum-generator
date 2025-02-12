@@ -1,13 +1,13 @@
 import asyncio
 from typing import Sequence
 
-import aiohttp
+import httpx
 
 from eventum.plugins.exceptions import (PluginConfigurationError,
                                         PluginRuntimeError)
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
-from eventum.plugins.output.http_session import (create_session,
-                                                 create_ssl_context)
+from eventum.plugins.output.http_client import (create_client,
+                                                create_ssl_context)
 from eventum.plugins.output.plugins.http.config import HttpOutputPluginConfig
 
 
@@ -36,20 +36,24 @@ class HttpOutputPlugin(
                 context=dict(self.instance_info, reason=str(e))
             )
 
-        self._session: aiohttp.ClientSession
+        self._client: httpx.AsyncClient
 
     async def _open(self) -> None:
-        self._session = create_session(
+        self._client = create_client(
             ssl_context=self._ssl_context,
             username=self._config.username,
             password=self._config.password,
             headers=self._config.headers,
             connect_timeout=self._config.connect_timeout,
-            request_timeout=self._config.request_timeout
+            request_timeout=self._config.request_timeout,
+            proxy_url=(
+                str(self._config.proxy_url) if self._config.proxy_url
+                else None
+            )
         )
 
     async def _close(self) -> None:
-        await self._session.close()
+        await self._client.aclose()
 
     async def _perform_request(self, data: str) -> None:
         """Perform request with provided data.
@@ -66,16 +70,12 @@ class HttpOutputPlugin(
             expected one
         """
         try:
-            response = await self._session.request(
+            response = await self._client.request(
                 method=self._config.method,
                 url=str(self._config.url),
-                data=data,
-                proxy=(
-                    str(self._config.proxy_url)
-                    if self._config.proxy_url else None
-                )
+                content=data
             )
-        except aiohttp.ClientError as e:
+        except httpx.RequestError as e:
             raise PluginRuntimeError(
                 'Request failed',
                 context=dict(
@@ -85,12 +85,13 @@ class HttpOutputPlugin(
                 )
             ) from e
 
-        if response.status != self._config.success_code:
+        if response.status_code != self._config.success_code:
             raise PluginRuntimeError(
                 'Server returned not expected status code',
                 context=dict(
                     self.instance_info,
-                    http_status=response.status,
+                    http_status=response.status_code,
+                    reason=response.text,
                     url=self._config.url
                 )
             )
