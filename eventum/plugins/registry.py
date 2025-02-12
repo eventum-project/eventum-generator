@@ -99,4 +99,4 @@ class PluginsRegistry:
     @classmethod
     def clear(cls) -> None:
         """Clear registry by removing all registered plugins from it."""
-        cls._registry = dict()
+        cls._registry.clear()
