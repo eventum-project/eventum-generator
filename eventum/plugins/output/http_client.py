@@ -1,7 +1,7 @@
 import ssl
 from typing import Any
 
-import aiohttp
+import httpx
 
 
 def create_ssl_context(
@@ -69,15 +69,16 @@ def create_ssl_context(
     return context
 
 
-def create_session(
+def create_client(
     ssl_context: ssl.SSLContext | None = None,
     username: str | None = None,
     password: str | None = None,
     headers: dict[str, Any] | None = None,
     connect_timeout: int = 10,
-    request_timeout: int = 300
-) -> aiohttp.ClientSession:
-    """Create client HTTP session with initialized parameters.
+    request_timeout: int = 300,
+    proxy_url: str | None = None
+) -> httpx.AsyncClient:
+    """Create HTTP client with initialized parameters.
 
     Parameters
     ----------
@@ -100,30 +101,30 @@ def create_session(
     request_timeout : int, default=300
         Timeout of requests
 
+    proxy_url : str | None, default=None
+        Proxy url
+
     Returns
     -------
-    aiohttp.ClientSession
-        Initialized client HTTP session
+    httpx.AsyncClient
+        Initialized HTTP client
     """
     ssl_context = ssl_context or ssl.create_default_context()
 
     if username is None:
-        auth = None
+        auth: httpx.BasicAuth | None = None
     else:
-        auth = aiohttp.BasicAuth(
-            login=username,
-            password=password or ""
-        )
+        auth = httpx.BasicAuth(username, password or '')
 
-    if headers is None:
-        headers = dict()
+    if proxy_url is None:
+        proxy: httpx.Proxy | None = None
+    else:
+        proxy = httpx.Proxy(proxy_url, )
 
-    return aiohttp.ClientSession(
+    return httpx.AsyncClient(
         auth=auth,
-        connector=aiohttp.TCPConnector(ssl=ssl_context),
         headers=headers,
-        timeout=aiohttp.ClientTimeout(
-            sock_connect=connect_timeout,
-            sock_read=request_timeout
-        )
+        verify=ssl_context,
+        timeout=httpx.Timeout(request_timeout, connect=connect_timeout),
+        proxy=proxy
     )
