@@ -6,7 +6,14 @@ import eventum.plugins.input.plugins as input_plugins
 from eventum.plugins.registry import PluginInfo, PluginsRegistry
 
 
-def test_registry():
+@pytest.fixture
+def clean_registry():
+    PluginsRegistry.clear()
+    yield
+    PluginsRegistry.clear()
+
+
+def test_registry(clean_registry):
     assert not PluginsRegistry.is_registered(input_plugins, 'test')
 
     with pytest.raises(ValueError):
@@ -31,7 +38,7 @@ def test_registry():
     assert plugin_info.config_cls is object
 
 
-def test_registry_clearing():
+def test_registry_clearing(clean_registry):
     PluginsRegistry.register_plugin(
         PluginInfo(
             name='test',
@@ -48,7 +55,7 @@ def test_registry_clearing():
     assert not PluginsRegistry.is_registered(input_plugins, 'test')
 
 
-def test_plugin_registration():
+def test_plugin_registration(clean_registry):
     PluginsRegistry.clear()
 
     assert not PluginsRegistry.is_registered(input_plugins, 'cron')
