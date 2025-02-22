@@ -24,7 +24,6 @@ packages = [
 python = "^3.11"
 pydantic = "^2.6.2"
 pyyaml = "^6.0.2"
-types-pyyaml = "^6.0.12.20240917"
 numpy = "^2.1.2"
 pytz = "^2024.2"
 croniter = "^5.0.1"
@@ -62,6 +61,7 @@ types-dateparser = "^1.2.0.20240420"
 matplotlib = "^3.9.2"
 requests = "^2.32.3"
 pytest-httpx = "^0.35.0"
+types-pyyaml = "^6.0.12.20241230"
 
 
 [build-system]
