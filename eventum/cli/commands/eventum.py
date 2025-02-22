@@ -1,7 +1,7 @@
-import os
 import signal
 import time
 from io import TextIOWrapper
+from typing import Literal, TypeAlias
 
 import click
 import structlog
@@ -10,6 +10,7 @@ from flatten_dict import unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError
 from setproctitle import setproctitle
 
+import eventum.cli.logging as logconf
 from eventum.cli.pydantic_converter import from_model
 from eventum.core.generator import Generator
 from eventum.core.main import App, AppError
@@ -39,9 +40,9 @@ def run(config: TextIOWrapper) -> None:
     try:
         data = yaml.load(config, Loader=yaml.SafeLoader)
     except yaml.error.YAMLError as e:
-        click.echo(
-            f'Error: Failed to parse configuration: {str(e).capitalize()}',
-            err=True
+        logger.error(
+            'Failed to parse configuration YAML content',
+            reason=str(e)
         )
         exit(1)
 
@@ -50,10 +51,9 @@ def run(config: TextIOWrapper) -> None:
     try:
         settings = Settings.model_validate(data)
     except ValidationError as e:
-        click.echo('Error: Failed to validate options:', err=True)
-        click.echo(
-            prettify_validation_errors(e.errors(), sep=os.linesep),
-            err=True
+        logger.error(
+            'Failed to validate settings',
+            reason=prettify_validation_errors(e.errors())
         )
         exit(1)
 
@@ -63,10 +63,6 @@ def run(config: TextIOWrapper) -> None:
         app.start()
     except AppError as e:
         logger.error(str(e), **e.context)
-        click.echo(
-            f'Error: App exited with error: {e} (see logs for more info)',
-            err=True
-        )
         exit(1)
 
     def handle_termination():
@@ -79,20 +75,44 @@ def run(config: TextIOWrapper) -> None:
     signal.pause()
 
 
+VerbosityLevel: TypeAlias = Literal[0, 1, 2, 3, 4]
+
+VERBOSITY_TO_LOG_LEVEL: dict[VerbosityLevel, logconf.LogLevel] = {
+    1: 'CRITICAL',
+    2: 'ERROR',
+    3: 'WARNING',
+    4: 'INFO'
+}
+
+
 @cli.command
 @from_model(GeneratorParameters)
 @click.option(
     '-v', '--verbose',
-    is_flag=True,
+    count=True,
+    type=click.IntRange(0, 4),
+    default=0,
     show_default=True,
-    default=False,
-    help='Whether to show generator logs'
+    help=(
+        'Level of verbosity for printed logs '
+        '(default: disabled, -v: critical, -vv: errors, '
+        '-vvv: warnings, -vvvv: info)'
+    )
 )
 def generate(
     generator_parameters: GeneratorParameters,
-    verbose: bool = False
+    verbose: VerbosityLevel
 ) -> None:
     """Generate events using single generator."""
+
+    if verbose > 0:
+        logconf.configure_for_cli(
+            level=VERBOSITY_TO_LOG_LEVEL[verbose],
+            disable=False
+        )
+    else:
+        logconf.configure_for_cli(disable=True)
+
     generator = Generator(generator_parameters)
     generator.start()
 
@@ -131,6 +151,7 @@ def generate(
         time.sleep(0.1)
 
     logger.info('Generator ended execution')
+    exit(generator.exit_code)
 
 
 if __name__ == '__main__':
