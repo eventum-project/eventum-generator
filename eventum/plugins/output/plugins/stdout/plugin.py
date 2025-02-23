@@ -57,7 +57,6 @@ class StdoutOutputPlugin(
     async def _close(self) -> None:
         self._flushing_task.cancel()
         await self._writer.drain()
-        self._writer.close()
 
     async def _write(self, events: Sequence[str]) -> int:
         try:
