@@ -18,6 +18,16 @@ from eventum.core.models.parameters.generator import GeneratorParameters
 from eventum.core.models.settings import Settings
 from eventum.utils.validation_prettier import prettify_validation_errors
 
+VerbosityLevel: TypeAlias = Literal[0, 1, 2, 3, 4, 5]
+
+VERBOSITY_TO_LOG_LEVEL: dict[VerbosityLevel, logconf.LogLevel] = {
+    1: 'CRITICAL',
+    2: 'ERROR',
+    3: 'WARNING',
+    4: 'INFO',
+    5: 'DEBUG',
+}
+
 setproctitle('eventum')
 logger = structlog.stdlib.get_logger()
 
@@ -37,6 +47,11 @@ def cli():
 )
 def run(config: TextIOWrapper) -> None:
     """Run application with all defined generators."""
+    logconf.configure_for_stderr(
+        level='ERROR',
+        disable=False
+    )
+
     try:
         data = yaml.load(config, Loader=yaml.SafeLoader)
     except yaml.error.YAMLError as e:
@@ -57,6 +72,12 @@ def run(config: TextIOWrapper) -> None:
         )
         exit(1)
 
+    logconf.configure_full(
+        format=settings.log.format,
+        level=settings.log.level.upper(),   # type: ignore[arg-type]
+        logs_dir=settings.path.logs
+    )
+
     app = App(settings)
 
     try:
@@ -75,28 +96,18 @@ def run(config: TextIOWrapper) -> None:
     signal.pause()
 
 
-VerbosityLevel: TypeAlias = Literal[0, 1, 2, 3, 4]
-
-VERBOSITY_TO_LOG_LEVEL: dict[VerbosityLevel, logconf.LogLevel] = {
-    1: 'CRITICAL',
-    2: 'ERROR',
-    3: 'WARNING',
-    4: 'INFO'
-}
-
-
 @cli.command
 @from_model(GeneratorParameters)
 @click.option(
     '-v', '--verbose',
     count=True,
-    type=click.IntRange(0, 4),
+    type=click.IntRange(0, 5),
     default=0,
     show_default=True,
     help=(
         'Level of verbosity for printed logs '
         '(default: disabled, -v: critical, -vv: errors, '
-        '-vvv: warnings, -vvvv: info)'
+        '-vvv: warnings, -vvvv: info, -vvvvv: debug)'
     )
 )
 def generate(
@@ -104,14 +115,13 @@ def generate(
     verbose: VerbosityLevel
 ) -> None:
     """Generate events using single generator."""
-
     if verbose > 0:
-        logconf.configure_for_cli(
+        logconf.configure_for_stderr(
             level=VERBOSITY_TO_LOG_LEVEL[verbose],
             disable=False
         )
     else:
-        logconf.configure_for_cli(disable=True)
+        logconf.configure_for_stderr(disable=True)
 
     generator = Generator(generator_parameters)
     generator.start()
