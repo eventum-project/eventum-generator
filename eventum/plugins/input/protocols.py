@@ -1,4 +1,4 @@
-from typing import Annotated, Iterator, Protocol, TypeAlias
+from typing import Annotated, AsyncIterator, Iterator, Protocol, TypeAlias
 
 import numpy as np
 from numpy.typing import NDArray
@@ -67,4 +67,19 @@ class SupportsIdentifiedTimestampsIterate(Protocol):
         IdentifiedTimestamps
             Array of timestamps with plugin ids
         """
+        ...
+
+
+class SupportsAsyncIdentifiedTimestampsIterate(Protocol):
+    """Async version of `SupportsIdentifiedTimestampsIterate` protocol."""
+
+    def iterate(
+        self,
+        skip_past: bool = True
+    ) -> AsyncIterator[IdentifiedTimestamps]:
+        """Iterate over arrays of identified timestamps.
+
+        Notes
+        -----
+        See `SupportsIdentifiedTimestampsIterate.iterate` docstring."""
         ...

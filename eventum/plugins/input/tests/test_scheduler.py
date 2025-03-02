@@ -9,7 +9,7 @@ from eventum.plugins.input.plugins.static.config import StaticInputPluginConfig
 from eventum.plugins.input.plugins.static.plugin import StaticInputPlugin
 from eventum.plugins.input.plugins.timer.config import TimerInputPluginConfig
 from eventum.plugins.input.plugins.timer.plugin import TimerInputPlugin
-from eventum.plugins.input.scheduler import BatchScheduler
+from eventum.plugins.input.scheduler import AsyncBatchScheduler, BatchScheduler
 
 
 @pytest.fixture
@@ -67,6 +67,48 @@ def test_scheduler_delay(delayed_source):
 
     t1 = time.time()
     batches = list(scheduler.iterate(skip_past=False))
+    t2 = time.time()
+
+    assert len(batches) == 10
+    assert (t2 - t1) >= 0.5
+
+
+@pytest.mark.asyncio
+async def test_async_scheduler(instant_source):
+    scheduler = AsyncBatchScheduler(
+        batcher=TimestampsBatcher(
+            source=instant_source,
+            batch_size=100,
+            batch_delay=None
+        ),
+        timezone=timezone('UTC')
+    )
+
+    t1 = time.time()
+    batches = []
+    async for batch in scheduler.iterate(skip_past=False):
+        batches.append(batch)
+    t2 = time.time()
+
+    assert len(batches) == 10
+    assert (t2 - t1) < 0.5
+
+
+@pytest.mark.asyncio
+async def test_async_scheduler_delay(delayed_source):
+    scheduler = AsyncBatchScheduler(
+        batcher=TimestampsBatcher(
+            source=delayed_source,
+            batch_size=100,
+            batch_delay=None
+        ),
+        timezone=timezone('UTC')
+    )
+
+    t1 = time.time()
+    batches = []
+    async for batch in scheduler.iterate(skip_past=False):
+        batches.append(batch)
     t2 = time.time()
 
     assert len(batches) == 10
