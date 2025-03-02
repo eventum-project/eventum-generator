@@ -185,11 +185,6 @@ class App:
     def _stop_generators(self) -> None:
         """Stop generators."""
         self._manager.bulk_stop(self._manager.generator_ids)
-        self._manager.bulk_join(
-            generator_ids=self._manager.generator_ids,
-            timeout=5,
-            force=True
-        )
 
     def _start_api(self) -> None:
         """Start application API."""
