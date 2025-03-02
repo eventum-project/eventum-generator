@@ -114,6 +114,7 @@ def test_normalize_versatile_datetime_for_now_with_relative_base():
     assert 0 <= (now - result).total_seconds() < 0.5
 
 
+@pytest.mark.filterwarnings('ignore:Parsing dates')
 def test_normalize_versatile_datetime_for_human_readable():
     result = normalize_versatile_datetime(
         value='1st August 2024',
@@ -136,6 +137,7 @@ def test_normalize_versatile_datetime_for_human_readable_with_relative_base():
     assert result == expected
 
 
+@pytest.mark.filterwarnings('ignore:Parsing dates')
 def test_normalize_versatile_datetime_relative_base_no_affect():
     base = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone('UTC'))
     result = normalize_versatile_datetime(
@@ -156,6 +158,7 @@ def test_normalize_versatile_datetime_unparsable_expression():
         )
 
 
+@pytest.mark.filterwarnings('ignore:Parsing dates')
 def test_normalize_versatile_daterange():
     expected_start = datetime.fromisoformat('2024-01-01T00:00:00.000Z')
     expected_end = datetime(2077, 1, 1, 0, 0, tzinfo=pytz.timezone('UTC'))
