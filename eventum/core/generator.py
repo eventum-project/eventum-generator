@@ -2,60 +2,63 @@ from threading import Thread
 
 import structlog
 
-from eventum.core.config import ConfigurationLoadError, load
-from eventum.core.executor import Executor, ImproperlyConfiguredError
+from eventum.core.config import load
+from eventum.core.executor import Executor
 from eventum.core.gauge import MetricsGauge
-from eventum.core.initializer import InitializationError, init_plugins
+from eventum.core.initializer import InitializedPlugins, init_plugins
+from eventum.core.models.config import GeneratorConfig
 from eventum.core.models.metrics import Metrics
 from eventum.core.models.parameters.generator import GeneratorParameters
-from eventum.utils.exceptions import ContextualException
 
 logger = structlog.stdlib.get_logger()
 
 
-class GeneratorInitializationError(ContextualException):
-    """Error during generator initialization."""
-
-
 class Generator:
-    """Thread-wrapped generator.
-
-    Raises
-    ------
-    GeneratorInitializationError
-        If any error occurs during generator initialization
-    """
+    """Thread-wrapped generator."""
 
     def __init__(self, params: GeneratorParameters) -> None:
         self._params = params
+        self._config: GeneratorConfig | None = None
+        self._plugins: InitializedPlugins | None = None
+        self._executor: Executor | None = None
+        self._gauge: MetricsGauge | None = None
+        self._thread = Thread(target=self._start)
 
+    def _start(self) -> None:
+        """Start generation.
+
+        Raises
+        ------
+        ConfigurationLoadError
+            If error occurs during configuration loading
+
+        InitializationError
+            If error occurs during plugin initialization
+
+        ImproperlyConfiguredError
+            If error occurs during executor initialization
+
+        ExecutionError
+            If any error occurs during execution
+        """
         logger.info('Loading configuration', file_path=self._params.path)
-        try:
-            self._config = load(self._params.path, self._params.params)
-        except ConfigurationLoadError as e:
-            raise GeneratorInitializationError(str(e), context=e.context)
+        self._config = load(self._params.path, self._params.params)
 
         logger.info('Initializing plugins')
-        try:
-            self._plugins = init_plugins(
-                input=self._config.input,
-                event=self._config.event,
-                output=self._config.output,
-                params=self._params
-            )
-        except InitializationError as e:
-            raise GeneratorInitializationError(str(e), context=e.context)
+        self._plugins = init_plugins(
+            input=self._config.input,
+            event=self._config.event,
+            output=self._config.output,
+            params=self._params
+        )
 
         logger.info('Initializing plugins executor')
-        try:
-            self._executor = Executor(
-                input=self._plugins.input,
-                event=self._plugins.event,
-                output=self._plugins.output,
-                params=self._params
-            )
-        except ImproperlyConfiguredError as e:
-            raise GeneratorInitializationError(str(e), context=e.context)
+        self._executor = Executor(
+            input=self._plugins.input,
+            event=self._plugins.event,
+            output=self._plugins.output,
+            params=self._params
+        )
 
         self._gauge = MetricsGauge(
             input=self._plugins.input,
@@ -64,7 +67,7 @@ class Generator:
             params=self._params
         )
 
-        self._thread = Thread(target=self._executor.execute)
+        self._executor.execute()
 
     def start(self) -> None:
         """Start generator in separate thread."""
@@ -74,18 +77,26 @@ class Generator:
         self._thread.start()
 
     def stop(self) -> None:
-        """Stop generator with joining underlying thread. All possible
-        exceptions are propagated.
+        """Stop generator with joining underlying thread and
+        propagating all possible exceptions.
+
+        Raises
+        ------
+        RuntimeError
+            If generator is not started
         """
         if not self.is_running:
             return
+
+        if self._executor is None:
+            raise RuntimeError('Generator is not started')
 
         self._executor.request_stop()
         self._thread.join()
 
     def join(self, timeout: float | None = None) -> bool:
-        """Wait until generator terminates. All possible exceptions are
-        propagated.
+        """Wait until generator terminates with propagating all
+        possible exceptions.
 
         Parameters
         ----------
@@ -110,9 +121,17 @@ class Generator:
 
         Returns
         -------
-        Metrics | None
+        Metrics
             Generator metrics
+
+        Raises
+        ------
+        RuntimeError
+            If generator is not started
         """
+        if self._gauge is None:
+            raise RuntimeError('Generator is not started')
+
         return self._gauge.gauge_metrics()
 
     @property
