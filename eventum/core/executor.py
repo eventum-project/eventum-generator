@@ -1,22 +1,23 @@
 import asyncio
 from datetime import datetime
-from queue import Queue
 from typing import Sequence
 
 import structlog
+from janus import Queue
 from pytz import timezone
 
 from eventum.core.models.parameters.generator import GeneratorParameters
 from eventum.plugins.event.base.plugin import EventPlugin, ProduceParams
 from eventum.plugins.exceptions import PluginRuntimeError
-from eventum.plugins.input.adapters import IdentifiedTimestampsPluginAdapter
+from eventum.plugins.input.adapters import (
+    AsyncIdentifiedTimestampsSyncAdapter, IdentifiedTimestampsPluginAdapter)
 from eventum.plugins.input.base.plugin import InputPlugin
 from eventum.plugins.input.batcher import TimestampsBatcher
 from eventum.plugins.input.merger import InputPluginsMerger
 from eventum.plugins.input.protocols import (
-    IdentifiedTimestamps, SupportsIdentifiedTimestampsIterate,
+    IdentifiedTimestamps, SupportsAsyncIdentifiedTimestampsIterate,
     SupportsIdentifiedTimestampsSizedIterate)
-from eventum.plugins.input.scheduler import BatchScheduler
+from eventum.plugins.input.scheduler import AsyncBatchScheduler
 from eventum.plugins.output.base.plugin import OutputPlugin
 from eventum.utils.exceptions import ContextualException
 
@@ -86,6 +87,8 @@ class Executor:
             value=self._params.max_concurrency
         )
 
+        self._stop_event = asyncio.Event()
+
     def _build_input_tags_map(self) -> dict[int, tuple[str, ...]]:
         """Build map of input plugin tags.
 
@@ -100,13 +103,13 @@ class Executor:
 
         return tags_map
 
-    def _configure_input(self) -> SupportsIdentifiedTimestampsIterate:
+    def _configure_input(self) -> SupportsAsyncIdentifiedTimestampsIterate:
         """Configure input plugins according to generator parameters
         by wrapping it to merger, batcher and scheduler.
 
         Returns
         -------
-        SupportsIdentifiedTimestampsIterate
+        SupportsAsyncIdentifiedTimestampsIterate
             Configured input
 
         Raises
@@ -141,12 +144,12 @@ class Executor:
             )
 
         if self._params.time_mode == 'live':
-            return BatchScheduler(
+            return AsyncBatchScheduler(
                 batcher=batcher,
                 timezone=self._timezone
             )
         else:
-            return batcher
+            return AsyncIdentifiedTimestampsSyncAdapter(target=batcher)
 
     async def _open_output_plugins(self) -> None:
         """Open output plugins.
@@ -224,14 +227,29 @@ class Executor:
 
         await self._open_output_plugins()
 
-        input_task = loop.run_in_executor(None, self._execute_input)
-        event_task = loop.run_in_executor(None, self._execute_event)
+        input_task = loop.create_task(self._execute_input())
+        event_task = loop.create_task(self._execute_event())
         output_task = loop.create_task(self._execute_output())
+
+        while True:
+            if input_task.done() and event_task.done() and output_task.done():
+                break
+
+            if self._stop_event.is_set():
+                input_task.cancel()
+                event_task.cancel()
+                output_task.cancel()
+
+                break
+
+            await asyncio.sleep(0.1)
 
         await input_task
         await event_task
         await output_task
 
+        await self._input_queue.aclose()
+        await self._event_queue.aclose()
         await self._close_output_plugins()
 
     def execute(self) -> None:
@@ -245,15 +263,16 @@ class Executor:
         with asyncio.Runner() as runner:
             runner.run(self._execute())
 
-    def _execute_input(self) -> None:
+    async def _execute_input(self) -> None:
         """Execute input plugins."""
         skip_past = self._params.time_mode == 'live' and self._params.skip_past
+        downstream_queue = self._input_queue.async_q
 
         try:
-            for timestamps in self._configured_input.iterate(
+            async for timestamps in self._configured_input.iterate(
                 skip_past=skip_past
             ):
-                self._input_queue.put(timestamps)
+                await downstream_queue.put(timestamps)
         except PluginRuntimeError as e:
             logger.error(str(e), **e.context)
         except Exception as e:
@@ -262,12 +281,15 @@ class Executor:
                 reason=str(e)
             )
 
-        self._input_queue.put(None)
+        await downstream_queue.put(None)
 
-    def _execute_event(self) -> None:
+    async def _execute_event(self) -> None:
         """Execute event plugin."""
+        upstream_queue = self._input_queue.async_q
+        downstream_queue = self._event_queue.async_q
+
         while True:
-            timestamps = self._input_queue.get()
+            timestamps = await upstream_queue.get()
 
             if timestamps is None:
                 break
@@ -293,9 +315,9 @@ class Executor:
                     )
 
             if events:
-                self._event_queue.put(events)
+                await downstream_queue.put(events)
 
-        self._event_queue.put(None)
+        await downstream_queue.put(None)
 
     def _handle_write_result(self, task: asyncio.Task[int]) -> None:
         """Handle result of output plugin write task.
@@ -311,7 +333,7 @@ class Executor:
             logger.error(str(e), **e.context)
         except Exception as e:
             logger.exception(
-                'Unexpected error occurred during output plugins execution',
+                'Unexpected error occurred during output plugin write',
                 reason=str(e)
             )
         finally:
@@ -321,13 +343,11 @@ class Executor:
     async def _execute_output(self) -> None:
         """Execute output plugins."""
         loop = asyncio.get_running_loop()
+        upstream_queue = self._event_queue.async_q
 
         gathering_tasks: list[asyncio.Task] = []
         while True:
-            events = await loop.run_in_executor(
-                executor=None,
-                func=self._event_queue.get
-            )
+            events = await upstream_queue.get()
 
             if events is None:
                 break
@@ -349,3 +369,10 @@ class Executor:
         if self._output_tasks:
             await asyncio.gather(*self._output_tasks, return_exceptions=True)
             self._output_tasks.clear()
+
+    def request_stop(self) -> None:
+        """Request stop of execution. This method is expected to be
+        called from thread other than the one executing `execute`
+        method.
+        """
+        self._stop_event.set()
