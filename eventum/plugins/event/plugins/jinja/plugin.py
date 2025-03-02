@@ -1,7 +1,7 @@
-import atexit
 import os
 from copy import copy
 from datetime import datetime
+from threading import RLock
 from typing import Any, MutableMapping, NotRequired
 
 from jinja2 import (BaseLoader, Environment, FileSystemLoader, Template,
@@ -18,7 +18,7 @@ from eventum.plugins.event.plugins.jinja.metrics import (
 from eventum.plugins.event.plugins.jinja.module_provider import ModuleProvider
 from eventum.plugins.event.plugins.jinja.sample_reader import (SampleLoadError,
                                                                SampleReader)
-from eventum.plugins.event.plugins.jinja.state import (MultiProcessState,
+from eventum.plugins.event.plugins.jinja.state import (MultiThreadState,
                                                        SingleThreadState)
 from eventum.plugins.event.plugins.jinja.subprocess_runner import \
     SubprocessRunner
@@ -47,6 +47,8 @@ class JinjaEventPlugin(
 
     _JINJA_EXTENSIONS = ('jinja2.ext.do', 'jinja2.ext.loopcontrols')
 
+    _GLOBAL_STATE = MultiThreadState(lock=RLock())
+
     def __init__(
         self,
         config: JinjaEventPluginConfig,
@@ -74,17 +76,10 @@ class JinjaEventPlugin(
             self._logger.info('Samples are loaded')
 
         self._module_provider = ModuleProvider(modules.__name__)
+
         self._subprocess_runner = SubprocessRunner()
         self._shared_state = SingleThreadState()
-
-        try:
-            self._global_state = MultiProcessState()
-            atexit.register(self._global_state.cleanup)
-        except RuntimeError as e:
-            raise PluginConfigurationError(
-                'Failed to create global state',
-                context=dict(self.instance_info, reason=str(e))
-            )
+        self._global_state = JinjaEventPlugin._GLOBAL_STATE
 
         self._env.globals['params'] = self._config.root.params
         self._env.globals['samples'] = self._samples
@@ -245,7 +240,7 @@ class JinjaEventPlugin(
         return self._shared_state
 
     @property
-    def global_state(self) -> MultiProcessState:
+    def global_state(self) -> MultiThreadState:
         """Global state of templates."""
         return self._global_state
 
