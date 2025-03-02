@@ -10,7 +10,7 @@ from flatten_dict import unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError
 from setproctitle import setproctitle
 
-import eventum.logging_config as logconf
+import eventum.cli.logging_config as logconf
 from eventum.cli.pydantic_converter import from_model
 from eventum.core.generator import Generator
 from eventum.core.main import App, AppError
