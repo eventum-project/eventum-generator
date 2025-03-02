@@ -67,7 +67,7 @@ class Generator:
         self._thread = Thread(target=self._executor.execute)
 
     def start(self) -> None:
-        """Start generator in subprocess."""
+        """Start generator in separate thread."""
         if self.is_running:
             return
 
