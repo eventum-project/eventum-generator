@@ -64,15 +64,12 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
         Maximum number of concurrent write operations performed by
         output plugins
 
-    metrics_interval : float, default=5.0
-        Time interval (in seconds) of metrics gauging
     """
     timezone: str = Field(default='UTC', min_length=3)
     batch: BatchParameters = Field(default_factory=BatchParameters)
     queue: QueueParameters = Field(default_factory=QueueParameters)
     keep_order: bool = Field(default=False)
     max_concurrency: int = Field(default=100)
-    metrics_interval: float = Field(default=5.0, ge=1.0)
 
     @field_validator('timezone')
     def validate_timezone(cls, v: str) -> str:
