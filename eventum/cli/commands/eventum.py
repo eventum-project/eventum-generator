@@ -10,7 +10,7 @@ from flatten_dict import unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError
 from setproctitle import setproctitle
 
-import eventum.cli.logging as logconf
+import eventum.logging_config as logconf
 from eventum.cli.pydantic_converter import from_model
 from eventum.core.generator import Generator
 from eventum.core.main import App, AppError
@@ -47,10 +47,7 @@ def cli():
 )
 def run(config: TextIOWrapper) -> None:
     """Run application with all defined generators."""
-    logconf.configure_for_stderr(
-        level='ERROR',
-        disable=False
-    )
+    logconf.direct_to_stderr()
 
     try:
         data = yaml.load(config, Loader=yaml.SafeLoader)
@@ -72,10 +69,11 @@ def run(config: TextIOWrapper) -> None:
         )
         exit(1)
 
-    logconf.configure_full(
+    logconf.configure_for_stderr_and_file(
         format=settings.log.format,
         level=settings.log.level.upper(),   # type: ignore[arg-type]
-        logs_dir=settings.path.logs
+        logs_dir=settings.path.logs,
+        log_basename='main'
     )
 
     app = App(settings)
@@ -86,13 +84,13 @@ def run(config: TextIOWrapper) -> None:
         logger.error(str(e), **e.context)
         exit(1)
 
-    def handle_termination():
-        logger.info('Termination signal is received')
+    def handle_termination(signal_num):
+        logger.info(f'{signal.Signals(signal_num).name} signal is received')
         app.stop()
-        exit(0)
+        exit(1)
 
-    signal.signal(signal.SIGINT, lambda _, __: handle_termination())
-    signal.signal(signal.SIGTERM, lambda _, __: handle_termination())
+    signal.signal(signal.SIGINT, lambda sig, __: handle_termination(sig))
+    signal.signal(signal.SIGTERM, lambda sig, __: handle_termination(sig))
     signal.pause()
 
 
@@ -110,58 +108,52 @@ def run(config: TextIOWrapper) -> None:
         '-vvv: warnings, -vvvv: info, -vvvvv: debug)'
     )
 )
+@click.option(
+    '-m', '--metrics-interval',
+    type=click.FloatRange(min=1),
+    default=30,
+    show_default=True,
+    help='Time interval (in seconds) of metrics gauging'
+)
 def generate(
     generator_parameters: GeneratorParameters,
-    verbose: VerbosityLevel
+    verbose: VerbosityLevel,
+    metrics_interval: float
 ) -> None:
     """Generate events using single generator."""
     if verbose > 0:
-        logconf.configure_for_stderr(
-            level=VERBOSITY_TO_LOG_LEVEL[verbose],
-            disable=False
-        )
+        logconf.direct_to_stderr(level=VERBOSITY_TO_LOG_LEVEL[verbose])
     else:
-        logconf.configure_for_stderr(disable=True)
+        logconf.disable()
 
     generator = Generator(generator_parameters)
     generator.start()
 
-    def handle_termination():
-        logger.info('Termination signal is received')
+    def handle_termination(signal_num: int):
+        logger.info(f'{signal.Signals(signal_num).name} signal is received')
         generator.stop()
-        generator.join(timeout=1)
-
-        if generator.is_running:
-            generator.force_stop()
 
         metrics = generator.get_metrics()
-        if metrics is not None:
-            logger.info('Publishing eventual metrics', metrics=metrics)
-        else:
-            logger.info('No eventual metrics to publish')
+        logger.info('Publishing eventual metrics', metrics=metrics)
 
-        exit(generator.exit_code)
+        exit(128 + signal_num)
 
-    signal.signal(signal.SIGINT, lambda _, __: handle_termination())
-    signal.signal(signal.SIGTERM, lambda _, __: handle_termination())
+    signal.signal(signal.SIGINT, lambda sig, __: handle_termination(sig))
+    signal.signal(signal.SIGTERM, lambda sig, __: handle_termination(sig))
 
     last_metrics_time = time.monotonic()
-    interval = generator_parameters.metrics_interval
 
     while generator.is_running:
         current_time = time.monotonic()
-        if (current_time - last_metrics_time) > interval:
+        if (current_time - last_metrics_time) > metrics_interval:
             last_metrics_time = current_time
             metrics = generator.get_metrics()
-            if metrics is not None:
-                logger.info('Publishing actual metric', metrics=metrics)
-            else:
-                logger.info('No metric to publish yet')
+            logger.info('Publishing actual metric', metrics=metrics)
 
         time.sleep(0.1)
 
     logger.info('Generator ended execution')
-    exit(generator.exit_code)
+    exit(0)
 
 
 if __name__ == '__main__':
