@@ -244,10 +244,6 @@ class Executor:
 
             await asyncio.sleep(0.1)
 
-        await input_task
-        await event_task
-        await output_task
-
         await self._input_queue.aclose()
         await self._event_queue.aclose()
         await self._close_output_plugins()
