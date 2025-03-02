@@ -22,11 +22,13 @@ class Generator:
 
     def __init__(self, params: GeneratorParameters) -> None:
         self._params = params
+
         self._config: GeneratorConfig | None = None
         self._plugins: InitializedPlugins | None = None
         self._executor: Executor | None = None
         self._gauge: MetricsGauge | None = None
-        self._thread = Thread(target=self._start)
+
+        self._thread: Thread | None = None
 
     def _start(self) -> None:
         """Start generation.
@@ -129,11 +131,22 @@ class Generator:
             )
             raise e
 
+    def _clear(self) -> None:
+        """Clear attributes for new generator run."""
+        self._config = None
+        self._plugins = None
+        self._executor = None
+        self._gauge = None
+        self._thread = None
+
     def start(self) -> None:
         """Start generator in separate thread."""
         if self.is_running:
             return
 
+        self._clear()
+
+        self._thread = Thread(target=self._start)
         self._thread.start()
 
     def stop(self) -> None:
@@ -143,13 +156,16 @@ class Generator:
         Raises
         ------
         RuntimeError
-            If generator is not started
+            If generator is not started or stopping was requested too
+            early
         """
         if not self.is_running:
             return
 
-        if self._executor is None:
-            raise RuntimeError('Generator is not started')
+        if self._thread is None or self._executor is None:
+            raise RuntimeError(
+                'Generator is not started or stopping was requested too early'
+            )
 
         self._executor.request_stop()
 
@@ -163,9 +179,17 @@ class Generator:
     def join(self) -> None:
         """Wait until generator terminates with propagating all
         possible exceptions.
+
+        Raises
+        ------
+        RuntimeError
+            If generator is not started
         """
         if not self.is_running:
             return
+
+        if self._thread is None:
+            raise RuntimeError('Generator is not started')
 
         try:
             self._thread.join()
@@ -185,14 +209,20 @@ class Generator:
         Raises
         ------
         RuntimeError
-            If generator is not started
+            If generator is not started or metrics were requested too
+            early
         """
         if self._gauge is None:
-            raise RuntimeError('Generator is not started')
+            raise RuntimeError(
+                'Generator is not started or metrics were requested too early'
+            )
 
         return self._gauge.gauge_metrics()
 
     @property
     def is_running(self) -> bool:
         """Whether the generator is running."""
+        if self._thread is None:
+            return False
+
         return self._thread.is_alive()
