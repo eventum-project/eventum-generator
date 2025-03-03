@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Sequence
 
 import structlog
-from janus import Queue
 from pytz import timezone
 
 from eventum.core.models.parameters.generator import GeneratorParameters
@@ -72,12 +71,12 @@ class Executor:
         self._params = params
         self._timezone = timezone(self._params.timezone)
 
-        self._input_queue: Queue[IdentifiedTimestamps | None] = Queue(
-            maxsize=params.queue.max_batches
-        )
-        self._event_queue: Queue[list[str] | None] = Queue(
-            maxsize=params.queue.max_batches
-        )
+        self._input_queue: asyncio.Queue[
+            IdentifiedTimestamps | None
+        ] = asyncio.Queue(maxsize=params.queue.max_batches)
+        self._event_queue: asyncio.Queue[
+            list[str] | None
+        ] = asyncio.Queue(maxsize=params.queue.max_batches)
 
         self._input_tags = self._build_input_tags_map()
         self._configured_input = self._configure_input()
@@ -244,8 +243,6 @@ class Executor:
 
             await asyncio.sleep(0.1)
 
-        await self._input_queue.aclose()
-        await self._event_queue.aclose()
         await self._close_output_plugins()
 
     def execute(self) -> None:
@@ -262,13 +259,12 @@ class Executor:
     async def _execute_input(self) -> None:
         """Execute input plugins."""
         skip_past = self._params.time_mode == 'live' and self._params.skip_past
-        downstream_queue = self._input_queue.async_q
 
         try:
             async for timestamps in self._configured_input.iterate(
                 skip_past=skip_past
             ):
-                await downstream_queue.put(timestamps)
+                await self._input_queue.put(timestamps)
         except PluginRuntimeError as e:
             logger.error(str(e), **e.context)
         except Exception as e:
@@ -277,15 +273,12 @@ class Executor:
                 reason=str(e)
             )
 
-        await downstream_queue.put(None)
+        await self._input_queue.put(None)
 
     async def _execute_event(self) -> None:
         """Execute event plugin."""
-        upstream_queue = self._input_queue.async_q
-        downstream_queue = self._event_queue.async_q
-
         while True:
-            timestamps = await upstream_queue.get()
+            timestamps = await self._input_queue.get()
 
             if timestamps is None:
                 break
@@ -311,9 +304,9 @@ class Executor:
                     )
 
             if events:
-                await downstream_queue.put(events)
+                await self._event_queue.put(events)
 
-        await downstream_queue.put(None)
+        await self._event_queue.put(None)
 
     def _handle_write_result(self, task: asyncio.Task[int]) -> None:
         """Handle result of output plugin write task.
@@ -339,11 +332,10 @@ class Executor:
     async def _execute_output(self) -> None:
         """Execute output plugins."""
         loop = asyncio.get_running_loop()
-        upstream_queue = self._event_queue.async_q
 
         gathering_tasks: list[asyncio.Task] = []
         while True:
-            events = await upstream_queue.get()
+            events = await self._event_queue.get()
 
             if events is None:
                 break
