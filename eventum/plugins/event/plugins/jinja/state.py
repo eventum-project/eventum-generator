@@ -102,9 +102,6 @@ class SingleThreadState(State):
     def __getitem__(self, key: Any) -> Any:
         return self.get(key)
 
-    def __setitem__(self, key: Any, value: Any) -> None:
-        self.set(key=key, value=value)
-
 
 class MultiThreadState(State):
     """Thread-safe key-value state.
