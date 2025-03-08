@@ -9,8 +9,8 @@ def prettify_validation_errors(
     errors: Iterable[ErrorDetails],
     sep: str = '; ',
 ) -> str:
-    """Prettify pydantic validation errors gotten from
-    `e.errors()` to user-friendly description string.
+    """Prettify pydantic validation errors to user-friendly description
+    string.
 
     Parameters
     ----------
