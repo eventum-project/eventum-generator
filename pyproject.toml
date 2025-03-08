@@ -102,3 +102,17 @@ addopts = [
 [tool.pytest.plugins]
 pytest-html = { report_name = "pytest_report" }
 
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.lint]
+select = [
+    "ALL"
+]
+ignore  = [
+    "TRY400"
+]
+flake8-quotes = {inline-quotes = "single", multiline-quotes = "double"}
+
+[tool.ruff.format]
+quote-style = "single"
