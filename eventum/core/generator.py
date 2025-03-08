@@ -13,6 +13,7 @@ from eventum.core.initializer import (InitializationError, InitializedPlugins,
 from eventum.core.models.config import GeneratorConfig
 from eventum.core.models.metrics import Metrics
 from eventum.core.models.parameters.generator import GeneratorParameters
+from eventum.utils.logging import run_with_thread_context
 
 logger = structlog.stdlib.get_logger()
 
@@ -49,6 +50,9 @@ class Generator:
         """
         # All exceptions are logged before propagated because we want to
         # inform user about potential errors in logs as soon as possible
+
+        structlog.contextvars.bind_contextvars(generator_id=self._params.id)
+
         logger.info(
             'Generator is started',
             process_id=os.getpid(),
@@ -131,22 +135,17 @@ class Generator:
             )
             raise e
 
-    def _clear(self) -> None:
-        """Clear attributes for new generator run."""
-        self._config = None
-        self._plugins = None
-        self._executor = None
-        self._gauge = None
-        self._thread = None
-
     def start(self) -> None:
         """Start generator in separate thread."""
         if self.is_running:
             return
 
-        self._clear()
+        self._config = None
+        self._plugins = None
+        self._executor = None
+        self._gauge = None
 
-        self._thread = Thread(target=self._start)
+        self._thread = Thread(target=run_with_thread_context()(self._start))
         self._thread.start()
 
     def stop(self) -> None:
