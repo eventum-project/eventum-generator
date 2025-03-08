@@ -39,13 +39,17 @@ def get_keyring_password() -> str:
     return password
 
 
-def get_secret(name: str) -> str:
+def get_secret(name: str, path: str | None = None) -> str:
     """Get secret from keyring.
 
     Parameters
     ----------
     name : str
         Name of the secret
+
+    path : str | None, default=None
+        Path to keyring file, default location is used if none is
+        provided
 
     Returns
     -------
@@ -66,6 +70,10 @@ def get_secret(name: str) -> str:
         raise ValueError(msg)
 
     keyring = crypt.CryptFileKeyring()
+
+    if path is not None:
+        keyring.file_path = path  # type: ignore[assignment]
+
     keyring.keyring_key = get_keyring_password()
 
     try:
@@ -83,7 +91,7 @@ def get_secret(name: str) -> str:
     return secret
 
 
-def set_secret(name: str, value: str) -> None:
+def set_secret(name: str, value: str, path: str | None = None) -> None:
     """Set secret to keyring under specified name.
 
     Parameters
@@ -93,6 +101,10 @@ def set_secret(name: str, value: str) -> None:
 
     value : str
         Value of the secret
+
+    path : str | None, default=None
+        Path to keyring file, default location is used if none is
+        provided
 
     Raises
     ------
@@ -108,6 +120,10 @@ def set_secret(name: str, value: str) -> None:
         raise ValueError(msg)
 
     keyring = crypt.CryptFileKeyring()
+
+    if path is not None:
+        keyring.file_path = path  # type: ignore[assignment]
+
     keyring.keyring_key = get_keyring_password()
 
     try:
@@ -120,13 +136,17 @@ def set_secret(name: str, value: str) -> None:
         raise OSError(e) from e
 
 
-def remove_secret(name: str) -> None:
+def remove_secret(name: str, path: str | None = None) -> None:
     """Remove secret from keyring.
 
     Parameters
     ----------
     name : str
         Name of the secret to remove
+
+    path : str | None, default=None
+        Path to keyring file, default location is used if none is
+        provided
 
     Raises
     ------
@@ -142,6 +162,10 @@ def remove_secret(name: str) -> None:
         raise ValueError(msg)
 
     keyring = crypt.CryptFileKeyring()
+
+    if path is not None:
+        keyring.file_path = path  # type: ignore[assignment]
+
     keyring.keyring_key = get_keyring_password()
 
     try:
