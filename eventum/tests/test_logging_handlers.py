@@ -30,9 +30,7 @@ class AppendingHandler(logging.Handler):
 def clear_handlers():
     logger = logging.getLogger()
     logger.handlers.clear()
-
     yield
-
     logger.handlers.clear()
 
 
