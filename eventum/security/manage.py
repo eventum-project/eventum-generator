@@ -1,11 +1,13 @@
+"""Functions for working with keyring."""
+
 import os
 from functools import lru_cache
 
 import keyrings.cryptfile.cryptfile as crypt  # type: ignore[import-untyped]
 import structlog
 
-DEFAULT_PASSWORD = 'eventum'
-KEYRING_PASS_ENV_VAR = 'EVENTUM_KEYRING_PASSWORD'
+DEFAULT_PASSWORD = 'eventum'  # noqa: S105
+KEYRING_PASS_ENV_VAR = 'EVENTUM_KEYRING_PASSWORD'  # noqa: S105
 KEYRING_SERVICE_NAME = 'eventum'
 
 
@@ -14,13 +16,16 @@ logger = structlog.stdlib.get_logger()
 
 @lru_cache
 def get_keyring_password() -> str:
-    """Get password for keyring from environment variable or return
-    default password.
+    """Get password for keyring.
+
+    Password is searched in environment variable first, otherwise
+    default password will be returned.
 
     Returns
     -------
     str
         Password for keyring
+
     """
     password = os.getenv(KEYRING_PASS_ENV_VAR)
 
@@ -28,7 +33,7 @@ def get_keyring_password() -> str:
         password = DEFAULT_PASSWORD
         logger.warning(
             'Environment variable with keyring password is not set, '
-            'using default password for keyring'
+            'using default password for keyring',
         )
 
     return password
@@ -54,9 +59,11 @@ def get_secret(name: str) -> str:
 
     EnvironmentError
         If any error occurs during obtaining secret from keyring
+
     """
     if not name:
-        raise ValueError('Name of secret cannot be blank')
+        msg = 'Name of secret cannot be blank'
+        raise ValueError(msg)
 
     keyring = crypt.CryptFileKeyring()
     keyring.keyring_key = get_keyring_password()
@@ -64,13 +71,14 @@ def get_secret(name: str) -> str:
     try:
         secret = keyring.get_password(
             service=KEYRING_SERVICE_NAME,
-            username=name
+            username=name,
         )
     except Exception as e:
-        raise EnvironmentError(str(e))
+        raise OSError(e) from e
 
     if secret is None:
-        raise ValueError('Secret is missing')
+        msg = 'Secret is missing'
+        raise ValueError(msg)
 
     return secret
 
@@ -93,21 +101,23 @@ def set_secret(name: str, value: str) -> None:
 
     EnvironmentError
         If any error occurs during setting secret to keyring
+
     """
     if not name or not value:
-        raise ValueError('Name and value of secret cannot be empty')
+        msg = 'Name and value of secret cannot be empty'
+        raise ValueError(msg)
 
     keyring = crypt.CryptFileKeyring()
     keyring.keyring_key = get_keyring_password()
 
     try:
-        keyring.set_password(               # type: ignore
+        keyring.set_password(  # type: ignore[call-arg]
             system=KEYRING_SERVICE_NAME,
             username=name,
-            password=value
+            password=value,
         )
     except Exception as e:
-        raise EnvironmentError(str(e))
+        raise OSError(e) from e
 
 
 def remove_secret(name: str) -> None:
@@ -125,9 +135,11 @@ def remove_secret(name: str) -> None:
 
     EnvironmentError
         If any error occurs during removing secret from keyring
+
     """
     if not name:
-        raise ValueError('Name of secret cannot be blank')
+        msg = 'Name of secret cannot be blank'
+        raise ValueError(msg)
 
     keyring = crypt.CryptFileKeyring()
     keyring.keyring_key = get_keyring_password()
@@ -138,4 +150,4 @@ def remove_secret(name: str) -> None:
             username=name,
         )
     except Exception as e:
-        raise EnvironmentError(str(e))
+        raise OSError(e) from e
