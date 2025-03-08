@@ -106,12 +106,8 @@ pytest-html = { report_name = "pytest_report" }
 line-length = 80
 
 [tool.ruff.lint]
-select = [
-    "ALL"
-]
-ignore  = [
-    "TRY400"
-]
+select = ["ALL"]
+ignore = ["D205"]
 flake8-quotes = {inline-quotes = "single", multiline-quotes = "double"}
 
 [tool.ruff.format]

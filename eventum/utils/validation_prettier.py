@@ -1,11 +1,13 @@
-from typing import Iterable
+"""Functions to prettify pydantic validation errors."""
+
+from collections.abc import Iterable
 
 from pydantic_core import ErrorDetails
 
 
 def prettify_validation_errors(
     errors: Iterable[ErrorDetails],
-    sep: str = '; '
+    sep: str = '; ',
 ) -> str:
     """Prettify pydantic validation errors gotten from
     `e.errors()` to user-friendly description string.
@@ -22,21 +24,21 @@ def prettify_validation_errors(
     -------
     str
         User-friendly description of errors
+
     """
 
     def _loc(location: Iterable[str | int]) -> str:
         return '.'.join(
-            loc if isinstance(loc, str) else f'[{loc}]'
-            for loc in location
+            loc if isinstance(loc, str) else f'[{loc}]' for loc in location
         )
 
     messages: list[str] = []
 
     for error in errors:
         loc = error['loc']
-        input = error['input']
+        input = error['input']  # noqa: A001
         msg = error['msg']
-        type = error['type']
+        type = error['type']  # noqa: A001
 
         if not loc:
             message = f'{input!r} - {msg.lower()} ({type})'
