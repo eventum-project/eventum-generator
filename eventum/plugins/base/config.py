@@ -1,3 +1,5 @@
+"""Definition of base plugin config."""
+
 from abc import ABC
 
 from pydantic import BaseModel

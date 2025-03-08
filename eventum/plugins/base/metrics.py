@@ -1,3 +1,5 @@
+"""Definition of base plugin metrics."""
+
 from typing import TypedDict
 
 
@@ -14,7 +16,9 @@ class PluginMetrics(TypedDict):
 
     configuration : dict
         Model-dumped plugin configuration
+
     """
+
     name: str
     id: int
     configuration: dict
