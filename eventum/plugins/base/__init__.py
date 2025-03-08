@@ -1,1 +1,1 @@
-"""Package with definitions of base plugin abstractions."""
+"""Package with definition of base plugin."""

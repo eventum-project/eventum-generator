@@ -1,3 +1,5 @@
+"""Definition of base event plugin metrics."""
+
 from eventum.plugins.base.metrics import PluginMetrics
 
 
@@ -11,6 +13,8 @@ class EventPluginMetrics(PluginMetrics):
 
     produce_failed : int
         Number unsuccessfully produced events
+
     """
+
     produced: int
     produce_failed: int

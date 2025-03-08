@@ -1,6 +1,8 @@
+"""Definition of base event plugin."""
+
 from abc import abstractmethod
 from datetime import datetime
-from typing import TypedDict, TypeVar
+from typing import TypedDict, TypeVar, override
 
 from pydantic import RootModel
 
@@ -21,6 +23,7 @@ class ProduceParams(TypedDict):
         Tags from input plugin that generated timestamp
 
     """
+
     timestamp: datetime
     tags: tuple[str, ...]
 
@@ -31,29 +34,31 @@ class EventPluginParams(PluginParams):
 
 ConfigT = TypeVar(
     'ConfigT',
-    bound=(EventPluginConfig | RootModel[EventPluginConfig])
+    bound=(EventPluginConfig | RootModel[EventPluginConfig]),
 )
 ParamsT = TypeVar('ParamsT', bound=EventPluginParams)
 
 
 class EventPlugin(Plugin[ConfigT, ParamsT], register=False):
-    """Base class for all event plugins.
-
-    Parameters
-    ----------
-    config : ConfigT
-        Configuration for the plugin
-
-    params : ParamsT
-        Parameters for the plugin (see `EventPluginParams`)
-
-    Raises
-    ------
-    PluginConfigurationError
-        If any error occurs during initializing plugin
-    """
+    """Base class for all event plugins."""
 
     def __init__(self, config: ConfigT, params: ParamsT) -> None:
+        """Initialize event plugin.
+
+        Parameters
+        ----------
+        config : ConfigT
+            Configuration for the plugin
+
+        params : ParamsT
+            Parameters for the plugin (see `EventPluginParams`)
+
+        Raises
+        ------
+        PluginConfigurationError
+            If any error occurs during initializing plugin
+
+        """
         super().__init__(config, params)
 
         self._produced = 0
@@ -79,12 +84,13 @@ class EventPlugin(Plugin[ConfigT, ParamsT], register=False):
 
         EventsExhausted
             If no more events can be produced by event plugin
+
         """
         try:
             result = self._produce(params=params)
-        except Exception as e:
+        except Exception:
             self._produce_failed += 1
-            raise e
+            raise
 
         self._produced += len(result)
         return result
@@ -96,6 +102,7 @@ class EventPlugin(Plugin[ConfigT, ParamsT], register=False):
         Notes
         -----
         See `produce` method for more info
+
         """
         ...
 
@@ -109,10 +116,11 @@ class EventPlugin(Plugin[ConfigT, ParamsT], register=False):
         """Number of unsuccessfully produced events."""
         return self._produce_failed
 
+    @override
     def get_metrics(self) -> EventPluginMetrics:
         metrics = super().get_metrics()
         return EventPluginMetrics(
             **metrics,
             produced=self.produced,
-            produce_failed=self.produce_failed
+            produce_failed=self.produce_failed,
         )
