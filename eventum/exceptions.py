@@ -1,4 +1,4 @@
-"""Exception definitions used across all subpackages."""
+"""Exceptions used across all subpackages."""
 
 from typing import Any
 
