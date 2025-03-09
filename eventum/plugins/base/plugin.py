@@ -41,10 +41,10 @@ class _PluginRegistrationInfo(TypedDict):
         Name of the plugin
 
     type : str
-        Type of the plugin (i.e. parent package name)
+        Type of the plugin (e.g. input, event, ...)
 
     package : ModuleType
-        Parent package containing plugin package
+        Parent package of plugin package
 
     """
 
@@ -108,7 +108,7 @@ def _inspect_plugin(plugin_cls: type) -> _PluginRegistrationInfo:
         module_parts = class_module.__name__.split('.')
         plugin_name = module_parts[-2]
         plugin_type = module_parts[-4]
-        plugin_type_package_name = '.'.join(module_parts[:-2])
+        plugin_parent_package_name = '.'.join(module_parts[:-2])
     except IndexError:
         msg = (
             'Cannot extract information from plugin '
@@ -117,11 +117,11 @@ def _inspect_plugin(plugin_cls: type) -> _PluginRegistrationInfo:
         raise TypeError(msg) from None
 
     try:
-        package = importlib.import_module(plugin_type_package_name)
+        package = importlib.import_module(plugin_parent_package_name)
     except ImportError as e:
         msg = (
-            'Cannot import parent package of plugin '
-            f'"{plugin_type_package_name}": {e}'
+            'Cannot import parent package of plugin package '
+            f'"{plugin_parent_package_name}": {e}'
         )
         raise TypeError(msg) from e
 
