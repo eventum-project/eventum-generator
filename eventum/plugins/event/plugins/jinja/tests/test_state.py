@@ -3,8 +3,10 @@ from threading import RLock
 
 import pytest
 
-from eventum.plugins.event.plugins.jinja.state import (MultiThreadState,
-                                                       SingleThreadState)
+from eventum.plugins.event.plugins.jinja.state import (
+    MultiThreadState,
+    SingleThreadState,
+)
 
 
 @pytest.fixture
@@ -32,16 +34,14 @@ def test_single_thread_state_update(single_thread_state: SingleThreadState):
 
 
 def test_single_thread_state_get_default(
-    single_thread_state: SingleThreadState
+    single_thread_state: SingleThreadState,
 ):
     key = 'test_key'
     default = 'default_value'
     assert single_thread_state.get(key, default) == default
 
 
-def test_single_thread_state_clear(
-    single_thread_state: SingleThreadState
-):
+def test_single_thread_state_clear(single_thread_state: SingleThreadState):
     key = 'test_key'
     value = 'test_value'
     single_thread_state.set(key, value)
@@ -50,9 +50,7 @@ def test_single_thread_state_clear(
     assert single_thread_state.get(key, default=None) is None
 
 
-def test_single_thread_state_as_dict(
-    single_thread_state: SingleThreadState
-):
+def test_single_thread_state_as_dict(single_thread_state: SingleThreadState):
     key = 'test_key'
     value = 'test_value'
     single_thread_state.set(key, value)
@@ -73,17 +71,13 @@ def test_multi_thread_state_update(multi_thread_state: MultiThreadState):
     assert multi_thread_state.get('test_key2') == 2
 
 
-def test_multi_thread_state_get_default(
-    multi_thread_state: MultiThreadState
-):
+def test_multi_thread_state_get_default(multi_thread_state: MultiThreadState):
     key = 'test_key'
     default = 'default_value'
     assert multi_thread_state.get(key, default) == default
 
 
-def test_multi_thread_state_clear(
-    multi_thread_state: MultiThreadState
-):
+def test_multi_thread_state_clear(multi_thread_state: MultiThreadState):
     key = 'test_key'
     value = 'test_value'
     multi_thread_state.set(key, value)
@@ -92,9 +86,7 @@ def test_multi_thread_state_clear(
     assert multi_thread_state.get(key, default=None) is None
 
 
-def test_multi_thread_state_as_dict(
-    multi_thread_state: MultiThreadState
-):
+def test_multi_thread_state_as_dict(multi_thread_state: MultiThreadState):
     key = 'test_key'
     value = 'test_value'
     multi_thread_state.set(key, value)
@@ -102,7 +94,7 @@ def test_multi_thread_state_as_dict(
 
 
 def test_multi_thread_state_concurrent_increment(
-    multi_thread_state: MultiThreadState
+    multi_thread_state: MultiThreadState,
 ):
     def increment():
         for _ in range(1000):

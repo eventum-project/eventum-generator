@@ -5,14 +5,18 @@ from datetime import datetime
 from jinja2 import DictLoader
 
 from eventum.plugins.event.plugins.jinja.config import (
-    CSVSampleConfig, ItemsSampleConfig, JinjaEventPluginConfig,
-    JinjaEventPluginConfigForGeneralModes, SampleType,
-    TemplateConfigForGeneralModes, TemplatePickingMode)
+    CSVSampleConfig,
+    ItemsSampleConfig,
+    JinjaEventPluginConfig,
+    JinjaEventPluginConfigForGeneralModes,
+    SampleType,
+    TemplateConfigForGeneralModes,
+    TemplatePickingMode,
+)
 from eventum.plugins.event.plugins.jinja.plugin import JinjaEventPlugin
 
 STATIC_FILES_DIR = os.path.join(
-    os.path.abspath(os.path.dirname(__file__)),
-    'static'
+    os.path.abspath(os.path.dirname(__file__)), 'static'
 )
 
 
@@ -29,23 +33,19 @@ def test_rendering():
                             template='test.jinja'
                         )
                     }
-                ]
-
+                ],
             )
         ),
         params={
             'id': 1,
             'templates_loader': DictLoader(
                 mapping={'test.jinja': '1 + 1 = {{ 1 + 1 }}'}
-            )
-        }
+            ),
+        },
     )
 
     events = plugin.produce(
-        params={
-            'tags': tuple(),
-            'timestamp': datetime.now().astimezone()
-        }
+        params={'tags': tuple(), 'timestamp': datetime.now().astimezone()}
     )
 
     assert len(events) == 1
@@ -65,23 +65,19 @@ def test_rendering_parameters():
                             template='test.jinja'
                         )
                     }
-                ]
-
+                ],
             )
         ),
         params={
             'id': 1,
             'templates_loader': DictLoader(
                 mapping={'test.jinja': '{{ params.passed_parameter }}'}
-            )
-        }
+            ),
+        },
     )
 
     events = plugin.produce(
-        params={
-            'tags': tuple(),
-            'timestamp': datetime.now().astimezone()
-        }
+        params={'tags': tuple(), 'timestamp': datetime.now().astimezone()}
     )
 
     assert len(events) == 1
@@ -95,8 +91,7 @@ def test_items_sample():
                 params={},
                 samples={
                     'test_sample': ItemsSampleConfig(
-                        type=SampleType.ITEMS,
-                        source=['value1', 'value2']
+                        type=SampleType.ITEMS, source=['value1', 'value2']
                     )
                 },
                 mode=TemplatePickingMode.ALL,
@@ -106,23 +101,19 @@ def test_items_sample():
                             template='test.jinja'
                         )
                     }
-                ]
-
+                ],
             )
         ),
         params={
             'id': 1,
             'templates_loader': DictLoader(
                 mapping={'test.jinja': '{{ samples.test_sample[0][0] }}'}
-            )
-        }
+            ),
+        },
     )
 
     events = plugin.produce(
-        params={
-            'tags': tuple(),
-            'timestamp': datetime.now().astimezone()
-        }
+        params={'tags': tuple(), 'timestamp': datetime.now().astimezone()}
     )
 
     assert len(events) == 1
@@ -138,7 +129,7 @@ def test_csv_sample():
                     'test_sample': CSVSampleConfig(
                         type=SampleType.CSV,
                         source=os.path.join(STATIC_FILES_DIR, 'sample.csv'),
-                        header=True
+                        header=True,
                     )
                 },
                 mode=TemplatePickingMode.ALL,
@@ -148,23 +139,19 @@ def test_csv_sample():
                             template='test.jinja'
                         )
                     }
-                ]
-
+                ],
             )
         ),
         params={
             'id': 1,
             'templates_loader': DictLoader(
                 mapping={'test.jinja': '{{ samples.test_sample[0] }}'}
-            )
-        }
+            ),
+        },
     )
 
     events = plugin.produce(
-        params={
-            'tags': tuple(),
-            'timestamp': datetime.now().astimezone()
-        }
+        params={'tags': tuple(), 'timestamp': datetime.now().astimezone()}
     )
 
     assert len(events) == 1
@@ -179,7 +166,7 @@ def test_subprocess():
                 samples={
                     'test_sample': CSVSampleConfig(
                         type=SampleType.CSV,
-                        source=os.path.join(STATIC_FILES_DIR, 'sample.csv')
+                        source=os.path.join(STATIC_FILES_DIR, 'sample.csv'),
                     )
                 },
                 mode=TemplatePickingMode.ALL,
@@ -189,8 +176,7 @@ def test_subprocess():
                             template='test.jinja'
                         )
                     }
-                ]
-
+                ],
             )
         ),
         params={
@@ -201,15 +187,12 @@ def test_subprocess():
                         '{{subprocess.run("echo Hello").stdout | trim}}'
                     )
                 }
-            )
-        }
+            ),
+        },
     )
 
     events = plugin.produce(
-        params={
-            'tags': tuple(),
-            'timestamp': datetime.now().astimezone()
-        }
+        params={'tags': tuple(), 'timestamp': datetime.now().astimezone()}
     )
 
     assert len(events) == 1
@@ -224,7 +207,7 @@ def test_locals_state():
                 samples={
                     'test_sample': CSVSampleConfig(
                         type=SampleType.CSV,
-                        source=os.path.join(STATIC_FILES_DIR, 'sample.csv')
+                        source=os.path.join(STATIC_FILES_DIR, 'sample.csv'),
                     )
                 },
                 mode=TemplatePickingMode.ALL,
@@ -238,9 +221,8 @@ def test_locals_state():
                         'other_test': TemplateConfigForGeneralModes(
                             template='other_test.jinja'
                         )
-                    }
-                ]
-
+                    },
+                ],
             )
         ),
         params={
@@ -253,12 +235,11 @@ def test_locals_state():
                         '{%- do locals.set("i", i + 1) -%}\n'
                     ),
                     'other_test.jinja': (
-                        '{%- set i = locals.get("i", 1) -%}\n'
-                        '{{ i }}\n'
-                    )
+                        '{%- set i = locals.get("i", 1) -%}\n{{ i }}\n'
+                    ),
                 }
-            )
-        }
+            ),
+        },
     )
 
     events = []
@@ -267,17 +248,13 @@ def test_locals_state():
             plugin.produce(
                 params={
                     'tags': tuple(),
-                    'timestamp': datetime.now().astimezone()
+                    'timestamp': datetime.now().astimezone(),
                 }
             )
         )
 
     assert len(events) == 6
-    assert events == [
-        '1', '1',
-        '2', '1',
-        '3', '1'
-    ]
+    assert events == ['1', '1', '2', '1', '3', '1']
 
 
 def test_shared_state():
@@ -288,7 +265,7 @@ def test_shared_state():
                 samples={
                     'test_sample': CSVSampleConfig(
                         type=SampleType.CSV,
-                        source=os.path.join(STATIC_FILES_DIR, 'sample.csv')
+                        source=os.path.join(STATIC_FILES_DIR, 'sample.csv'),
                     )
                 },
                 mode=TemplatePickingMode.ALL,
@@ -302,9 +279,8 @@ def test_shared_state():
                         'other_test': TemplateConfigForGeneralModes(
                             template='other_test.jinja'
                         )
-                    }
-                ]
-
+                    },
+                ],
             )
         ),
         params={
@@ -317,12 +293,11 @@ def test_shared_state():
                         '{%- do shared.set("i", i + 1) -%}\n'
                     ),
                     'other_test.jinja': (
-                        '{%- set i = shared.get("i", 1) -%}\n'
-                        '{{ i }}\n'
-                    )
+                        '{%- set i = shared.get("i", 1) -%}\n{{ i }}\n'
+                    ),
                 }
-            )
-        }
+            ),
+        },
     )
 
     events = []
@@ -331,17 +306,13 @@ def test_shared_state():
             plugin.produce(
                 params={
                     'tags': tuple(),
-                    'timestamp': datetime.now().astimezone()
+                    'timestamp': datetime.now().astimezone(),
                 }
             )
         )
 
     assert len(events) == 6
-    assert events == [
-        '1', '2',
-        '2', '3',
-        '3', '4'
-    ]
+    assert events == ['1', '2', '2', '3', '3', '4']
 
 
 def test_global_state():
@@ -352,7 +323,7 @@ def test_global_state():
                 samples={
                     'test_sample': CSVSampleConfig(
                         type=SampleType.CSV,
-                        source=os.path.join(STATIC_FILES_DIR, 'sample.csv')
+                        source=os.path.join(STATIC_FILES_DIR, 'sample.csv'),
                     )
                 },
                 mode=TemplatePickingMode.ALL,
@@ -366,9 +337,8 @@ def test_global_state():
                         'other_test': TemplateConfigForGeneralModes(
                             template='other_test.jinja'
                         )
-                    }
-                ]
-
+                    },
+                ],
             )
         ),
         params={
@@ -381,12 +351,11 @@ def test_global_state():
                         '{%- do globals.set("i", i + 1) -%}\n'
                     ),
                     'other_test.jinja': (
-                        '{%- set i = globals.get("i", 1) -%}\n'
-                        '{{ i }}\n'
-                    )
+                        '{%- set i = globals.get("i", 1) -%}\n{{ i }}\n'
+                    ),
                 }
-            )
-        }
+            ),
+        },
     )
 
     events = []
@@ -395,17 +364,13 @@ def test_global_state():
             plugin.produce(
                 params={
                     'tags': tuple(),
-                    'timestamp': datetime.now().astimezone()
+                    'timestamp': datetime.now().astimezone(),
                 }
             )
         )
 
     assert len(events) == 6
-    assert events == [
-        '1', '2',
-        '2', '3',
-        '3', '4'
-    ]
+    assert events == ['1', '2', '2', '3', '3', '4']
 
 
 def test_modules():
@@ -416,7 +381,7 @@ def test_modules():
                 samples={
                     'test_sample': CSVSampleConfig(
                         type=SampleType.CSV,
-                        source=os.path.join(STATIC_FILES_DIR, 'sample.csv')
+                        source=os.path.join(STATIC_FILES_DIR, 'sample.csv'),
                     )
                 },
                 mode=TemplatePickingMode.ALL,
@@ -426,27 +391,21 @@ def test_modules():
                             template='test.jinja'
                         )
                     }
-                ]
-
+                ],
             )
         ),
         params={
             'id': 1,
             'templates_loader': DictLoader(
                 mapping={
-                    'test.jinja': (
-                        '{{ module.rand.number.integer(1, 10) }}'
-                    )
+                    'test.jinja': ('{{ module.rand.number.integer(1, 10) }}')
                 }
-            )
-        }
+            ),
+        },
     )
 
     events = plugin.produce(
-        params={
-            'tags': tuple(),
-            'timestamp': datetime.now().astimezone()
-        }
+        params={'tags': tuple(), 'timestamp': datetime.now().astimezone()}
     )
 
     assert len(events) == 1
@@ -461,7 +420,7 @@ def test_timestamp():
                 samples={
                     'test_sample': CSVSampleConfig(
                         type=SampleType.CSV,
-                        source=os.path.join(STATIC_FILES_DIR, 'sample.csv')
+                        source=os.path.join(STATIC_FILES_DIR, 'sample.csv'),
                     )
                 },
                 mode=TemplatePickingMode.ALL,
@@ -471,27 +430,19 @@ def test_timestamp():
                             template='test.jinja'
                         )
                     }
-                ]
-
+                ],
             )
         ),
         params={
             'id': 1,
             'templates_loader': DictLoader(
-                mapping={
-                    'test.jinja': '{{ timestamp.isoformat() }}'
-                }
-            )
-        }
+                mapping={'test.jinja': '{{ timestamp.isoformat() }}'}
+            ),
+        },
     )
     ts = datetime.now().astimezone()
 
-    events = plugin.produce(
-        params={
-            'tags': tuple(),
-            'timestamp': ts
-        }
-    )
+    events = plugin.produce(params={'tags': tuple(), 'timestamp': ts})
 
     assert len(events) == 1
     assert events.pop() == ts.isoformat()
@@ -505,7 +456,7 @@ def test_tags():
                 samples={
                     'test_sample': CSVSampleConfig(
                         type=SampleType.CSV,
-                        source=os.path.join(STATIC_FILES_DIR, 'sample.csv')
+                        source=os.path.join(STATIC_FILES_DIR, 'sample.csv'),
                     )
                 },
                 mode=TemplatePickingMode.ALL,
@@ -515,24 +466,21 @@ def test_tags():
                             template='test.jinja'
                         )
                     }
-                ]
-
+                ],
             )
         ),
         params={
             'id': 1,
             'templates_loader': DictLoader(
-                mapping={
-                    'test.jinja': '{{ tags[1] }}'
-                }
-            )
-        }
+                mapping={'test.jinja': '{{ tags[1] }}'}
+            ),
+        },
     )
 
     events = plugin.produce(
         params={
             'tags': ('some', 'interesting', 'tags'),
-            'timestamp': datetime.now().astimezone()
+            'timestamp': datetime.now().astimezone(),
         }
     )
 

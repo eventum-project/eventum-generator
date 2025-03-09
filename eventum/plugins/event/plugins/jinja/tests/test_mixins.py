@@ -5,12 +5,12 @@ from pydantic import BaseModel
 
 from eventum.plugins.event.plugins.jinja.mixins import (
     TemplateAliasesUniquenessValidatorMixin,
-    TemplateSingleItemElementsValidatorMixin)
+    TemplateSingleItemElementsValidatorMixin,
+)
 
 
 class ValidatedAliasesConfig(
-    TemplateAliasesUniquenessValidatorMixin,
-    BaseModel
+    TemplateAliasesUniquenessValidatorMixin, BaseModel
 ):
     templates: list[dict[str, Any]]
 
@@ -18,8 +18,7 @@ class ValidatedAliasesConfig(
 
 
 class ValidatedSingleItemElementsConfig(
-    TemplateSingleItemElementsValidatorMixin,
-    BaseModel
+    TemplateSingleItemElementsValidatorMixin, BaseModel
 ):
     templates: list[dict[str, Any]]
 

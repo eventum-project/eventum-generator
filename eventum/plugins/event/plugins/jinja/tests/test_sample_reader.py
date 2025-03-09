@@ -2,14 +2,18 @@ import os
 
 import pytest
 
-from eventum.plugins.event.plugins.jinja.config import (CSVSampleConfig,
-                                                        ItemsSampleConfig,
-                                                        JSONSampleConfig,
-                                                        SampleConfig,
-                                                        SampleType)
-from eventum.plugins.event.plugins.jinja.sample_reader import (Sample,
-                                                               SampleLoadError,
-                                                               SampleReader)
+from eventum.plugins.event.plugins.jinja.config import (
+    CSVSampleConfig,
+    ItemsSampleConfig,
+    JSONSampleConfig,
+    SampleConfig,
+    SampleType,
+)
+from eventum.plugins.event.plugins.jinja.sample_reader import (
+    Sample,
+    SampleLoadError,
+    SampleReader,
+)
 
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -20,10 +24,7 @@ def items_sample_config():
         'items_sample': SampleConfig(
             root=ItemsSampleConfig(
                 type=SampleType.ITEMS,
-                source=(
-                    ('one', 'two'),
-                    ('three', 'four')
-                )
+                source=(('one', 'two'), ('three', 'four')),
             )
         )
     }
@@ -33,10 +34,7 @@ def items_sample_config():
 def flat_items_sample_config():
     return {
         'items_sample': SampleConfig(
-            root=ItemsSampleConfig(
-                type=SampleType.ITEMS,
-                source=(1, 2, 3)
-            )
+            root=ItemsSampleConfig(type=SampleType.ITEMS, source=(1, 2, 3))
         )
     }
 
@@ -49,7 +47,7 @@ def csv_sample_config():
                 type=SampleType.CSV,
                 source=os.path.join(BASE_PATH, 'static/sample.csv'),
                 header=True,
-                delimiter=','
+                delimiter=',',
             )
         )
     }
@@ -63,7 +61,7 @@ def no_header_csv_sample_config():
                 type=SampleType.CSV,
                 source=os.path.join(BASE_PATH, 'static/sample.csv'),
                 header=False,
-                delimiter=','
+                delimiter=',',
             )
         )
     }
@@ -77,7 +75,7 @@ def not_existing_csv_sample_config():
                 type=SampleType.CSV,
                 source=os.path.join(BASE_PATH, 'static/not_existing.csv'),
                 header=True,
-                delimiter=','
+                delimiter=',',
             )
         )
     }
@@ -91,7 +89,7 @@ def other_delimiter_csv_sample_config():
                 type=SampleType.CSV,
                 source=os.path.join(BASE_PATH, 'static/piped_sample.csv'),
                 header=True,
-                delimiter='|'
+                delimiter='|',
             )
         )
     }
@@ -135,9 +133,9 @@ def test_load_flat_items_sample(flat_items_sample_config):
     sample = sample_reader['items_sample']
 
     assert isinstance(sample, Sample)
-    assert sample[0] == (1, )
-    assert sample[1] == (2, )
-    assert sample[2] == (3, )
+    assert sample[0] == (1,)
+    assert sample[1] == (2,)
+    assert sample[2] == (3,)
 
 
 def test_load_csv_sample(csv_sample_config):
@@ -155,7 +153,7 @@ def test_load_csv_sample_with_wrong_path(not_existing_csv_sample_config):
 
 
 def test_load_csv_sample_with_other_delimiter(
-    other_delimiter_csv_sample_config
+    other_delimiter_csv_sample_config,
 ):
     sample_reader = SampleReader(other_delimiter_csv_sample_config)
 
@@ -190,12 +188,12 @@ def test_load_nested_json_sample(nested_json_sample_config):
     assert sample[0] == (
         {'firstname': 'John', 'lastname': 'Doe'},
         ['john@example.com', 'john.public@example.com'],
-        'Manager'
+        'Manager',
     )
     assert sample[1] == (
         {'firstname': 'Jane', 'lastname': 'Doe'},
         ['jane@example.com', 'jane.public@example.com'],
-        'HR'
+        'HR',
     )
 
 
