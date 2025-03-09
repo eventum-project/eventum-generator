@@ -103,12 +103,19 @@ addopts = [
 pytest-html = { report_name = "pytest_report" }
 
 [tool.ruff]
-line-length = 80
+line-length = 79
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D205"]
+ignore = [
+    "D105",     # undocumented-magic-method
+    "D205",     # missing-blank-line-after-summary
+    "S311",     # suspicious-non-cryptographic-random-usage
+    "S701",     # jinja2-autoescape-false
+    "PTH123",   # builtin-open
+]
 flake8-quotes = {inline-quotes = "single", multiline-quotes = "double"}
+exclude = ["**/tests/**"]
 
 [tool.ruff.format]
 quote-style = "single"
