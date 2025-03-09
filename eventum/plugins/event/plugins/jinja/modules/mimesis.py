@@ -1,70 +1,62 @@
-from collections.abc import Mapping
+"""Mimesis module."""
 
 import mimesis.enums as _enums
 import mimesis.random as _random
 from mimesis import BaseDataProvider, Generic, Locale
-from mimesis.builtins import (BrazilSpecProvider, DenmarkSpecProvider,
-                              ItalySpecProvider, NetherlandsSpecProvider,
-                              PolandSpecProvider, RussiaSpecProvider,
-                              UkraineSpecProvider, USASpecProvider)
+from mimesis.builtins import (
+    BrazilSpecProvider,
+    DenmarkSpecProvider,
+    ItalySpecProvider,
+    NetherlandsSpecProvider,
+    PolandSpecProvider,
+    RussiaSpecProvider,
+    UkraineSpecProvider,
+    USASpecProvider,
+)
 
 
-class _Locale(Mapping[str, Generic]):
+class _Locale:
     def __init__(self) -> None:
         self._dict: dict[str, Generic] = {}
 
     def __getitem__(self, locale: str) -> Generic:
-        if self._dict.__contains__(locale):
-            return self._dict.__getitem__(locale)
-        else:
+        if locale in self._dict:
+            return self._dict[locale]
+        try:
             generator = Generic(Locale(locale))
-            self._dict.__setitem__(locale, generator)
-            return generator
+        except ValueError:
+            msg = f'Unknown locale "{locale}"'
+            raise KeyError(msg) from None
 
-    def __iter__(self):
-        return self._dict.__iter__()
-
-    def __len__(self):
-        return self._dict.__len__()
+        self._dict[locale] = generator
+        return generator
 
 
-class _Spec(Mapping[str, BaseDataProvider]):
+class _Spec:
     def __init__(self) -> None:
         self._dict: dict[str, BaseDataProvider] = {}
 
     def __getitem__(self, spec_name: str) -> BaseDataProvider:
-        if self._dict.__contains__(spec_name):
-            return self._dict.__getitem__(spec_name)
-        else:
-            match spec_name:
-                case 'brazil':
-                    spec: BaseDataProvider = BrazilSpecProvider()
-                case 'denmark':
-                    spec = DenmarkSpecProvider()
-                case 'italy':
-                    spec = ItalySpecProvider()
-                case 'netherlands':
-                    spec = NetherlandsSpecProvider()
-                case 'poland':
-                    spec = PolandSpecProvider()
-                case 'russia':
-                    spec = RussiaSpecProvider()
-                case 'ukraine':
-                    spec = UkraineSpecProvider()
-                case 'usa':
-                    spec = USASpecProvider()
-                case v:
-                    raise ValueError(f'"{v}" is not valid spec')
+        if spec_name in self._dict:
+            return self._dict[spec_name]
 
-            self._dict.__setitem__(spec_name, spec)
+        try:
+            spec: BaseDataProvider = {
+                'brazil': BrazilSpecProvider(),
+                'denmark': DenmarkSpecProvider(),
+                'italy': ItalySpecProvider(),
+                'netherlands': NetherlandsSpecProvider(),
+                'poland': PolandSpecProvider(),
+                'russia': RussiaSpecProvider(),
+                'ukraine': UkraineSpecProvider(),
+                'usa': USASpecProvider(),
+            }[spec_name]
+        except KeyError as e:
+            msg = f'Unknown spec "{e}"'
+            raise KeyError(msg) from None
 
-            return spec
-
-    def __iter__(self):
-        return self._dict.__iter__()
-
-    def __len__(self):
-        return self._dict.__len__()
+        self._dict[spec_name] = spec
+        return spec
 
 
 enums = _enums
