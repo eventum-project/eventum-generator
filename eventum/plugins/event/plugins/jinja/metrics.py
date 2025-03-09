@@ -1,3 +1,4 @@
+"""Definition of jinja event plugin metrics."""
 
 from typing import TypedDict
 
@@ -17,7 +18,9 @@ class JinjaEventPluginStateMetrics(TypedDict):
 
     globals : dict
         Global state
+
     """
+
     locals: dict[str, dict]
     shared: dict
     globals: dict
@@ -30,5 +33,7 @@ class JinjaEventPluginMetrics(EventPluginMetrics):
     ----------
     state : JinjaEventPluginStateMetrics
         Jinja event plugin state metrics
+
     """
+
     state: JinjaEventPluginStateMetrics
