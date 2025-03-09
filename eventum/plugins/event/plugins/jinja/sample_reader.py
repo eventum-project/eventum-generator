@@ -161,11 +161,11 @@ def _get_sample_loader(
         raise ValueError(msg) from e
 
 
-class SampleReader:
-    """Sample reader."""
+class SamplesReader:
+    """Samples reader."""
 
     def __init__(self, config: dict[str, SampleConfig]) -> None:
-        """Initialize sample reader.
+        """Initialize samples reader.
 
         Parameters
         ----------
