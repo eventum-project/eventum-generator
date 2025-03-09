@@ -1,5 +1,15 @@
+"""Common registry for plugins registration.
+
+This module should be used only by plugin modules to register
+themselves and `loader` module to load registered plugins.
+
+User should use `loader` module to access existing plugins and avoid
+direct usage of registry.
+"""
+
 from dataclasses import dataclass
 from types import ModuleType
+from typing import ClassVar
 
 
 @dataclass(frozen=True)
@@ -19,7 +29,9 @@ class PluginInfo:
 
     package : ModuleType
         Parent package with plugins of specific type
+
     """
+
     name: str
     cls: type
     config_cls: type
@@ -27,11 +39,11 @@ class PluginInfo:
 
 
 class PluginsRegistry:
-    """Centralized registry of plugins. All plugins should be
+    """Common registry of plugins. All plugins should be
     registered using this class to be accessible via loader.
     """
 
-    _registry: dict[str, dict[str, PluginInfo]] = dict()
+    _registry: ClassVar[dict[str, dict[str, PluginInfo]]] = {}
 
     @classmethod
     def register_plugin(cls, plugin_info: PluginInfo) -> None:
@@ -41,11 +53,12 @@ class PluginsRegistry:
         ----------
         plugin_info : PluginInfo
             Information about plugin
+
         """
         location = plugin_info.package.__name__
 
         if location not in cls._registry:
-            cls._registry[location] = dict()
+            cls._registry[location] = {}
 
         cls._registry[location][plugin_info.name] = plugin_info
 
@@ -70,11 +83,13 @@ class PluginsRegistry:
         ------
         ValueError
             If specified plugin is not found in registry
+
         """
         try:
             return cls._registry[package.__name__][name]
         except KeyError:
-            raise ValueError('Plugin is not registered')
+            msg = 'Plugin is not registered'
+            raise ValueError(msg) from None
 
     @classmethod
     def is_registered(cls, package: ModuleType, name: str) -> bool:
@@ -92,6 +107,7 @@ class PluginsRegistry:
         -------
         bool
             `True` if plugin is registered else `False`
+
         """
         pkg_name = package.__name__
         return pkg_name in cls._registry and name in cls._registry[pkg_name]

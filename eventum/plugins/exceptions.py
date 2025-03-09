@@ -1,7 +1,9 @@
-from eventum.utils.exceptions import ContextualException
+"""Plugin exceptions hierarchy."""
+
+from eventum.exceptions import ContextualError
 
 
-class PluginError(ContextualException):
+class PluginError(ContextualError):
     """Base plugin error."""
 
 
