@@ -1,4 +1,4 @@
-"""Plugin exceptions hierarchy."""
+"""Plugin exceptions."""
 
 from eventum.exceptions import ContextualError
 
