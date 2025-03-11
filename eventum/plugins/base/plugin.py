@@ -6,6 +6,7 @@ from abc import ABC
 from collections.abc import Iterator
 from contextlib import contextmanager
 from copy import deepcopy
+from pathlib import Path
 from types import ModuleType
 from typing import (
     Any,
@@ -150,6 +151,10 @@ class PluginParams(TypedDict):
         registered but it needs representable type to moment of
         initialization
 
+    base_path : Required[Path]
+        Base path for all relative paths used in plugin configurations,
+        if it is not provided then current working directory is used
+
     Notes
     -----
     Parameters for specific plugins must be not required for possibility
@@ -160,6 +165,7 @@ class PluginParams(TypedDict):
     id: Required[int]
     ephemeral_name: NotRequired[str]
     ephemeral_type: NotRequired[str]
+    base_path: NotRequired[Path]
 
 
 ConfigT = TypeVar('ConfigT', bound=(PluginConfig | RootModel))
@@ -203,6 +209,8 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
             self._plugin_name = params['ephemeral_name']
         if 'ephemeral_type' in params:
             self._plugin_type = params['ephemeral_type']
+
+        self._base_path = params.get('base_path', Path.cwd())
 
         self._config = config
         self._logger = logger.bind(**self.instance_info)
