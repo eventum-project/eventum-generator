@@ -91,7 +91,7 @@ def _load_csv_sample(config: CSVSampleConfig) -> Sample:
 
     """
     data = tablib.Dataset()
-    with open(config.source) as f:
+    with config.source.open() as f:
         data.load(
             in_stream=f,
             format='csv',
@@ -121,7 +121,7 @@ def _load_json_sample(config: JSONSampleConfig) -> Sample:
 
     """
     data = tablib.Dataset()
-    with open(config.source) as f:
+    with config.source.open() as f:
         data.load(
             in_stream=f,
             format='json',

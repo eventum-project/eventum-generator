@@ -1,13 +1,13 @@
 """Definition of jinja event plugin config."""
 
 from enum import StrEnum
-from typing import Annotated, Any, Literal, Self, override
+from pathlib import Path
+from typing import Any, Literal, Self, override
 
 from pydantic import (
     BaseModel,
     Field,
     RootModel,
-    StringConstraints,
     field_validator,
     model_validator,
 )
@@ -59,7 +59,7 @@ class CSVSampleConfig(BaseModel, frozen=True, extra='forbid'):
     delimiter : str, default=','
         Delimiter for csv values
 
-    source : str
+    source : Path
         Path to csv file
 
     """
@@ -67,7 +67,7 @@ class CSVSampleConfig(BaseModel, frozen=True, extra='forbid'):
     type: Literal[SampleType.CSV]
     header: bool = False
     delimiter: str = Field(default=',', min_length=1)
-    source: str = Field(pattern=r'.*\.csv')
+    source: Path = Field(pattern=r'.*\.csv')
 
 
 class JSONSampleConfig(BaseModel, frozen=True, extra='forbid'):
@@ -78,13 +78,13 @@ class JSONSampleConfig(BaseModel, frozen=True, extra='forbid'):
     type : Literal[SampleType.JSON]
         Discriminator field for sample configuration
 
-    source : str
+    source : Path
         Path to json file
 
     """
 
     type: Literal[SampleType.JSON]
-    source: str = Field(pattern=r'.*\.json')
+    source: Path = Field(pattern=r'.*\.json')
 
 
 SampleConfigModel = ItemsSampleConfig | CSVSampleConfig | JSONSampleConfig
@@ -117,20 +117,26 @@ class TemplatePickingMode(StrEnum):
     CHAIN = 'chain'
 
 
-TemplatePath = Annotated[str, StringConstraints(pattern=r'.*\.jinja')]
-
-
 class TemplateConfigForGeneralModes(BaseModel, frozen=True, extra='forbid'):
     """Template configuration for general picking modes.
 
     Attributes
     ----------
-    template : TemplatePath
+    template : Path
         Path to template
 
     """
 
-    template: TemplatePath = Field(min_length=1)
+    template: Path = Field(pattern=r'.*\.jinja')
+
+    @field_validator('template')
+    @classmethod
+    def validate_template_path(cls, v: Path) -> Path:  # noqa: D102
+        if v.is_absolute():
+            msg = 'Template path must be relative'
+            raise ValueError(msg)
+
+        return v
 
 
 class TemplateConfigForChanceMode(TemplateConfigForGeneralModes, frozen=True):

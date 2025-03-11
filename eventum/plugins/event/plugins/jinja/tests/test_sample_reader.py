@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 import pytest
 
@@ -15,7 +15,7 @@ from eventum.plugins.event.plugins.jinja.sample_reader import (
     SamplesReader,
 )
 
-BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+BASE_PATH = Path(__file__).parent
 
 
 @pytest.fixture
@@ -45,7 +45,7 @@ def csv_sample_config():
         'csv_sample': SampleConfig(
             root=CSVSampleConfig(
                 type=SampleType.CSV,
-                source=os.path.join(BASE_PATH, 'static/sample.csv'),
+                source=BASE_PATH / 'static/sample.csv',
                 header=True,
                 delimiter=',',
             )
@@ -59,7 +59,7 @@ def no_header_csv_sample_config():
         'csv_sample': SampleConfig(
             root=CSVSampleConfig(
                 type=SampleType.CSV,
-                source=os.path.join(BASE_PATH, 'static/sample.csv'),
+                source=BASE_PATH / 'static/sample.csv',
                 header=False,
                 delimiter=',',
             )
@@ -73,7 +73,7 @@ def not_existing_csv_sample_config():
         'csv_sample': SampleConfig(
             root=CSVSampleConfig(
                 type=SampleType.CSV,
-                source=os.path.join(BASE_PATH, 'static/not_existing.csv'),
+                source=BASE_PATH / 'static/not_existing.csv',
                 header=True,
                 delimiter=',',
             )
@@ -87,7 +87,7 @@ def other_delimiter_csv_sample_config():
         'csv_sample': SampleConfig(
             root=CSVSampleConfig(
                 type=SampleType.CSV,
-                source=os.path.join(BASE_PATH, 'static/piped_sample.csv'),
+                source=BASE_PATH / 'static/piped_sample.csv',
                 header=True,
                 delimiter='|',
             )
@@ -101,7 +101,7 @@ def json_sample_config():
         'json_sample': SampleConfig(
             root=JSONSampleConfig(
                 type=SampleType.JSON,
-                source=os.path.join(BASE_PATH, 'static/sample.json'),
+                source=BASE_PATH / 'static/sample.json',
             )
         )
     }
@@ -113,7 +113,7 @@ def nested_json_sample_config():
         'json_sample': SampleConfig(
             root=JSONSampleConfig(
                 type=SampleType.JSON,
-                source=os.path.join(BASE_PATH, 'static/nested_sample.json'),
+                source=BASE_PATH / 'static/nested_sample.json',
             )
         )
     }

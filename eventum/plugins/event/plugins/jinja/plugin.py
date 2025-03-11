@@ -1,6 +1,5 @@
 """Definition of jinja event plugin."""
 
-import os
 from collections.abc import MutableMapping
 from copy import copy
 from threading import RLock
@@ -97,7 +96,7 @@ class JinjaEventPlugin(
         self._env = self._initialize_environment(
             loader=(
                 params.get('templates_loader', None)
-                or FileSystemLoader(os.getcwd())
+                or FileSystemLoader(str(self._base_path))
             ),
         )
 
@@ -187,7 +186,9 @@ class JinjaEventPlugin(
         """
         return {
             alias: self._load_template(
-                name=conf.template,
+                # even on windows jinja requires forward slashes
+                # when loading templates, so we use as_posix here
+                name=conf.template.as_posix(),
                 globals={'locals': self._template_states[alias]},
             )
             for alias, conf in self._template_configs.items()
