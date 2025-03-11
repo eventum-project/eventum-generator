@@ -1,5 +1,6 @@
 import os
 import tempfile
+from pathlib import Path
 
 import pytest
 
@@ -8,9 +9,9 @@ from eventum.security.manage import get_secret, remove_secret, set_secret
 
 @pytest.fixture
 def temp_keyring_file():
-    filename = os.path.join(tempfile.gettempdir(), 'test.cfg')
+    filename = Path(tempfile.gettempdir(), 'test.cfg')
     yield filename
-    if os.path.exists(filename):
+    if filename.exists():
         os.remove(filename)
 
 

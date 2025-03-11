@@ -2,6 +2,7 @@
 
 import os
 from functools import lru_cache
+from pathlib import Path
 
 import keyrings.cryptfile.cryptfile as crypt  # type: ignore[import-untyped]
 import structlog
@@ -39,7 +40,7 @@ def get_keyring_password() -> str:
     return password
 
 
-def get_secret(name: str, path: str | None = None) -> str:
+def get_secret(name: str, path: Path | None = None) -> str:
     """Get secret from keyring.
 
     Parameters
@@ -47,7 +48,7 @@ def get_secret(name: str, path: str | None = None) -> str:
     name : str
         Name of the secret
 
-    path : str | None, default=None
+    path : Path | None, default=None
         Path to keyring file, default location is used if none is
         provided
 
@@ -91,7 +92,7 @@ def get_secret(name: str, path: str | None = None) -> str:
     return secret
 
 
-def set_secret(name: str, value: str, path: str | None = None) -> None:
+def set_secret(name: str, value: str, path: Path | None = None) -> None:
     """Set secret to keyring under specified name.
 
     Parameters
@@ -102,7 +103,7 @@ def set_secret(name: str, value: str, path: str | None = None) -> None:
     value : str
         Value of the secret
 
-    path : str | None, default=None
+    path : Path | None, default=None
         Path to keyring file, default location is used if none is
         provided
 
@@ -136,7 +137,7 @@ def set_secret(name: str, value: str, path: str | None = None) -> None:
         raise OSError(e) from e
 
 
-def remove_secret(name: str, path: str | None = None) -> None:
+def remove_secret(name: str, path: Path | None = None) -> None:
     """Remove secret from keyring.
 
     Parameters
@@ -144,7 +145,7 @@ def remove_secret(name: str, path: str | None = None) -> None:
     name : str
         Name of the secret to remove
 
-    path : str | None, default=None
+    path : Path | None, default=None
         Path to keyring file, default location is used if none is
         provided
 
