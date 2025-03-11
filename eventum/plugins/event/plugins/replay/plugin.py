@@ -1,4 +1,4 @@
-"""Definition of jinja event plugin."""
+"""Definition of replay event plugin."""
 
 import os
 import re
