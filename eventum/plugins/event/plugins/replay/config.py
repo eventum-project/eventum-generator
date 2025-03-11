@@ -1,8 +1,11 @@
-import os
+"""Definition of replay event plugin config."""
+
+from pathlib import Path
 
 from pydantic import Field, field_validator
 
 from eventum.plugins.event.base.config import EventPluginConfig
+from eventum.plugins.fields import Encoding
 
 
 class ReplayEventPluginConfig(EventPluginConfig, frozen=True):
@@ -10,14 +13,16 @@ class ReplayEventPluginConfig(EventPluginConfig, frozen=True):
 
     Attributes
     ----------
-    path : str
+    path : Path
         Absolute path to log file
 
     timestamp_pattern : str | None, default=None
         Regular expression pattern to identify the timestamp
-        substitution position within the original message, if value is
-        not set, then substitution is not performed, for more
-        information about python regex syntax see:
+        substitution position within the original message, the
+        substitution is performed over the named group "timestamp",
+        if value is not set or pattern does not match, then
+        substitution is not performed, for more information about
+        python regex syntax see:
         https://docs.python.org/3/library/re.html#regular-expression-syntax
 
     timestamp_format : str | None, default=None
@@ -25,25 +30,34 @@ class ReplayEventPluginConfig(EventPluginConfig, frozen=True):
         substituted in the log message, the format follows C89 standard,
         for more information see:
         https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
-        If value is not set, then default (ISO8601) format is used
+        If value is not set, then default (ISO 8601) format is used
 
     repeat : bool, default=False
         Whether to repeat replaying after the end of file is reached
 
-    read_batch_size : int
-        Number of lines to read from the file at a time, this
-        parameters controls how often to access file and how many lines
-        from file to store in memory
+    chunk_size : int
+        Number of bytes to read from the file at a time, this parameter
+        controls how often to access file and how many data will be
+        stored in in memory, if 0 is provided then the entire file is
+        read at once
+
+    encoding : Encoding, default='utf_8'
+        Encoding of the log file
+
     """
-    path: str
+
+    path: Path
     timestamp_pattern: str | None = None
     timestamp_format: str | None = None
     repeat: bool = False
-    read_batch_size: int = Field(default=1000, ge=1, le=1_000_000)
+    chunk_size: int = Field(default=1_048_576, ge=0)
+    encoding: Encoding = Field(default='utf_8')
 
     @field_validator('path')
-    def validate_path(cls, v: str):
-        if os.path.isabs(v):
+    @classmethod
+    def validate_path(cls, v: Path) -> Path:  # noqa: D102
+        if v.is_absolute():
             return v
 
-        raise ValueError('Path must be absolute')
+        msg = 'Path must be absolute'
+        raise ValueError(msg)
