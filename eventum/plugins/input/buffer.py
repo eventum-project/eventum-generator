@@ -1,6 +1,11 @@
+"""Auxiliary buffer for accumulating timestamps in plugins before
+publishing them.
+"""
+
 from collections import deque
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Iterator, Literal
+from typing import Literal, cast
 
 from numpy import concatenate, datetime64, full
 from numpy.typing import NDArray
@@ -23,7 +28,9 @@ class BufferItem:
 
     multiply : int:
         multiplication factor for type 'm'
+
     """
+
     type: Literal['v', 'm', 'mv']
     value: datetime64 | NDArray[datetime64]
     multiply: int = 1
@@ -33,6 +40,7 @@ class Buffer:
     """Buffer for timestamps."""
 
     def __init__(self) -> None:
+        """Initialize buffer."""
         self._buffer: deque[BufferItem] = deque()
         self._buffer_size = 0
 
@@ -43,6 +51,7 @@ class Buffer:
         ----------
         timestamp : datetime64
             Timestamp to push
+
         """
         self._buffer.append(BufferItem(type='v', value=timestamp))
         self._buffer_size += 1
@@ -55,18 +64,21 @@ class Buffer:
         timestamp : datetime64
             Timestamp to push
 
+        multiply : int
+            How many values of provided `timestamp` to push
+
         Raises
         ------
         ValueError
             If parameter "multiply" is less than 1
+
         """
         if multiply < 1:
-            raise ValueError(
-                'Parameter "multiply" must be greater or equal to 1'
-            )
+            msg = 'Parameter "multiply" must be greater or equal to 1'
+            raise ValueError(msg)
 
         self._buffer.append(
-            BufferItem(type='m', value=timestamp, multiply=multiply)
+            BufferItem(type='m', value=timestamp, multiply=multiply),
         )
         self._buffer_size += multiply
 
@@ -77,6 +89,7 @@ class Buffer:
         ----------
         timestamps : NDArray[datetime64]
             Timestamps to push
+
         """
         if timestamps.size == 0:
             return
@@ -84,10 +97,84 @@ class Buffer:
         self._buffer.append(BufferItem(type='mv', value=timestamps))
         self._buffer_size += timestamps.size
 
+    def _read_v(self) -> NDArray[datetime64]:
+        """Read single timestamp value from non empty buffer.
+
+        Returns
+        -------
+        NDArray[datetime64]
+            Array with timestamp
+
+        """
+        item = self._buffer.popleft()
+        value = cast(datetime64, item.value)
+
+        return full(
+            shape=1,
+            fill_value=value,
+            dtype='datetime64[us]',
+        )
+
+    def _read_m(self, required: int) -> NDArray[datetime64]:
+        """Read multiplied timestamp value from non empty buffer.
+
+        Parameters
+        ----------
+        required : int
+            Number of timestamps to read from value
+
+        Returns
+        -------
+        NDArray[datetime64]
+            Array with timestamp
+
+        """
+        item = self._buffer[0]
+        value = cast(datetime64, item.value)
+
+        if required >= item.multiply:
+            self._buffer.popleft()
+            n = item.multiply
+        else:
+            item.multiply -= required
+            n = required
+
+        return full(
+            shape=n,
+            fill_value=value,
+            dtype='datetime64[us]',
+        )
+
+    def _read_mv(self, required: int) -> NDArray[datetime64]:
+        """Read multivalue array of timestamps from non empty buffer.
+
+        Parameters
+        ----------
+        required : int
+            Number of timestamps to read from array
+
+        Returns
+        -------
+        NDArray[datetime64]
+            Array with timestamp
+
+        """
+        item = self._buffer[0]
+        value = cast(NDArray[datetime64], item.value)
+
+        if required >= value.size:
+            self._buffer.popleft()
+            return value
+
+        item.value = value[required:]
+
+        return value[:required]
+
     def read(
         self,
         size: int,
-        partial: bool = False
+        *,
+        partial: bool = False,
     ) -> Iterator[NDArray[datetime64]]:
         """Read timestamps from buffer by arrays of specified size.
 
@@ -114,11 +201,11 @@ class Buffer:
         -----
         No push methods are supposed to be called until this method
         generator is exhausted
+
         """
         if size < 1:
-            raise ValueError(
-                'Parameter "size" must be greater or equal to 1'
-            )
+            msg = 'Parameter "size" must be greater or equal to 1'
+            raise ValueError(msg)
 
         to_concatenate: list[NDArray[datetime64]] = []
         current_size = 0
@@ -131,53 +218,16 @@ class Buffer:
 
             match item.type:
                 case 'v':
-                    self._buffer.popleft()
-                    current_size += 1
-
-                    to_concatenate.append(
-                        full(
-                            shape=1,
-                            fill_value=item.value,
-                            dtype='datetime64[us]'
-                        )
-                    )
+                    arr = self._read_v()
                 case 'm':
-                    n = item.multiply or 1
-                    required = size - current_size
-
-                    if required >= n:
-                        self._buffer.popleft()
-                    else:
-                        n = required
-                        item.multiply -= n
-
-                    current_size += n
-
-                    to_concatenate.append(
-                        full(
-                            shape=n,
-                            fill_value=item.value,
-                            dtype='datetime64[us]'
-                        )
-                    )
+                    arr = self._read_m(required=(size - current_size))
                 case 'mv':
-                    n = item.value.size
-                    required = size - current_size
+                    arr = self._read_mv(required=(size - current_size))
 
-                    arr: NDArray[datetime64] = item.value   # type: ignore
+            current_size += arr.size
+            to_concatenate.append(arr)
 
-                    if required >= n:
-                        self._buffer.popleft()
-                    else:
-                        n = required
-                        item.value = arr[n:]
-                        arr = arr[:n]
-
-                    current_size += n
-
-                    to_concatenate.append(arr)
-
-            if current_size == size:
+            if current_size >= size:
                 yield concatenate(to_concatenate)
 
                 self._buffer_size -= size
@@ -195,8 +245,8 @@ class Buffer:
                 self._buffer.appendleft(
                     BufferItem(
                         type='mv',
-                        value=remaining_array
-                    )
+                        value=remaining_array,
+                    ),
                 )
 
     @property

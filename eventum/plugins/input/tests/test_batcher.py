@@ -15,16 +15,14 @@ def source():
     return IdentifiedTimestampsPluginAdapter(
         StaticInputPlugin(
             config=StaticInputPluginConfig(count=1000000),
-            params={'id': 1, 'timezone': timezone('UTC')}
+            params={'id': 1, 'timezone': timezone('UTC')},
         )
     )
 
 
 def test_size_batching(source):
     batcher = TimestampsBatcher(
-        source=source,
-        batch_size=1000,
-        batch_delay=None
+        source=source, batch_size=1000, batch_delay=None
     )
 
     batches = list(batcher.iterate(skip_past=False))
@@ -35,9 +33,7 @@ def test_size_batching(source):
 
 def test_uneven_size_batching(source):
     batcher = TimestampsBatcher(
-        source=source,
-        batch_size=333_333,
-        batch_delay=None
+        source=source, batch_size=333_333, batch_delay=None
     )
 
     batches = list(batcher.iterate(skip_past=False))
@@ -54,21 +50,16 @@ def delay_source():
     return IdentifiedTimestampsPluginAdapter(
         CronInputPlugin(
             config=CronInputPluginConfig(
-                expression='* * * * *',
-                count=1,
-                start='now',
-                end='+60m'
+                expression='* * * * *', count=1, start='now', end='+60m'
             ),
-            params={'id': 1, 'timezone': timezone('UTC')}
+            params={'id': 1, 'timezone': timezone('UTC')},
         )
     )
 
 
 def test_delay_batching(delay_source):
     batcher = TimestampsBatcher(
-        source=delay_source,
-        batch_size=None,
-        batch_delay=600
+        source=delay_source, batch_size=None, batch_delay=600
     )
 
     batches = list(batcher.iterate(skip_past=False))
@@ -87,28 +78,26 @@ def uneven_delay_source():
                     expression='1-30 * * * *',
                     count=1,
                     start='00:00',
-                    end='+60m'
+                    end='+60m',
                 ),
-                params={'id': 1, 'timezone': timezone('UTC')}
+                params={'id': 1, 'timezone': timezone('UTC')},
             ),
             CronInputPlugin(
                 config=CronInputPluginConfig(
                     expression='50-59 * * * *',
                     count=2,
                     start='00:00',
-                    end='+60m'
+                    end='+60m',
                 ),
-                params={'id': 1, 'timezone': timezone('UTC')}
-            )
+                params={'id': 1, 'timezone': timezone('UTC')},
+            ),
         ]
     )
 
 
 def test_delay_with_size_batching(uneven_delay_source):
     batcher = TimestampsBatcher(
-        source=uneven_delay_source,
-        batch_size=15,
-        batch_delay=600
+        source=uneven_delay_source, batch_size=15, batch_delay=600
     )
 
     batches = list(batcher.iterate(skip_past=False))

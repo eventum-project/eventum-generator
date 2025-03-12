@@ -1,3 +1,5 @@
+"""Field definitions used in plugin configs."""
+
 from typing import Literal
 
 type Encoding = Literal[

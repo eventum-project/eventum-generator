@@ -1,11 +1,17 @@
+"""Size and delay based batching of timestamp arrays."""
+
+from collections.abc import Iterator
 from datetime import timedelta
-from typing import Iterator
+from typing import cast, override
 
 import numpy as np
+from numpy.typing import NDArray
 
 from eventum.plugins.input.protocols import (
-    IdentifiedTimestamps, SupportsIdentifiedTimestampsIterate,
-    SupportsIdentifiedTimestampsSizedIterate)
+    IdentifiedTimestamps,
+    SupportsIdentifiedTimestampsIterate,
+    SupportsIdentifiedTimestampsSizedIterate,
+)
 from eventum.plugins.input.utils.array_utils import chunk_array
 
 
@@ -20,24 +26,6 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
     MIN_BATCH_DELAY : float
         Minimum batch delay that can be configured for batcher
 
-    Parameters
-    ----------
-    source : SupportsIdentifiedTimestampsSizedIterate
-        Source of identified timestamp arrays
-
-    batch_size : int | None, default=100_000
-        Maximum size of producing batches, not limited if value is
-        `None`, cannot be  less than `MIN_BATCH_SIZE` attribute
-
-    batch_delay: float | None, default=None
-        Maximum time (in seconds) for single batch to accumulate
-        incoming timestamps, not limited if value is `None`, cannot be
-        less then `MIN_BATCH_DELAY` attribute
-
-    Raises
-    ------
-    ValueError
-        If some parameter is out of allowed range
     """
 
     MIN_BATCH_SIZE = 1
@@ -49,131 +37,230 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
         batch_size: int | None = 100_000,
         batch_delay: float | None = None,
     ) -> None:
-        if batch_size is None and batch_delay is None:
-            raise ValueError('Batch size and delay cannot be both omitted')
+        """Initialize batcher.
 
-        if (
-            batch_size is not None
-            and not self.MIN_BATCH_SIZE <= batch_size
-        ):
-            raise ValueError(
-                'Batch size must be greater or equal to '
-                f'{self.MIN_BATCH_SIZE}'
+        Parameters
+        ----------
+        source : SupportsIdentifiedTimestampsSizedIterate
+            Source of identified timestamp arrays
+
+        batch_size : int | None, default=100_000
+            Maximum size of producing batches, not limited if value is
+            `None`, cannot be  less than `MIN_BATCH_SIZE` attribute
+
+        batch_delay: float | None, default=None
+            Maximum time (in seconds) for single batch to accumulate
+            incoming timestamps, not limited if value is `None`, cannot be
+            less then `MIN_BATCH_DELAY` attribute
+
+        Raises
+        ------
+        ValueError
+            If some parameter is out of allowed range
+
+        """
+        if batch_size is None and batch_delay is None:
+            msg = 'Batch size and delay cannot be both omitted'
+            raise ValueError(msg)
+
+        if batch_size is not None and not batch_size >= self.MIN_BATCH_SIZE:
+            msg = (
+                f'Batch size must be greater or equal to {self.MIN_BATCH_SIZE}'
             )
+            raise ValueError(msg)
 
         if batch_delay is not None and batch_delay < self.MIN_BATCH_DELAY:
-            raise ValueError(
+            msg = (
                 'Batch delay must be greater or equal to '
                 f'{self.MIN_BATCH_DELAY}'
             )
+            raise ValueError(msg)
 
         self._batch_size = batch_size
         self._batch_delay = batch_delay
 
         self._source = source
 
-    def iterate(
+    def _iterate_without_delay(
         self,
-        skip_past: bool = True
+        iterator: Iterator[IdentifiedTimestamps],
     ) -> Iterator[IdentifiedTimestamps]:
-        read_size = self._batch_size or 10_000
+        """Iterate over batches without a set delay parameter.
 
-        if self._batch_delay is None:
-            # batch size must be set when delay is None
-            assert isinstance(self._batch_size, int)
+        Parameters
+        ----------
+        iterator: Iterator[IdentifiedTimestamps]
+            Iterator to use
 
-            current_size = 0
-            to_concatenate: list[IdentifiedTimestamps] = []
+        """
+        self._batch_size = cast(int, self._batch_size)
+        current_size = 0
+        to_concatenate: list[IdentifiedTimestamps] = []
 
-            for array in self._source.iterate(
-                size=read_size,
-                skip_past=skip_past
-            ):
+        for array in iterator:
+            to_concatenate.append(array)
+            current_size += array.size
+
+            if current_size >= self._batch_size:
+                chunks = chunk_array(
+                    array=np.concatenate(to_concatenate),
+                    size=self._batch_size,
+                )
+                to_concatenate.clear()
+                current_size = 0
+
+                if chunks[-1].size < self._batch_size:
+                    last_partial_chunk = chunks.pop()
+                    to_concatenate.append(last_partial_chunk)
+                    current_size += last_partial_chunk.size
+
+                yield from chunks
+
+        if to_concatenate:
+            yield np.concatenate(to_concatenate)
+
+    def _get_cutoff_index_by_delay(
+        self,
+        latest: np.datetime64,
+        array: NDArray[np.datetime64],
+    ) -> int:
+        """Get cutoff index by delay condition.
+
+        Parameters
+        ----------
+        latest : np.datetime64
+            Latest timestamp for the batch
+
+        array : NDArray[np.datetime64]
+            Array to find index for
+
+        Returns
+        -------
+        int
+            Cutoff index
+
+        """
+        if latest < array[-1]:
+            return int(
+                np.searchsorted(
+                    a=array,
+                    v=latest,  # type: ignore[assignment]
+                    side='right',
+                ),
+            )
+
+        return array.size
+
+    def _get_cutoff_index_by_size(
+        self,
+        current_size: int,
+        array: NDArray,
+    ) -> int:
+        """Get cutoff index by size condition.
+
+        Parameters
+        ----------
+        current_size : int
+            Current size of batch
+
+        array : NDArray
+            Array to find index for
+
+        Returns
+        -------
+        int
+            Cutoff index
+
+        """
+        if self._batch_size is None:
+            return array.size
+
+        if (current_size + array.size) >= self._batch_size:
+            return self._batch_size - current_size
+
+        return array.size
+
+    def _iterate_with_delay(
+        self,
+        iterator: Iterator[IdentifiedTimestamps],
+    ) -> Iterator[IdentifiedTimestamps]:
+        """Iterate over batches with a set delay parameter.
+
+        Parameters
+        ----------
+        iterator: Iterator[IdentifiedTimestamps]
+            Iterator to use
+
+        """
+        self._batch_delay = cast(float, self._batch_delay)
+
+        delta = np.timedelta64(  # type: ignore[call-overload]
+            timedelta(seconds=self._batch_delay),
+            'us',
+        )
+        to_concatenate = []
+        prev_array: IdentifiedTimestamps | None = None
+
+        current_size = 0
+        latest_timestamp: np.datetime64 | None = None
+
+        while True:
+            if prev_array is None:
+                try:
+                    array = next(iterator)
+                except StopIteration:
+                    break
+            else:
+                array = prev_array
+                prev_array = None
+
+            if latest_timestamp is None:
+                latest_timestamp = array['timestamp'][0] + delta
+
+            delay_cutoff_index = self._get_cutoff_index_by_delay(
+                latest=latest_timestamp,  # type: ignore[arg-type]
+                array=array['timestamp'],
+            )
+            size_cutoff_index = self._get_cutoff_index_by_size(
+                current_size=current_size,
+                array=array,
+            )
+            cutoff_index = min(delay_cutoff_index, size_cutoff_index)
+
+            # process cutoff index
+            if cutoff_index >= array.size:
                 to_concatenate.append(array)
                 current_size += array.size
+            else:
+                left_part = array[:cutoff_index]
+                right_part = array[cutoff_index:]
 
-                if current_size >= self._batch_size:
-                    chunks = chunk_array(
-                        array=np.concatenate(to_concatenate),
-                        size=self._batch_size
-                    )
-                    to_concatenate.clear()
-                    current_size = 0
+                if left_part.size > 0:
+                    to_concatenate.append(left_part)
 
-                    if chunks[-1].size < self._batch_size:
-                        last_partial_chunk = chunks.pop()
-                        to_concatenate.append(last_partial_chunk)
-                        current_size += last_partial_chunk.size
+                if right_part.size > 0:
+                    prev_array = right_part
 
-                    yield from chunks
-
-            if to_concatenate:
                 yield np.concatenate(to_concatenate)
+
+                to_concatenate.clear()
+                current_size = 0
+                latest_timestamp = None
+
+        if to_concatenate:
+            yield np.concatenate(to_concatenate)
+
+    @override
+    def iterate(
+        self,
+        skip_past: bool = True,
+    ) -> Iterator[IdentifiedTimestamps]:
+        iterator = self._source.iterate(
+            size=self._batch_size or 10_000,
+            skip_past=skip_past,
+        )
+
+        if self._batch_delay is None:
+            yield from self._iterate_without_delay(iterator=iterator)
         else:
-            delta = np.timedelta64(timedelta(seconds=self._batch_delay), 'us')
-            iterator = iter(
-                self._source.iterate(size=read_size, skip_past=skip_past)
-            )
-            to_concatenate = []
-            prev_array: IdentifiedTimestamps | None = None
-
-            current_size = 0
-            cutoff_timestamp: np.datetime64 | None = None
-
-            while True:
-                if prev_array is None:
-                    try:
-                        array = next(iterator)
-                    except StopIteration:
-                        break
-                else:
-                    array = prev_array
-                    prev_array = None
-
-                if cutoff_timestamp is None:
-                    cutoff_timestamp = array['timestamp'][0] + delta
-
-                cutoff_index = -1
-
-                # check batch delay
-                if cutoff_timestamp < array['timestamp'][-1]:
-                    cutoff_index = np.searchsorted(
-                        a=array['timestamp'],
-                        v=cutoff_timestamp,          # type: ignore[assignment]
-                        side='right'
-                    )
-                elif cutoff_timestamp == array['timestamp'][-1]:
-                    cutoff_index = array.size
-
-                # check batch size
-                if (
-                    self._batch_size is not None
-                    and (current_size + array.size) >= self._batch_size
-                ):
-                    index = self._batch_size - current_size
-                    if cutoff_index == -1:
-                        cutoff_index = index
-                    else:
-                        cutoff_index = min(cutoff_index, index)
-
-                # process cutoff index
-                if cutoff_index == -1:
-                    to_concatenate.append(array)
-                    current_size += array.size
-                else:
-                    left_part = array[:cutoff_index]
-                    right_part = array[cutoff_index:]
-
-                    if left_part.size > 0:
-                        to_concatenate.append(left_part)
-
-                    if right_part.size > 0:
-                        prev_array = right_part
-
-                    yield np.concatenate(to_concatenate)
-                    to_concatenate.clear()
-                    current_size = 0
-                    cutoff_timestamp = None
-
-            if to_concatenate:
-                yield np.concatenate(to_concatenate)
+            yield from self._iterate_with_delay(iterator=iterator)

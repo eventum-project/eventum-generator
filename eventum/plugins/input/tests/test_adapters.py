@@ -3,7 +3,9 @@ import pytest
 from pytz import timezone
 
 from eventum.plugins.input.adapters import (
-    AsyncIdentifiedTimestampsSyncAdapter, IdentifiedTimestampsPluginAdapter)
+    AsyncIdentifiedTimestampsSyncAdapter,
+    IdentifiedTimestampsPluginAdapter,
+)
 from eventum.plugins.input.batcher import TimestampsBatcher
 from eventum.plugins.input.plugins.cron.config import CronInputPluginConfig
 from eventum.plugins.input.plugins.cron.plugin import CronInputPlugin
@@ -13,12 +15,9 @@ from eventum.plugins.input.plugins.cron.plugin import CronInputPlugin
 def plugin():
     return CronInputPlugin(
         config=CronInputPluginConfig(
-            start='now',
-            end='+60s',
-            expression='* * * * * *',
-            count=1
+            start='now', end='+60s', expression='* * * * * *', count=1
         ),
-        params={'id': 1437, 'timezone': timezone('UTC')}
+        params={'id': 1437, 'timezone': timezone('UTC')},
     )
 
 
