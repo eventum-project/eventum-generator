@@ -1,4 +1,6 @@
-from typing import Sequence
+"""Utils for working with numpy arrays."""
+
+from collections.abc import Sequence
 
 from numpy import concatenate, datetime64, searchsorted, sort
 from numpy.typing import NDArray
@@ -6,7 +8,7 @@ from numpy.typing import NDArray
 
 def get_future_slice(
     timestamps: NDArray[datetime64],
-    after: datetime64
+    after: datetime64,
 ) -> NDArray[datetime64]:
     """Get slice of timestamps `after` the moment using binary search.
 
@@ -22,6 +24,7 @@ def get_future_slice(
     -------
     NDArray[datetime64]
         Slice of original timestamps array after the specified moment
+
     """
     index = searchsorted(a=timestamps, v=after, side='right')
     return timestamps[index:]
@@ -29,7 +32,7 @@ def get_future_slice(
 
 def get_past_slice(
     timestamps: NDArray[datetime64],
-    before: datetime64
+    before: datetime64,
 ) -> NDArray[datetime64]:
     """Get slice of timestamps `before` the moment using binary search.
 
@@ -45,6 +48,7 @@ def get_past_slice(
     -------
     NDArray[datetime64]
         Slice of original timestamps array before the specified moment
+
     """
     index = searchsorted(a=timestamps, v=before, side='right')
     return timestamps[:index]
@@ -67,8 +71,9 @@ def chunk_array(array: NDArray, size: int) -> list[NDArray]:
     -------
     list[NDArray]
         List of chunks
+
     """
-    return [array[i:i + size] for i in range(0, array.size, size)]
+    return [array[i : i + size] for i in range(0, array.size, size)]
 
 
 def merge_arrays(arrays: Sequence[NDArray]) -> NDArray:
@@ -92,12 +97,14 @@ def merge_arrays(arrays: Sequence[NDArray]) -> NDArray:
     Notes
     -----
     If array is structured or multidimensional then zeroth axis is used
+
     """
     if not arrays:
-        raise ValueError('At least one array must be provided')
+        msg = 'At least one array must be provided'
+        raise ValueError(msg)
 
     return sort(
         a=concatenate(arrays),
         kind='mergesort',
-        axis=0
+        axis=0,
     )

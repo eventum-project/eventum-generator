@@ -1,3 +1,5 @@
+"""Utils for time related operations."""
+
 from datetime import datetime, timedelta
 from math import ceil, floor
 from typing import Literal, assert_never
@@ -19,6 +21,7 @@ def now64(timezone: BaseTzInfo) -> datetime64:
     datetime64
         Numpy `datetime64` object with current time in specified
         `timezone`
+
     """
     return datetime64(datetime.now().astimezone(timezone).replace(tzinfo=None))
 
@@ -37,6 +40,7 @@ def timedelta64_to_seconds(timedelta: timedelta64) -> float:
     float
         Floating point number representing number of seconds in
         `timedelta`
+
     """
     return float(timedelta / timedelta64(1000000, 'us'))
 
@@ -57,10 +61,12 @@ def to_naive(timestamp: datetime, timezone: BaseTzInfo) -> datetime:
     -------
     datetime
         Naive datetime object
+
     """
     return (
         timestamp.astimezone(timezone).replace(tzinfo=None)
-        if timestamp.tzinfo else timestamp
+        if timestamp.tzinfo
+        else timestamp
     )
 
 
@@ -68,7 +74,7 @@ def skip_periods(
     start: datetime,
     moment: datetime,
     duration: timedelta,
-    ret_timestamp: Literal['last_past', 'first_future']
+    ret_timestamp: Literal['last_past', 'first_future'],
 ) -> datetime:
     """Get last past or first future timestamp relating to specified
     moment skipping past periods with constant duration.
@@ -96,9 +102,11 @@ def skip_periods(
     ------
     ValueError
         If duration is less than zero
+
     """
     if duration.total_seconds() <= 0:
-        raise ValueError('Duration must be greater than zero')
+        msg = 'Duration must be greater than zero'
+        raise ValueError(msg)
 
     skip_periods = (moment.astimezone() - start.astimezone()) / duration
 
