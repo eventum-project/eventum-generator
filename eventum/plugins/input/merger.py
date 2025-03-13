@@ -100,7 +100,7 @@ class InputPluginsMerger(
 
         """
         active_generators = {
-            guid: iter(plugin.generate(size, skip_past))
+            guid: plugin.generate(size, skip_past=skip_past)
             for guid, plugin in self._plugins.items()
         }
 
