@@ -14,13 +14,11 @@ from eventum.plugins.input.plugins.http.plugin import HttpInputPlugin
 def test_plugin():
     with ThreadPoolExecutor(max_workers=1) as executor:
         plugin = HttpInputPlugin(
-            config=HttpInputPluginConfig(
-                port=8080
-            ),
+            config=HttpInputPluginConfig(port=8080),
             params={
                 'id': 1,
                 'timezone': timezone('UTC'),
-            }
+            },
         )
 
         timestamps = []

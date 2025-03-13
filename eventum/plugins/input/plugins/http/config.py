@@ -1,3 +1,5 @@
+"""Definition of http input plugin config."""
+
 from pydantic import Field
 
 from eventum.plugins.input.base.config import InputPluginConfig
@@ -5,7 +7,7 @@ from eventum.plugins.input.base.config import InputPluginConfig
 
 class HttpInputPluginConfig(
     InputPluginConfig,
-    frozen=True
+    frozen=True,
 ):
     """Configuration for `http` input plugin.
 
@@ -21,11 +23,13 @@ class HttpInputPluginConfig(
         Maximum number of incoming requests to store in queue before
         they are processed, if a request arrives and the queue is full
         a 429 response will be returned immediately
+
     """
+
     host: str = Field(
-        default='0.0.0.0',
+        default='0.0.0.0',  # noqa: S104
         min_length=1,
-        validate_default=True
+        validate_default=True,
     )
     port: int = Field(ge=1)
     max_pending_requests: int = Field(default=100, ge=1)
