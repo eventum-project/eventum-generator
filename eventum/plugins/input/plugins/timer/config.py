@@ -1,3 +1,4 @@
+"""Definition of timer input plugin config."""
 
 from pydantic import Field
 
@@ -22,7 +23,9 @@ class TimerInputPluginConfig(InputPluginConfig, frozen=True):
     repeat : bool
         Number of cycles to repeat, if value is not set, then repeat
         infinitely
+
     """
+
     start: VersatileDatetime = Field(default=None, union_mode='left_to_right')
     seconds: float = Field(ge=0.1)
     count: int = Field(ge=1)

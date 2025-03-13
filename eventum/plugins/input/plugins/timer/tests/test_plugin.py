@@ -12,15 +12,9 @@ def test_plugin():
 
     plugin = TimerInputPlugin(
         config=TimerInputPluginConfig(
-            start=start,
-            seconds=1.0,
-            count=3,
-            repeat=86400
+            start=start, seconds=1.0, count=3, repeat=86400
         ),
-        params={
-            'id': 1,
-            'timezone': timezone('UTC')
-        }
+        params={'id': 1, 'timezone': timezone('UTC')},
     )
 
     timestamps = []

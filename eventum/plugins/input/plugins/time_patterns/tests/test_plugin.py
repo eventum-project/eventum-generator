@@ -54,9 +54,6 @@ def test_plugin():
     # go.Figure(data=[go.Histogram(x=timestamps, nbinsx=300)]).show()
 
 
-test_plugin()
-
-
 def test_time_pattern_invalid_config():
     config = TimePatternsInputPluginConfig(
         patterns=[

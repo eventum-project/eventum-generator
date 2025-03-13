@@ -1,6 +1,9 @@
+"""Definition of timer input plugin."""
+
+from collections.abc import Iterator
 from datetime import datetime, timedelta
 from itertools import repeat
-from typing import Iterator
+from typing import override
 
 from numpy import datetime64
 from numpy.typing import NDArray
@@ -17,22 +20,25 @@ class TimerInputPlugin(InputPlugin[TimerInputPluginConfig, InputPluginParams]):
     seconds.
     """
 
+    @override
     def __init__(
         self,
         config: TimerInputPluginConfig,
-        params: InputPluginParams
+        params: InputPluginParams,
     ) -> None:
         super().__init__(config, params)
 
+    @override
     def _generate(
         self,
         size: int,
-        skip_past: bool = True
+        *,
+        skip_past: bool = True,
     ) -> Iterator[NDArray[datetime64]]:
         start = normalize_versatile_datetime(
             value=self._config.start,
             timezone=self._timezone,
-            none_point='now'
+            none_point='now',
         )
 
         timeout = timedelta(seconds=self._config.seconds)
@@ -41,21 +47,22 @@ class TimerInputPlugin(InputPlugin[TimerInputPluginConfig, InputPluginParams]):
             end = normalize_versatile_datetime(
                 value=None,
                 timezone=self._timezone,
-                none_point='max'
+                none_point='max',
             )
         else:
             try:
                 end = start + (timeout * self._config.repeat)
             except OverflowError:
+                msg = 'End time of generation is overflowed'
                 raise PluginRuntimeError(
-                    'End time of generation is overflowed',
-                    context=dict(self.instance_info)
-                )
+                    msg,
+                    context=dict(self.instance_info),
+                ) from None
 
         self._logger.info(
             'Generating in range',
             start_timestamp=start.isoformat(),
-            end_timestamp=end.isoformat()
+            end_timestamp=end.isoformat(),
         )
 
         if skip_past:
@@ -63,7 +70,7 @@ class TimerInputPlugin(InputPlugin[TimerInputPluginConfig, InputPluginParams]):
                 start=start,
                 moment=datetime.now().astimezone(self._timezone),
                 duration=timeout,
-                ret_timestamp='first_future'
+                ret_timestamp='first_future',
             )
             skipped_periods = (timestamp - start) // timeout
         else:
@@ -75,7 +82,7 @@ class TimerInputPlugin(InputPlugin[TimerInputPluginConfig, InputPluginParams]):
             and self._config.repeat - skipped_periods <= 0
         ):
             self._logger.info(
-                'All timestamps are in past, nothing to generate'
+                'All timestamps are in past, nothing to generate',
             )
             return
 
@@ -91,9 +98,10 @@ class TimerInputPlugin(InputPlugin[TimerInputPluginConfig, InputPluginParams]):
 
             self._buffer.m_push(
                 timestamp=datetime64(
-                    to_naive(timestamp, self._timezone).isoformat(), 'us'
+                    to_naive(timestamp, self._timezone).isoformat(),
+                    'us',
                 ),
-                multiply=self._config.count
+                multiply=self._config.count,
             )
             if self._buffer.size >= size:
                 yield from self._buffer.read(size, partial=False)
