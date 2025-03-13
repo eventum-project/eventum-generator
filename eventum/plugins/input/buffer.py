@@ -5,7 +5,7 @@ publishing them.
 from collections import deque
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import Literal, assert_never, cast
 
 from numpy import concatenate, datetime64, full
 from numpy.typing import NDArray
@@ -223,6 +223,8 @@ class Buffer:
                     arr = self._read_m(required=(size - current_size))
                 case 'mv':
                     arr = self._read_mv(required=(size - current_size))
+                case t:
+                    assert_never(t)
 
             current_size += arr.size
             to_concatenate.append(arr)
