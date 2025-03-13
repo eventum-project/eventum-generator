@@ -1,7 +1,7 @@
+"""Definition of timestamps input plugin config."""
 
-
-import os
 from datetime import datetime
+from pathlib import Path
 
 from pydantic import Field, field_validator
 
@@ -13,7 +13,7 @@ class TimestampsInputPluginConfig(InputPluginConfig, frozen=True):
 
     Attributes
     ----------
-    source : list[datetime] | str
+    source : list[datetime] | Path
         List of timestamps or absolute path to file with new line
         separated timestamps in ISO8601 format
 
@@ -21,12 +21,19 @@ class TimestampsInputPluginConfig(InputPluginConfig, frozen=True):
     -----
     It is expected that timestamps are already sorted in ascending
     order
+
     """
-    source: list[datetime] | str = Field(min_length=1)
+
+    source: list[datetime] | Path = Field(min_length=1)
 
     @field_validator('source')
-    def validate_source(cls, v: list[datetime] | str) -> list[datetime] | str:
-        if isinstance(v, str) and not os.path.isabs(v):
-            raise ValueError('Path must be absolute')
+    @classmethod
+    def validate_source(  # noqa: D102
+        cls,
+        v: list[datetime] | Path,
+    ) -> list[datetime] | Path:
+        if isinstance(v, Path) and not v.is_absolute():
+            msg = 'Path must be absolute'
+            raise ValueError(msg)
 
         return v

@@ -6,10 +6,12 @@ import pytest
 from numpy import datetime64
 from pytz import timezone
 
-from eventum.plugins.input.plugins.timestamps.config import \
-    TimestampsInputPluginConfig
-from eventum.plugins.input.plugins.timestamps.plugin import \
-    TimestampsInputPlugin
+from eventum.plugins.input.plugins.timestamps.config import (
+    TimestampsInputPluginConfig,
+)
+from eventum.plugins.input.plugins.timestamps.plugin import (
+    TimestampsInputPlugin,
+)
 
 
 def test_timestamps_sample():
@@ -21,11 +23,7 @@ def test_timestamps_sample():
         ]
     )
     plugin = TimestampsInputPlugin(
-        config=config,
-        params={
-            'id': 1,
-            'timezone': timezone('UTC')
-        }
+        config=config, params={'id': 1, 'timezone': timezone('UTC')}
     )
     timestamps = []
     for batch in plugin.generate(size=100, skip_past=False):
@@ -52,11 +50,7 @@ def timestamps_filename():
 def test_timestamps_from_file(timestamps_filename):
     config = TimestampsInputPluginConfig(source=timestamps_filename)
     plugin = TimestampsInputPlugin(
-        config=config,
-        params={
-            'id': 1,
-            'timezone': timezone('UTC')
-        }
+        config=config, params={'id': 1, 'timezone': timezone('UTC')}
     )
 
     timestamps = []
