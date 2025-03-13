@@ -13,12 +13,9 @@ def test_plugin():
             expression='* * * * *',
             count=2,
             start=datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone('UTC')),
-            end=datetime(2024, 1, 1, 23, 59, 59, tzinfo=timezone('UTC'))
+            end=datetime(2024, 1, 1, 23, 59, 59, tzinfo=timezone('UTC')),
         ),
-        params={
-            'id': 1,
-            'timezone': timezone('UTC')
-        }
+        params={'id': 1, 'timezone': timezone('UTC')},
     )
 
     timestamps = []
