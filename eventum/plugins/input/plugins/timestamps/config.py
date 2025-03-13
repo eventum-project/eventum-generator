@@ -3,7 +3,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import field_validator
 
 from eventum.plugins.input.base.config import InputPluginConfig
 
@@ -24,7 +24,7 @@ class TimestampsInputPluginConfig(InputPluginConfig, frozen=True):
 
     """
 
-    source: list[datetime] | Path = Field(min_length=1)
+    source: list[datetime] | Path
 
     @field_validator('source')
     @classmethod

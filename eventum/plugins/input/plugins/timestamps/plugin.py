@@ -35,12 +35,6 @@ class TimestampsInputPlugin(
                 to_naive(ts, self._timezone)
                 for ts in self._read_timestamps_from_file(config.source)
             ]
-            if not timestamps:
-                msg = 'No timestamps are in the file'
-                raise PluginConfigurationError(
-                    msg,
-                    context=dict(self.instance_info, file_path=config.source),
-                )
             self._logger.info(
                 'Timestamps are read from the file',
                 file_path=config.source,
@@ -49,8 +43,16 @@ class TimestampsInputPlugin(
         else:
             timestamps = [to_naive(ts, self._timezone) for ts in config.source]
             self._logger.info(
-                'Timestamps are read from the configuration',
+                'Timestamps are read from configuration',
+                file_path=config.source,
                 count=len(timestamps),
+            )
+
+        if not timestamps:
+            msg = 'Timestamps sequence is empty'
+            raise PluginConfigurationError(
+                msg,
+                context=dict(self.instance_info, file_path=config.source),
             )
 
         self._timestamps: NDArray[datetime64] = array(
