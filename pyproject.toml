@@ -70,8 +70,8 @@ path = 'eventum/__init__.py'
 
 [dependency-groups]
 dev = [
-    "matplotlib>=3.10.1",
     "mypy>=1.15.0",
+    "plotly>=6.0.0",
     "pytest>=8.3.5",
     "pytest-asyncio>=0.25.3",
     "pytest-cov>=6.0.0",
@@ -112,7 +112,6 @@ ignore = [
     "D205",     # missing-blank-line-after-summary
     "S311",     # suspicious-non-cryptographic-random-usage
     "S701",     # jinja2-autoescape-false
-    "PTH123",   # builtin-open
 ]
 flake8-quotes = {inline-quotes = "single", multiline-quotes = "double"}
 exclude = ["**/tests/**"]
