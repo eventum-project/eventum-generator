@@ -17,7 +17,7 @@ def instant_source():
     return IdentifiedTimestampsPluginAdapter(
         StaticInputPlugin(
             config=StaticInputPluginConfig(count=1000),
-            params={'id': 1, 'timezone': timezone('UTC')}
+            params={'id': 1, 'timezone': timezone('UTC')},
         )
     )
 
@@ -27,12 +27,9 @@ def delayed_source():
     return IdentifiedTimestampsPluginAdapter(
         TimerInputPlugin(
             config=TimerInputPluginConfig(
-                start='now',
-                seconds=0.5,
-                count=1000,
-                repeat=1
+                start='now', seconds=0.5, count=1000, repeat=1
             ),
-            params={'id': 1, 'timezone': timezone('UTC')}
+            params={'id': 1, 'timezone': timezone('UTC')},
         )
     )
 
@@ -40,11 +37,9 @@ def delayed_source():
 def test_scheduler(instant_source):
     scheduler = BatchScheduler(
         batcher=TimestampsBatcher(
-            source=instant_source,
-            batch_size=100,
-            batch_delay=None
+            source=instant_source, batch_size=100, batch_delay=None
         ),
-        timezone=timezone('UTC')
+        timezone=timezone('UTC'),
     )
 
     t1 = time.time()
@@ -58,11 +53,9 @@ def test_scheduler(instant_source):
 def test_scheduler_delay(delayed_source):
     scheduler = BatchScheduler(
         batcher=TimestampsBatcher(
-            source=delayed_source,
-            batch_size=100,
-            batch_delay=None
+            source=delayed_source, batch_size=100, batch_delay=None
         ),
-        timezone=timezone('UTC')
+        timezone=timezone('UTC'),
     )
 
     t1 = time.time()
@@ -77,11 +70,9 @@ def test_scheduler_delay(delayed_source):
 async def test_async_scheduler(instant_source):
     scheduler = AsyncBatchScheduler(
         batcher=TimestampsBatcher(
-            source=instant_source,
-            batch_size=100,
-            batch_delay=None
+            source=instant_source, batch_size=100, batch_delay=None
         ),
-        timezone=timezone('UTC')
+        timezone=timezone('UTC'),
     )
 
     t1 = time.time()
@@ -98,11 +89,9 @@ async def test_async_scheduler(instant_source):
 async def test_async_scheduler_delay(delayed_source):
     scheduler = AsyncBatchScheduler(
         batcher=TimestampsBatcher(
-            source=delayed_source,
-            batch_size=100,
-            batch_delay=None
+            source=delayed_source, batch_size=100, batch_delay=None
         ),
-        timezone=timezone('UTC')
+        timezone=timezone('UTC'),
     )
 
     t1 = time.time()

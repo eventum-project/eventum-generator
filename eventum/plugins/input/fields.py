@@ -1,8 +1,8 @@
 """Field definitions used in input plugin configs."""
 
-from datetime import datetime
+from datetime import datetime, time
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, TypeAlias
 
 import dateparser
 from pydantic import AfterValidator
@@ -57,6 +57,12 @@ TimeKeywordString = Annotated[str, AfterValidator(_try_parse_time_keyword)]
 # For proper validation in pydantic models this annotation should be used
 # with union_mode='left_to_right' in Field
 type VersatileDatetimeStrict = (
-    datetime | TimeKeywordString | RelativeTimeString | HumanDatetimeString
+    datetime
+    | time
+    | TimeKeywordString
+    | RelativeTimeString
+    | HumanDatetimeString
 )
-type VersatileDatetime = VersatileDatetimeStrict | None
+# We do use TypeAlias here because using new syntax results in following error:
+# Unable to apply constraint 'union_mode' to schema of type 'nullable'
+VersatileDatetime: TypeAlias = VersatileDatetimeStrict | None  # noqa: UP040

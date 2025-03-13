@@ -1,11 +1,16 @@
-from typing import Annotated, AsyncIterator, Iterator, Protocol, TypeAlias
+"""Protocols used to unify usage of input plugins and their wrappers
+such as batcher, merger, scheduler etc.
+"""
+
+from collections.abc import AsyncIterator, Iterator
+from typing import Annotated, Protocol
 
 import numpy as np
 from numpy.typing import NDArray
 
-IdentifiedTimestamps: TypeAlias = Annotated[
+type IdentifiedTimestamps = Annotated[
     NDArray,
-    np.dtype([('timestamp', 'datetime64[us]'), ('id', 'uint16')])
+    np.dtype([('timestamp', 'datetime64[us]'), ('id', 'uint16')]),
 ]
 
 
@@ -18,7 +23,8 @@ class SupportsIdentifiedTimestampsSizedIterate(Protocol):
     def iterate(
         self,
         size: int,
-        skip_past: bool = True
+        *,
+        skip_past: bool = True,
     ) -> Iterator[IdentifiedTimestamps]:
         """Iterate over arrays of identified timestamps.
 
@@ -41,6 +47,7 @@ class SupportsIdentifiedTimestampsSizedIterate(Protocol):
         ------
         ValueError
             If parameter "size" is less than 1
+
         """
         ...
 
@@ -53,7 +60,8 @@ class SupportsIdentifiedTimestampsIterate(Protocol):
 
     def iterate(
         self,
-        skip_past: bool = True
+        *,
+        skip_past: bool = True,
     ) -> Iterator[IdentifiedTimestamps]:
         """Iterate over arrays of identified timestamps.
 
@@ -66,6 +74,7 @@ class SupportsIdentifiedTimestampsIterate(Protocol):
         ------
         IdentifiedTimestamps
             Array of timestamps with plugin ids
+
         """
         ...
 
@@ -75,11 +84,14 @@ class SupportsAsyncIdentifiedTimestampsIterate(Protocol):
 
     def iterate(
         self,
-        skip_past: bool = True
+        *,
+        skip_past: bool = True,
     ) -> AsyncIterator[IdentifiedTimestamps]:
         """Iterate over arrays of identified timestamps.
 
         Notes
         -----
-        See `SupportsIdentifiedTimestampsIterate.iterate` docstring."""
+        See `SupportsIdentifiedTimestampsIterate.iterate` docstring.
+
+        """
         ...

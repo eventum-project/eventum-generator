@@ -253,6 +253,7 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
     @override
     def iterate(
         self,
+        *,
         skip_past: bool = True,
     ) -> Iterator[IdentifiedTimestamps]:
         iterator = self._source.iterate(

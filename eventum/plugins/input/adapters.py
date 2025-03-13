@@ -36,6 +36,7 @@ class IdentifiedTimestampsPluginAdapter(
     def iterate(
         self,
         size: int,
+        *,
         skip_past: bool = True,
     ) -> Iterator[IdentifiedTimestamps]:
         if size < 1:
@@ -75,6 +76,7 @@ class AsyncIdentifiedTimestampsSyncAdapter(
     @override
     async def iterate(
         self,
+        *,
         skip_past: bool = True,
     ) -> AsyncIterator[IdentifiedTimestamps]:
         for array in self._target.iterate(skip_past=skip_past):

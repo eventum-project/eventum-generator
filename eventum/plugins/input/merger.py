@@ -1,4 +1,9 @@
-from typing import Iterable, Iterator
+"""Merger of timestamps for aggregating several input plugins into
+single source.
+"""
+
+from collections.abc import Iterable, Iterator
+from typing import override
 
 import numpy as np
 import structlog
@@ -7,52 +12,61 @@ from numpy.typing import NDArray
 from eventum.plugins.exceptions import PluginRuntimeError
 from eventum.plugins.input.base.plugin import InputPlugin
 from eventum.plugins.input.protocols import (
-    IdentifiedTimestamps, SupportsIdentifiedTimestampsSizedIterate)
+    IdentifiedTimestamps,
+    SupportsIdentifiedTimestampsSizedIterate,
+)
 from eventum.plugins.input.utils.array_utils import chunk_array, merge_arrays
 
 logger = structlog.stdlib.get_logger()
 
 
 class InputPluginsMerger(
-    SupportsIdentifiedTimestampsSizedIterate
+    SupportsIdentifiedTimestampsSizedIterate,
 ):
-    """Merger of timestamp generating by multiple input plugins.
-
-    Parameters
-    ----------
-    plugins : Iterable[InputPlugin]
-        Input plugins to merge
-
-    Raises
-    ------
-    ValueError
-        If no plugins provided in sequence or some of the plugin is
-        interactive
-    """
+    """Merger of timestamp generating by multiple input plugins."""
 
     def __init__(self, plugins: Iterable[InputPlugin]) -> None:
-        self._plugins: dict[str, InputPlugin] = dict()
+        """Initialize merger.
+
+        Parameters
+        ----------
+        plugins : Iterable[InputPlugin]
+            Input plugins to merge
+
+        Raises
+        ------
+        ValueError
+            If no plugins provided in sequence or some of the plugin is
+            interactive
+
+        """
+        self._plugins: dict[str, InputPlugin] = {}
 
         for plugin in plugins:
             if plugin.is_interactive:
-                raise ValueError(
+                msg = (
                     f'"{plugin.plugin_name}" input plugin is interactive '
                     'and cannot be merged'
                 )
+                raise ValueError(msg)
 
             self._plugins[plugin.guid] = plugin
 
         if not self._plugins:
-            raise ValueError('At least one plugin must be provided')
+            msg = 'At least one plugin must be provided'
+            raise ValueError(msg)
 
-    def _slice(
+    def _slice(  # noqa: C901, PLR0912
         self,
         size: int,
-        skip_past: bool
+        *,
+        skip_past: bool,
     ) -> Iterator[dict[str, NDArray[np.datetime64]]]:
-        """Slice timestamps from active generators. For each active
-        generator current slice starts at earliest available timestamp
-        and ends at minimal latest of arrays across all generators
+        """Slice timestamps from active generators.
+
+        For each active generator current slice starts at earliest
+        available timestamp and ends at minimal latest of arrays across
+        all generators.
 
         Parameters
         ----------
@@ -83,13 +97,14 @@ class InputPluginsMerger(
         ```
         In the above example for 3 independent generators `_slice`
         method will yield 5 times.
+
         """
         active_generators = {
             guid: iter(plugin.generate(size, skip_past))
             for guid, plugin in self._plugins.items()
         }
 
-        next_arrays: dict[str, NDArray[np.datetime64]] = dict()
+        next_arrays: dict[str, NDArray[np.datetime64]] = {}
         next_required_guids = list(active_generators.keys())
 
         while True:
@@ -102,12 +117,12 @@ class InputPluginsMerger(
                     except StopIteration:
                         del active_generators[guid]
                     except PluginRuntimeError as e:
-                        logger.error(
+                        logger.error(  # noqa: TRY400
                             (
                                 'One of the input plugins finished execution '
                                 ' with error'
                             ),
-                            **e.context
+                            **e.context,
                         )
                         del active_generators[guid]
                     except Exception as e:
@@ -129,11 +144,11 @@ class InputPluginsMerger(
             # find cutoff timestamp
             cutoff_timestamp = min(
                 next_arrays.values(),
-                key=lambda arr: arr[-1]
+                key=lambda arr: arr[-1],
             )[-1]
 
             # fill the slice
-            slice: dict[str, NDArray[np.datetime64]] = dict()
+            slice: dict[str, NDArray[np.datetime64]] = {}  # noqa: A001
             for guid in tuple(next_arrays.keys()):
                 array = next_arrays[guid]
 
@@ -147,7 +162,7 @@ class InputPluginsMerger(
                     index = np.searchsorted(
                         a=array,
                         v=cutoff_timestamp,
-                        side='right'
+                        side='right',
                     )
                     left_part = array[:index]
                     right_part = array[index:]
@@ -165,15 +180,16 @@ class InputPluginsMerger(
 
             yield slice
 
+    @override
     def iterate(
         self,
         size: int,
-        skip_past: bool = True
+        *,
+        skip_past: bool = True,
     ) -> Iterator[IdentifiedTimestamps]:
         if size < 1:
-            raise ValueError(
-                'Parameter "size" must be greater or equal to 1'
-            )
+            msg = 'Parameter "size" must be greater or equal to 1'
+            raise ValueError(msg)
 
         consume_size = max(10_000, size // len(self._plugins))
 
@@ -186,7 +202,7 @@ class InputPluginsMerger(
             for guid, array in arrays.items():
                 array_with_id = np.empty(
                     shape=array.size,
-                    dtype=[('timestamp', 'datetime64[us]'), ('id', 'uint16')]
+                    dtype=[('timestamp', 'datetime64[us]'), ('id', 'uint16')],
                 )
                 array_with_id['timestamp'][:] = array
                 array_with_id['id'][:] = self._plugins[guid].id

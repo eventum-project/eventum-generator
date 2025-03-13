@@ -7,8 +7,9 @@ from pytz import timezone
 from eventum.plugins.input.merger import InputPluginsMerger
 from eventum.plugins.input.plugins.http.config import HttpInputPluginConfig
 from eventum.plugins.input.plugins.http.plugin import HttpInputPlugin
-from eventum.plugins.input.plugins.linspace.config import \
-    LinspaceInputPluginConfig
+from eventum.plugins.input.plugins.linspace.config import (
+    LinspaceInputPluginConfig,
+)
 from eventum.plugins.input.plugins.linspace.plugin import LinspaceInputPlugin
 
 
@@ -24,7 +25,7 @@ def test_merger():
         params={
             'id': 1,
             'timezone': timezone('UTC'),
-        }
+        },
     )
 
     plugin_2 = LinspaceInputPlugin(
@@ -36,7 +37,7 @@ def test_merger():
         params={
             'id': 2,
             'timezone': timezone('UTC'),
-        }
+        },
     )
 
     plugin_3 = LinspaceInputPlugin(
@@ -48,7 +49,7 @@ def test_merger():
         params={
             'id': 3,
             'timezone': timezone('UTC'),
-        }
+        },
     )
 
     plugins_lst = [plugin_1, plugin_2, plugin_3]
@@ -74,7 +75,7 @@ def test_merger_with_interactive_plugins():
             plugins=[
                 HttpInputPlugin(
                     config=HttpInputPluginConfig(port=8080),
-                    params={'id': 1, 'timezone': timezone('UTC')}
+                    params={'id': 1, 'timezone': timezone('UTC')},
                 )
             ]
         )
