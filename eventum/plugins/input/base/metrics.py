@@ -1,3 +1,5 @@
+"""Definition of base input plugin metrics."""
+
 from eventum.plugins.base.metrics import PluginMetrics
 
 
@@ -8,5 +10,7 @@ class InputPluginMetrics(PluginMetrics):
     ----------
     created : int
         Number of created events
+
     """
+
     created: int

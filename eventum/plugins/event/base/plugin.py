@@ -42,23 +42,8 @@ ParamsT = TypeVar('ParamsT', bound=EventPluginParams)
 class EventPlugin(Plugin[ConfigT, ParamsT], register=False):
     """Base class for all event plugins."""
 
+    @override
     def __init__(self, config: ConfigT, params: ParamsT) -> None:
-        """Initialize event plugin.
-
-        Parameters
-        ----------
-        config : ConfigT
-            Configuration for the plugin
-
-        params : ParamsT
-            Parameters for the plugin (see `EventPluginParams`)
-
-        Raises
-        ------
-        PluginConfigurationError
-            If any error occurs during initializing plugin
-
-        """
         super().__init__(config, params)
 
         self._produced = 0

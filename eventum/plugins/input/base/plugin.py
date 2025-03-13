@@ -1,5 +1,8 @@
+"""Definition of base input plugin."""
+
 from abc import abstractmethod
-from typing import Any, Iterator, Required, TypeVar
+from collections.abc import Iterator
+from typing import Any, Required, TypeVar, override
 
 from numpy import datetime64
 from numpy.typing import NDArray
@@ -19,25 +22,21 @@ class InputPluginParams(PluginParams):
     ----------
     timezone : BaseTzInfo
         Timezone that is used for generated timestamps
+
     """
+
     timezone: Required[BaseTzInfo]
 
 
 ConfigT = TypeVar(
     'ConfigT',
-    bound=(InputPluginConfig | RootModel[InputPluginConfig])
+    bound=(InputPluginConfig | RootModel[InputPluginConfig]),
 )
 ParamsT = TypeVar('ParamsT', bound=InputPluginParams)
 
 
 class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
     """Base class for all input plugins.
-
-    Parameters
-    ----------
-    **kwargs : Unpack[InputPluginKwargs]
-        Arguments for plugin configuration (see `InputPluginKwargs`)
-
 
     Other Parameters
     ----------------
@@ -47,13 +46,9 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
         since they are blocking generation due to unpredictable user
         interactions
 
-    Raises
-    ------
-    PluginConfigurationError
-        If any error occurs during initializing plugin with the
-        provided parameters
     """
 
+    @override
     def __init__(self, config: ConfigT, params: ParamsT) -> None:
         super().__init__(config, params)
 
@@ -63,15 +58,21 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
         self._buffer = Buffer()
         self._created = 0
 
-    def __init_subclass__(cls, interactive: bool = False, **kwargs: Any):
+    def __init_subclass__(
+        cls,
+        *,
+        interactive: bool = False,
+        **kwargs: Any,  # noqa: ANN401
+    ) -> None:
         super().__init_subclass__(**kwargs)
 
-        setattr(cls, '_interactive', interactive)
+        cls._interactive = interactive  # type: ignore[attr-defined]
 
     def generate(
         self,
         size: int,
-        skip_past: bool = True
+        *,
+        skip_past: bool = True,
     ) -> Iterator[NDArray[datetime64]]:
         """Generate timestamps.
 
@@ -89,7 +90,7 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
             Whether to skip past timestamps before starting generation
 
         Yields
-        -------
+        ------
         NDArray[datetime64]
             Array of generated timestamps
 
@@ -97,6 +98,7 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
         ------
         PluginRuntimeError
             If any error occurs during timestamps generation
+
         """
         self._created = 0
 
@@ -108,26 +110,29 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
     def _generate(
         self,
         size: int,
-        skip_past: bool = True
+        *,
+        skip_past: bool = True,
     ) -> Iterator[NDArray[datetime64]]:
         """Generate timestamps.
 
         Notes
         -----
         See `generate` method for more info
+
         """
         ...
 
     @property
     def is_interactive(self) -> bool:
         """Whether the plugin is interactive."""
-        return getattr(self, '_interactive')
+        return self._interactive  # type: ignore[attr-defined]
 
     @property
     def created(self) -> int:
         """Number of created events."""
         return self._created
 
+    @override
     def get_metrics(self) -> InputPluginMetrics:
         metrics = super().get_metrics()
         return InputPluginMetrics(**metrics, created=self.created)
