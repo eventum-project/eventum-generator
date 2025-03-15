@@ -3,7 +3,7 @@
 import asyncio
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import Any, TypeVar, override
+from typing import TypeVar, assert_never, override
 
 from pydantic import RootModel
 
@@ -45,7 +45,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         self._is_opened = False
 
         self._formatter_config = self._get_formatter_config()
-        self._formatter = self._get_formatter(self._formatter_config)
+        self._formatter = self._get_formatter()
 
         self._written = 0
         self._format_failed = 0
@@ -59,36 +59,21 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         FormatterConfigT
             Formatter config
 
-        Raises
-        ------
-        PluginConfigurationError
-            If config is of invalid type
-
         """
-        if isinstance(self._config, OutputPluginConfig):
-            return self._config.formatter
-        if isinstance(self._config, RootModel):
-            return self._config.root.formatter
-        msg = 'Invalid config type'
-        raise PluginConfigurationError(
-            msg,
-            context=dict(
-                self.instance_info,
-                plugin_config_class=type(self._config),
-            ),
-        )
+        match self._config:
+            case OutputPluginConfig():
+                return self._config.formatter
+            case RootModel():
+                return self._config.root.formatter
+            case t:
+                assert_never(t)
 
-    def _get_formatter(self, config: FormatterConfigT) -> Formatter[Any]:
+    def _get_formatter(self) -> Formatter:
         """Get formatter corresponding to config.
-
-        Parameters
-        ----------
-        config : FormatterConfigT
-            Configuration of formatter
 
         Returns
         -------
-        Formatter[Any]
+        Formatter
             Formatter
 
         Raises
@@ -97,6 +82,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
             If formatter configuration fails
 
         """
+        config = self._formatter_config
         try:
             FormatterCls = get_formatter_class(config.format)  # noqa: N806
             return FormatterCls(config)
