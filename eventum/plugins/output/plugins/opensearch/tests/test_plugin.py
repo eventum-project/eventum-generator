@@ -3,10 +3,12 @@ import re
 import pytest
 from pytest_httpx import HTTPXMock
 
-from eventum.plugins.output.plugins.opensearch.config import \
-    OpensearchOutputPluginConfig
-from eventum.plugins.output.plugins.opensearch.plugin import \
-    OpensearchOutputPlugin
+from eventum.plugins.output.plugins.opensearch.config import (
+    OpensearchOutputPluginConfig,
+)
+from eventum.plugins.output.plugins.opensearch.plugin import (
+    OpensearchOutputPlugin,
+)
 
 pytest_plugins = ('pytest_asyncio',)
 
@@ -14,11 +16,11 @@ pytest_plugins = ('pytest_asyncio',)
 @pytest.fixture
 def config():
     return OpensearchOutputPluginConfig(
-        hosts=['https://localhost:9200'],   # type: ignore[arg-type]
+        hosts=['https://localhost:9200'],  # type: ignore[arg-type]
         username='admin',
         password='pass',
         index='test_index',
-        verify=False
+        verify=False,
     )
 
 
@@ -29,13 +31,9 @@ def write_response():
         '_id': 'pIQetY8B-vfSDQ_FAHhq',
         '_version': 1,
         'result': 'created',
-        '_shards': {
-            'total': 1,
-            'successful': 1,
-            'failed': 0
-        },
+        '_shards': {'total': 1, 'successful': 1, 'failed': 0},
         '_seq_no': 0,
-        '_primary_term': 1
+        '_primary_term': 1,
     }
 
 
@@ -51,31 +49,23 @@ def write_many_response():
                     '_id': 'QYQmtY8B-vfSDQ_Fw4u9',
                     '_version': 1,
                     'result': 'created',
-                    '_shards': {
-                        'total': 1,
-                        'successful': 1,
-                        'failed': 0
-                    },
+                    '_shards': {'total': 1, 'successful': 1, 'failed': 0},
                     '_seq_no': 0,
                     '_primary_term': 17,
-                    'status': 201
+                    'status': 201,
                 }
             }
-        ]
+        ],
     }
 
 
 @pytest.mark.asyncio
-async def test_opensearch_write(
-    httpx_mock: HTTPXMock,
-    config,
-    write_response
-):
+async def test_opensearch_write(httpx_mock: HTTPXMock, config, write_response):
     httpx_mock.add_response(
         method='POST',
         url=re.compile(r'https://localhost:9200/.*'),
         status_code=201,
-        json=write_response
+        json=write_response,
     )
 
     plugin = OpensearchOutputPlugin(config=config, params={'id': 1})
@@ -100,15 +90,13 @@ async def test_opensearch_write(
 
 @pytest.mark.asyncio
 async def test_opensearch_write_many(
-    httpx_mock: HTTPXMock,
-    config,
-    write_many_response
+    httpx_mock: HTTPXMock, config, write_many_response
 ):
     httpx_mock.add_response(
         method='POST',
         url=re.compile(r'https://localhost:9200/.*'),
         status_code=200,
-        json=write_many_response
+        json=write_many_response,
     )
 
     plugin = OpensearchOutputPlugin(config=config, params={'id': 1})
@@ -117,7 +105,7 @@ async def test_opensearch_write_many(
     written = await plugin.write(
         [
             '{"@timestamp": "2024-01-01T00:00:00.000Z", "value": 1}',
-            '{"@timestamp": "2024-01-01T00:00:01.000Z", "value": 2}'
+            '{"@timestamp": "2024-01-01T00:00:01.000Z", "value": 2}',
         ]
     )
     await plugin.close()
@@ -140,15 +128,13 @@ async def test_opensearch_write_many(
 @pytest.mark.asyncio
 @pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 async def test_opensearch_invalid_data(
-    httpx_mock: HTTPXMock,
-    config,
-    write_response
+    httpx_mock: HTTPXMock, config, write_response
 ):
     httpx_mock.add_response(
         method='POST',
         url=re.compile(r'https://localhost:9200/.*'),
         status_code=201,
-        json=write_response
+        json=write_response,
     )
 
     plugin = OpensearchOutputPlugin(config=config, params={'id': 1})
@@ -168,15 +154,13 @@ async def test_opensearch_invalid_data(
 
 @pytest.mark.asyncio
 async def test_opensearch_write_many_partially_corrupted(
-    httpx_mock: HTTPXMock,
-    config,
-    write_response
+    httpx_mock: HTTPXMock, config, write_response
 ):
     httpx_mock.add_response(
         method='POST',
         url=re.compile(r'https://localhost:9200/.*'),
         status_code=201,
-        json=write_response
+        json=write_response,
     )
 
     plugin = OpensearchOutputPlugin(config=config, params={'id': 1})
@@ -185,7 +169,7 @@ async def test_opensearch_write_many_partially_corrupted(
     written = await plugin.write(
         [
             '{"@timestamp": "2024-01-01T00:00:00.000Z", "value": 1}',
-            '{"@timestamp": "2024-01-01T00:00:00.000Z", "val CORRUPTED...'
+            '{"@timestamp": "2024-01-01T00:00:00.000Z", "val CORRUPTED...',
         ]
     )
     await plugin.close()
