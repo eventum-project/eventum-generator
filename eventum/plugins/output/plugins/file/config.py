@@ -1,10 +1,13 @@
+"""Definition of file output plugin config."""
+
 import os
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, field_validator
 
+from eventum.plugins.fields import Encoding
 from eventum.plugins.output.base.config import OutputPluginConfig
-from eventum.plugins.output.fields import Encoding
 
 
 class FileOutputPluginConfig(OutputPluginConfig, frozen=True):
@@ -12,7 +15,7 @@ class FileOutputPluginConfig(OutputPluginConfig, frozen=True):
 
     Attributes
     ----------
-    path : str
+    path : Path
         Absolute path of the file to write
 
     flush_interval : float, default = 1
@@ -34,8 +37,10 @@ class FileOutputPluginConfig(OutputPluginConfig, frozen=True):
 
     separator : str, default=os.linesep
         Separator between events
+
     """
-    path: str
+
+    path: Path
     flush_interval: float = Field(default=1, ge=0)
     cleanup_interval: float = Field(default=10, ge=1.0)
     file_mode: int = Field(default=640, ge=0, le=7777)
@@ -44,7 +49,10 @@ class FileOutputPluginConfig(OutputPluginConfig, frozen=True):
     separator: str = Field(default=os.linesep)
 
     @field_validator('path')
-    def validate_path(cls, v: str):
-        if os.path.isabs(v):
+    @classmethod
+    def validate_path(cls, v: Path) -> Path:  # noqa: D102
+        if v.is_absolute():
             return v
-        raise ValueError('Path must be absolute')
+
+        msg = 'Path must be absolute'
+        raise ValueError(msg)

@@ -1,5 +1,6 @@
 import asyncio
 import os
+from pathlib import Path
 
 import pytest
 
@@ -14,10 +15,9 @@ async def test_plugin_write(tmp_path):
     filepath = tmp_path / 'test'
     plugin = FileOutputPlugin(
         config=FileOutputPluginConfig(
-            path=str(filepath),
-            write_mode='overwrite'
+            path=Path(filepath), write_mode='overwrite'
         ),
-        params={'id': 1}
+        params={'id': 1},
     )
 
     await plugin.open()
@@ -38,11 +38,9 @@ async def test_plugin_separator(tmp_path):
     filepath = tmp_path / 'test'
     plugin = FileOutputPlugin(
         config=FileOutputPluginConfig(
-            path=str(filepath),
-            write_mode='overwrite',
-            separator=''
+            path=Path(filepath), write_mode='overwrite', separator=''
         ),
-        params={'id': 1}
+        params={'id': 1},
     )
 
     await plugin.open()
@@ -63,21 +61,16 @@ async def test_plugin_write_with_format(tmp_path):
     filepath = tmp_path / 'test'
     plugin = FileOutputPlugin(
         config=FileOutputPluginConfig(
-            path=str(filepath),
+            path=Path(filepath),
             formatter=JsonFormatterConfig(format=Format.JSON),
-            write_mode='overwrite'
+            write_mode='overwrite',
         ),
-        params={'id': 1}
+        params={'id': 1},
     )
 
     await plugin.open()
 
-    events = [
-        '{\n'
-        '  "a": 1\n'
-        '}\n'
-
-    ]
+    events = ['{\n  "a": 1\n}\n']
     await plugin.write(events)
 
     await plugin.close()
@@ -93,10 +86,9 @@ async def test_plugin_write_overwrite(tmp_path):
     filepath = tmp_path / 'test'
     plugin = FileOutputPlugin(
         config=FileOutputPluginConfig(
-            path=str(filepath),
-            write_mode='overwrite'
+            path=Path(filepath), write_mode='overwrite'
         ),
-        params={'id': 1}
+        params={'id': 1},
     )
     events = ['a']
 
@@ -106,10 +98,9 @@ async def test_plugin_write_overwrite(tmp_path):
 
     plugin = FileOutputPlugin(
         config=FileOutputPluginConfig(
-            path=str(filepath),
-            write_mode='overwrite'
+            path=Path(filepath), write_mode='overwrite'
         ),
-        params={'id': 1}
+        params={'id': 1},
     )
     events = ['b']
 
@@ -128,10 +119,9 @@ async def test_plugin_write_append(tmp_path):
     filepath = tmp_path / 'test'
     plugin = FileOutputPlugin(
         config=FileOutputPluginConfig(
-            path=str(filepath),
-            write_mode='overwrite'
+            path=Path(filepath), write_mode='overwrite'
         ),
-        params={'id': 1}
+        params={'id': 1},
     )
     events = ['a']
 
@@ -141,10 +131,9 @@ async def test_plugin_write_append(tmp_path):
 
     plugin = FileOutputPlugin(
         config=FileOutputPluginConfig(
-            path=str(filepath),
-            write_mode='append'
+            path=Path(filepath), write_mode='append'
         ),
-        params={'id': 1}
+        params={'id': 1},
     )
     events = ['b']
 
@@ -163,11 +152,9 @@ async def test_plugin_filemode(tmp_path):
     filepath = tmp_path / 'test'
     plugin = FileOutputPlugin(
         config=FileOutputPluginConfig(
-            path=str(filepath),
-            write_mode='overwrite',
-            file_mode=600
+            path=Path(filepath), write_mode='overwrite', file_mode=600
         ),
-        params={'id': 1}
+        params={'id': 1},
     )
     events = ['a']
 
@@ -183,18 +170,15 @@ async def test_plugin_flush_every_event(tmp_path):
     filepath = tmp_path / 'test'
     plugin = FileOutputPlugin(
         config=FileOutputPluginConfig(
-            path=str(filepath),
-            write_mode='overwrite',
-            flush_interval=0
+            path=Path(filepath), write_mode='overwrite', flush_interval=0
         ),
-        params={'id': 1}
+        params={'id': 1},
     )
     events = ['a', 'b', 'c']
 
     await plugin.open()
 
     with open(filepath) as f:
-
         for event in events:
             await plugin.write([event])
             lines = f.readlines()
@@ -209,18 +193,15 @@ async def test_plugin_flush_interval(tmp_path):
     filepath = tmp_path / 'test'
     plugin = FileOutputPlugin(
         config=FileOutputPluginConfig(
-            path=str(filepath),
-            write_mode='overwrite',
-            flush_interval=0.1
+            path=Path(filepath), write_mode='overwrite', flush_interval=0.1
         ),
-        params={'id': 1}
+        params={'id': 1},
     )
     events = ['a', 'b', 'c']
 
     await plugin.open()
 
     with open(filepath) as f:
-
         for event in events:
             await plugin.write([event])
             lines = f.readlines()
@@ -240,11 +221,9 @@ async def test_plugin_file_recreation(tmp_path):
     filepath = tmp_path / 'test'
     plugin = FileOutputPlugin(
         config=FileOutputPluginConfig(
-            path=str(filepath),
-            write_mode='overwrite',
-            flush_interval=0
+            path=Path(filepath), write_mode='overwrite', flush_interval=0
         ),
-        params={'id': 1}
+        params={'id': 1},
     )
 
     await plugin.open()

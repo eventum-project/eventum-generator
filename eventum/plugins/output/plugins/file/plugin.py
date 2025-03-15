@@ -1,6 +1,9 @@
+"""Definition of file output plugin."""
+
 import asyncio
 import os
-from typing import Sequence
+from collections.abc import Sequence
+from typing import override
 
 import aiofiles
 from aiofiles.threadpool.text import AsyncTextIOWrapper
@@ -11,14 +14,15 @@ from eventum.plugins.output.plugins.file.config import FileOutputPluginConfig
 
 
 class FileOutputPlugin(
-    OutputPlugin[FileOutputPluginConfig, OutputPluginParams]
+    OutputPlugin[FileOutputPluginConfig, OutputPluginParams],
 ):
     """Output plugin for writing events to file."""
 
+    @override
     def __init__(
         self,
         config: FileOutputPluginConfig,
-        params: OutputPluginParams
+        params: OutputPluginParams,
     ) -> None:
         super().__init__(config, params)
 
@@ -42,6 +46,7 @@ class FileOutputPlugin(
         -----
         Cleanup lock must be acquired before running this method to
         avoid unexpected file closing when trying to get fileno
+
         """
         if self._file.closed:
             return False
@@ -50,10 +55,10 @@ class FileOutputPlugin(
 
         stat = await self._loop.run_in_executor(
             executor=None,
-            func=lambda: os.stat(fileno)
+            func=lambda: os.stat(fileno),  # noqa: PTH116
         )
 
-        return True if stat.st_nlink > 0 else False
+        return stat.st_nlink > 0
 
     async def _start_flushing(self) -> None:
         """Start flushing cycle based on specified flush interval."""
@@ -96,11 +101,12 @@ class FileOutputPlugin(
         -------
         int
             File descriptor number
+
         """
         return os.open(
             path=path,
             flags=flags,
-            mode=int(str(self._config.file_mode), base=8)
+            mode=int(str(self._config.file_mode), base=8),
         )
 
     async def _open_file(self) -> AsyncTextIOWrapper:
@@ -110,12 +116,13 @@ class FileOutputPlugin(
         -------
         AsyncTextIOWrapper
             Opened file
+
         """
         f = await aiofiles.open(
             file=self._config.path,
             mode='a' if self._config.write_mode == 'append' else 'w',
             encoding=self._config.encoding,
-            opener=self._create_descriptor
+            opener=self._create_descriptor,
         )
         await self._logger.ainfo('File is opened', file_path=self._config.path)
         return f
@@ -127,16 +134,17 @@ class FileOutputPlugin(
         -------
         AsyncTextIOWrapper
             Opened file
+
         """
         f = await aiofiles.open(
             file=self._config.path,
             mode='a',
             encoding=self._config.encoding,
-            opener=self._create_descriptor
+            opener=self._create_descriptor,
         )
         await self._logger.ainfo(
             'File is reopened',
-            file_path=self._config.path
+            file_path=self._config.path,
         )
         return f
 
@@ -144,22 +152,24 @@ class FileOutputPlugin(
         try:
             self._file = await self._open_file()
         except OSError as e:
+            msg = 'Failed to open file'
             raise PluginRuntimeError(
-                'Failed to open file',
+                msg,
                 context=dict(
                     self.instance_info,
                     reason=str(e),
-                    file_path=self._config.path
-                )
-            )
+                    file_path=self._config.path,
+                ),
+            ) from e
 
         if not await self._file.writable():
+            msg = 'File is not writable'
             raise PluginRuntimeError(
-                'File is not writable',
+                msg,
                 context=dict(
                     self.instance_info,
-                    file_path=self._config.path
-                )
+                    file_path=self._config.path,
+                ),
             )
 
         self._flushing_task = self._loop.create_task(self._start_flushing())
@@ -180,21 +190,22 @@ class FileOutputPlugin(
                 try:
                     self._file = await self._reopen_file()
                 except OSError as e:
+                    msg = 'Failed to reopen file'
                     raise PluginRuntimeError(
-                        'Failed to reopen file',
+                        msg,
                         context=dict(
                             self.instance_info,
                             reason=str(e),
-                            file_path=self._config.path
-                        )
-                    )
+                            file_path=self._config.path,
+                        ),
+                    ) from e
 
             if not self._cleaned_up:
                 self._cleanup_task.cancel()
 
             self._cleaned_up = False
             self._cleanup_task = self._loop.create_task(
-                self._schedule_cleanup()
+                self._schedule_cleanup(),
             )
 
             try:
@@ -202,13 +213,14 @@ class FileOutputPlugin(
                     e + self._config.separator for e in events
                 )
             except OSError as e:
+                msg = 'Failed to write events to file'
                 raise PluginRuntimeError(
-                    'Failed to write events to file',
+                    msg,
                     context=dict(
                         self.instance_info,
                         reason=str(e),
-                        file_path=self._config.path
-                    )
+                        file_path=self._config.path,
+                    ),
                 ) from e
 
             if self._config.flush_interval == 0:
