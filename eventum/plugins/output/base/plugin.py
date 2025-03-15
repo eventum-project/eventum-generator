@@ -17,6 +17,7 @@ from eventum.plugins.output.base.config import OutputPluginConfig
 from eventum.plugins.output.fields import FormatterConfigT
 from eventum.plugins.output.formatters import (
     Formatter,
+    FormatterParams,
     FormattingResult,
     get_formatter_class,
 )
@@ -85,7 +86,11 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         config = self._formatter_config
         try:
             FormatterCls = get_formatter_class(config.format)  # noqa: N806
-            return FormatterCls(config)
+            # https://github.com/python/mypy/issues/18804
+            return FormatterCls(
+                config,
+                params=FormatterParams(base_path=self._base_path),  # type: ignore[typeddict-item]
+            )
         except ValueError as e:
             msg = 'Failed to configure formatter'
             raise PluginConfigurationError(
