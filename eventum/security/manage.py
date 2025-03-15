@@ -1,4 +1,4 @@
-"""Functions for working with keyring."""
+"""Module for securely storing and retrieving secrets using a keyring."""
 
 import os
 from functools import lru_cache
