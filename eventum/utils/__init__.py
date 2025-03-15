@@ -1,1 +1,1 @@
-"""Package containing often used utils."""
+"""Package containing common useful utils."""
