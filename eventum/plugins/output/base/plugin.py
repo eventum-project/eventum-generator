@@ -213,16 +213,18 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
 
         try:
             formatting_result = await self._format_events(events)
-        finally:
+        except:
             self._format_failed += len(events)
+            raise
 
         if not formatting_result.events:
             return 0
 
         try:
             written = await self._write(formatting_result.events)
-        finally:
+        except:
             self._write_failed += formatting_result.formatted_count
+            raise
 
         # handle possible events aggregation
         if (
