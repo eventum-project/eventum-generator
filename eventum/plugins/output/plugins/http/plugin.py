@@ -1,25 +1,33 @@
+"""Definition of http output plugin."""
+
 import asyncio
-from typing import Sequence
+from collections.abc import Sequence
+from typing import override
 
 import httpx
 
-from eventum.plugins.exceptions import (PluginConfigurationError,
-                                        PluginRuntimeError)
+from eventum.plugins.exceptions import (
+    PluginConfigurationError,
+    PluginRuntimeError,
+)
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
-from eventum.plugins.output.http_client import (create_client,
-                                                create_ssl_context)
+from eventum.plugins.output.http_client import (
+    create_client,
+    create_ssl_context,
+)
 from eventum.plugins.output.plugins.http.config import HttpOutputPluginConfig
 
 
 class HttpOutputPlugin(
-    OutputPlugin[HttpOutputPluginConfig, OutputPluginParams]
+    OutputPlugin[HttpOutputPluginConfig, OutputPluginParams],
 ):
     """Output plugin for indexing events to OpenSearch."""
 
+    @override
     def __init__(
         self,
         config: HttpOutputPluginConfig,
-        params: OutputPluginParams
+        params: OutputPluginParams,
     ) -> None:
         super().__init__(config, params)
 
@@ -28,13 +36,14 @@ class HttpOutputPlugin(
                 verify=config.verify,
                 ca_cert=config.ca_cert,
                 client_cert=config.client_cert,
-                client_key=config.client_cert_key
+                client_key=config.client_cert_key,
             )
         except OSError as e:
+            msg = 'Failed to create SSL context'
             raise PluginConfigurationError(
-                'Failed to create SSL context',
-                context=dict(self.instance_info, reason=str(e))
-            )
+                msg,
+                context=dict(self.instance_info, reason=str(e)),
+            ) from e
 
         self._client: httpx.AsyncClient
 
@@ -47,9 +56,8 @@ class HttpOutputPlugin(
             connect_timeout=self._config.connect_timeout,
             request_timeout=self._config.request_timeout,
             proxy_url=(
-                str(self._config.proxy_url) if self._config.proxy_url
-                else None
-            )
+                str(self._config.proxy_url) if self._config.proxy_url else None
+            ),
         )
 
     async def _close(self) -> None:
@@ -68,34 +76,37 @@ class HttpOutputPlugin(
         PluginRuntimeError
             If request failed or response status code differs from
             expected one
+
         """
         try:
             response = await self._client.request(
                 method=self._config.method,
                 url=str(self._config.url),
-                content=data
+                content=data,
             )
         except httpx.RequestError as e:
+            msg = 'Request failed'
             raise PluginRuntimeError(
-                'Request failed',
+                msg,
                 context=dict(
                     self.instance_info,
                     reason=str(e),
-                    url=self._config.url
-                )
+                    url=self._config.url,
+                ),
             ) from e
 
         if response.status_code != self._config.success_code:
             content = await response.aread()
             text = content.decode()
+            msg = 'Server returned not expected status code'
             raise PluginRuntimeError(
-                'Server returned not expected status code',
+                msg,
                 context=dict(
                     self.instance_info,
                     http_status=response.status_code,
                     reason=text,
-                    url=self._config.url
-                )
+                    url=self._config.url,
+                ),
             )
 
     async def _write(self, events: Sequence[str]) -> int:
@@ -104,36 +115,31 @@ class HttpOutputPlugin(
                 self._loop.create_task(self._perform_request(event))
                 for event in events
             ],
-            return_exceptions=True
+            return_exceptions=True,
         )
 
-        errors: list[PluginRuntimeError] = []
-        unexpected_errors: list[Exception] = []
-
+        log_tasks: list[asyncio.Task] = []
         for result in results:
             if isinstance(result, PluginRuntimeError):
-                errors.append(result)
-            elif isinstance(result, Exception):
-                unexpected_errors.append(result)
-
-        if errors:
-            await asyncio.gather(
-                *[
-                    self._logger.aerror(str(error), **error.context)
-                    for error in errors
-                ]
-            )
-
-        if unexpected_errors:
-            raise PluginRuntimeError(
-                'Error during performing request',
-                context=dict(
-                    self.instance_info,
-                    reason=(
-                        f'First 3/{len(unexpected_errors)} errors are shown: '
-                        f'{unexpected_errors[:3]}'
-                    )
+                log_tasks.append(
+                    self._loop.create_task(
+                        self._logger.aerror(str(result), **result.context),
+                    ),
                 )
-            )
+            elif isinstance(result, BaseException):
+                log_tasks.append(
+                    self._loop.create_task(
+                        self._logger.aerror(
+                            'Failed to perform request',
+                            **self.instance_info,
+                            reason=str(result),
+                            url=self._config.url,
+                        ),
+                    ),
+                )
 
-        return len(events) - len(errors)
+        errors_count = len(log_tasks)
+
+        await asyncio.gather(*log_tasks)
+
+        return len(events) - errors_count

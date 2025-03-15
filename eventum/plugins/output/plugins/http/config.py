@@ -1,11 +1,16 @@
-import os
-from typing import Any, Literal
+"""Definition of http output plugin config."""
+
+from pathlib import Path
+from typing import Any, Literal, Self
 
 from pydantic import Field, HttpUrl, field_validator, model_validator
 
 from eventum.plugins.output.base.config import OutputPluginConfig
-from eventum.plugins.output.fields import (Format, FormatterConfigT,
-                                           JsonFormatterConfig)
+from eventum.plugins.output.fields import (
+    Format,
+    FormatterConfigT,
+    JsonFormatterConfig,
+)
 
 
 class HttpOutputPluginConfig(OutputPluginConfig, frozen=True):
@@ -53,10 +58,18 @@ class HttpOutputPluginConfig(OutputPluginConfig, frozen=True):
     Notes
     -----
     By default one line JSON batch formatter is used for events
+
     """
+
     url: HttpUrl
     method: Literal[
-        'GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'
+        'GET',
+        'HEAD',
+        'OPTIONS',
+        'POST',
+        'PUT',
+        'PATCH',
+        'DELETE',
     ] = Field(default='POST')
     success_code: int = Field(default=201, ge=100)
     headers: dict[str, Any] = Field(default_factory=dict)
@@ -65,37 +78,38 @@ class HttpOutputPluginConfig(OutputPluginConfig, frozen=True):
     connect_timeout: int = Field(default=10, ge=1)
     request_timeout: int = Field(default=300, ge=1)
     verify: bool = Field(default=False)
-    ca_cert: str | None = Field(default=None, min_length=1)
-    client_cert: str | None = Field(default=None, min_length=1)
-    client_cert_key: str | None = Field(default=None, min_length=1)
+    ca_cert: Path | None = Field(default=None, min_length=1)
+    client_cert: Path | None = Field(default=None, min_length=1)
+    client_cert_key: Path | None = Field(default=None, min_length=1)
     proxy_url: HttpUrl | None = Field(default=None)
     formatter: FormatterConfigT = Field(
         default_factory=lambda: JsonFormatterConfig(
             format=Format.JSON_BATCH,
-            indent=0
+            indent=0,
         ),
         validate_default=True,
-        discriminator='format'
+        discriminator='format',
     )
 
     @field_validator('ca_cert', 'client_cert', 'client_cert_key')
-    def validate_absolute_paths(cls, v: str | None):
-        if not isinstance(v, str):
+    @classmethod
+    def validate_absolute_paths(cls, v: Path | None) -> Path | None:  # noqa: D102
+        if v is None:
             return v
 
-        if not os.path.isabs(v):
-            raise ValueError('Path must be absolute')
+        if not v.is_absolute():
+            msg = 'Path must be absolute'
+            raise ValueError(msg)
 
         return v
 
     @model_validator(mode='after')
-    def validate_client_cert(self):
+    def validate_client_cert(self) -> Self:  # noqa: D102
         if self.client_cert is None and self.client_cert_key is None:
             return self
 
         if self.client_cert is None or self.client_cert_key is None:
-            raise ValueError(
-                'Client certificate and key must be provided together'
-            )
+            msg = 'Client certificate and key must be provided together'
+            raise ValueError(msg)
 
         return self

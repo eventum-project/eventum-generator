@@ -15,13 +15,13 @@ async def test_plugin_write(httpx_mock: HTTPXMock):
         method='POST',
         url=re.compile(r'http://localhost:8000/.*'),
         status_code=201,
-        text='Ok.'
+        text='Ok.',
     )
 
     config = HttpOutputPluginConfig(
-        url=HttpUrl('http://localhost:8000/endpoint'),   # type: ignore
+        url=HttpUrl('http://localhost:8000/endpoint'),  # type: ignore
         headers={'Content-Type': 'application/json'},
-        formatter=JsonFormatterConfig(format=Format.JSON, indent=0)
+        formatter=JsonFormatterConfig(format=Format.JSON, indent=0),
     )
     plugin = HttpOutputPlugin(config=config, params={'id': 1})
 
@@ -50,13 +50,13 @@ async def test_plugin_wrong_code(httpx_mock: HTTPXMock):
         method='POST',
         url=re.compile(r'http://localhost:8000/.*'),
         status_code=200,
-        text='Ok.'
+        text='Ok.',
     )
 
     config = HttpOutputPluginConfig(
-        url=HttpUrl('http://localhost:8000/endpoint'),   # type: ignore
+        url=HttpUrl('http://localhost:8000/endpoint'),  # type: ignore
         headers={'Content-Type': 'application/json'},
-        formatter=JsonFormatterConfig(format=Format.JSON, indent=0)
+        formatter=JsonFormatterConfig(format=Format.JSON, indent=0),
     )
     plugin = HttpOutputPlugin(config=config, params={'id': 1})
 
