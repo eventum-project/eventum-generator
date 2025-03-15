@@ -1,22 +1,27 @@
+"""Definition of opensearch output plugin."""
+
 import asyncio
 import sys
-from typing import Sequence, assert_never
+from collections.abc import Sequence
+from typing import assert_never, override
 
 from eventum.plugins.exceptions import PluginRuntimeError
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
-from eventum.plugins.output.plugins.stdout.config import \
-    StdoutOutputPluginConfig
+from eventum.plugins.output.plugins.stdout.config import (
+    StdoutOutputPluginConfig,
+)
 
 
 class StdoutOutputPlugin(
-    OutputPlugin[StdoutOutputPluginConfig, OutputPluginParams]
+    OutputPlugin[StdoutOutputPluginConfig, OutputPluginParams],
 ):
     """Output plugin for writing events to stdout."""
 
+    @override
     def __init__(
         self,
         config: StdoutOutputPluginConfig,
-        params: OutputPluginParams
+        params: OutputPluginParams,
     ) -> None:
         super().__init__(config, params)
 
@@ -44,13 +49,13 @@ class StdoutOutputPlugin(
         loop = asyncio.get_event_loop()
         w_transport, w_protocol = await loop.connect_write_pipe(
             protocol_factory=asyncio.streams.FlowControlMixin,
-            pipe=pipe
+            pipe=pipe,
         )
         self._writer = asyncio.StreamWriter(
             transport=w_transport,
             protocol=w_protocol,
             reader=None,
-            loop=loop
+            loop=loop,
         )
         self._flushing_task = self._loop.create_task(self._start_flushing())
 
@@ -62,15 +67,16 @@ class StdoutOutputPlugin(
         try:
             lines = [
                 f'{event}{self._config.separator}'.encode(
-                    encoding=self._config.encoding
+                    encoding=self._config.encoding,
                 )
                 for event in events
             ]
         except UnicodeEncodeError as e:
+            msg = 'Cannot encode events'
             raise PluginRuntimeError(
-                'Cannot encode events',
-                context=dict(self.instance_info, reason=str(e))
-            )
+                msg,
+                context=dict(self.instance_info, reason=str(e)),
+            ) from e
 
         self._writer.writelines(lines)
 

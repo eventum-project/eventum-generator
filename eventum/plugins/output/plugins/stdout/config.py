@@ -1,10 +1,12 @@
+"""Definition of stdout output plugin config."""
+
 import os
 from typing import Literal
 
 from pydantic import Field
 
+from eventum.plugins.fields import Encoding
 from eventum.plugins.output.base.config import OutputPluginConfig
-from eventum.plugins.output.fields import Encoding
 
 
 class StdoutOutputPluginConfig(OutputPluginConfig, frozen=True):
@@ -24,7 +26,9 @@ class StdoutOutputPluginConfig(OutputPluginConfig, frozen=True):
 
     separator : str, default=os.linesep
         Separator between events
+
     """
+
     flush_interval: float = Field(default=1, ge=0)
     stream: Literal['stdout', 'stderr'] = 'stdout'
     encoding: Encoding = Field(default='utf_8')
