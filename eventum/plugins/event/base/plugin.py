@@ -73,8 +73,9 @@ class EventPlugin(Plugin[ConfigT, ParamsT], register=False):
         """
         try:
             result = self._produce(params=params)
-        finally:
+        except:
             self._produce_failed += 1
+            raise
 
         self._produced += len(result)
         return result
