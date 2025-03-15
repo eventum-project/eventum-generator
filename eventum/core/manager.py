@@ -1,5 +1,7 @@
+"""Module for managing multiple generators."""
+
+from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
-from typing import Iterable
 
 import structlog
 
@@ -17,7 +19,8 @@ class GeneratorManager:
     """Manager of generators."""
 
     def __init__(self) -> None:
-        self._generators: dict[str, Generator] = dict()
+        """Initialize manager."""
+        self._generators: dict[str, Generator] = {}
 
     def add(self, params: GeneratorParameters) -> None:
         """Add new generator with provided parameters to list of managed
@@ -32,9 +35,11 @@ class GeneratorManager:
         ------
         ManagingError
             If generator with this id is already added
+
         """
         if params.id in self._generators:
-            raise ManagingError('Generator with this id is already added')
+            msg = 'Generator with this id is already added'
+            raise ManagingError(msg)
 
         self._generators[params.id] = Generator(params)
 
@@ -51,6 +56,7 @@ class GeneratorManager:
         ------
         ManagingError
             If generator is not found in list of managed generators
+
         """
         generator = self.get_generator(generator_id)
 
@@ -68,9 +74,10 @@ class GeneratorManager:
         ----------
         generator_ids : Iterable[str]
             ID of generators to remove
+
         """
         with ThreadPoolExecutor() as executor:
-            for id in generator_ids:
+            for id in generator_ids:  # noqa: A001
                 if id in self._generators:
                     generator = self._generators[id]
 
@@ -92,6 +99,7 @@ class GeneratorManager:
         ------
         ManagingError
             If generator is not found in list of managed generators
+
         """
         generator = self.get_generator(generator_id)
 
@@ -109,8 +117,9 @@ class GeneratorManager:
         ----------
         generator_ids : Iterable[str]
             ID of generators to start
+
         """
-        for id in generator_ids:
+        for id in generator_ids:  # noqa: A001
             if id in self._generators:
                 generator = self._generators[id]
 
@@ -129,6 +138,7 @@ class GeneratorManager:
         ------
         ManagingError
             If generator is not found in list of managed generators
+
         """
         generator = self.get_generator(generator_id)
 
@@ -146,9 +156,10 @@ class GeneratorManager:
         ----------
         generator_ids : Iterable[str]
             ID of generators to stop
+
         """
         with ThreadPoolExecutor() as executor:
-            for id in generator_ids:
+            for id in generator_ids:  # noqa: A001
                 if id in self._generators:
                     generator = self._generators[id]
 
@@ -162,9 +173,10 @@ class GeneratorManager:
         ----------
         generator_ids : Iterable[str]
             ID of generators to join
+
         """
         with ThreadPoolExecutor() as executor:
-            for id in generator_ids:
+            for id in generator_ids:  # noqa: A001
                 if id in self._generators:
                     generator = self._generators[id]
 
@@ -189,11 +201,13 @@ class GeneratorManager:
         ManagingError
             If no generator with provided ID found in managed
             generators
+
         """
         try:
             return self._generators[generator_id]
-        except KeyError:
-            raise ManagingError('No such generator')
+        except KeyError as e:
+            msg = f'No such generator "{e}"'
+            raise ManagingError(msg) from None
 
     @property
     def generator_ids(self) -> list[str]:
