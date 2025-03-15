@@ -155,11 +155,6 @@ class PluginParams(TypedDict):
         Base path for all relative paths used in plugin configurations,
         if it is not provided then current working directory is used
 
-    Notes
-    -----
-    Parameters for specific plugins must be not required for possibility
-    of generic creation of plugins of specific type
-
     """
 
     id: Required[int]
