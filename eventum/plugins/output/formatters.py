@@ -455,7 +455,7 @@ class EventumHttpInputFormatter(
         )
 
 
-def get_formatter_class(format: Format) -> type[Formatter[Any]]:  # noqa: A002
+def get_formatter_class(format: Format) -> type[Formatter[Any]]:
     """Return specific formatter class depending on format.
 
     Parameters
