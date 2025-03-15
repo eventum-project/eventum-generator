@@ -60,7 +60,9 @@ class RoutingHandler(logging.Handler):
         if lru_size < 1:
             msg = 'Parameter "lru_size" must be greater or equal to 1'
             raise ValueError(msg)
+
         super().__init__()
+
         self._attribute = attribute
         self._handler_factory = handler_factory
         self._default_handler = default_handler
