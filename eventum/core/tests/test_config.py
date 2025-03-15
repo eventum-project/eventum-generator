@@ -1,27 +1,17 @@
-import os
+from pathlib import Path
 
 import pytest
 
 from eventum.core.config import ConfigurationLoadError, load
 from eventum.core.models.config import GeneratorConfig
 
-BASE_PATH = os.path.abspath(os.path.dirname(__file__))
+BASE_PATH = Path(__file__).parent
 
-CONFIG_PATH = os.path.join(BASE_PATH, 'static', 'config.yml')
-BAD_TOKENS_CONFIG_PATH = os.path.join(
-    BASE_PATH,
-    'static',
-    'bad_tokens_config.yml'
-)
-INVALID_YAML_CONFIG_PATH = os.path.join(
-    BASE_PATH,
-    'static',
-    'invalid_yaml_config.yml'
-)
-INVALID_STRUCTURE_CONFIG_PATH = os.path.join(
-    BASE_PATH,
-    'static',
-    'invalid_structure_config.yml'
+CONFIG_PATH = BASE_PATH / 'static' / 'config.yml'
+BAD_TOKENS_CONFIG_PATH = BASE_PATH / 'static' / 'bad_tokens_config.yml'
+INVALID_YAML_CONFIG_PATH = BASE_PATH / 'static' / 'invalid_yaml_config.yml'
+INVALID_STRUCTURE_CONFIG_PATH = (
+    BASE_PATH / 'static' / 'invalid_structure_config.yml'
 )
 
 
@@ -34,7 +24,7 @@ def test_load():
 
 def test_invalid_path():
     with pytest.raises(ConfigurationLoadError):
-        load(path=os.path.join(BASE_PATH, 'cha cha cha'), params={})
+        load(path=BASE_PATH / 'cha cha cha', params={})
 
 
 def test_bad_tokens_structure():

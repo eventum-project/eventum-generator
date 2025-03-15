@@ -1,19 +1,23 @@
+"""Application configuration loader."""
+
 import re
-from typing import Any, Iterable
+from collections.abc import Iterable
+from pathlib import Path
+from typing import Any
 
 import yaml
 from jinja2 import BaseLoader, Environment, TemplateSyntaxError
 from pydantic import ValidationError
 
 from eventum.core.models.config import GeneratorConfig
+from eventum.exceptions import ContextualError
 from eventum.security.manage import get_secret
-from eventum.utils.exceptions import ContextualException
 from eventum.utils.validation_prettier import prettify_validation_errors
 
 TOKEN_PATTERN = re.compile(pattern=r'\${\s*?(\S*?)\s*?}')
 
 
-class ConfigurationLoadError(ContextualException):
+class ConfigurationLoadError(ContextualError):
     """Error during loading generator configuration."""
 
 
@@ -37,6 +41,7 @@ def _extract_tokens(content: str, prefix: str | None = None) -> list[str]:
     -------
     list[str]
         List of extracted tokens
+
     """
     matches: list[str] = re.findall(pattern=TOKEN_PATTERN, string=content)
 
@@ -50,7 +55,7 @@ def _extract_tokens(content: str, prefix: str | None = None) -> list[str]:
     for match in matches:
         parts = match.split('.', maxsplit=1)
 
-        if len(parts) == 2 and parts[0] == prefix:
+        if len(parts) == 2 and parts[0] == prefix:  # noqa: PLR2004
             tokens.append(match)
 
     return tokens
@@ -68,6 +73,7 @@ def extract_params(content: str) -> list[str]:
     -------
     list[str]
         List of extracted param names
+
     """
     tokens = _extract_tokens(content, prefix='params')
 
@@ -94,6 +100,7 @@ def extract_secrets(content: str) -> list[str]:
     -------
     list[str]
         List of extracted secret names
+
     """
     tokens = _extract_tokens(content, prefix='secrets')
 
@@ -110,7 +117,7 @@ def extract_secrets(content: str) -> list[str]:
 
 def _prepare_params(
     used_params: Iterable[str],
-    provided_params: dict[str, Any]
+    provided_params: dict[str, Any],
 ) -> dict[str, Any]:
     """Prepare params for config substitution.
 
@@ -131,16 +138,18 @@ def _prepare_params(
     ------
     ValueError
         If some parameters are missing
+
     """
     used_params = set(used_params)
-    rendering_params: dict[str, Any] = dict()
+    rendering_params: dict[str, Any] = {}
 
     if used_params:
         all_params = set(provided_params.keys())
 
         if not all_params.issuperset(used_params):
             missing_params = used_params - all_params
-            raise ValueError(f'Parameters {missing_params} are missing')
+            msg = f'Parameters {missing_params} are missing'
+            raise ValueError(msg)
 
         for param in used_params:
             rendering_params[param] = provided_params[param]
@@ -165,18 +174,18 @@ def _prepare_secrets(used_secrets: Iterable[str]) -> dict[str, Any]:
     ------
     ValueError
         If some secrets are missing or cannot be read from keyring
+
     """
     used_secrets = set(used_secrets)
-    rendering_secrets: dict[str, Any] = dict()
+    rendering_secrets: dict[str, Any] = {}
 
     if used_secrets:
         for secret in used_secrets:
             try:
                 value = get_secret(secret)
-            except (EnvironmentError, ValueError) as e:
-                raise ValueError(
-                    f'Cannot obtain secret "{secret}": {e}'
-                )
+            except (OSError, ValueError) as e:
+                msg = f'Cannot obtain secret "{secret}": {e}'
+                raise ValueError(msg) from None
 
             rendering_secrets[secret] = value
 
@@ -186,7 +195,7 @@ def _prepare_secrets(used_secrets: Iterable[str]) -> dict[str, Any]:
 def _substitute_tokens(
     params: dict[str, Any],
     secrets: dict[str, Any],
-    content: str
+    content: str,
 ) -> str:
     """Substitute tokens to content of configuration.
 
@@ -210,34 +219,36 @@ def _substitute_tokens(
     ------
     TokenSubstitutionError
         If any error occurs during tokens substitution
+
     """
     rendering_kwargs = {
         'params': params,
-        'secrets': secrets
+        'secrets': secrets,
     }
     env = Environment(
         loader=BaseLoader(),
         variable_start_string='${',
-        variable_end_string='}'
+        variable_end_string='}',
     )
     try:
         template = env.from_string(content)
         return template.render(rendering_kwargs)
     except TemplateSyntaxError as e:
-        raise TokenSubstitutionError(
+        msg = (
             f'Tokens substitution structure is malformed: {e} '
             f'(line {e.lineno})'
         )
+        raise TokenSubstitutionError(msg) from e
     except Exception as e:
-        raise TokenSubstitutionError(str(e))
+        raise TokenSubstitutionError(str(e)) from e
 
 
-def load(path: str, params: dict[str, Any]) -> GeneratorConfig:
+def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
     """Load generator configuration from the file on specified path.
 
     Parameters
     ----------
-    path : str
+    path : Path
         Configuration path
 
     params : dict[str, Any]
@@ -247,70 +258,77 @@ def load(path: str, params: dict[str, Any]) -> GeneratorConfig:
     -------
     GeneratorConfig
         Loaded generator configuration
+
     """
     try:
-        with open(path) as f:
+        with path.open() as f:
             content = f.read()
     except OSError as e:
+        msg = 'Failed to read configuration file'
         raise ConfigurationLoadError(
-            'Failed to read configuration file',
-            context=dict(reason=str(e), file_path=path)
-        )
+            msg,
+            context={'reason': str(e), 'file_path': path},
+        ) from None
 
     try:
         rendering_params = _prepare_params(
             used_params=extract_params(content),
-            provided_params=params
+            provided_params=params,
         )
     except ValueError as e:
+        msg = 'Failed to substitute params to configuration'
         raise ConfigurationLoadError(
-            'Failed to substitute params to configuration',
-            context=dict(reason=str(e), file_path=path)
-        )
+            msg,
+            context={'reason': str(e), 'file_path': path},
+        ) from None
 
     try:
         rendering_secrets = _prepare_secrets(
-            used_secrets=extract_secrets(content)
+            used_secrets=extract_secrets(content),
         )
     except ValueError as e:
+        msg = 'Failed to substitute secrets to configuration'
         raise ConfigurationLoadError(
-            'Failed to substitute secrets to configuration',
-            context=dict(reason=str(e), file_path=path)
-        )
+            msg,
+            context={'reason': str(e), 'file_path': path},
+        ) from None
 
     try:
         substituted_content = _substitute_tokens(
             params=rendering_params,
             secrets=rendering_secrets,
-            content=content
+            content=content,
         )
     except TokenSubstitutionError as e:
+        msg = 'Failed to substitute tokens to configuration'
         raise ConfigurationLoadError(
-            'Failed to substitute tokens to configuration',
-            context=dict(
-                reason=str(e),
-                file_path=path
-            )
-        )
+            msg,
+            context={
+                'reason': str(e),
+                'file_path': path,
+            },
+        ) from None
 
     try:
         config_data = yaml.load(substituted_content, yaml.SafeLoader)
     except yaml.error.YAMLError as e:
+        msg = 'Failed to parse configuration YAML content'
         raise ConfigurationLoadError(
-            'Failed to parse configuration YAML content',
-            context=dict(
-                reason=str(e),
-                file_path=path
-            )
-        )
+            msg,
+            context={
+                'reason': str(e),
+                'file_path': path,
+            },
+        ) from None
 
     try:
         return GeneratorConfig.model_validate(config_data)
     except ValidationError as e:
+        msg = 'Invalid configuration'
         raise ConfigurationLoadError(
-            'Invalid configuration',
-            context=dict(
-                reason=prettify_validation_errors(e.errors()),
-                file_path=path
-            )
-        )
+            msg,
+            context={
+                'reason': prettify_validation_errors(e.errors()),
+                'file_path': path,
+            },
+        ) from None
