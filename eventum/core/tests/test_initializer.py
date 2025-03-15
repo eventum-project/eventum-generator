@@ -16,21 +16,19 @@ TEMPLATE_REL_PATH = os.path.relpath(TEMPLATE_PATH, start=os.getcwd())
 def test_initializer():
     input_config = [
         {'cron': {'expression': '* * * * *', 'count': 1}},
-        {'static': {'count': 100}}
+        {'static': {'count': 100}},
     ]
     event_config = {
         'jinja': {
             'params': {},
             'samples': {},
             'mode': 'all',
-            'templates': [
-                {'test': {'template': TEMPLATE_REL_PATH}}
-            ]
+            'templates': [{'test': {'template': TEMPLATE_REL_PATH}}],
         }
     }
     output_config = [
         {'stdout': {'stream': 'stderr'}},
-        {'file': {'path': '/tmp/out.log'}}
+        {'file': {'path': '/tmp/out.log'}},
     ]
 
     plugins = init_plugins(
@@ -38,10 +36,8 @@ def test_initializer():
         event=event_config,
         output=output_config,
         params=GeneratorParameters(
-            id='test',
-            time_mode='sample',
-            path='/tmp/test.yml'
-        )
+            id='test', time_mode='sample', path='/tmp/test.yml'
+        ),
     )
 
     assert isinstance(plugins.input[0], CronInputPlugin)

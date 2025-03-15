@@ -1,23 +1,34 @@
+"""Module that provides loading, initialization and configuring
+plugins.
+"""
+
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, Literal, assert_never, overload
+from typing import Literal, assert_never, overload
 
 from pydantic import ValidationError
 from pytz import timezone
 
 from eventum.core.models.config import PluginConfig, PluginConfigFields
 from eventum.core.models.parameters.generator import GeneratorParameters
+from eventum.exceptions import ContextualError
 from eventum.plugins.event.base.plugin import EventPlugin, EventPluginParams
-from eventum.plugins.exceptions import (PluginConfigurationError,
-                                        PluginLoadError, PluginNotFoundError)
+from eventum.plugins.exceptions import (
+    PluginConfigurationError,
+    PluginLoadError,
+    PluginNotFoundError,
+)
 from eventum.plugins.input.base.plugin import InputPlugin, InputPluginParams
-from eventum.plugins.loader import (load_event_plugin, load_input_plugin,
-                                    load_output_plugin)
+from eventum.plugins.loader import (
+    load_event_plugin,
+    load_input_plugin,
+    load_output_plugin,
+)
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
-from eventum.utils.exceptions import ContextualException
 from eventum.utils.validation_prettier import prettify_validation_errors
 
 
-class InitializationError(ContextualException):
+class InitializationError(ContextualError):
     """Error during initialization."""
 
 
@@ -35,7 +46,9 @@ class InitializedPlugins:
 
     output : list[OutputPlugin]
         List of initialized output plugins
+
     """
+
     input: list[InputPlugin]
     event: EventPlugin
     output: list[OutputPlugin]
@@ -46,9 +59,8 @@ def init_plugin(
     name: str,
     type: Literal['input'],
     config: PluginConfigFields,
-    params: InputPluginParams
-) -> InputPlugin:
-    ...
+    params: InputPluginParams,
+) -> InputPlugin: ...
 
 
 @overload
@@ -56,9 +68,8 @@ def init_plugin(
     name: str,
     type: Literal['event'],
     config: PluginConfigFields,
-    params: EventPluginParams
-) -> EventPlugin:
-    ...
+    params: EventPluginParams,
+) -> EventPlugin: ...
 
 
 @overload
@@ -66,16 +77,15 @@ def init_plugin(
     name: str,
     type: Literal['output'],
     config: PluginConfigFields,
-    params: OutputPluginParams
-) -> OutputPlugin:
-    ...
+    params: OutputPluginParams,
+) -> OutputPlugin: ...
 
 
 def init_plugin(
     name: str,
-    type: Literal['input', 'event', 'output'],
+    type: Literal['input', 'event', 'output'],  # noqa: A002
     config: PluginConfigFields,
-    params: InputPluginParams | EventPluginParams | OutputPluginParams
+    params: InputPluginParams | EventPluginParams | OutputPluginParams,
 ) -> InputPlugin | EventPlugin | OutputPlugin:
     """Initialize plugin.
 
@@ -102,6 +112,7 @@ def init_plugin(
     ------
     InitializationError
         If any error occurs during initializing
+
     """
     try:
         match type:
@@ -114,55 +125,59 @@ def init_plugin(
             case t:
                 assert_never(t)
     except PluginNotFoundError as e:
+        msg = 'Plugin is not found'
         raise InitializationError(
-            'Plugin is not found',
-            context=(e.context | dict(plugin_type=type))
-        )
+            msg,
+            context=(e.context | {'plugin_type': type}),
+        ) from None
     except PluginLoadError as e:
+        msg = 'Failed to load plugin'
         raise InitializationError(
-            'Failed to load plugin',
-            context=(e.context | dict(plugin_type=type))
-        )
+            msg,
+            context=(e.context | {'plugin_type': type}),
+        ) from e
 
-    PluginCls = plugin_info.cls
-    ConfigCls = plugin_info.config_cls
+    PluginCls = plugin_info.cls  # noqa: N806
+    ConfigCls = plugin_info.config_cls  # noqa: N806
 
     try:
         plugin_config = ConfigCls.model_validate(  # type: ignore[attr-defined]
-            config
+            config,
         )
     except ValidationError as e:
+        msg = 'Invalid configuration for plugin'
         raise InitializationError(
-            'Invalid configuration for plugin',
-            context=dict(
-                plugin_name=name,
-                plugin_type=type,
-                plugin_id=params['id'],
-                reason=prettify_validation_errors(e.errors())
-            )
-        )
+            msg,
+            context={
+                'plugin_name': name,
+                'plugin_type': type,
+                'plugin_id': params['id'],
+                'reason': prettify_validation_errors(e.errors()),
+            },
+        ) from None
 
     try:
         return PluginCls(config=plugin_config, params=params)
     except PluginConfigurationError as e:
-        raise InitializationError(str(e), context=e.context)
+        raise InitializationError(str(e), context=e.context) from None
     except Exception as e:
+        msg = 'Unexpected error during plugin initialization'
         raise InitializationError(
-            'Unexpected error during plugin initialization',
-            context=dict(
-                plugin_name=name,
-                plugin_type=type,
-                plugin_id=params['id'],
-                reason=str(e)
-            )
-        )
+            msg,
+            context={
+                'plugin_name': name,
+                'plugin_type': type,
+                'plugin_id': params['id'],
+                'reason': str(e),
+            },
+        ) from e
 
 
 def init_plugins(
-    input: Iterable[PluginConfig],
+    input: Iterable[PluginConfig],  # noqa: A002
     event: PluginConfig,
     output: Iterable[PluginConfig],
-    params: GeneratorParameters
+    params: GeneratorParameters,
 ) -> InitializedPlugins:
     """Initialize plugins.
 
@@ -190,6 +205,7 @@ def init_plugins(
     ------
     InitializationError
         If any error occurs during initializing
+
     """
     input_plugins: list[InputPlugin] = []
     for i, conf in enumerate(input, start=1):
@@ -199,8 +215,8 @@ def init_plugins(
                 name=plugin_name,
                 type='input',
                 config=plugin_conf,
-                params={'id': i, 'timezone': timezone(params.timezone)}
-            )
+                params={'id': i, 'timezone': timezone(params.timezone)},
+            ),
         )
 
     plugin_name, plugin_conf = next(iter(event.items()))
@@ -208,7 +224,7 @@ def init_plugins(
         name=plugin_name,
         type='event',
         config=plugin_conf,
-        params={'id': 1}
+        params={'id': 1},
     )
 
     output_plugins: list[OutputPlugin] = []
@@ -219,12 +235,12 @@ def init_plugins(
                 name=plugin_name,
                 type='output',
                 config=plugin_conf,
-                params={'id': i}
-            )
+                params={'id': i},
+            ),
         )
 
     return InitializedPlugins(
         input=input_plugins,
         event=event_plugin,
-        output=output_plugins
+        output=output_plugins,
     )
