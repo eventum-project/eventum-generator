@@ -52,6 +52,7 @@ class OpensearchOutputPlugin(
 
         self._client: httpx.AsyncClient
 
+    @override
     async def _open(self) -> None:
         self._client = create_client(
             ssl_context=self._ssl_context,
@@ -68,6 +69,7 @@ class OpensearchOutputPlugin(
             ),
         )
 
+    @override
     async def _close(self) -> None:
         await self._client.aclose()
 
@@ -297,6 +299,7 @@ class OpensearchOutputPlugin(
 
         return 1
 
+    @override
     async def _write(self, events: Sequence[str]) -> int:
         if len(events) > 1:
             return await self._post_bulk(events)

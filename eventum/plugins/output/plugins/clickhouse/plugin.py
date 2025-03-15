@@ -41,6 +41,7 @@ class ClickhouseOutputPlugin(
 
         self._client: AsyncClient
 
+    @override
     async def _open(self) -> None:
         try:
             self._client = await get_async_client(
@@ -80,9 +81,11 @@ class ClickhouseOutputPlugin(
 
         await self._logger.ainfo('ClickHouse client is initialized')
 
+    @override
     async def _close(self) -> None:
         await self._client.close()
 
+    @override
     async def _write(self, events: Sequence[str]) -> int:
         results = await asyncio.gather(
             *[

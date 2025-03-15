@@ -118,6 +118,7 @@ class ScriptEventPlugin(
 
         return function
 
+    @override
     def _produce(self, params: ProduceParams) -> list[str]:
         try:
             result = self._function(params)

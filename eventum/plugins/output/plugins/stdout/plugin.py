@@ -37,6 +37,7 @@ class StdoutOutputPlugin(
             await asyncio.sleep(self._config.flush_interval)
             await self._writer.drain()
 
+    @override
     async def _open(self) -> None:
         match self._config.stream:
             case 'stdout':
@@ -59,10 +60,12 @@ class StdoutOutputPlugin(
         )
         self._flushing_task = self._loop.create_task(self._start_flushing())
 
+    @override
     async def _close(self) -> None:
         self._flushing_task.cancel()
         await self._writer.drain()
 
+    @override
     async def _write(self, events: Sequence[str]) -> int:
         try:
             lines = [

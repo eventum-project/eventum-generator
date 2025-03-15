@@ -241,6 +241,7 @@ class ReplayEventPlugin(
 
         return message[:match_start] + string + message[match_end:]
 
+    @override
     def _produce(self, params: ProduceParams) -> list[str]:
         try:
             line = next(self._lines)

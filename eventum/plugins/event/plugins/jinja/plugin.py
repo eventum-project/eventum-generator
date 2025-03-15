@@ -301,6 +301,7 @@ class JinjaEventPlugin(
                 context=dict(self.instance_info, reason=str(e)),
             ) from None
 
+    @override
     def _produce(self, params: ProduceParams) -> list[str]:
         self._event_context['timestamp'] = params['timestamp']
         self._event_context['tags'] = params['tags']

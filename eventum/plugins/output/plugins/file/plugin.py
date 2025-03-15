@@ -148,6 +148,7 @@ class FileOutputPlugin(
         )
         return f
 
+    @override
     async def _open(self) -> None:
         try:
             self._file = await self._open_file()
@@ -175,6 +176,7 @@ class FileOutputPlugin(
         self._flushing_task = self._loop.create_task(self._start_flushing())
         self._cleanup_task = self._loop.create_task(self._schedule_cleanup())
 
+    @override
     async def _close(self) -> None:
         self._flushing_task.cancel()
         self._cleanup_task.cancel()
@@ -184,6 +186,7 @@ class FileOutputPlugin(
                 await self._file.flush()
                 await self._file.close()
 
+    @override
     async def _write(self, events: Sequence[str]) -> int:
         async with self._cleanup_lock:
             if not await self._is_operable():

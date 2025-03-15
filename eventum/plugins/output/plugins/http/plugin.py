@@ -47,6 +47,7 @@ class HttpOutputPlugin(
 
         self._client: httpx.AsyncClient
 
+    @override
     async def _open(self) -> None:
         self._client = create_client(
             ssl_context=self._ssl_context,
@@ -60,6 +61,7 @@ class HttpOutputPlugin(
             ),
         )
 
+    @override
     async def _close(self) -> None:
         await self._client.aclose()
 
@@ -109,6 +111,7 @@ class HttpOutputPlugin(
                 ),
             )
 
+    @override
     async def _write(self, events: Sequence[str]) -> int:
         results = await asyncio.gather(
             *[
