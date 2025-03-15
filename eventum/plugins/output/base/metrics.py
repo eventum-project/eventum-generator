@@ -1,3 +1,5 @@
+"""Definition of base output plugin metrics."""
+
 from eventum.plugins.base.metrics import PluginMetrics
 
 
@@ -14,7 +16,9 @@ class OutputPluginMetrics(PluginMetrics):
 
     written : int
         Number of written events
+
     """
+
     format_failed: int
     write_failed: int
     written: int

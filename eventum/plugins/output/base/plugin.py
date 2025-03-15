@@ -1,17 +1,25 @@
+"""Definition of base output plugin."""
+
 import asyncio
 from abc import abstractmethod
-from typing import Any, Sequence, TypeVar
+from collections.abc import Sequence
+from typing import Any, TypeVar, override
 
 from pydantic import RootModel
 
 from eventum.core.models.metrics import OutputPluginMetrics
 from eventum.plugins.base.plugin import Plugin, PluginParams
-from eventum.plugins.exceptions import (PluginConfigurationError,
-                                        PluginRuntimeError)
+from eventum.plugins.exceptions import (
+    PluginConfigurationError,
+    PluginRuntimeError,
+)
 from eventum.plugins.output.base.config import OutputPluginConfig
 from eventum.plugins.output.fields import FormatterConfigT
-from eventum.plugins.output.formatters import (Formatter, FormattingResult,
-                                               get_formatter_class)
+from eventum.plugins.output.formatters import (
+    Formatter,
+    FormattingResult,
+    get_formatter_class,
+)
 
 
 class OutputPluginParams(PluginParams):
@@ -20,28 +28,15 @@ class OutputPluginParams(PluginParams):
 
 ConfigT = TypeVar(
     'ConfigT',
-    bound=(OutputPluginConfig | RootModel[OutputPluginConfig])
+    bound=(OutputPluginConfig | RootModel[OutputPluginConfig]),
 )
 ParamsT = TypeVar('ParamsT', bound=OutputPluginParams)
 
 
 class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
-    """Base class for all output plugins.
+    """Base class for all output plugins."""
 
-    Parameters
-    ----------
-    config : ConfigT
-        Configuration for the plugin
-
-    params : ParamsT
-        Parameters for the plugin (see `OutputPluginParams`)
-
-    Raises
-    ------
-    PluginConfigurationError
-        If any error occurs during initializing plugin
-    """
-
+    @override
     def __init__(self, config: ConfigT, params: ParamsT) -> None:
         super().__init__(config, params)
 
@@ -68,19 +63,20 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         ------
         PluginConfigurationError
             If config is of invalid type
+
         """
         if isinstance(self._config, OutputPluginConfig):
             return self._config.formatter
-        elif isinstance(self._config, RootModel):
+        if isinstance(self._config, RootModel):
             return self._config.root.formatter
-        else:
-            raise PluginConfigurationError(
-                'Invalid config type',
-                context=dict(
-                    self.instance_info,
-                    plugin_config_class=type(self._config)
-                )
-            )
+        msg = 'Invalid config type'
+        raise PluginConfigurationError(
+            msg,
+            context=dict(
+                self.instance_info,
+                plugin_config_class=type(self._config),
+            ),
+        )
 
     def _get_formatter(self, config: FormatterConfigT) -> Formatter[Any]:
         """Get formatter corresponding to config.
@@ -99,15 +95,17 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         ------
         PluginConfigurationError
             If formatter configuration fails
+
         """
         try:
-            FormatterCls = get_formatter_class(config.format)
+            FormatterCls = get_formatter_class(config.format)  # noqa: N806
             return FormatterCls(config)
         except ValueError as e:
+            msg = 'Failed to configure formatter'
             raise PluginConfigurationError(
-                'Failed to configure formatter',
-                context=dict(self.instance_info, reason=str(e))
-            )
+                msg,
+                context=dict(self.instance_info, reason=str(e)),
+            ) from None
 
     async def open(self) -> None:
         """Open plugin for writing.
@@ -120,14 +118,9 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         Notes
         -----
         Metrics are reset on successful opening
+
         """
-        try:
-            self._loop = asyncio.get_running_loop()
-        except RuntimeError as e:
-            raise PluginRuntimeError(
-                str(e).capitalize(),
-                context=dict(self.instance_info)
-            )
+        self._loop = asyncio.get_running_loop()
 
         if not self._is_opened:
             await self._open()
@@ -164,11 +157,11 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         Notes
         -----
         All errors from formatting result are logged
-        """
 
+        """
         formatting_result = await self._loop.run_in_executor(
             executor=None,
-            func=lambda: self._formatter.format_events(events)
+            func=lambda: self._formatter.format_events(events),
         )
 
         if formatting_result.errors:
@@ -177,7 +170,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
             for error in formatting_result.errors:
                 context = {
                     'format': self._formatter_config.format,
-                    'reason': str(error)
+                    'reason': str(error),
                 }
 
                 if error.original_event is not None:
@@ -189,7 +182,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
                 *[
                     self._logger.aerror('Failed to format event', **context)
                     for context in contexts
-                ]
+                ],
             )
 
         return formatting_result
@@ -215,30 +208,30 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         Notes
         -----
         Number of successfully written events based on formatted events
+
         """
         if not events:
             return 0
 
         if not self._is_opened:
+            msg = 'Output plugin is not opened for writing'
             raise PluginRuntimeError(
-                'Output plugin is not opened for writing',
-                context=dict(self.instance_info)
+                msg,
+                context=dict(self.instance_info),
             )
 
         try:
             formatting_result = await self._format_events(events)
-        except Exception as e:
+        finally:
             self._format_failed += len(events)
-            raise e
 
         if not formatting_result.events:
             return 0
 
         try:
             written = await self._write(formatting_result.events)
-        except Exception as e:
+        finally:
             self._write_failed += formatting_result.formatted_count
-            raise e
 
         # handle possible events aggregation
         if (
@@ -258,6 +251,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         Notes
         -----
         See `open` method for more info
+
         """
         ...
 
@@ -269,6 +263,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         Notes
         -----
         See `close` method for more info
+
         """
         ...
 
@@ -279,6 +274,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         Notes
         -----
         See `write` method for more info
+
         """
         ...
 
@@ -297,11 +293,12 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         """Number of unsuccessfully formatted events."""
         return self._format_failed
 
+    @override
     def get_metrics(self) -> OutputPluginMetrics:
         metrics = super().get_metrics()
         return OutputPluginMetrics(
             **metrics,
             written=self.written,
             format_failed=self.format_failed,
-            write_failed=self.write_failed
+            write_failed=self.write_failed,
         )
