@@ -1,6 +1,8 @@
-from typing import Literal, TypeAlias
+"""Field definitions used in plugin config."""
 
-ClickhouseInputFormat: TypeAlias = Literal[
+from typing import Literal
+
+type ClickhouseInputFormat = Literal[
     'TabSeparated',
     'TabSeparatedRaw',
     'TabSeparatedWithNames',

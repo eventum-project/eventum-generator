@@ -1,18 +1,29 @@
-import os
-from typing import Literal
+"""Definition of clickhouse output plugin config."""
 
-from pydantic import (ClickHouseDsn, Field, HttpUrl, field_validator,
-                      model_validator)
+from pathlib import Path
+from typing import Literal, Self
+
+from pydantic import (
+    ClickHouseDsn,
+    Field,
+    HttpUrl,
+    field_validator,
+    model_validator,
+)
 
 from eventum.plugins.output.base.config import OutputPluginConfig
-from eventum.plugins.output.fields import (Format, FormatterConfigT,
-                                           JsonFormatterConfig)
-from eventum.plugins.output.plugins.clickhouse.fields import \
-    ClickhouseInputFormat
+from eventum.plugins.output.fields import (
+    Format,
+    FormatterConfigT,
+    JsonFormatterConfig,
+)
+from eventum.plugins.output.plugins.clickhouse.fields import (
+    ClickhouseInputFormat,
+)
 
 
 class ClickhouseOutputPluginConfig(OutputPluginConfig, frozen=True):
-    """Configuration for `clickhouse` output plugin.
+    r"""Configuration for `clickhouse` output plugin.
 
     Attributes
     ----------
@@ -55,13 +66,13 @@ class ClickhouseOutputPluginConfig(OutputPluginConfig, frozen=True):
     verify : bool, default=False
         Whether to verify SSL certificate of ClickHouse server
 
-    ca_cert : str | None, default=None
+    ca_cert : Path | None, default=None
         Absolute path to CA certificate
 
-    client_cert : str | None, default=None
+    client_cert : Path | None, default=None
         Absolute path to client certificate
 
-    client_cert_key : str | None, default=None
+    client_cert_key : Path | None, default=None
         Absolute path to client certificate key
 
     server_host_name : str | None, default=None
@@ -82,16 +93,15 @@ class ClickhouseOutputPluginConfig(OutputPluginConfig, frozen=True):
         ClickHouse input format for inserting, documentation:
         https://clickhouse.com/docs/en/interfaces/formats
 
-    separator : str, default='\\n'
-        Separator between events for constructing request body
-
     Notes
     -----
     To see full documentation of parameters:
     https://clickhouse.com/docs/en/integrations/python#connection-arguments
 
     By default one line JSON formatter is used for events
+
     """
+
     host: str = Field(min_length=1)
     port: int = Field(default=8123, ge=1)
     protocol: Literal['http', 'https'] = Field(default='http')
@@ -104,44 +114,44 @@ class ClickhouseOutputPluginConfig(OutputPluginConfig, frozen=True):
     request_timeout: int = Field(default=300, ge=1)
     client_name: str | None = Field(default=None, min_length=1)
     verify: bool = Field(default=True)
-    ca_cert: str | None = Field(default=None, min_length=1)
-    client_cert: str | None = Field(default=None, min_length=1)
-    client_cert_key: str | None = Field(default=None, min_length=1)
+    ca_cert: Path | None = Field(default=None, min_length=1)
+    client_cert: Path | None = Field(default=None, min_length=1)
+    client_cert_key: Path | None = Field(default=None, min_length=1)
     server_host_name: str | None = Field(default=None, min_length=1)
     tls_mode: Literal['proxy', 'strict', 'mutual'] | None = Field(default=None)
     proxy_url: HttpUrl | None = Field(default=None)
     input_format: ClickhouseInputFormat = Field(
-        default='JSONEachRow',
-        validate_default=True
+        default='JSON',
+        validate_default=True,
     )
-    separator: str = Field(default='\n')
     formatter: FormatterConfigT = Field(
         default_factory=lambda: JsonFormatterConfig(
-            format=Format.JSON,
-            indent=0
+            format=Format.JSON_BATCH,
+            indent=0,
         ),
         validate_default=True,
-        discriminator='format'
+        discriminator='format',
     )
 
     @field_validator('ca_cert', 'client_cert', 'client_cert_key')
-    def validate_ca_cert(cls, v: str | None):
-        if not isinstance(v, str):
+    @classmethod
+    def validate_ca_cert(cls, v: Path | None) -> Path | None:  # noqa: D102
+        if v is None:
             return v
 
-        if not os.path.isabs(v):
-            raise ValueError('Path must be absolute')
+        if not v.is_absolute():
+            msg = 'Path must be absolute'
+            raise ValueError(msg)
 
         return v
 
     @model_validator(mode='after')
-    def validate_client_cert(self):
+    def validate_client_cert(self) -> Self:  # noqa: D102
         if self.client_cert is None and self.client_cert_key is None:
             return self
 
         if self.client_cert is None or self.client_cert_key is None:
-            raise ValueError(
-                'Client certificate and key must be provided together'
-            )
+            msg = 'Client certificate and key must be provided together'
+            raise ValueError(msg)
 
         return self
