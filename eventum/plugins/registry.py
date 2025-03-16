@@ -69,7 +69,8 @@ class PluginsRegistry:
         Parameters
         ----------
         package : ModuleType
-            Parent package with plugins of specific type
+            Parent package of plugin package with plugins of specific
+            type
 
         name : str
             Plugin name
