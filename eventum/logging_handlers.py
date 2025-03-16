@@ -34,7 +34,9 @@ class RoutingHandler(logging.Handler):
             single argument
 
         default_handler : logging.Handler
-            Handler that is used when log record attribute is missing
+            Handler that is used when log record attribute is missing,
+            unhashable or any error occurs during usage of created
+            handler
 
         formatter: logging.Formatter
             Formatter that will be used for created handlers
