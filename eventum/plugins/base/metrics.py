@@ -14,11 +14,11 @@ class PluginMetrics(TypedDict):
     id : int
         ID of the plugin
 
-    configuration : dict
-        Model-dumped plugin configuration
+    type : str
+        Type of the plugin
 
     """
 
-    name: str
     id: int
-    configuration: dict
+    name: str
+    type: str
