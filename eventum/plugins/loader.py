@@ -57,7 +57,7 @@ def _construct_plugin_module_name(package: ModuleType, name: str) -> str:
     Parameters
     ----------
     package : ModuleType
-        Parent package with plugins of specific type
+        Parent package of plugin package with plugins of specific type
 
     name : str
         Name of the plugin
@@ -77,7 +77,7 @@ def _invoke_plugin(package: ModuleType, name: str) -> None:
     Parameters
     ----------
     package : ModuleType
-        Parent package with plugins of specific type
+        Parent package of plugin package with plugins of specific type
 
     name : str
         Name of the plugin
@@ -115,7 +115,7 @@ def _load_plugin(package: ModuleType, name: str) -> PluginInfo:
     Parameters
     ----------
     package : ModuleType
-        Parent package with plugins of specific type
+        Parent package of plugin package with plugins of specific type
 
     name : str
         Name of the plugin
@@ -259,3 +259,10 @@ def get_output_plugin_names() -> list[str]:
 
     """
     return _get_subpackage_names(output_plugins)
+
+
+def clear_cache() -> None:
+    """Clear cache of functions that load plugins."""
+    load_input_plugin.cache_clear()
+    load_event_plugin.cache_clear()
+    load_output_plugin.cache_clear()
