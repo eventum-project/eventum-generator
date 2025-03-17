@@ -16,8 +16,8 @@ type IdentifiedTimestamps = Annotated[
 
 class SupportsIdentifiedTimestampsSizedIterate(Protocol):
     """Protocol for iterating over identified timestamps. Defines an
-    interface for objects capable of yielding timestamp arrays with
-    associated plugin identifiers of specified size.
+    interface for objects capable of yielding timestamp arrays of
+    specified size with associated plugin identifiers.
     """
 
     def iterate(
