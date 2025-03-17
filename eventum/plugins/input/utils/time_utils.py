@@ -47,7 +47,8 @@ def timedelta64_to_seconds(timedelta: timedelta64) -> float:
 
 def to_naive(timestamp: datetime, timezone: BaseTzInfo) -> datetime:
     """Convert datetime to naive format for specified timezone. If
-    datetime object is naive then it's returned without any conversion.
+    datetime object is naive then current zone info is used for
+    conversion.
 
     Parameters
     ----------
@@ -55,7 +56,7 @@ def to_naive(timestamp: datetime, timezone: BaseTzInfo) -> datetime:
         Timestamp to convert
 
     timezone: BaseTzInfo
-        Timezone for localization resulting datetime value
+        Timezone for localization of datetime value
 
     Returns
     -------
@@ -63,11 +64,7 @@ def to_naive(timestamp: datetime, timezone: BaseTzInfo) -> datetime:
         Naive datetime object
 
     """
-    return (
-        timestamp.astimezone(timezone).replace(tzinfo=None)
-        if timestamp.tzinfo
-        else timestamp
-    )
+    return timestamp.astimezone(timezone).replace(tzinfo=None)
 
 
 def skip_periods(
