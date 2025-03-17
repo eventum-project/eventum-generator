@@ -107,7 +107,7 @@ class Buffer:
 
         """
         item = self._buffer.popleft()
-        value = cast(datetime64, item.value)
+        value = cast('datetime64', item.value)
 
         return full(
             shape=1,
@@ -130,7 +130,7 @@ class Buffer:
 
         """
         item = self._buffer[0]
-        value = cast(datetime64, item.value)
+        value = cast('datetime64', item.value)
 
         if required >= item.multiply:
             self._buffer.popleft()
@@ -160,7 +160,7 @@ class Buffer:
 
         """
         item = self._buffer[0]
-        value = cast(NDArray[datetime64], item.value)
+        value = cast('NDArray[datetime64]', item.value)
 
         if required >= value.size:
             self._buffer.popleft()
