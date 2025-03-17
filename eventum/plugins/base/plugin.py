@@ -5,7 +5,8 @@ import inspect
 from abc import ABC
 from collections.abc import Iterator
 from contextlib import contextmanager
-from copy import deepcopy
+from copy import copy
+from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
 from typing import (
@@ -33,7 +34,8 @@ from eventum.plugins.registry import PluginInfo, PluginsRegistry
 logger = structlog.stdlib.get_logger()
 
 
-class _PluginRegistrationInfo(TypedDict):
+@dataclass(frozen=True)
+class _PluginRegistrationInfo:
     """Information about plugin for registration.
 
     Attributes
@@ -90,18 +92,18 @@ def _inspect_plugin(plugin_cls: type) -> _PluginRegistrationInfo:
 
     Raises
     ------
-    TypeError
+    ValueError
         If provided class cannot be inspected
 
     """
     class_module = inspect.getmodule(plugin_cls)
     if class_module is None:
-        msg = 'Cannot get module of plugin class definition'
-        raise TypeError(msg)
+        msg = 'Cannot found the module of plugin class definition'
+        raise ValueError(msg)
 
     if class_module.__name__ == '__main__':
         msg = 'Plugin can be used only as external module'
-        raise TypeError(msg)
+        raise ValueError(msg)
 
     try:
         # expected structure for extraction:
@@ -112,10 +114,11 @@ def _inspect_plugin(plugin_cls: type) -> _PluginRegistrationInfo:
         plugin_parent_package_name = '.'.join(module_parts[:-2])
     except IndexError:
         msg = (
-            'Cannot extract information from plugin '
-            f'module name "{class_module.__name__}"'
+            'Plugin is defined in unexpected location: '
+            f'"{class_module.__name__}", expecting following location: '
+            '"eventum.plugins.<plugin_type>.plugins.<plugin_name>.plugin"'
         )
-        raise TypeError(msg) from None
+        raise ValueError(msg) from None
 
     try:
         package = importlib.import_module(plugin_parent_package_name)
@@ -124,7 +127,7 @@ def _inspect_plugin(plugin_cls: type) -> _PluginRegistrationInfo:
             'Cannot import parent package of plugin package '
             f'"{plugin_parent_package_name}": {e}'
         )
-        raise TypeError(msg) from e
+        raise ValueError(msg) from e
 
     return _PluginRegistrationInfo(
         name=plugin_name,
@@ -173,13 +176,7 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
     Other Parameters
     ----------------
     register : bool, default=True
-        Whether to register class as complete plugin
-
-    Notes
-    -----
-    All subclasses of this class is considered as complete plugins
-    if inheritance parameter `register` is set to `True`. Complete
-    plugins are automatically registered in `PluginsRegistry`.
+        Whether to register plugin in registry
 
     """
 
@@ -195,25 +192,31 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
             Parameters for plugin (see `PluginParams`)
 
         """
-        with self._required_params():
-            self._id = params['id']
-
-        self._guid = str(uuid4())
+        self._config = config
 
         if 'ephemeral_name' in params:
             self._plugin_name = params['ephemeral_name']
         if 'ephemeral_type' in params:
             self._plugin_type = params['ephemeral_type']
 
+        with self._required_params():
+            self._id = params['id']
+
+        self._guid = str(uuid4())
+
         self._base_path = params.get('base_path', Path.cwd())
 
-        self._config = config
-        self._logger = logger.bind(**self.instance_info)
+        self._plugin_info = {
+            'plugin_name': self.plugin_name,
+            'plugin_type': self.plugin_type,
+            'plugin_id': self.id,
+        }
+        self._logger = logger.bind(**self._plugin_info)
 
         self._metrics = PluginMetrics(
-            name=self.plugin_name,
             id=self.id,
-            configuration=self.config.model_dump(),
+            name=self.plugin_name,
+            type=self._plugin_type,
         )
 
     @contextmanager
@@ -229,10 +232,24 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
         try:
             yield
         except KeyError as e:
+            if hasattr(self, '_plugin_info'):
+                context = self._plugin_info
+            elif str(e) == 'id':
+                context = {
+                    'plugin_name': self.plugin_name,
+                    'plugin_type': self.plugin_type,
+                }
+            else:
+                context = {
+                    'plugin_name': self.plugin_name,
+                    'plugin_type': self.plugin_type,
+                    'plugin_id': self.id,
+                }
+
             msg = 'Missing required parameter'
             raise PluginConfigurationError(
                 msg,
-                context=dict(self.instance_info, reason=str(e)),
+                context=dict(**context, reason=str(e)),
             ) from None
 
     def __str__(self) -> str:
@@ -242,7 +259,7 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
         cls,
         *,
         register: bool = True,
-        **kwargs: Any,  # noqa: ANN401
+        **kwargs: Any,
     ) -> None:
         super().__init_subclass__(**kwargs)
 
@@ -257,15 +274,15 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
 
         try:
             registration_info = _inspect_plugin(cls)
-        except TypeError as e:
+        except ValueError as e:
             msg = 'Unable to inspect plugin'
             raise PluginRegistrationError(
                 msg,
                 context=dict(context, reason=str(e)),
             ) from e
 
-        plugin_name = registration_info['name']
-        plugin_type = registration_info['type']
+        plugin_name = registration_info.name
+        plugin_type = registration_info.type
         cls._plugin_name = plugin_name  # type: ignore[attr-defined]
         cls._plugin_type = plugin_type  # type: ignore[attr-defined]
 
@@ -274,35 +291,40 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
                 cls.__orig_bases__[0],  # type: ignore[attr-defined]
             )
         except ValueError:
-            msg = 'Generic parameters must be specified'
+            msg = (
+                'Generic parameters must be specified for plugin registration'
+            )
             raise PluginRegistrationError(
                 msg,
                 context=context,
             ) from None
         except Exception as e:
-            msg = 'Unable to define config class'
+            msg = 'Unable to determine plugin config class'
             raise PluginRegistrationError(
                 msg,
                 context=dict(context, reason=str(e)),
             ) from e
 
         if isinstance(config_cls, TypeVar):
-            msg = 'Config class cannot have generic type'
+            msg = (
+                'Concrete classes must be specified as generic parameters '
+                'for plugin registration'
+            )
             raise PluginRegistrationError(msg, context=context)
 
         PluginsRegistry.register_plugin(
             PluginInfo(
-                name=registration_info['name'],
+                name=registration_info.name,
                 cls=cls,
                 config_cls=config_cls,
-                package=registration_info['package'],
+                package=registration_info.package,
             ),
         )
 
         log.info(
             'Plugin is registered',
-            plugin_type=registration_info['type'],
-            plugin_name=registration_info['name'],
+            plugin_type=registration_info.type,
+            plugin_name=registration_info.name,
             plugin_config_class=config_cls.__name__,
         )
 
@@ -327,15 +349,6 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
         return self._plugin_type
 
     @property
-    def instance_info(self) -> PluginInstanceInfo:
-        """Information about plugin instance."""
-        return {
-            'plugin_name': self.plugin_name,
-            'plugin_type': self.plugin_type,
-            'plugin_id': self.id,
-        }
-
-    @property
     def config(self) -> ConfigT:
         """Plugin config."""
         return self._config
@@ -349,4 +362,5 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
             Plugins metrics
 
         """
-        return deepcopy(self._metrics)
+        # all metric item types are immutable so copy is safe
+        return copy(self._metrics)
