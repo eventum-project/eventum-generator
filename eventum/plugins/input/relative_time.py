@@ -32,6 +32,8 @@ def parse_relative_time(expression: str) -> timedelta:
         If expression cannot be parsed due to invalid format
 
     """
+    expression = expression.strip()
+
     if not expression:
         msg = 'Empty expression is provided'
         raise ValueError(msg)
