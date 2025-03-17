@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, override
 
 from pytz import BaseTzInfo
 
-from eventum.plugins.input.batcher import TimestampsBatcher
 from eventum.plugins.input.protocols import (
     IdentifiedTimestamps,
     SupportsAsyncIdentifiedTimestampsIterate,
@@ -32,21 +31,22 @@ class BaseBatchScheduler:
 
     def __init__(
         self,
-        batcher: TimestampsBatcher,
+        source: SupportsIdentifiedTimestampsIterate,
         timezone: BaseTzInfo,
     ) -> None:
         """Initialize scheduler.
 
         Parameters
         ----------
-        batcher : TimestampsBatcher
-            Timestamps batcher
+        source : SupportsIdentifiedTimestampsIterate
+            Timestamps source
 
         timezone : BaseTzInfo, default=pytz.timezone('UTC')
-            Timezone of timestamps in batches, used to track current time
+            Timezone of timestamps in batches, used to match timestamps
+            with current time
 
         """
-        self._batcher = batcher
+        self._source = source
         self._timezone = timezone
 
     def _iterate(
@@ -68,7 +68,7 @@ class BaseBatchScheduler:
             should be published
 
         """
-        for array in self._batcher.iterate(skip_past=skip_past):
+        for array in self._source.iterate(skip_past=skip_past):
             now = now64(self._timezone)
             latest_ts: np.datetime64 = array['timestamp'][-1]
             delta = latest_ts - now
@@ -88,11 +88,10 @@ class BatchScheduler(SupportsIdentifiedTimestampsIterate, BaseBatchScheduler):
     @override
     def __init__(
         self,
-        batcher: TimestampsBatcher,
+        source: SupportsIdentifiedTimestampsIterate,
         timezone: BaseTzInfo,
     ) -> None:
-        self._batcher = batcher
-        self._timezone = timezone
+        super().__init__(source, timezone)
 
     @override
     def iterate(
@@ -120,11 +119,10 @@ class AsyncBatchScheduler(
     @override
     def __init__(
         self,
-        batcher: TimestampsBatcher,
+        source: SupportsIdentifiedTimestampsIterate,
         timezone: BaseTzInfo,
     ) -> None:
-        self._batcher = batcher
-        self._timezone = timezone
+        super().__init__(source, timezone)
 
     @override
     async def iterate(
