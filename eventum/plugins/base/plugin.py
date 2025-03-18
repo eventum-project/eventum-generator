@@ -206,17 +206,16 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
 
         self._base_path = params.get('base_path', Path.cwd())
 
-        self._plugin_info = {
-            'plugin_name': self.plugin_name,
-            'plugin_type': self.plugin_type,
-            'plugin_id': self.id,
-        }
-        self._logger = logger.bind(**self._plugin_info)
+        self._logger = logger.bind(
+            plugin_name=self.name,
+            plugin_type=self.type,
+            plugin_id=self.id,
+        )
 
         self._metrics = PluginMetrics(
             id=self.id,
-            name=self.plugin_name,
-            type=self._plugin_type,
+            name=self.name,
+            type=self.type,
         )
 
     @contextmanager
@@ -232,17 +231,15 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
         try:
             yield
         except KeyError as e:
-            if hasattr(self, '_plugin_info'):
-                context = self._plugin_info
-            elif str(e) == 'id':
-                context = {
-                    'plugin_name': self.plugin_name,
-                    'plugin_type': self.plugin_type,
+            if str(e) == 'id':
+                context: dict[str, Any] = {
+                    'plugin_name': self.name,
+                    'plugin_type': self.type,
                 }
             else:
                 context = {
-                    'plugin_name': self.plugin_name,
-                    'plugin_type': self.plugin_type,
+                    'plugin_name': self.name,
+                    'plugin_type': self.type,
                     'plugin_id': self.id,
                 }
 
@@ -253,7 +250,7 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
             ) from None
 
     def __str__(self) -> str:
-        return f'<{self.plugin_name} {self.plugin_type} plugin [{self._id}]>'
+        return f'<{self.name} {self.type} plugin [{self.id}]>'
 
     def __init_subclass__(
         cls,
@@ -339,12 +336,12 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
         return self._guid
 
     @property
-    def plugin_name(self) -> str:
+    def name(self) -> str:
         """Canonical name of the plugin."""
         return self._plugin_name
 
     @property
-    def plugin_type(self) -> str:
+    def type(self) -> str:
         """Type of the plugin."""
         return self._plugin_type
 
