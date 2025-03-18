@@ -56,7 +56,7 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
             self._timezone = params['timezone']
 
         self._buffer = Buffer()
-        self._created = 0
+        self._generated = 0
 
     def __init_subclass__(
         cls,
@@ -100,10 +100,10 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
             If any error occurs during timestamps generation
 
         """
-        self._created = 0
+        self._generated = 0
 
         for array in self._generate(size=size, skip_past=skip_past):
-            self._created += array.size
+            self._generated += array.size
             yield array
 
     @abstractmethod
@@ -128,11 +128,11 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
         return self._interactive  # type: ignore[attr-defined]
 
     @property
-    def created(self) -> int:
-        """Number of created events."""
-        return self._created
+    def generated(self) -> int:
+        """Number of generated timestamps."""
+        return self._generated
 
     @override
     def get_metrics(self) -> InputPluginMetrics:
         metrics = super().get_metrics()
-        return InputPluginMetrics(**metrics, created=self.created)
+        return InputPluginMetrics(**metrics, generated=self.generated)

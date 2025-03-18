@@ -8,9 +8,9 @@ class InputPluginMetrics(PluginMetrics):
 
     Attributes
     ----------
-    created : int
-        Number of created events
+    generated : int
+        Number of generated timestamps
 
     """
 
-    created: int
+    generated: int
