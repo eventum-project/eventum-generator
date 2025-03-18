@@ -62,7 +62,7 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
         cls,
         *,
         interactive: bool = False,
-        **kwargs: Any,  # noqa: ANN401
+        **kwargs: Any,
     ) -> None:
         super().__init_subclass__(**kwargs)
 
