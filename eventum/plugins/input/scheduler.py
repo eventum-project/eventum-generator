@@ -91,7 +91,7 @@ class BatchScheduler(SupportsIdentifiedTimestampsIterate, BaseBatchScheduler):
         source: SupportsIdentifiedTimestampsIterate,
         timezone: BaseTzInfo,
     ) -> None:
-        super().__init__(source, timezone)
+        BaseBatchScheduler.__init__(self, source, timezone)
 
     @override
     def iterate(
@@ -122,7 +122,7 @@ class AsyncBatchScheduler(
         source: SupportsIdentifiedTimestampsIterate,
         timezone: BaseTzInfo,
     ) -> None:
-        super().__init__(source, timezone)
+        BaseBatchScheduler.__init__(self, source, timezone)
 
     @override
     async def iterate(
