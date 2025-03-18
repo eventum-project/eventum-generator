@@ -36,7 +36,7 @@ def delayed_source():
 
 def test_scheduler(instant_source):
     scheduler = BatchScheduler(
-        batcher=TimestampsBatcher(
+        source=TimestampsBatcher(
             source=instant_source, batch_size=100, batch_delay=None
         ),
         timezone=timezone('UTC'),
@@ -52,7 +52,7 @@ def test_scheduler(instant_source):
 
 def test_scheduler_delay(delayed_source):
     scheduler = BatchScheduler(
-        batcher=TimestampsBatcher(
+        source=TimestampsBatcher(
             source=delayed_source, batch_size=100, batch_delay=None
         ),
         timezone=timezone('UTC'),
@@ -69,7 +69,7 @@ def test_scheduler_delay(delayed_source):
 @pytest.mark.asyncio
 async def test_async_scheduler(instant_source):
     scheduler = AsyncBatchScheduler(
-        batcher=TimestampsBatcher(
+        source=TimestampsBatcher(
             source=instant_source, batch_size=100, batch_delay=None
         ),
         timezone=timezone('UTC'),
@@ -88,7 +88,7 @@ async def test_async_scheduler(instant_source):
 @pytest.mark.asyncio
 async def test_async_scheduler_delay(delayed_source):
     scheduler = AsyncBatchScheduler(
-        batcher=TimestampsBatcher(
+        source=TimestampsBatcher(
             source=delayed_source, batch_size=100, batch_delay=None
         ),
         timezone=timezone('UTC'),
