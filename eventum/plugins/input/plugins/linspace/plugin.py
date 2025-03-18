@@ -7,6 +7,7 @@ from numpy import datetime64, linspace, timedelta64
 from numpy.typing import NDArray
 
 from eventum.plugins.input.base.plugin import InputPlugin, InputPluginParams
+from eventum.plugins.input.exceptions import PluginGenerationError
 from eventum.plugins.input.normalizers import normalize_versatile_daterange
 from eventum.plugins.input.plugins.linspace.config import (
     LinspaceInputPluginConfig,
@@ -44,13 +45,20 @@ class LinspaceInputPlugin(
         *,
         skip_past: bool = True,
     ) -> Iterator[NDArray[datetime64]]:
-        start, end = normalize_versatile_daterange(
-            start=self._config.start,
-            end=self._config.end,
-            timezone=self._timezone,
-            none_start='now',
-            none_end='max',
-        )
+        try:
+            start, end = normalize_versatile_daterange(
+                start=self._config.start,
+                end=self._config.end,
+                timezone=self._timezone,
+                none_start='now',
+                none_end='max',
+            )
+        except (ValueError, OverflowError) as e:
+            msg = 'Failed to normalize daterange'
+            raise PluginGenerationError(
+                msg,
+                context={'reason': str(e)},
+            ) from None
 
         self._logger.info(
             'Generating in range',
