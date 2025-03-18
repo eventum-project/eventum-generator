@@ -64,7 +64,7 @@ class EventPlugin(Plugin[ConfigT, ParamsT], register=False):
 
         Raises
         ------
-        PluginRuntimeError
+        PluginProduceError
             If any error occurs during producing events
 
         EventsExhausted
