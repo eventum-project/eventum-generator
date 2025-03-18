@@ -3,12 +3,10 @@ from pathlib import Path
 
 import pytest
 
+from eventum.plugins.event.exceptions import PluginProduceError
 from eventum.plugins.event.plugins.script.config import ScriptEventPluginConfig
 from eventum.plugins.event.plugins.script.plugin import ScriptEventPlugin
-from eventum.plugins.exceptions import (
-    PluginConfigurationError,
-    PluginRuntimeError,
-)
+from eventum.plugins.exceptions import PluginConfigurationError
 
 STATIC_DIR = Path(__file__).parent / 'static'
 
@@ -67,7 +65,7 @@ def test_plugin_exception_in_function():
         params={'id': 1},
     )
 
-    with pytest.raises(PluginRuntimeError):
+    with pytest.raises(PluginProduceError):
         plugin.produce(
             params={
                 'timestamp': datetime.now().astimezone(),

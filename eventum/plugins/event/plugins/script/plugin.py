@@ -9,11 +9,9 @@ from eventum.plugins.event.base.plugin import (
     EventPluginParams,
     ProduceParams,
 )
+from eventum.plugins.event.exceptions import PluginProduceError
 from eventum.plugins.event.plugins.script.config import ScriptEventPluginConfig
-from eventum.plugins.exceptions import (
-    PluginConfigurationError,
-    PluginRuntimeError,
-)
+from eventum.plugins.exceptions import PluginConfigurationError
 
 
 class ScriptEventPlugin(
@@ -68,7 +66,7 @@ class ScriptEventPlugin(
             msg = 'Cannot get spec of script module'
             raise PluginConfigurationError(
                 msg,
-                context=dict(self.instance_info, file_path=script_path),
+                context={'file_path': script_path},
             )
 
         try:
@@ -77,18 +75,17 @@ class ScriptEventPlugin(
             msg = 'Failed to import script as external module'
             raise PluginConfigurationError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=str(e),
-                    file_path=script_path,
-                ),
+                context={
+                    'reason': str(e),
+                    'file_path': script_path,
+                },
             ) from e
 
         if spec.loader is None:
             msg = 'Script cannot be executed due to loader problem'
             raise PluginConfigurationError(
                 msg,
-                context=dict(self.instance_info, file_path=script_path),
+                context={'file_path': script_path},
             )
 
         try:
@@ -97,11 +94,10 @@ class ScriptEventPlugin(
             msg = 'Exception occurred during script execution'
             raise PluginConfigurationError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=str(e),
-                    file_path=script_path,
-                ),
+                context={
+                    'reason': str(e),
+                    'file_path': script_path,
+                },
             ) from e
 
         try:
@@ -113,7 +109,7 @@ class ScriptEventPlugin(
             )
             raise PluginConfigurationError(
                 msg,
-                context=dict(self.instance_info, file_path=script_path),
+                context={'file_path': script_path},
             ) from None
 
         return function
@@ -124,12 +120,11 @@ class ScriptEventPlugin(
             result = self._function(params)
         except Exception as e:
             msg = 'Exception occurred during function execution'
-            raise PluginRuntimeError(
+            raise PluginProduceError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=f'{e.__class__.__name__}: {e}',
-                ),
+                context={
+                    'reason': f'{e.__class__.__name__}: {e}',
+                },
             ) from e
 
         if isinstance(result, str):
@@ -143,21 +138,20 @@ class ScriptEventPlugin(
                 'Function returned object of invalid type, '
                 'string or list of strings are expected'
             )
-            raise PluginRuntimeError(
+            raise PluginProduceError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=(
+                context={
+                    'reason': (
                         f'Elements of next types encountered in list: {types}'
                     ),
-                ),
+                },
             )
 
         msg = (
             'Function returned object of invalid type, '
             'string or list of strings are expected'
         )
-        raise PluginRuntimeError(
+        raise PluginProduceError(
             msg,
-            context=dict(self.instance_info),
+            context={},
         )
