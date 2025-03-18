@@ -9,8 +9,8 @@ import numpy as np
 import structlog
 from numpy.typing import NDArray
 
-from eventum.plugins.exceptions import PluginRuntimeError
 from eventum.plugins.input.base.plugin import InputPlugin
+from eventum.plugins.input.exceptions import PluginGenerationError
 from eventum.plugins.input.protocols import (
     IdentifiedTimestamps,
     SupportsIdentifiedTimestampsSizedIterate,
@@ -45,7 +45,7 @@ class InputPluginsMerger(
         for plugin in plugins:
             if plugin.is_interactive:
                 msg = (
-                    f'"{plugin.plugin_name}" input plugin is interactive '
+                    f'"{plugin.name}" input plugin is interactive '
                     'and cannot be merged'
                 )
                 raise ValueError(msg)
@@ -116,12 +116,16 @@ class InputPluginsMerger(
                         next_arrays[guid] = array
                     except StopIteration:
                         del active_generators[guid]
-                    except PluginRuntimeError as e:
-                        logger.error(  # noqa: TRY400
+                    except PluginGenerationError as e:
+                        plugin = self._plugins[guid]
+                        logger.error(
                             (
                                 'One of the input plugins finished execution '
                                 ' with error'
                             ),
+                            plugin_id=plugin.id,
+                            plugin_type=plugin.type,
+                            plugin_name=plugin.name,
                             **e.context,
                         )
                         del active_generators[guid]
@@ -132,7 +136,9 @@ class InputPluginsMerger(
                                 'One of the input plugins finished execution '
                                 ' with unexpected error'
                             ),
-                            **plugin.instance_info,
+                            plugin_id=plugin.id,
+                            plugin_type=plugin.type,
+                            plugin_name=plugin.name,
                             reason=str(e),
                         )
 
@@ -148,7 +154,7 @@ class InputPluginsMerger(
             )[-1]
 
             # fill the slice
-            slice: dict[str, NDArray[np.datetime64]] = {}  # noqa: A001
+            slice: dict[str, NDArray[np.datetime64]] = {}
             for guid in tuple(next_arrays.keys()):
                 array = next_arrays[guid]
 
