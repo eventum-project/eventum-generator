@@ -11,12 +11,12 @@ from eventum.plugins.event.base.plugin import (
     EventPluginParams,
     ProduceParams,
 )
-from eventum.plugins.event.exceptions import EventsExhaustedError
-from eventum.plugins.event.plugins.replay.config import ReplayEventPluginConfig
-from eventum.plugins.exceptions import (
-    PluginConfigurationError,
-    PluginRuntimeError,
+from eventum.plugins.event.exceptions import (
+    PluginExhaustedError,
+    PluginProduceError,
 )
+from eventum.plugins.event.plugins.replay.config import ReplayEventPluginConfig
+from eventum.plugins.exceptions import PluginConfigurationError
 
 
 class ReplayEventPlugin(
@@ -53,7 +53,7 @@ class ReplayEventPlugin(
             msg = 'File does not exist'
             raise PluginConfigurationError(
                 msg,
-                context=dict(self.instance_info, file_path=self._config.path),
+                context={'file_path': self._config.path},
             )
 
     def _initialize_pattern(self) -> re.Pattern | None:
@@ -77,7 +77,7 @@ class ReplayEventPlugin(
                 msg = 'Failed to compile regular expression'
                 raise PluginConfigurationError(
                     msg,
-                    context=dict(self.instance_info, reason=str(e)),
+                    context={'reason': str(e)},
                 ) from None
         else:
             return None
@@ -111,17 +111,16 @@ class ReplayEventPlugin(
                 self._last_read_position = f.tell()
         except OSError as e:
             msg = 'Failed to read file'
-            raise PluginRuntimeError(
+            raise PluginProduceError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=str(e),
-                    file_path=self._config.path,
-                ),
+                context={
+                    'reason': str(e),
+                    'file_path': self._config.path,
+                },
             ) from None
 
         # decode lines in-place to reduce memory usage
-        lines = cast(list[str], byte_lines)
+        lines = cast('list[str]', byte_lines)
 
         if not lines:
             self._logger.info(
@@ -246,7 +245,7 @@ class ReplayEventPlugin(
         try:
             line = next(self._lines)
         except StopIteration:
-            raise EventsExhaustedError from None
+            raise PluginExhaustedError from None
 
         if self._pattern is None:
             return [line]
