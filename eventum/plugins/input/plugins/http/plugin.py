@@ -12,8 +12,8 @@ from numpy.typing import NDArray
 from pydantic import BaseModel, Field
 
 from eventum.logging_context import propagate_logger_context
-from eventum.plugins.exceptions import PluginRuntimeError
 from eventum.plugins.input.base.plugin import InputPlugin, InputPluginParams
+from eventum.plugins.input.exceptions import PluginGenerationError
 from eventum.plugins.input.plugins.http.config import HttpInputPluginConfig
 from eventum.plugins.input.utils.time_utils import now64
 
@@ -153,9 +153,9 @@ class HttpInputPlugin(
             self._server.should_exit = True
 
             msg = 'Error during server execution'
-            raise PluginRuntimeError(
+            raise PluginGenerationError(
                 msg,
-                context=dict(self.instance_info, reason=str(e)),
+                context={'reason': str(e)},
             ) from e
 
     @override
