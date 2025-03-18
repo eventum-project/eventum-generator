@@ -52,7 +52,7 @@ class TimestampsInputPlugin(
             msg = 'Timestamps sequence is empty'
             raise PluginConfigurationError(
                 msg,
-                context=dict(self.instance_info, file_path=config.source),
+                context={'file_path': config.source},
             )
 
         self._timestamps: NDArray[datetime64] = array(
@@ -92,11 +92,10 @@ class TimestampsInputPlugin(
             msg = 'Failed to read timestamps from file'
             raise PluginConfigurationError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    file_path=filename,
-                    reason=str(e),
-                ),
+                context={
+                    'file_path': filename,
+                    'reason': str(e),
+                },
             ) from None
 
     @override
