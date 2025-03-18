@@ -93,7 +93,7 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
             Iterator to use
 
         """
-        self._batch_size = cast(int, self._batch_size)
+        self._batch_size = cast('int', self._batch_size)
         current_size = 0
         to_concatenate: list[IdentifiedTimestamps] = []
 
@@ -192,7 +192,7 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
             Iterator to use
 
         """
-        self._batch_delay = cast(float, self._batch_delay)
+        self._batch_delay = cast('float', self._batch_delay)
 
         delta = np.timedelta64(  # type: ignore[call-overload]
             timedelta(seconds=self._batch_delay),
