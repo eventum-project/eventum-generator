@@ -1,5 +1,7 @@
 """Exceptions used across output plugins."""
 
+from eventum.plugins.exceptions import PluginError
+
 
 class FormatError(Exception):
     """Exception for formatting errors."""
@@ -22,3 +24,11 @@ class FormatError(Exception):
         """
         super().__init__(*args)
         self.original_event = original_event
+
+
+class PluginOpenError(PluginError):
+    """Error during opening plugin."""
+
+
+class PluginWriteError(PluginError):
+    """Events cannot be written."""
