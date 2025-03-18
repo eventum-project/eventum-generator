@@ -36,9 +36,9 @@ def prettify_validation_errors(
 
     for error in errors:
         loc = error['loc']
-        input = error['input']  # noqa: A001
+        input = error['input']
         msg = error['msg']
-        type = error['type']  # noqa: A001
+        type = error['type']
 
         if not loc:
             message = f'{input!r} - {msg.lower()} ({type})'
