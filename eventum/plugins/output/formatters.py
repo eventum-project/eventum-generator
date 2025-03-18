@@ -91,7 +91,7 @@ class Formatter(ABC, Generic[T]):
 
     _registered_formatters: ClassVar[dict[Format, type['Formatter[Any]']]] = {}
 
-    def __init_subclass__(cls, format: Format, **kwargs: Any) -> None:  # noqa: A002, ANN401
+    def __init_subclass__(cls, format: Format, **kwargs: Any) -> None:
         if format in Formatter._registered_formatters:
             registered_formatter = Formatter._registered_formatters[format]
             msg = (
@@ -143,7 +143,7 @@ class Formatter(ABC, Generic[T]):
         ...
 
     @classmethod
-    def get_formatter(cls, format: Format) -> type['Formatter[Any]']:  # noqa: A002
+    def get_formatter(cls, format: Format) -> type['Formatter[Any]']:
         """Get appropriate formatter for specified format.
 
         Parameters
