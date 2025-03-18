@@ -96,7 +96,7 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
 
         Raises
         ------
-        PluginRuntimeError
+        PluginGenerationError
             If any error occurs during timestamps generation
 
         """
