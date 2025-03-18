@@ -11,6 +11,7 @@ from pydantic import ValidationError
 
 from eventum.plugins.exceptions import PluginConfigurationError
 from eventum.plugins.input.base.plugin import InputPlugin, InputPluginParams
+from eventum.plugins.input.exceptions import PluginGenerationError
 from eventum.plugins.input.merger import InputPluginsMerger
 from eventum.plugins.input.normalizers import normalize_versatile_daterange
 from eventum.plugins.input.plugins.time_patterns.config import (
@@ -237,13 +238,21 @@ class TimePatternInputPlugin(
         *,
         skip_past: bool = True,
     ) -> Iterator[NDArray[np.datetime64]]:
-        start_dt, end_dt = normalize_versatile_daterange(
-            start=self._config.oscillator.start,
-            end=self._config.oscillator.end,
-            timezone=self._timezone,
-            none_start='now',
-            none_end='max',
-        )
+        try:
+            start_dt, end_dt = normalize_versatile_daterange(
+                start=self._config.oscillator.start,
+                end=self._config.oscillator.end,
+                timezone=self._timezone,
+                none_start='now',
+                none_end='max',
+            )
+        except (ValueError, OverflowError) as e:
+            msg = 'Failed to normalize daterange'
+            raise PluginGenerationError(
+                msg,
+                context={'reason': str(e)},
+            ) from None
+
         self._logger.info(
             'Generating in range',
             start_timestamp=start_dt.isoformat(),
@@ -361,31 +370,28 @@ class TimePatternsInputPlugin(
                 msg = 'Failed to load time pattern configuration'
                 raise PluginConfigurationError(
                     msg,
-                    context=dict(
-                        self.instance_info,
-                        file_path=pattern_path,
-                        reason=str(e),
-                    ),
+                    context={
+                        'file_path': pattern_path,
+                        'reason': str(e),
+                    },
                 ) from None
             except yaml.error.YAMLError as e:
                 msg = 'Failed to parse time pattern configuration'
                 raise PluginConfigurationError(
                     msg,
-                    context=dict(
-                        self.instance_info,
-                        file_path=pattern_path,
-                        reason=str(e),
-                    ),
+                    context={
+                        'file_path': pattern_path,
+                        'reason': str(e),
+                    },
                 ) from None
             except ValidationError as e:
                 msg = 'Bad time pattern configuration structure'
                 raise PluginConfigurationError(
                     msg,
-                    context=dict(
-                        self.instance_info,
-                        file_path=pattern_path,
-                        reason=str(e),
-                    ),
+                    context={
+                        'file_path': pattern_path,
+                        'reason': str(e),
+                    },
                 ) from None
 
             try:
@@ -393,21 +399,18 @@ class TimePatternsInputPlugin(
                     config=time_pattern,
                     params=params
                     | {  # type: ignore[arg-type]
-                        'ephemeral_name': (
-                            f'{self.plugin_name} ({pattern_path})'
-                        ),
-                        'ephemeral_type': self.plugin_type,
+                        'ephemeral_name': (f'{self.name} ({pattern_path})'),
+                        'ephemeral_type': self.type,
                     },
                 )
             except PluginConfigurationError as e:
                 msg = 'Failed to initialize time pattern for configuration'
                 raise PluginConfigurationError(
                     msg,
-                    context=dict(
-                        self.instance_info,
-                        file_path=pattern_path,
-                        reason=str(e),
-                    ),
+                    context={
+                        'file_path': pattern_path,
+                        'reason': str(e),
+                    },
                 ) from None
 
             time_patterns.append(time_pattern_plugin)
@@ -423,7 +426,7 @@ class TimePatternsInputPlugin(
     ) -> Iterator[NDArray[np.datetime64]]:
         merger = InputPluginsMerger(plugins=self._time_patterns)
 
-        self._logger.info('Generating in time patterns range')
+        self._logger.info('Generating in range of merged time patterns')
 
         for arr in merger.iterate(size, skip_past=skip_past):
             yield arr['timestamp']
