@@ -8,8 +8,8 @@ from typing import override
 from numpy import datetime64
 from numpy.typing import NDArray
 
-from eventum.plugins.exceptions import PluginRuntimeError
 from eventum.plugins.input.base.plugin import InputPlugin, InputPluginParams
+from eventum.plugins.input.exceptions import PluginGenerationError
 from eventum.plugins.input.normalizers import normalize_versatile_datetime
 from eventum.plugins.input.plugins.timer.config import TimerInputPluginConfig
 from eventum.plugins.input.utils.time_utils import skip_periods, to_naive
@@ -44,19 +44,26 @@ class TimerInputPlugin(InputPlugin[TimerInputPluginConfig, InputPluginParams]):
         timeout = timedelta(seconds=self._config.seconds)
 
         if self._config.repeat is None:
-            end = normalize_versatile_datetime(
-                value=None,
-                timezone=self._timezone,
-                none_point='max',
-            )
+            try:
+                end = normalize_versatile_datetime(
+                    value=None,
+                    timezone=self._timezone,
+                    none_point='max',
+                )
+            except (ValueError, OverflowError) as e:
+                msg = 'Failed to normalize end time'
+                raise PluginGenerationError(
+                    msg,
+                    context={'reason': str(e)},
+                ) from None
         else:
             try:
                 end = start + (timeout * self._config.repeat)
             except OverflowError:
                 msg = 'End time of generation is overflowed'
-                raise PluginRuntimeError(
+                raise PluginGenerationError(
                     msg,
-                    context=dict(self.instance_info),
+                    context={},
                 ) from None
 
         self._logger.info(
