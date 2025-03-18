@@ -20,6 +20,7 @@ from eventum.plugins.event.base.plugin import (
     EventPluginParams,
     ProduceParams,
 )
+from eventum.plugins.event.exceptions import PluginProduceError
 from eventum.plugins.event.plugins.jinja import modules
 from eventum.plugins.event.plugins.jinja.config import (
     JinjaEventPluginConfig,
@@ -46,10 +47,7 @@ from eventum.plugins.event.plugins.jinja.template_pickers import (
     TemplatePicker,
     get_picker_class,
 )
-from eventum.plugins.exceptions import (
-    PluginConfigurationError,
-    PluginRuntimeError,
-)
+from eventum.plugins.exceptions import PluginConfigurationError
 
 
 class JinjaEventPluginParams(EventPluginParams):
@@ -139,7 +137,7 @@ class JinjaEventPlugin(
         except SampleLoadError as e:
             raise PluginConfigurationError(
                 str(e),
-                context=dict(self.instance_info, **e.context),
+                context=e.context,
             ) from None
 
     def _initialize_environment(self, loader: BaseLoader) -> Environment:
@@ -246,31 +244,28 @@ class JinjaEventPlugin(
             msg = 'Failed to load template'
             raise PluginConfigurationError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason='Template is not found',
-                    file_name=name,
-                ),
+                context={
+                    'reason': 'Template is not found',
+                    'file_name': name,
+                },
             ) from None
         except TemplateSyntaxError as e:
             msg = 'Failed to load template'
             raise PluginConfigurationError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=f'Bad syntax in template: {e} (line {e.lineno})',
-                    file_name=name,
-                ),
+                context={
+                    'reason': f'Bad syntax in template: {e} (line {e.lineno})',
+                    'file_name': name,
+                },
             ) from e
         except TemplateError as e:
             msg = 'Failed to load template'
             raise PluginConfigurationError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=f'Template error: {e}',
-                    file_name=name,
-                ),
+                context={
+                    'reason': f'Template error: {e}',
+                    'file_name': name,
+                },
             ) from e
 
     def _initialize_template_picker(self) -> TemplatePicker:
@@ -298,7 +293,7 @@ class JinjaEventPlugin(
             msg = 'Failed to configure template picker'
             raise PluginConfigurationError(
                 msg,
-                context=dict(self.instance_info, reason=str(e)),
+                context={'reason': str(e)},
             ) from None
 
     @override
@@ -322,18 +317,17 @@ class JinjaEventPlugin(
                 )
             except Exception as e:
                 msg = 'Failed to render template'
-                raise PluginRuntimeError(
+                raise PluginProduceError(
                     msg,
-                    context=dict(
-                        self.instance_info,
-                        reason=str(e),
-                        template_alias=alias,
-                    ),
+                    context={
+                        'reason': str(e),
+                        'template_alias': alias,
+                    },
                 ) from e
             rendered.append(event)
 
         # use local state of last rendered template for next calls
-        locals = self._template_states[picked_aliases[-1]]  # noqa: A001
+        locals = self._template_states[picked_aliases[-1]]
         self._event_context['locals'] = locals
 
         return rendered

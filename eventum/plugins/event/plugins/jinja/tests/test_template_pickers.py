@@ -1,4 +1,5 @@
-# type: ignore
+from pathlib import Path
+
 import pytest
 
 from eventum.plugins.event.plugins.jinja.config import (
@@ -38,27 +39,35 @@ def test_get_picker_class(picker_class, picking_mode):
 
 def test_get_picker_class_unexistent():
     with pytest.raises(ValueError):
-        get_picker_class('what picker?')
+        get_picker_class('what picker?')  # type: ignore
 
 
 def test_all_template_picker():
     config = {
-        'template1': TemplateConfigForGeneralModes(template='test1.jinja'),
-        'template2': TemplateConfigForGeneralModes(template='test2.jinja'),
+        'template1': TemplateConfigForGeneralModes(
+            template=Path('test1.jinja')
+        ),
+        'template2': TemplateConfigForGeneralModes(
+            template=Path('test2.jinja')
+        ),
     }
     picker = AllTemplatePicker(config, {})
 
-    assert picker.pick({}) == ('template1', 'template2')
+    assert picker.pick({}) == ('template1', 'template2')  # type: ignore
 
 
 def test_any_template_picker():
     config = {
-        'template1': TemplateConfigForGeneralModes(template='test1.jinja'),
-        'template2': TemplateConfigForGeneralModes(template='test2.jinja'),
+        'template1': TemplateConfigForGeneralModes(
+            template=Path('test1.jinja')
+        ),
+        'template2': TemplateConfigForGeneralModes(
+            template=Path('test2.jinja')
+        ),
     }
     picker = AnyTemplatePicker(config, {})
 
-    picked_templates = picker.pick({})
+    picked_templates = picker.pick({})  # type: ignore
 
     assert len(picked_templates) == 1
     assert picked_templates[0] in ('template1', 'template2')
@@ -67,15 +76,15 @@ def test_any_template_picker():
 def test_chance_template_picker():
     config = {
         'template1': TemplateConfigForChanceMode(
-            template='test1.jinja', chance=0.2
+            template=Path('test1.jinja'), chance=0.2
         ),
         'template2': TemplateConfigForChanceMode(
-            template='test2.jinja', chance=0.8
+            template=Path('test2.jinja'), chance=0.8
         ),
     }
     picker = ChanceTemplatePicker(config, {})
 
-    picked_templates = picker.pick({})
+    picked_templates = picker.pick({})  # type: ignore
 
     assert len(picked_templates) == 1
     assert picked_templates[0] in ('template1', 'template2')
@@ -83,29 +92,35 @@ def test_chance_template_picker():
 
 def test_spin_template_picker():
     config = {
-        'template1': TemplateConfigForGeneralModes(template='test1.jinja'),
-        'template2': TemplateConfigForGeneralModes(template='test2.jinja'),
-        'template3': TemplateConfigForGeneralModes(template='test3.jinja'),
+        'template1': TemplateConfigForGeneralModes(
+            template=Path('test1.jinja')
+        ),
+        'template2': TemplateConfigForGeneralModes(
+            template=Path('test2.jinja')
+        ),
+        'template3': TemplateConfigForGeneralModes(
+            template=Path('test3.jinja')
+        ),
     }
     picker = SpinTemplatePicker(config, {})
 
-    assert picker.pick({}) == ('template1',)
-    assert picker.pick({}) == ('template2',)
-    assert picker.pick({}) == ('template3',)
-    assert picker.pick({}) == ('template1',)
+    assert picker.pick({}) == ('template1',)  # type: ignore
+    assert picker.pick({}) == ('template2',)  # type: ignore
+    assert picker.pick({}) == ('template3',)  # type: ignore
+    assert picker.pick({}) == ('template1',)  # type: ignore
 
 
 def test_fsm_template_picker():
     config = {
         'template1': TemplateConfigForFSMMode(
-            template='test1.jinja',
+            template=Path('test1.jinja'),
             initial=True,
             transition=TemplateTransition(
                 to='template2', when=Eq(eq={'shared.some_flag': True})
             ),
         ),
         'template2': TemplateConfigForFSMMode(
-            template='test2.jinja',
+            template=Path('test2.jinja'),
             initial=False,
             transition=TemplateTransition(
                 to='template1', when=Eq(eq={'shared.some_flag': False})
@@ -115,24 +130,30 @@ def test_fsm_template_picker():
     picker = FSMTemplatePicker(config, {})
     state = SingleThreadState({'some_flag': False})
 
-    assert picker.pick({'shared': state}) == ('template1',)
-    assert picker.pick({'shared': state}) == ('template1',)
+    assert picker.pick({'shared': state}) == ('template1',)  # type: ignore
+    assert picker.pick({'shared': state}) == ('template1',)  # type: ignore
     state.set('some_flag', True)
 
-    assert picker.pick({'shared': state}) == ('template2',)
-    assert picker.pick({'shared': state}) == ('template2',)
+    assert picker.pick({'shared': state}) == ('template2',)  # type: ignore
+    assert picker.pick({'shared': state}) == ('template2',)  # type: ignore
 
     state.set('some_flag', False)
 
-    assert picker.pick({'shared': state}) == ('template1',)
-    assert picker.pick({'shared': state}) == ('template1',)
+    assert picker.pick({'shared': state}) == ('template1',)  # type: ignore
+    assert picker.pick({'shared': state}) == ('template1',)  # type: ignore
 
 
 def test_chain_template_picker():
     config = {
-        'template1': TemplateConfigForGeneralModes(template='test1.jinja'),
-        'template2': TemplateConfigForGeneralModes(template='test2.jinja'),
-        'template3': TemplateConfigForGeneralModes(template='test3.jinja'),
+        'template1': TemplateConfigForGeneralModes(
+            template=Path('test1.jinja')
+        ),
+        'template2': TemplateConfigForGeneralModes(
+            template=Path('test2.jinja')
+        ),
+        'template3': TemplateConfigForGeneralModes(
+            template=Path('test3.jinja')
+        ),
     }
     picker = ChainTemplatePicker(
         config=config,
@@ -147,11 +168,11 @@ def test_chain_template_picker():
         },
     )
 
-    assert picker.pick({}) == ('template1',)
-    assert picker.pick({}) == ('template1',)
-    assert picker.pick({}) == ('template3',)
-    assert picker.pick({}) == ('template2',)
-    assert picker.pick({}) == ('template1',)
-    assert picker.pick({}) == ('template1',)
-    assert picker.pick({}) == ('template1',)
-    assert picker.pick({}) == ('template3',)
+    assert picker.pick({}) == ('template1',)  # type: ignore
+    assert picker.pick({}) == ('template1',)  # type: ignore
+    assert picker.pick({}) == ('template3',)  # type: ignore
+    assert picker.pick({}) == ('template2',)  # type: ignore
+    assert picker.pick({}) == ('template1',)  # type: ignore
+    assert picker.pick({}) == ('template1',)  # type: ignore
+    assert picker.pick({}) == ('template1',)  # type: ignore
+    assert picker.pick({}) == ('template3',)  # type: ignore

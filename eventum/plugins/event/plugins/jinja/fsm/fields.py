@@ -75,7 +75,7 @@ def _compare_with_state(
     operator: Callable[[Any, Any], bool],
     state: State,
     field_name: str,
-    target_value: Any,  # noqa: ANN401
+    target_value: Any,
 ) -> bool:
     """Perform comparison with value from state.
 

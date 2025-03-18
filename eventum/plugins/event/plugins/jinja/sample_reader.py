@@ -38,7 +38,7 @@ class Sample:
     def __len__(self) -> int:
         return len(self._dataset)
 
-    def __getitem__(self, key: Any) -> list | tuple:  # noqa: ANN401
+    def __getitem__(self, key: Any) -> list | tuple:
         return self._dataset[key]
 
 

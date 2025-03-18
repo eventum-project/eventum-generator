@@ -32,7 +32,7 @@ class TemplatePicker(ABC, Generic[T]):
     def __init_subclass__(
         cls,
         mode: TemplatePickingMode,
-        **kwargs: Any,  # noqa: ANN401
+        **kwargs: Any,
     ) -> None:
         if mode in TemplatePicker._registered_pickers:
             registered_picker = TemplatePicker._registered_pickers[mode]

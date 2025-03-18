@@ -12,7 +12,7 @@ class State(ABC):
     """Base key-value state."""
 
     @abstractmethod
-    def get(self, key: str, default: Any = None) -> Any:  # noqa: ANN401
+    def get(self, key: str, default: Any = None) -> Any:
         """Get value from state.
 
         Parameters
@@ -34,7 +34,7 @@ class State(ABC):
         ...
 
     @abstractmethod
-    def set(self, key: str, value: Any) -> None:  # noqa: ANN401
+    def set(self, key: str, value: Any) -> None:
         """Set value to state.
 
         Parameters
@@ -70,7 +70,7 @@ class State(ABC):
         ...
 
     @abstractmethod
-    def __getitem__(self, key: Any) -> Any: ...  # noqa: ANN401
+    def __getitem__(self, key: Any) -> Any: ...
 
 
 class SingleThreadState(State):
