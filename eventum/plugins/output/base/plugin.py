@@ -9,11 +9,9 @@ from pydantic import RootModel
 
 from eventum.core.models.metrics import OutputPluginMetrics
 from eventum.plugins.base.plugin import Plugin, PluginParams
-from eventum.plugins.exceptions import (
-    PluginConfigurationError,
-    PluginRuntimeError,
-)
+from eventum.plugins.exceptions import PluginConfigurationError
 from eventum.plugins.output.base.config import OutputPluginConfig
+from eventum.plugins.output.exceptions import PluginWriteError
 from eventum.plugins.output.fields import FormatterConfigT
 from eventum.plugins.output.formatters import (
     Formatter,
@@ -95,7 +93,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
             msg = 'Failed to configure formatter'
             raise PluginConfigurationError(
                 msg,
-                context=dict(self.instance_info, reason=str(e)),
+                context={'reason': str(e)},
             ) from None
 
     async def open(self) -> None:
@@ -103,7 +101,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
 
         Raises
         ------
-        PluginRuntimeError
+        PluginOpenError
             If error occurs during opening
 
         Notes
@@ -193,12 +191,8 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
 
         Raises
         ------
-        PluginRuntimeError
+        PluginWriteError
             If error occurs during writing events
-
-        Notes
-        -----
-        Number of successfully written events based on formatted events
 
         """
         if not events:
@@ -206,9 +200,9 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
 
         if not self._is_opened:
             msg = 'Output plugin is not opened for writing'
-            raise PluginRuntimeError(
+            raise PluginWriteError(
                 msg,
-                context=dict(self.instance_info),
+                context={},
             )
 
         try:
