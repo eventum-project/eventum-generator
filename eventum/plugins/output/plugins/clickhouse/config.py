@@ -93,6 +93,15 @@ class ClickhouseOutputPluginConfig(OutputPluginConfig, frozen=True):
         ClickHouse input format for inserting, documentation:
         https://clickhouse.com/docs/en/interfaces/formats
 
+    header : str, default=''
+        Header that inserted before all events
+
+    footer: str, default=''
+        Footer that inserted after all events
+
+    separator: str, default='\n'
+        Separator between events
+
     Notes
     -----
     To see full documentation of parameters:
@@ -121,12 +130,15 @@ class ClickhouseOutputPluginConfig(OutputPluginConfig, frozen=True):
     tls_mode: Literal['proxy', 'strict', 'mutual'] | None = Field(default=None)
     proxy_url: HttpUrl | None = Field(default=None)
     input_format: ClickhouseInputFormat = Field(
-        default='JSON',
+        default='JSONEachRow',
         validate_default=True,
     )
+    header: str = Field(default='')
+    footer: str = Field(default='')
+    separator: str = Field(default='\n')
     formatter: FormatterConfigT = Field(
         default_factory=lambda: JsonFormatterConfig(
-            format=Format.JSON_BATCH,
+            format=Format.JSON,
             indent=0,
         ),
         validate_default=True,

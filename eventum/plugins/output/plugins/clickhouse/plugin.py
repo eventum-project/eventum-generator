@@ -1,17 +1,13 @@
 """Definition of clickhouse output plugin."""
 
-import asyncio
-import contextlib
-import re
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, override
 
 from clickhouse_connect import get_async_client
 from clickhouse_connect.driver.binding import quote_identifier as quote
-from clickhouse_connect.driver.summary import QuerySummary
 
-from eventum.plugins.exceptions import PluginRuntimeError
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
+from eventum.plugins.output.exceptions import PluginWriteError
 from eventum.plugins.output.plugins.clickhouse.config import (
     ClickhouseOutputPluginConfig,
 )
@@ -36,9 +32,6 @@ class ClickhouseOutputPlugin(
         self._fq_table_name = '.'.join(
             [quote(config.database), quote(config.table)],
         )
-
-        self._fmt_error_row_pattern = re.compile(r'\(at row (?P<row>\d+)\)')
-
         self._client: AsyncClient
 
     @override
@@ -74,9 +67,9 @@ class ClickhouseOutputPlugin(
             )
         except Exception as e:
             msg = 'Cannot initialize ClickHouse client'
-            raise PluginRuntimeError(
+            raise PluginWriteError(
                 msg,
-                context=dict(self.instance_info, reason=str(e)),
+                context={'reason': str(e)},
             ) from e
 
         await self._logger.ainfo('ClickHouse client is initialized')
@@ -87,46 +80,24 @@ class ClickhouseOutputPlugin(
 
     @override
     async def _write(self, events: Sequence[str]) -> int:
-        results = await asyncio.gather(
-            *[
-                self._client.raw_insert(
-                    table=self._fq_table_name,
-                    insert_block=event,
-                    fmt=self._config.input_format,
-                )
-                for event in events
-            ],
-            return_exceptions=True,
-        )
-
-        log_tasks: list[asyncio.Task] = []
-        written_rows = 0
-        for result in results:
-            if isinstance(result, QuerySummary):
-                written_rows += result.written_rows
-            else:
-                context = dict(
-                    self.instance_info,
-                    reason=str(result),
-                    host=self._config.host,
-                )
-
-                # try to enrich exception with original (formatted) event
-                pos_match = re.search(self._fmt_error_row_pattern, str(result))
-                if pos_match is not None:
-                    row = int(pos_match.group('row'))
-                    with contextlib.suppress(IndexError):
-                        context.update(formatted_event=events[row - 1])
-
-                log_tasks.append(
-                    self._loop.create_task(
-                        self._logger.aerror(
-                            'Failed to insert events to ClickHouse',
-                            **context,
-                        ),
-                    ),
-                )
-
-        await asyncio.gather(*log_tasks)
-
-        return written_rows
+        try:
+            result = await self._client.raw_insert(
+                table=self._fq_table_name,
+                insert_block=(
+                    self._config.header
+                    + self._config.separator.join(events)
+                    + self._config.footer
+                ),
+                fmt=self._config.input_format,
+            )
+        except Exception as e:
+            msg = 'Failed to insert events to ClickHouse'
+            raise PluginWriteError(
+                msg,
+                context={
+                    'reason': str(e),
+                    'host': self._config.host,
+                },
+            ) from e
+        else:
+            return result.written_rows
