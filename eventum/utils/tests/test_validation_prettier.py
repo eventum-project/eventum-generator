@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
+from pydantic_core import ErrorDetails
 
 from eventum.utils.validation_prettier import prettify_validation_errors
 
@@ -11,11 +12,24 @@ class TestModel(BaseModel):
 
 
 def test_prettify_validation_errors():
-    try:
-        TestModel.model_validate({'field_1': 'field_2', 'b': 4})
-    except ValidationError as e:
-        message = prettify_validation_errors(e.errors())
-        assert 'field_1' in message
-        assert 'field_2' in message
-    else:
-        assert False
+    errors = [
+        ErrorDetails(
+            loc=('field1', 'nested_field1'),
+            msg='Error message 1',
+            type='type1',
+            input='input1',
+        ),
+        ErrorDetails(
+            loc=('field2', 'nested_field2'),
+            msg='Error message 2',
+            type='type2',
+            input='input2',
+        ),
+    ]
+
+    expected_output = (
+        '"field1.nested_field1": \'input1\' - error message 1 (type1); '
+        '"field2.nested_field2": \'input2\' - error message 2 (type2)'
+    )
+
+    assert prettify_validation_errors(errors) == expected_output
