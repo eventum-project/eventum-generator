@@ -69,13 +69,13 @@ class HttpOutputPlugin(
         Parameters
         ----------
         data : str
-            Data for request
+            Data for request.
 
         Raises
         ------
         PluginWriteError
             If request failed or response status code differs from
-            expected one
+            expected one.
 
         """
         try:

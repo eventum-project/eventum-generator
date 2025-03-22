@@ -40,7 +40,7 @@ class FileOutputPlugin(
         Returns
         -------
         bool
-            Check result
+            Check result.
 
         Notes
         -----
@@ -92,15 +92,15 @@ class FileOutputPlugin(
         Parameters
         ----------
         path : str
-            Path to file
+            Path to file.
 
         flags : int
-            Flags for file descriptor
+            Flags for file descriptor.
 
         Returns
         -------
         int
-            File descriptor number
+            File descriptor number.
 
         """
         return os.open(
@@ -115,7 +115,7 @@ class FileOutputPlugin(
         Returns
         -------
         AsyncTextIOWrapper
-            Opened file
+            Opened file.
 
         """
         f = await aiofiles.open(
@@ -133,7 +133,7 @@ class FileOutputPlugin(
         Returns
         -------
         AsyncTextIOWrapper
-            Opened file
+            Opened file.
 
         """
         f = await aiofiles.open(

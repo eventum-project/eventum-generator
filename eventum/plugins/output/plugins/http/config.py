@@ -19,45 +19,45 @@ class HttpOutputPluginConfig(OutputPluginConfig, frozen=True):
     Attributes
     ----------
     url : HttpUrl
-        URL to use for requests
+        URL to use for requests.
 
     method : Literal[\
         'GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'\
     ], default='POST'
-        HTTP method to use for requests
+        HTTP method to use for requests.
 
     success_code : int,default=201
         Expected HTTP response code, if server returns other code, then
-        it is considered as an error
+        it is considered as an error.
 
     headers: dict[str, Any], default={}
-        Request headers
+        Request headers.
 
     username: str | None, default=None
-        Username that is used to authenticate
+        Username that is used to authenticate.
 
     password: str | None, default=None
-        Password for user to authenticate
+        Password for user to authenticate.
 
     verify: bool, default=True
         Whether to verify SSL certificate of the cluster nodes when
-        connecting to them
+        connecting to them.
 
     ca_cert: str | None, default=None
-        Absolute path to CA certificate
+        Absolute path to CA certificate.
 
     client_cert: str | None, default=None
-        Absolute path to client certificate
+        Absolute path to client certificate.
 
     client_cert_key: str | None, default=None
-        Absolute path to client certificate key
+        Absolute path to client certificate key.
 
     proxy_url : HttpUrl
-        HTTP(S) proxy address
+        HTTP(S) proxy address.
 
     Notes
     -----
-    By default one line JSON batch formatter is used for events
+    By default one line JSON batch formatter is used for events.
 
     """
 

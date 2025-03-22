@@ -27,7 +27,7 @@ class SimpleFormatterConfig(BaseFormatterConfig, frozen=True):
     """Config for formats without additional parameters.
 
     format : Literal[Format.PLAIN, Format.EVENTUM_HTTP_INPUT]
-        Target format
+        Target format.
     """
 
     format: Literal[Format.PLAIN, Format.EVENTUM_HTTP_INPUT]
@@ -39,10 +39,10 @@ class JsonFormatterConfig(BaseFormatterConfig, frozen=True):
     Parameters
     ----------
     format : Literal[Format.JSON, Format.JSON_BATCH]
-        Target format
+        Target format.
 
     indent : int, default=0
-        Indentation size
+        Indentation size.
 
     """
 
@@ -56,21 +56,21 @@ class TemplateFormatterConfig(BaseFormatterConfig, frozen=True):
     Parameters
     ----------
     format : Literal[Format.TEMPLATE, Format.TEMPLATE_BATCH]
-        Target format
+        Target format.
 
     template : str | None, default=None
-        Template content
+        Template content.
 
     template_path : Path | None, default=None
-        Template path
+        Template path.
 
     Notes
     -----
-    Template and template path are mutually exclusive parameters
+    Template and template path are mutually exclusive parameters.
 
     To access original event (for `template` mode) or events sequence
     (for `template-batch` mode) use `event` or `events` variable in
-    template correspondingly
+    template correspondingly.
 
     """
 

@@ -18,7 +18,7 @@ class OutputPluginConfig(PluginConfig, ABC, frozen=True):
     Attributes
     ----------
     formatter : FormatterConfigT, default=SimpleFormatterConfig(...)
-        Formatter configuration
+        Formatter configuration.
 
     """
 

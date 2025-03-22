@@ -16,27 +16,27 @@ class FileOutputPluginConfig(OutputPluginConfig, frozen=True):
     Attributes
     ----------
     path : Path
-        Absolute path of the file to write
+        Absolute path of the file to write.
 
     flush_interval : float, default = 1
         Flush interval (in seconds) for flushing events, if value is 0
-        then flush is performed for every event
+        then flush is performed for every event.
 
     cleanup_interval : float, default = 10
         Interval (in seconds) to wait new events before closing file,
-        file is reopened once new events are received
+        file is reopened once new events are received.
 
     file_mode : int, default = 640
-        File access mode to use (e.g. 640)
+        File access mode to use (e.g. 640).
 
     write_mode : Literal['append', 'overwrite'], default = 'append'
-        Mode that is used to write if the file already exists
+        Mode that is used to write if the file already exists.
 
     encoding : Encoding, default='utf-8'
-        Encoding
+        Encoding.
 
     separator : str, default=os.linesep
-        Separator between events
+        Separator between events.
 
     """
 

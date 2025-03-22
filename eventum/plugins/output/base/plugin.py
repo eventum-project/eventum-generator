@@ -55,7 +55,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         Returns
         -------
         FormatterConfigT
-            Formatter config
+            Formatter config.
 
         """
         match self._config:
@@ -72,12 +72,12 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         Returns
         -------
         Formatter
-            Formatter
+            Formatter.
 
         Raises
         ------
         PluginConfigurationError
-            If formatter configuration fails
+            If formatter configuration fails.
 
         """
         config = self._formatter_config
@@ -101,11 +101,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         Raises
         ------
         PluginOpenError
-            If error occurs during opening
-
-        Notes
-        -----
-        Metrics are reset on successful opening
+            If error occurs during opening.
 
         """
         self._loop = asyncio.get_running_loop()
@@ -135,16 +131,16 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         Parameters
         ----------
         events : Sequence[str]
-            Events to format
+            Events to format.
 
         Returns
         -------
         FormattingResult
-            Formatting result
+            Formatting result.
 
         Notes
         -----
-        All errors from formatting result are logged
+        All errors from formatting result are logged.
 
         """
         formatting_result = await self._loop.run_in_executor(
@@ -181,17 +177,17 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         Parameters
         ----------
         events : Sequence[str]
-            Sequence of events to write
+            Sequence of events to write.
 
         Returns
         -------
         int
-            Number of successfully written events
+            Number of successfully written events.
 
         Raises
         ------
         PluginWriteError
-            If error occurs during writing events
+            If error occurs during writing events.
 
         """
         if not events:
@@ -236,7 +232,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
 
         Notes
         -----
-        See `open` method for more info
+        See `open` method for more info.
 
         """
         ...
@@ -248,7 +244,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
 
         Notes
         -----
-        See `close` method for more info
+        See `close` method for more info.
 
         """
         ...
@@ -259,7 +255,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
 
         Notes
         -----
-        See `write` method for more info
+        See `write` method for more info.
 
         """
         ...

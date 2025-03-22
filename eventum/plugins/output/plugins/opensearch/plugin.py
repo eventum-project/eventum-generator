@@ -77,7 +77,7 @@ class OpensearchOutputPlugin(
         Yields
         ------
         httpx.URL
-            Chosen host URL
+            Chosen host URL.
 
         """
         host_urls = [httpx.URL(str(host)) for host in self._config.hosts]
@@ -91,12 +91,12 @@ class OpensearchOutputPlugin(
         Parameters
         ----------
         events : Iterable[str]
-            Events for bulk request
+            Events for bulk request.
 
         Returns
         -------
         str
-            Bulk data for request body
+            Bulk data for request body.
 
         """
         bulk_lines = []
@@ -115,17 +115,17 @@ class OpensearchOutputPlugin(
         Parameters
         ----------
         bulk_response : dict
-            Original response of bulk request
+            Original response of bulk request.
 
         Return
         ------
         list[str]
-            List of error messages
+            List of error messages.
 
         Raises
         ------
         ValueError
-            If bulk response has invalid structure
+            If bulk response has invalid structure.
 
         """
         if 'errors' not in bulk_response or 'items' not in bulk_response:
@@ -164,17 +164,17 @@ class OpensearchOutputPlugin(
         Parameters
         ----------
         events : Sequence[str]
-            Events to index
+            Events to index.
 
         Returns
         -------
         int
-            Number of successfully written events
+            Number of successfully written events.
 
         Raises
         ------
         PluginWriteError
-            If events indexing fails
+            If events indexing fails.
 
         """
         host = next(self._hosts)
@@ -246,17 +246,17 @@ class OpensearchOutputPlugin(
         Parameters
         ----------
         event : str
-            Event to index
+            Event to index.
 
         Returns
         -------
         int
-            Number of successfully written events (always 1)
+            Number of successfully written events (always 1).
 
         Raises
         ------
         PluginWriteError
-            If events indexing fails
+            If events indexing fails.
 
         """
         host = next(self._hosts)

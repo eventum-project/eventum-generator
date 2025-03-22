@@ -16,10 +16,10 @@ class FormatError(Exception):
         Parameters
         ----------
         *args: object
-            Exceptions arguments
+            Exceptions arguments.
 
-        original_event : str | None, default=NOne
-            Original event
+        original_event : str | None, default=None
+            Original event.
 
         """
         super().__init__(*args)

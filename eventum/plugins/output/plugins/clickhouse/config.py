@@ -28,86 +28,86 @@ class ClickhouseOutputPluginConfig(OutputPluginConfig, frozen=True):
     Attributes
     ----------
     host : str
-        The hostname or IP address of the ClickHouse server
+        The hostname or IP address of the ClickHouse server.
 
     port : int, default=8123
-        The ClickHouse HTTP or HTTPS port
+        The ClickHouse HTTP or HTTPS port.
 
     protocol : Literal['http', 'https'], default='http'
-        Protocol to use to connect to ClickHouse
+        Protocol to use to connect to ClickHouse.
 
     database : str, default='default'
-        Database name for inserting events
+        Database name for inserting events.
 
     table : str
-        Table name for inserting events
+        Table name for inserting events.
 
     username : str, default='default'
-        Username that is used to authenticate to ClickHouse
+        Username that is used to authenticate to ClickHouse.
 
     password : str, default=''
-        Password for user to authenticate
+        Password for user to authenticate.
 
     dsn : ClickHouseDsn | None, default=None
         A string in standard DSN (Data Source Name) format, other
         connection values (such as host or username) will be extracted
-        from this string if not set otherwise
+        from this string if not set otherwise.
 
     connect_timeout : int, default=10
-        Connection timeout in seconds
+        Connection timeout in seconds.
 
     request_timeout : int, default=300
-        Requests timeout in seconds
+        Requests timeout in seconds.
 
     client_name : str | None, default=None
         Client name that is prepended to the HTTP User Agent header,
-        set this to track client queries in the ClickHouse query log
+        set this to track client queries in the ClickHouse query log.
 
     verify : bool, default=False
-        Whether to verify SSL certificate of ClickHouse server
+        Whether to verify SSL certificate of ClickHouse server.
 
     ca_cert : Path | None, default=None
-        Absolute path to CA certificate
+        Absolute path to CA certificate.
 
     client_cert : Path | None, default=None
-        Absolute path to client certificate
+        Absolute path to client certificate.
 
     client_cert_key : Path | None, default=None
-        Absolute path to client certificate key
+        Absolute path to client certificate key.
 
     server_host_name : str | None, default=None
         The ClickHouse server hostname as identified by the CN or SNI
         of its TLS certificate, set this to avoid SSL errors when
-        connecting through a proxy or tunnel with a different hostname
+        connecting through a proxy or tunnel with a different hostname.
 
     tls_mode : Literal['proxy', 'strict', 'mutual'] | None, default=None
         Mode of TLS behavior, `proxy` and `strict` do not invoke
         ClickHouse mutual TLS connection, but do send client cert and
         key, `mutual` assumes ClickHouse mutual TLS auth with a client
-        certificate, default behavior is `mutual`
+        certificate, default behavior is `mutual`.
 
     proxy_url : HttpUrl
-        HTTP(S) proxy address
+        HTTP(S) proxy address.
 
     input_format : ClickhouseInputFormat, default='JSONEachRow'
         ClickHouse input format for inserting, documentation:
         https://clickhouse.com/docs/en/interfaces/formats
 
     header : str, default=''
-        Header that inserted before all events
+        Header that inserted before all events.
 
     footer: str, default=''
-        Footer that inserted after all events
+        Footer that inserted after all events.
 
     separator: str, default='\n'
-        Separator between events
+        Separator between events.
 
     Notes
     -----
     To see full documentation of parameters:
     https://clickhouse.com/docs/en/integrations/python#connection-arguments
 
-    By default one line JSON formatter is used for events
+    By default one line JSON formatter is used for events.
 
     """
 

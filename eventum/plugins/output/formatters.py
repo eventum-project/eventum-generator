@@ -45,16 +45,16 @@ class FormattingResult:
         original or not due to formatting errors of specific events
         from the entire provided list or reduction behavior of specific
         formatters which take multiple events and produce for example
-        one aggregated event
+        one aggregated event.
 
     formatted_count : int
         Number of successfully formatted events, this field is helpful
         for tracking number of successfully formatted events with taking
-        into account possible events aggregation
+        into account possible events aggregation.
 
     errors : list[FormatError]
         List with formatting errors of specific events or entire
-        sequence of events (for specific aggregating formatters)
+        sequence of events (for specific aggregating formatters).
 
     """
 
@@ -72,7 +72,7 @@ class FormatterParams(TypedDict):
     Attributes
     ----------
     base_path : Required[Path]
-        Base path for all relative paths in formatter configs
+        Base path for all relative paths in formatter configs.
 
     """
 
@@ -85,7 +85,7 @@ class Formatter(ABC, Generic[T]):
     Other Parameters
     ----------------
     format : Format
-        Format to which to bind formatter class
+        Format to which to bind formatter class.
 
     """
 
@@ -110,16 +110,16 @@ class Formatter(ABC, Generic[T]):
         Parameters
         ----------
         config : T
-            Formatter config
+            Formatter config.
 
         params : FormatterParams
-            Formatter params
+            Formatter params.
 
         Raises
         ------
         ValueError
             If any error occurs during formatter initialization for
-            parameters specified in provided config
+            parameters specified in provided config.
 
         """
         self._config = config
@@ -132,12 +132,12 @@ class Formatter(ABC, Generic[T]):
         Parameters
         ----------
         events : Sequence[str]
-            Events to format
+            Events to format.
 
         Returns
         -------
         FormattingResult
-            Result of events formatting
+            Result of events formatting.
 
         """
         ...
@@ -149,17 +149,17 @@ class Formatter(ABC, Generic[T]):
         Parameters
         ----------
         format : Format
-            Format
+            Format.
 
         Returns
         -------
         type['Formatter[Any]']
-            Formatter
+            Formatter.
 
         Raises
         ------
         ValueError
-            If no appropriate formatter found for format
+            If no appropriate formatter found for format.
 
         """
         try:
@@ -263,17 +263,17 @@ def _load_template_from_string(template: str) -> Template:
     Parameters
     ----------
     template : str
-        Template source
+        Template source.
 
     Returns
     -------
     Template
-        Loaded template
+        Loaded template.
 
     Raises
     ------
     ValueError
-        If template cannot be loaded
+        If template cannot be loaded.
 
     """
     env = Environment(loader=BaseLoader())
@@ -291,23 +291,23 @@ def _load_template_from_file(base_dir: Path, template_path: Path) -> Template:
     Parameters
     ----------
     base_dir : Path
-        Base dir for resolving relative template path
+        Base dir for resolving relative template path.
 
     template_path : Path
-        Relative path to file with template source
+        Relative path to file with template source.
 
     Returns
     -------
     Template
-        Loaded template
+        Loaded template.
 
     Raises
     ------
     ValueError
-        If `base_dir` is relative or `template_path` is absolute
+        If `base_dir` is relative or `template_path` is absolute.
 
     ValueError
-        If template is not found or cannot be loaded
+        If template is not found or cannot be loaded.
 
     """
     if not base_dir.is_absolute():
@@ -461,17 +461,17 @@ def get_formatter_class(format: Format) -> type[Formatter[Any]]:
     Parameters
     ----------
     format : Format
-        Format
+        Format.
 
     Returns
     -------
     type[Formatter[Any]]
-        Formatter class
+        Formatter class.
 
     Raises
     ------
     ValueError
-        If no appropriate formatter found for specified format
+        If no appropriate formatter found for specified format.
 
     """
     return Formatter.get_formatter(format)

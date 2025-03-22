@@ -21,43 +21,43 @@ class OpensearchOutputPluginConfig(OutputPluginConfig, frozen=True):
     hosts: list[HttpUrl]
         Opensearch cluster nodes that will be used for indexing events,
         specifying more than one nodes allows for load balancing,
-        nodes must be specified in format `https://<host>:<port>`
+        nodes must be specified in format `https://<host>:<port>`.
 
     username: str
         Username that is used to authenticate to Opensearch for indexing
-        events
+        events.
 
     password: str
-        Password for user to authenticate
+        Password for user to authenticate.
 
     index: str
-        Index for writing events
+        Index for writing events.
 
     connect_timeout : int, default=10
-        Connection timeout in seconds
+        Connection timeout in seconds.
 
     request_timeout : int, default=300
-        Requests timeout in seconds
+        Requests timeout in seconds.
 
     verify: bool, default=True
         Whether to verify SSL certificate of the cluster nodes when
-        connecting to them
+        connecting to them.
 
     ca_cert: str | None, default=None
-        Absolute path to CA certificate
+        Absolute path to CA certificate.
 
     client_cert: str | None, default=None
-        Absolute path to client certificate
+        Absolute path to client certificate.
 
     client_cert_key: str | None, default=None
-        Absolute path to client certificate key
+        Absolute path to client certificate key.
 
     proxy_url : HttpUrl
-        HTTP(S) proxy address
+        HTTP(S) proxy address.
 
     Notes
     -----
-    By default one line JSON formatter is used for events
+    By default one line JSON formatter is used for events.
 
     """
 

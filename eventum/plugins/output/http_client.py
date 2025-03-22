@@ -19,29 +19,29 @@ def create_ssl_context(
     Parameters
     ----------
     verify : bool
-        Wether to verify certificates
+        Wether to verify certificates.
 
     ca_cert : Path | None, default=None
-        Path to CA certificate
+        Path to CA certificate.
 
     client_cert : Path | None, default=None
-        Path to client certificate
+        Path to client certificate.
 
     client_key : Path | None, default=None
-        Path to client certificate key
+        Path to client certificate key.
 
     Returns
     -------
     ssl.SSLContext
-        Initialized SSL context
+        Initialized SSL context.
 
     Raises
     ------
     OSError
-        If error occurs during reading certificates
+        If error occurs during reading certificates.
 
     ValueError:
-        If client cert is provided but client key is not or vise versa
+        If client cert is provided but client key is not or vise versa.
 
     """
     context = ssl.create_default_context()
@@ -91,31 +91,31 @@ def create_client(  # noqa: PLR0913
     Parameters
     ----------
     ssl_context : ssl.SSLContext | None, default=None
-        SSL context for session
+        SSL context for session.
 
     username : str | None, default=None
-        Username used in basic auth
+        Username used in basic auth.
 
     password : str | None, default=None
         Password for user used in basic auth, can be `None` with
-        provided `username` (in this case empty string will be used)
+        provided `username` (in this case empty string will be used).
 
     headers : dict[str, Any] | None, default=None
-        Headers to set in session
+        Headers to set in session.
 
     connect_timeout : int, default=10
-        Timeout of connection to host
+        Timeout of connection to host.
 
     request_timeout : int, default=300
-        Timeout of requests
+        Timeout of requests.
 
     proxy_url : str | None, default=None
-        Proxy url
+        Proxy url.
 
     Returns
     -------
     httpx.AsyncClient
-        Initialized HTTP client
+        Initialized HTTP client.
 
     """
     ssl_context = ssl_context or ssl.create_default_context()
