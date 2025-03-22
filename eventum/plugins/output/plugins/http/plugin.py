@@ -6,11 +6,9 @@ from typing import override
 
 import httpx
 
-from eventum.plugins.exceptions import (
-    PluginConfigurationError,
-    PluginRuntimeError,
-)
+from eventum.plugins.exceptions import PluginConfigurationError
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
+from eventum.plugins.output.exceptions import PluginWriteError
 from eventum.plugins.output.http_client import (
     create_client,
     create_ssl_context,
@@ -42,7 +40,7 @@ class HttpOutputPlugin(
             msg = 'Failed to create SSL context'
             raise PluginConfigurationError(
                 msg,
-                context=dict(self.instance_info, reason=str(e)),
+                context={'reason': str(e)},
             ) from e
 
         self._client: httpx.AsyncClient
@@ -88,27 +86,25 @@ class HttpOutputPlugin(
             )
         except httpx.RequestError as e:
             msg = 'Request failed'
-            raise PluginRuntimeError(
+            raise PluginWriteError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=str(e),
-                    url=self._config.url,
-                ),
+                context={
+                    'reason': str(e),
+                    'url': self._config.url,
+                },
             ) from e
 
         if response.status_code != self._config.success_code:
             content = await response.aread()
             text = content.decode()
             msg = 'Server returned not expected status code'
-            raise PluginRuntimeError(
+            raise PluginWriteError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    http_status=response.status_code,
-                    reason=text,
-                    url=self._config.url,
-                ),
+                context={
+                    'http_status': response.status_code,
+                    'reason': text,
+                    'url': self._config.url,
+                },
             )
 
     @override
@@ -123,7 +119,7 @@ class HttpOutputPlugin(
 
         log_tasks: list[asyncio.Task] = []
         for result in results:
-            if isinstance(result, PluginRuntimeError):
+            if isinstance(result, PluginWriteError):
                 log_tasks.append(
                     self._loop.create_task(
                         self._logger.aerror(str(result), **result.context),
@@ -134,7 +130,6 @@ class HttpOutputPlugin(
                     self._loop.create_task(
                         self._logger.aerror(
                             'Failed to perform request',
-                            **self.instance_info,
                             reason=str(result),
                             url=self._config.url,
                         ),
