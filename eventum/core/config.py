@@ -21,10 +21,6 @@ class ConfigurationLoadError(ContextualError):
     """Error during loading generator configuration."""
 
 
-class TokenSubstitutionError(Exception):
-    """Error during tokens substitution."""
-
-
 def _extract_tokens(content: str, prefix: str | None = None) -> list[str]:
     """Extract tokens enclosed within `${}` from the given content.
 
@@ -217,7 +213,7 @@ def _substitute_tokens(
 
     Raises
     ------
-    TokenSubstitutionError
+    ValueError
         If any error occurs during tokens substitution
 
     """
@@ -238,9 +234,9 @@ def _substitute_tokens(
             f'Tokens substitution structure is malformed: {e} '
             f'(line {e.lineno})'
         )
-        raise TokenSubstitutionError(msg) from e
+        raise ValueError(msg) from e
     except Exception as e:
-        raise TokenSubstitutionError(str(e)) from e
+        raise ValueError(str(e)) from e
 
 
 def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
@@ -258,6 +254,11 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
     -------
     GeneratorConfig
         Loaded generator configuration
+
+    Raises
+    ------
+    ConfigurationLoadError
+        If configuration cannot be loaded
 
     """
     try:
@@ -299,7 +300,7 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
             secrets=rendering_secrets,
             content=content,
         )
-    except TokenSubstitutionError as e:
+    except ValueError as e:
         msg = 'Failed to substitute tokens to configuration'
         raise ConfigurationLoadError(
             msg,
