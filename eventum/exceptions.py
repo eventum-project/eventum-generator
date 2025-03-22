@@ -12,10 +12,10 @@ class ContextualError(Exception):
         Parameters
         ----------
         *args: object
-            Exception arguments
+            Exception arguments.
 
         context : dict[str, Any]
-            Context of error
+            Context of error.
 
         """
         super().__init__(*args)
