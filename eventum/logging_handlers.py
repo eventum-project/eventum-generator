@@ -91,6 +91,12 @@ class RoutingHandler(logging.Handler):
 
                 handler.emit(record)
         except Exception:  # noqa: BLE001
-            # if attribute value is not hashable or other error occurred
-            # then we use default handler
             self._default_handler.emit(record)
+
+    @override
+    def close(self) -> None:
+        self._default_handler.close()
+        for handler in self._handlers.values():
+            handler.close()
+
+        super().close()
