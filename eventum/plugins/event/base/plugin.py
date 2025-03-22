@@ -6,7 +6,6 @@ from typing import TypedDict, TypeVar, override
 
 from pydantic import RootModel
 
-from eventum.core.models.metrics import EventPluginMetrics
 from eventum.plugins.base.plugin import Plugin, PluginParams
 from eventum.plugins.event.base.config import EventPluginConfig
 
@@ -100,12 +99,3 @@ class EventPlugin(Plugin[ConfigT, ParamsT], register=False):
     def produce_failed(self) -> int:
         """Number of unsuccessfully produced events."""
         return self._produce_failed
-
-    @override
-    def get_metrics(self) -> EventPluginMetrics:
-        metrics = super().get_metrics()
-        return EventPluginMetrics(
-            **metrics,
-            produced=self.produced,
-            produce_failed=self.produce_failed,
-        )

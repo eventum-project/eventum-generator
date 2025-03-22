@@ -9,7 +9,6 @@ from numpy.typing import NDArray
 from pydantic import RootModel
 from pytz import BaseTzInfo
 
-from eventum.core.models.metrics import InputPluginMetrics
 from eventum.plugins.base.plugin import Plugin, PluginParams
 from eventum.plugins.input.base.config import InputPluginConfig
 from eventum.plugins.input.buffer import Buffer
@@ -131,8 +130,3 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
     def generated(self) -> int:
         """Number of generated timestamps."""
         return self._generated
-
-    @override
-    def get_metrics(self) -> InputPluginMetrics:
-        metrics = super().get_metrics()
-        return InputPluginMetrics(**metrics, generated=self.generated)

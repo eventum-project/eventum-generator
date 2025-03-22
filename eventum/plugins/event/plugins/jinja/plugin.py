@@ -27,10 +27,6 @@ from eventum.plugins.event.plugins.jinja.config import (
     TemplateConfigForGeneralModes,
 )
 from eventum.plugins.event.plugins.jinja.context import EventContext
-from eventum.plugins.event.plugins.jinja.metrics import (
-    JinjaEventPluginMetrics,
-    JinjaEventPluginStateMetrics,
-)
 from eventum.plugins.event.plugins.jinja.module_provider import ModuleProvider
 from eventum.plugins.event.plugins.jinja.sample_reader import (
     SampleLoadError,
@@ -215,7 +211,7 @@ class JinjaEventPlugin(
     def _load_template(
         self,
         name: str,
-        globals: MutableMapping[str, Any] | None = None,  # noqa: A002
+        globals: MutableMapping[str, Any] | None = None,
     ) -> Template:
         """Load template using current environment.
 
@@ -351,18 +347,3 @@ class JinjaEventPlugin(
     def subprocess_runner(self) -> SubprocessRunner:
         """Subprocess runner."""
         return self._subprocess_runner
-
-    @override
-    def get_metrics(self) -> JinjaEventPluginMetrics:
-        metrics = super().get_metrics()
-        return JinjaEventPluginMetrics(
-            **metrics,
-            state=JinjaEventPluginStateMetrics(
-                locals={
-                    name: state.as_dict()
-                    for name, state in self.local_states.items()
-                },
-                shared=self.shared_state.as_dict(),
-                globals=self.global_state.as_dict(),
-            ),
-        )

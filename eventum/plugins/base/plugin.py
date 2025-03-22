@@ -5,7 +5,6 @@ import inspect
 from abc import ABC
 from collections.abc import Iterator
 from contextlib import contextmanager
-from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
@@ -24,7 +23,6 @@ import structlog
 from pydantic import RootModel
 
 from eventum.plugins.base.config import PluginConfig
-from eventum.plugins.base.metrics import PluginMetrics
 from eventum.plugins.exceptions import (
     PluginConfigurationError,
     PluginRegistrationError,
@@ -212,12 +210,6 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
             plugin_id=self.id,
         )
 
-        self._metrics = PluginMetrics(
-            id=self.id,
-            name=self.name,
-            type=self.type,
-        )
-
     @contextmanager
     def _required_params(self) -> Iterator:
         """Context manager for handling missing keys in plugin parameters.
@@ -349,15 +341,3 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
     def config(self) -> ConfigT:
         """Plugin config."""
         return self._config
-
-    def get_metrics(self) -> PluginMetrics:
-        """Get plugin metrics.
-
-        Returns
-        -------
-        PluginMetrics
-            Plugins metrics
-
-        """
-        # all metric item types are immutable so copy is safe
-        return copy(self._metrics)
