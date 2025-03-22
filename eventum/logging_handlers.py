@@ -27,7 +27,7 @@ class RoutingHandler(logging.Handler):
         attribute : str
             Name of log record attribute to use for routing
 
-        handler_factory : Callable[[str], logging.Handler]
+        handler_factory : Callable[[Hashable], logging.Handler]
             Factory for creating new handlers, new handler is created
             using factory for each unique value of specified log record
             attribute, attribute value is passed to factory function as
