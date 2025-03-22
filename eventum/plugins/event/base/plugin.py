@@ -16,10 +16,10 @@ class ProduceParams(TypedDict):
     Attributes
     ----------
     timestamp : str
-        Timestamp of event
+        Timestamp of event.
 
     tags : tuple[str, ...]
-        Tags from input plugin that generated timestamp
+        Tags from input plugin that generated timestamp.
 
     """
 
@@ -54,20 +54,20 @@ class EventPlugin(Plugin[ConfigT, ParamsT], register=False):
         Parameters
         ----------
         params : ProduceParams
-            Parameters for events producing
+            Parameters for events producing.
 
         Returns
         -------
         list[str]
-           Produced events
+           Produced events.
 
         Raises
         ------
         PluginProduceError
-            If any error occurs during producing events
+            If any error occurs during producing events.
 
         EventsExhausted
-            If no more events can be produced by event plugin
+            If no more events can be produced by event plugin.
 
         """
         try:
@@ -85,7 +85,7 @@ class EventPlugin(Plugin[ConfigT, ParamsT], register=False):
 
         Notes
         -----
-        See `produce` method for more info
+        See `produce` method for more info.
 
         """
         ...
