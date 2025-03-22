@@ -18,12 +18,12 @@ def propagate_logger_context(
     ----------
     context : dict[str, Any] | None, default=None
         Context to bind, current logging context is used if none is
-        provided
+        provided.
 
     Returns
     -------
     Callable
-        Decorator
+        Decorator.
 
     """
     context = context or structlog.contextvars.get_contextvars()
