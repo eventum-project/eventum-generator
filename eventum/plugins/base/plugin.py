@@ -39,13 +39,13 @@ class _PluginRegistrationInfo:
     Attributes
     ----------
     name : str
-        Name of the plugin
+        Name of the plugin.
 
     type : str
-        Type of the plugin (e.g. input, event, ...)
+        Type of the plugin (e.g. input, event, ...).
 
     package : ModuleType
-        Parent package of plugin package
+        Parent package of plugin package.
 
     """
 
@@ -60,13 +60,13 @@ class PluginInstanceInfo(TypedDict):
     Attributes
     ----------
     plugin_name : str
-        Name of the plugin
+        Name of the plugin.
 
     plugin_type : str
-        Type of the plugin
+        Type of the plugin.
 
     plugin_id : int
-        ID of the plugin instance
+        ID of the plugin instance.
 
     """
 
@@ -81,17 +81,17 @@ def _inspect_plugin(plugin_cls: type) -> _PluginRegistrationInfo:
     Parameters
     ----------
     plugin_cls : type
-        Class of the plugin to inspect
+        Class of the plugin to inspect.
 
     Returns
     -------
     _PluginRegistrationInfo
-        Information for plugin registration
+        Information for plugin registration.
 
     Raises
     ------
     ValueError
-        If provided class cannot be inspected
+        If provided class cannot be inspected.
 
     """
     class_module = inspect.getmodule(plugin_cls)
@@ -140,21 +140,21 @@ class PluginParams(TypedDict):
     Attributes
     ----------
     id : int
-        Numeric plugin identifier
+        Numeric plugin identifier.
 
     ephemeral_name : str
         Ephemeral name of plugin, might be helpful when plugin is not
         registered but it needs representable name to moment of
-        initialization
+        initialization.
 
     ephemeral_type : str
         Ephemeral type of plugin, might be helpful when plugin is not
         registered but it needs representable type to moment of
-        initialization
+        initialization.
 
     base_path : Required[Path]
         Base path for all relative paths used in plugin configurations,
-        if it is not provided then current working directory is used
+        if it is not provided then current working directory is used.
 
     """
 
@@ -174,7 +174,7 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
     Other Parameters
     ----------------
     register : bool, default=True
-        Whether to register plugin in registry
+        Whether to register plugin in registry.
 
     """
 
@@ -184,10 +184,10 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
         Parameters
         ----------
         config : ConfigT
-            Configuration for the plugin
+            Configuration for the plugin.
 
         params : ParamsT
-            Parameters for plugin (see `PluginParams`)
+            Parameters for plugin (see `PluginParams`).
 
         """
         self._config = config
@@ -217,7 +217,7 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
         Raises
         ------
         PluginConfigurationError
-            If `KeyError` is raised
+            If `KeyError` is raised.
 
         """
         try:
