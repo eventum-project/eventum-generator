@@ -19,15 +19,15 @@ class BufferItem:
     ----------
     type : Literal['v', 'm', 'mv']
         Type of item:
-        v - single timestamp value,
-        m - value of timestamps that should be multiplied,
-        mv - multi value array of timestamps
+        v - single timestamp value;
+        m - value of timestamps that should be multiplied;
+        mv - multi value array of timestamps;
 
     value : datetime64 | NDArray[datetime64]
-        Target value
+        Target value.
 
     multiply : int:
-        multiplication factor for type 'm'
+        multiplication factor for type 'm'.
 
     """
 
@@ -50,7 +50,7 @@ class Buffer:
         Parameters
         ----------
         timestamp : datetime64
-            Timestamp to push
+            Timestamp to push.
 
         """
         self._buffer.append(BufferItem(type='v', value=timestamp))
@@ -62,15 +62,15 @@ class Buffer:
         Parameters
         ----------
         timestamp : datetime64
-            Timestamp to push
+            Timestamp to push.
 
         multiply : int
-            How many values of provided `timestamp` to push
+            How many values of provided `timestamp` to push.
 
         Raises
         ------
         ValueError
-            If parameter "multiply" is less than 1
+            If parameter "multiply" is less than 1.
 
         """
         if multiply < 1:
@@ -88,7 +88,7 @@ class Buffer:
         Parameters
         ----------
         timestamps : NDArray[datetime64]
-            Timestamps to push
+            Timestamps to push.
 
         """
         if timestamps.size == 0:
@@ -103,7 +103,7 @@ class Buffer:
         Returns
         -------
         NDArray[datetime64]
-            Array with timestamp
+            Array with timestamp.
 
         """
         item = self._buffer.popleft()
@@ -121,12 +121,12 @@ class Buffer:
         Parameters
         ----------
         required : int
-            Number of timestamps to read from value
+            Number of timestamps to read from value.
 
         Returns
         -------
         NDArray[datetime64]
-            Array with timestamp
+            Array with timestamp.
 
         """
         item = self._buffer[0]
@@ -151,12 +151,12 @@ class Buffer:
         Parameters
         ----------
         required : int
-            Number of timestamps to read from array
+            Number of timestamps to read from array.
 
         Returns
         -------
         NDArray[datetime64]
-            Array with timestamp
+            Array with timestamp.
 
         """
         item = self._buffer[0]
@@ -181,26 +181,26 @@ class Buffer:
         Parameters
         ----------
         size : int
-            Size of arrays
+            Size of arrays.
 
         partial : bool, default = False
             Read until buffer is empty event if the last array is not
-            complete
+            complete.
 
         Yields
         ------
         NDArray[datetime64]
-            Array of timestamps
+            Array of timestamps.
 
         Raises
         ------
         ValueError
-            If  parameter "size" is less than 1
+            If  parameter "size" is less than 1.
 
         Notes
         -----
         No push methods are supposed to be called until this method
-        generator is exhausted
+        generator is exhausted.
 
         """
         if size < 1:

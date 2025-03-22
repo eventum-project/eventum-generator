@@ -14,13 +14,13 @@ def now64(timezone: BaseTzInfo) -> datetime64:
     Parameters
     ----------
     timezone : BaseTzInfo
-        Timezone for value of `datetime64` object
+        Timezone for value of `datetime64` object.
 
     Returns
     -------
     datetime64
         Numpy `datetime64` object with current time in specified
-        `timezone`
+        `timezone`.
 
     """
     return datetime64(datetime.now().astimezone(timezone).replace(tzinfo=None))
@@ -33,13 +33,13 @@ def timedelta64_to_seconds(timedelta: timedelta64) -> float:
     Parameters
     ----------
     timedelta : timedelta64
-        Timedelta to convert
+        Timedelta to convert.
 
     Returns
     -------
     float
         Floating point number representing number of seconds in
-        `timedelta`
+        `timedelta`.
 
     """
     return float(timedelta / timedelta64(1000000, 'us'))
@@ -53,15 +53,15 @@ def to_naive(timestamp: datetime, timezone: BaseTzInfo) -> datetime:
     Parameters
     ----------
     timestamp : datetime
-        Timestamp to convert
+        Timestamp to convert.
 
     timezone: BaseTzInfo
-        Timezone for localization of datetime value
+        Timezone for localization of datetime value.
 
     Returns
     -------
     datetime
-        Naive datetime object
+        Naive datetime object.
 
     """
     return timestamp.astimezone(timezone).replace(tzinfo=None)
@@ -79,26 +79,26 @@ def skip_periods(
     Parameters
     ----------
     start : datetime
-        Start timestamp for counting periods
+        Start timestamp for counting periods.
 
     moment : datetime
-        Timestamps of moment until which to skip
+        Timestamps of moment until which to skip.
 
     duration : timedelta
-        Duration of one period
+        Duration of one period.
 
     ret_timestamp : Literal['last_past', 'first_future']
-        Which timestamp to return: last past or first future
+        Which timestamp to return: last past or first future.
 
     Returns
     -------
     datetime
-        Timestamp after skipped past periods
+        Timestamp after skipped past periods.
 
     Raises
     ------
     ValueError
-        If duration is less than zero
+        If duration is less than zero.
 
     """
     if duration.total_seconds() <= 0:

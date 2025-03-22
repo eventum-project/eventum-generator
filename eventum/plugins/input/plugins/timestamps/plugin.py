@@ -67,18 +67,18 @@ class TimestampsInputPlugin(
         ----------
         filename : str
             Path to file with timestamps that are delimited with new
-            line
+            line.
 
         Returns
         -------
         list[datetime]
-            List of datetime objects
+            List of datetime objects.
 
         Raises
         ------
         PluginConfigurationError
             If cannot read content of the specified file or parse
-            timestamps
+            timestamps.
 
         """
         try:

@@ -15,15 +15,15 @@ def get_future_slice(
     Parameters
     ----------
     timestamps : NDArray[datetime64]
-        Timestamps array sorted in ascending order
+        Timestamps array sorted in ascending order.
 
     after : datetime64
-        Cutoff moment
+        Cutoff moment.
 
     Returns
     -------
     NDArray[datetime64]
-        Slice of original timestamps array after the specified moment
+        Slice of original timestamps array after the specified moment.
 
     """
     index = searchsorted(a=timestamps, v=after, side='right')
@@ -39,15 +39,15 @@ def get_past_slice(
     Parameters
     ----------
     timestamps : NDArray[datetime64]
-        Timestamps array sorted in ascending order
+        Timestamps array sorted in ascending order.
 
     before : datetime64
-        Cutoff moment
+        Cutoff moment.
 
     Returns
     -------
     NDArray[datetime64]
-        Slice of original timestamps array before the specified moment
+        Slice of original timestamps array before the specified moment.
 
     """
     index = searchsorted(a=timestamps, v=before, side='right')
@@ -62,15 +62,15 @@ def chunk_array(array: NDArray, size: int) -> list[NDArray]:
     Parameters
     ----------
     array : NDArray
-        Array to chunk
+        Array to chunk.
 
     size : int
-        Size of one chunk
+        Size of one chunk.
 
     Returns
     -------
     list[NDArray]
-        List of chunks
+        List of chunks.
 
     """
     return [array[i : i + size] for i in range(0, array.size, size)]
@@ -82,21 +82,21 @@ def merge_arrays(arrays: Sequence[NDArray]) -> NDArray:
     Parameters
     ----------
     arrays : Sequence[NDArray]
-        Arrays to merge
+        Arrays to merge.
 
     Returns
     -------
     NDArray
-        Merged sorted resulting array
+        Merged sorted resulting array.
 
     Raises
     ------
     ValueError
-        If arrays sequence is empty
+        If arrays sequence is empty.
 
     Notes
     -----
-    If array is structured or multidimensional then zeroth axis is used
+    If array is structured or multidimensional then zeroth axis is used.
 
     """
     if not arrays:

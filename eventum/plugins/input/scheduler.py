@@ -39,11 +39,11 @@ class BaseBatchScheduler:
         Parameters
         ----------
         source : SupportsIdentifiedTimestampsIterate
-            Timestamps source
+            Timestamps source.
 
         timezone : BaseTzInfo, default=pytz.timezone('UTC')
             Timezone of timestamps in batches, used to match timestamps
-            with current time
+            with current time.
 
         """
         self._source = source
@@ -59,13 +59,13 @@ class BaseBatchScheduler:
         Parameters
         ----------
         skip_past : bool, default=True
-            Whether to skip past timestamps before starting iteration
+            Whether to skip past timestamps before starting iteration.
 
         Yields
         ------
         tuple[IdentifiedTimestamps, float]
             Array of timestamps and number of seconds to wait before it
-            should be published
+            should be published.
 
         """
         for array in self._source.iterate(skip_past=skip_past):

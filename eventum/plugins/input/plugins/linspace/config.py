@@ -17,16 +17,16 @@ class LinspaceInputPluginConfig(
     Attributes
     ----------
     start : VersatileDatetimeStrict
-        Start of the generating date range
+        Start of the generating date range.
 
     end : VersatileDatetimeStrict
-        End of the generating date range
+        End of the generating date range.
 
     count : int
-        Number of events within date range
+        Number of events within date range.
 
     endpoint : bool
-        Whether to include end point of date range
+        Whether to include end point of date range.
 
     """
 

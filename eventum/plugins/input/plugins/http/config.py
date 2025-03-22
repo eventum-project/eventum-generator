@@ -14,15 +14,15 @@ class HttpInputPluginConfig(
     Attributes
     ----------
     host : str, default='0.0.0.0'
-        Bind address
+        Bind address.
 
     port : int
-        Bind port
+        Bind port.
 
     max_pending_requests : int, default=100
         Maximum number of incoming requests to store in queue before
-        they are processed, if a request arrives and the queue is full
-        a 429 response will be returned immediately
+        they are processed. If a request is received and the queue is
+        full a 429 response will be returned immediately.
 
     """
 

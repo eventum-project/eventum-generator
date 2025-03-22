@@ -12,17 +12,17 @@ class TimerInputPluginConfig(InputPluginConfig, frozen=True):
     Attributes
     ----------
     start : VersatileDatetime
-        Start time of timer countdown, if not set current time is used
+        Start time of timer countdown, if not set current time is used.
 
     seconds : float
-        Number of seconds to wait before generating timestamp
+        Number of seconds to wait before generating timestamp.
 
     count : int
-        Number of timestamps to generate
+        Number of timestamps to generate.
 
     repeat : bool
         Number of cycles to repeat, if value is not set, then repeat
-        infinitely
+        infinitely.
 
     """
 

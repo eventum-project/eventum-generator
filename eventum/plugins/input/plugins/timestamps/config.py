@@ -15,12 +15,12 @@ class TimestampsInputPluginConfig(InputPluginConfig, frozen=True):
     ----------
     source : list[datetime] | Path
         List of timestamps or absolute path to file with new line
-        separated timestamps in ISO8601 format
+        separated timestamps in ISO8601 format.
 
     Notes
     -----
     It is expected that timestamps are already sorted in ascending
-    order
+    order.
 
     """
 

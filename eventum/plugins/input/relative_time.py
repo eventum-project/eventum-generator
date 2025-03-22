@@ -19,17 +19,17 @@ def parse_relative_time(expression: str) -> timedelta:
         <value> ::= <integer>
         <unit> ::= 'd' | 'h' | 'm' | 's'
         ```
-        Example expressions: `+1d12h`; `1h30m10s`; `-3d4h`; `-1d2h30m`
+        Example expressions: `+1d12h`; `1h30m10s`; `-3d4h`; `-1d2h30m`.
 
     Returns
     -------
     timedelta
-        Parsed expression represented as timedelta object
+        Parsed expression represented as timedelta object.
 
     Raises
     ------
     ValueError
-        If expression cannot be parsed due to invalid format
+        If expression cannot be parsed due to invalid format.
 
     """
     expression = expression.strip()

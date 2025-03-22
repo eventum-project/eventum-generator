@@ -21,10 +21,10 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
     Attributes
     ----------
     MIN_BATCH_SIZE : int
-        Minimum batch size that can be configured for batcher
+        Minimum batch size that can be configured for batcher.
 
     MIN_BATCH_DELAY : float
-        Minimum batch delay that can be configured for batcher
+        Minimum batch delay that can be configured for batcher.
 
     """
 
@@ -42,21 +42,21 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
         Parameters
         ----------
         source : SupportsIdentifiedTimestampsSizedIterate
-            Source of identified timestamp arrays
+            Source of identified timestamp arrays.
 
         batch_size : int | None, default=100_000
             Maximum size of producing batches, not limited if value is
-            `None`, cannot be  less than `MIN_BATCH_SIZE` attribute
+            `None`, cannot be  less than `MIN_BATCH_SIZE` attribute.
 
         batch_delay: float | None, default=None
             Maximum time (in seconds) for single batch to accumulate
             incoming timestamps, not limited if value is `None`, cannot be
-            less then `MIN_BATCH_DELAY` attribute
+            less then `MIN_BATCH_DELAY` attribute.
 
         Raises
         ------
         ValueError
-            If some parameter is out of allowed range
+            If some parameter is out of allowed range.
 
         """
         if batch_size is None and batch_delay is None:
@@ -90,7 +90,7 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
         Parameters
         ----------
         iterator: Iterator[IdentifiedTimestamps]
-            Iterator to use
+            Iterator to use.
 
         """
         self._batch_size = cast('int', self._batch_size)
@@ -129,15 +129,15 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
         Parameters
         ----------
         latest : np.datetime64
-            Latest timestamp for the batch
+            Latest timestamp for the batch.
 
         array : NDArray[np.datetime64]
-            Array to find index for
+            Array to find index for.
 
         Returns
         -------
         int
-            Cutoff index
+            Cutoff index.
 
         """
         if latest < array[-1]:
@@ -161,15 +161,15 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
         Parameters
         ----------
         current_size : int
-            Current size of batch
+            Current size of batch.
 
         array : NDArray
-            Array to find index for
+            Array to find index for.
 
         Returns
         -------
         int
-            Cutoff index
+            Cutoff index.
 
         """
         if self._batch_size is None:
@@ -189,7 +189,7 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
         Parameters
         ----------
         iterator: Iterator[IdentifiedTimestamps]
-            Iterator to use
+            Iterator to use.
 
         """
         self._batch_delay = cast('float', self._batch_delay)

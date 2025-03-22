@@ -26,7 +26,7 @@ class LinspaceInputPlugin(
     -----
     Plugin allocates all the timestamp at generation start. If you have
     deal with large number of timestamps and need lazy evaluation, see
-    timer input plugin
+    timer input plugin.
 
     """
 

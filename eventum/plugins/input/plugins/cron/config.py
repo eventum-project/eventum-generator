@@ -19,11 +19,11 @@ class CronInputPluginConfig(
     ----------
     start : VersatileDatetime, default = None
         Start of the generating date range, if not set, current time
-        is used
+        is used.
 
     end : VersatileDatetime, default = None
         End of the generating date range, if not set, then never end
-        generation
+        generation.
 
     expression : str
         Cron expression (supports specifying seconds, years, random
@@ -31,7 +31,7 @@ class CronInputPluginConfig(
         https://pypi.org/project/croniter/#about-second-repeats)
 
     count : int
-        Number of events to generate for every interval
+        Number of events to generate for every interval.
 
     """
 

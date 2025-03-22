@@ -31,13 +31,13 @@ class InputPluginsMerger(
         Parameters
         ----------
         plugins : Iterable[InputPlugin]
-            Input plugins to merge
+            Input plugins to merge.
 
         Raises
         ------
         ValueError
             If no plugins provided in sequence or some of the plugin is
-            interactive
+            interactive.
 
         """
         self._plugins: dict[str, InputPlugin] = {}
@@ -71,16 +71,16 @@ class InputPluginsMerger(
         Parameters
         ----------
         size : int
-            Number of timestamps to read from each generator
+            Number of timestamps to read from each generator.
 
         skip_past : bool
-            Whether to skip past timestamps before starting slicing
+            Whether to skip past timestamps before starting slicing.
 
         Yields
         ------
         dict[str, NDArray[np.datetime64]]
             Slices of generators as a map with plugin guids in keys and
-            arrays in values
+            arrays in values.
 
         Notes
         -----

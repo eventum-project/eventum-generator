@@ -20,7 +20,7 @@ class InputPluginParams(PluginParams):
     Attributes
     ----------
     timezone : BaseTzInfo
-        Timezone that is used for generated timestamps
+        Timezone that is used for generated timestamps.
 
     """
 
@@ -40,10 +40,10 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
     Other Parameters
     ----------------
     interactive : bool, default=False
-        Whether to mark input plugin as interactive, interactive input
+        Whether to mark input plugin as interactive. Interactive input
         plugins cannot be merged with others and are used individually
         since they are blocking generation due to unpredictable user
-        interactions
+        interactions.
 
     """
 
@@ -80,23 +80,23 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
         size : int
             Number of timestamps to generate for each iteration, for
             the last iteration it is allowed to yield array not of
-            full size, for interactive plugins it is allowed to yield
+            full size. For interactive plugins it is allowed to yield
             array not of full size for each interaction with the plugin
             but if single interaction produces more than `size`
-            timestamps then they must be chunked
+            timestamps then they must be chunked.
 
         skip_past : bool, default=True
-            Whether to skip past timestamps before starting generation
+            Whether to skip past timestamps before starting generation.
 
         Yields
         ------
         NDArray[datetime64]
-            Array of generated timestamps
+            Array of generated timestamps.
 
         Raises
         ------
         PluginGenerationError
-            If any error occurs during timestamps generation
+            If any error occurs during timestamps generation.
 
         """
         self._generated = 0
@@ -116,7 +116,7 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
 
         Notes
         -----
-        See `generate` method for more info
+        See `generate` method for more info.
 
         """
         ...

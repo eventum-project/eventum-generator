@@ -27,7 +27,7 @@ class IdentifiedTimestampsPluginAdapter(
         Parameters
         ----------
         plugin : InputPlugin
-            Input plugin to adapt
+            Input plugin to adapt.
 
         """
         self._plugin = plugin
@@ -68,7 +68,7 @@ class AsyncIdentifiedTimestampsSyncAdapter(
         Parameters
         ----------
         target : SupportsIdentifiedTimestampsIterate
-            Target to adapt
+            Target to adapt.
 
         """
         self._target = target

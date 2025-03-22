@@ -51,19 +51,18 @@ class OscillatorConfig(
     Attributes
     ----------
     period : float
-        Duration of one period
+        Duration of one period.
 
     unit : TimeUnit
-        Time unit of the period
+        Time unit of the period.
 
     start : VersatileDatetimeStrict
-        Start time of the distribution;
-        if relative time is provided current time used as relative base
+        Start time of the distribution. If relative time is provided
+        current time used as relative base.
 
     end : VersatileDatetimeStrict
-        End time of the distribution;
-        if relative time is provided start time of distribution used as
-        relative base
+        End time of the distribution. If relative time is provided
+        start time of distribution used as relative base.
 
     """
 
@@ -79,7 +78,7 @@ class MultiplierConfig(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     ratio : int
-        Multiplication ratio
+        Multiplication ratio.
 
     """
 
@@ -92,13 +91,13 @@ class RandomizerConfig(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     deviation : float
-        Deviation ratio
+        Deviation ratio.
 
     direction : RandomizerDirection
-        Direction of deviation
+        Direction of deviation.
 
     sampling : int, default=1024
-        Size of sample with random deviation ratios
+        Size of sample with random deviation ratios.
 
     """
 
@@ -113,10 +112,10 @@ class BetaDistributionParameters(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     a : float
-        Parameter alpha for the distribution
+        Parameter alpha for the distribution.
 
     b : float
-        Parameter beta for the distribution
+        Parameter beta for the distribution.
 
     """
 
@@ -130,13 +129,13 @@ class TriangularDistributionParameters(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     left : float
-        Left edge of the distribution
+        Left edge of the distribution.
 
     mode : float
-        Mode position of the distribution
+        Mode position of the distribution.
 
     right : float
-        Right edge of the distribution
+        Right edge of the distribution.
 
     """
 
@@ -160,10 +159,10 @@ class UniformDistributionParameters(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     low : float
-        Low edge of the distribution
+        Low edge of the distribution.
 
     high : float
-        High edge of the distribution
+        High edge of the distribution.
 
     """
 
@@ -184,10 +183,10 @@ class BaseSpreaderConfig(ABC, BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     distribution: Distribution
-        Distribution function for spreading
+        Distribution function for spreading.
 
     parameters: DistributionParameters
-        Parameters of distribution
+        Parameters of distribution.
 
     """
 
@@ -224,19 +223,19 @@ class TimePatternConfig(InputPluginConfig, extra='forbid', frozen=True):
     Attributes
     ----------
     label: str
-        Label with a description
+        Label with a description.
 
     oscillator: OscillatorConfig
-        Configuration of oscillator
+        Configuration of oscillator.
 
     multiplier: MultiplierConfig
-        Configuration of multiplier
+        Configuration of multiplier.
 
     randomizer: RandomizerConfig
-        Configuration of randomizer
+        Configuration of randomizer.
 
     spreader: SpreaderConfig
-        Configuration of spreader
+        Configuration of spreader.
 
     """
 
@@ -253,7 +252,7 @@ class TimePatternsInputPluginConfig(InputPluginConfig, frozen=True):
     Attributes
     ----------
     patterns : list[Path]
-        File paths to time pattern configurations
+        File paths to time pattern configurations.
 
     """
 

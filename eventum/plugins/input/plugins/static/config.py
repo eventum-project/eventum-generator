@@ -11,7 +11,7 @@ class StaticInputPluginConfig(InputPluginConfig, frozen=True):
     Attributes
     ----------
     count : int
-        Number of events to generate
+        Number of events to generate.
 
     """
 

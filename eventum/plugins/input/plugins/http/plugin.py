@@ -24,7 +24,7 @@ class GenerateRequestData(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     count : int
-        Number of events to generate
+        Number of events to generate.
 
     """
 
@@ -45,7 +45,7 @@ class HttpInputPlugin(
     ```json
     {"count": 10}
     ```
-    , where 10 - is an example number of events to generate
+    , where 10 - is an example number of events to generate.
 
     """
 
@@ -97,13 +97,13 @@ class HttpInputPlugin(
         Parameters
         ----------
         data : GenerateRequest
-            Request data
+            Request data.
 
         Raises
         ------
         HTTPException
-            429 - If requests queue is full
-            409 - If server is stopping
+            429 - If requests queue is full;
+            409 - If server is stopping;
 
         """
         if self._is_stopping:
@@ -143,7 +143,7 @@ class HttpInputPlugin(
         Parameters
         ----------
         future : Future
-            Done future
+            Done future.
 
         """
         try:

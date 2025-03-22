@@ -98,16 +98,16 @@ class TimePatternInputPlugin(
         Parameters
         ----------
         count : int
-            Number of unique factors
+            Number of unique factors.
 
         Yields
         ------
         float
-            Randomizer factor
+            Randomizer factor.
 
         Notes
         -----
-        Factors are shuffled each time the sample is exhausted
+        Factors are shuffled each time the sample is exhausted.
 
         """
         match self._config.randomizer.direction:
@@ -172,15 +172,15 @@ class TimePatternInputPlugin(
         Parameters
         ----------
         size : int
-            Size of distribution
+            Size of distribution.
 
         duration : numpy.timedelta64
-            Duration of period
+            Duration of period.
 
         Returns
         -------
         NDArray[numpy.timedelta64]
-            Generated distribution
+            Generated distribution.
 
         """
         params = self._config.spreader.parameters
@@ -215,18 +215,18 @@ class TimePatternInputPlugin(
         Parameters
         ----------
         start : numpy.datetime64
-            Start timestamp of period
+            Start timestamp of period.
 
         size : int
-            Number of timestamps in period
+            Number of timestamps in period.
 
         duration : numpy.timedelta64
-            Duration of period
+            Duration of period.
 
         Returns
         -------
         NDArray[numpy.datetime64]
-            Generated array of timestamps
+            Generated array of timestamps.
 
         """
         return self._generate_distribution(size, duration) + start
@@ -350,7 +350,7 @@ class TimePatternsInputPlugin(
         Parameters
         ----------
         params : InputPluginParams
-            Input plugin parameters
+            Input plugin parameters.
 
         """
         time_patterns: list[TimePatternInputPlugin] = []

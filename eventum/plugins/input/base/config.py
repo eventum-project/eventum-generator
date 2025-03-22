@@ -11,7 +11,7 @@ class InputPluginConfig(PluginConfig, ABC, frozen=True):
     Attributes
     ----------
     tags : tuple[str, ...], optional
-        Tags list attached to an input plugin (the default is no tags)
+        Tags list attached to an input plugin (the default is no tags).
 
     """
 

@@ -31,22 +31,22 @@ class SupportsIdentifiedTimestampsSizedIterate(Protocol):
         Parameters
         ----------
         size : int
-            Number of timestamps to yield for each iteration, actual
-            number can be lower than specified, see `generate` method
-            of `InputPlugin` for details
+            Number of timestamps to yield for each iteration. Actual
+            number can be lower than specified. See `generate` method
+            of `InputPlugin` for details.
 
         skip_past : bool, default=True
-            Whether to skip past timestamps before starting iteration
+            Whether to skip past timestamps before starting iteration.
 
         Yields
         ------
         IdentifiedTimestamps
-            Array of timestamps with plugin ids
+            Array of timestamps with plugin ids.
 
         Raises
         ------
         ValueError
-            If parameter "size" is less than 1
+            If parameter `size` is less than 1.
 
         """
         ...
@@ -68,12 +68,12 @@ class SupportsIdentifiedTimestampsIterate(Protocol):
         Parameters
         ----------
         skip_past : bool, default=True
-            Whether to skip past timestamps before starting iteration
+            Whether to skip past timestamps before starting iteration.
 
         Yields
         ------
         IdentifiedTimestamps
-            Array of timestamps with plugin ids
+            Array of timestamps with plugin ids.
 
         """
         ...

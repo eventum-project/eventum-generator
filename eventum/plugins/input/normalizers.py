@@ -23,32 +23,33 @@ def normalize_versatile_datetime(  # noqa: C901, PLR0912
     Parameters
     ----------
     value : VersatileDatetime
-        Value to normalize
+        Value to normalize.
 
     timezone : BaseTzInfo
-        Timezone that is used for returned datetime object
+        Timezone that is used for returned datetime object.
 
     relative_base : datetime | None
         Base time to use when value represents relative time, default
-        is current time
+        is current time.
 
     none_point : NonePoint, default='now'
         What time to use when `value` parameter is `None`: 'now' -
         current time; `min` - minimal value of datetime; `max` -
-        maximal value of datetime
+        maximal value of datetime.
 
     Returns
     -------
     datetime
-        Normalized value as datetime object in specified timezone
+        Normalized value as datetime object in specified timezone.
 
     Raises
     ------
     ValueError
-        If provided value cannot be parsed as datetime objects
+        If provided value cannot be parsed as datetime objects.
 
     OverflowError
-        If resulting datetime value is overflowed for specified timezone
+        If resulting datetime value is overflowed for specified
+        timezone.
 
     """
     now = datetime.now().astimezone(timezone)
@@ -143,37 +144,37 @@ def normalize_versatile_daterange(
     Parameters
     ----------
     start : VersatileDatetime
-        Start of the date range, used as relative base for `end`
+        Start of the date range, used as relative base for `end`.
 
     end : VersatileDatetime
-        End of the date range
+        End of the date range.
 
     timezone : BaseTzInfo
-        Timezone that is used for returned datetime objects
+        Timezone that is used for returned datetime objects.
 
     none_start : NoneStartPoint, default='min'
         What time to use when `start` parameter is `None`: 'now' -
-        current time; `min` - minimal value of datetime;
+        current time; `min` - minimal value of datetime.
 
     none_end : NoneStartPoint, default='max'
         What time to use when `end` parameter is `None`: 'now' -
-        current time; `max` - maximal value of datetime;
+        current time; `max` - maximal value of datetime.
 
     Returns
     -------
     tuple[datetime, datetime]
         Normalized start and end of the date range as a tuple in
-        specified timezone
+        specified timezone.
 
     Raises
     ------
     ValueError
         If provided values cannot be parsed as datetime objects or
-        date range is improper (e.g. start time is later than end time)
+        date range is improper (e.g. start time is later than end time).
 
     OverflowError
         If some of the resulting datetime values are overflowed for
-        specified timezone
+        specified timezone.
 
     """
     if start == TimeKeyword.NEVER.value:
