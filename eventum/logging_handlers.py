@@ -25,29 +25,29 @@ class RoutingHandler(logging.Handler):
         Parameters
         ----------
         attribute : str
-            Name of log record attribute to use for routing
+            Name of log record attribute to use for routing.
 
         handler_factory : Callable[[Hashable], logging.Handler]
             Factory for creating new handlers, new handler is created
             using factory for each unique value of specified log record
             attribute, attribute value is passed to factory function as
-            single argument
+            single argument.
 
         default_handler : logging.Handler
             Handler that is used when log record attribute is missing,
             unhashable or any error occurs during usage of created
-            handler
+            handler.
 
         formatter: logging.Formatter
-            Formatter that will be used for created handlers
+            Formatter that will be used for created handlers.
 
         lru_size : int, default=1024
-            Number of dynamically created handlers to keep in lru cache
+            Number of dynamically created handlers to keep in lru cache.
 
         Raises
         ------
         ValueError
-            If `lru_size` is less than 1
+            If `lru_size` is less than 1.
 
         Notes
         -----
@@ -56,11 +56,11 @@ class RoutingHandler(logging.Handler):
         factory.
 
         Provided formatter is used only for handlers created by
-        `handler_factory`, but not for `default_handler`
+        `handler_factory`, but not for `default_handler`.
 
         """
         if lru_size < 1:
-            msg = 'Parameter "lru_size" must be greater or equal to 1'
+            msg = 'Parameter `lru_size` must be greater or equal to 1'
             raise ValueError(msg)
 
         super().__init__()
