@@ -5,8 +5,8 @@ import sys
 from collections.abc import Sequence
 from typing import assert_never, override
 
-from eventum.plugins.exceptions import PluginRuntimeError
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
+from eventum.plugins.output.exceptions import PluginWriteError
 from eventum.plugins.output.plugins.stdout.config import (
     StdoutOutputPluginConfig,
 )
@@ -76,9 +76,9 @@ class StdoutOutputPlugin(
             ]
         except UnicodeEncodeError as e:
             msg = 'Cannot encode events'
-            raise PluginRuntimeError(
+            raise PluginWriteError(
                 msg,
-                context=dict(self.instance_info, reason=str(e)),
+                context={'reason': str(e)},
             ) from e
 
         self._writer.writelines(lines)
