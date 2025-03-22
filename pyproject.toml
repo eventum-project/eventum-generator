@@ -108,10 +108,14 @@ line-length = 79
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
+    "A001",     # builtin-variable-shadowing
+    "A002",     # builtin-argument-shadowing
+    "ANN401",   # any-type
     "D105",     # undocumented-magic-method
     "D205",     # missing-blank-line-after-summary
     "S311",     # suspicious-non-cryptographic-random-usage
     "S701",     # jinja2-autoescape-false
+    "TRY400",   # error-instead-of-exception
 ]
 flake8-quotes = {inline-quotes = "single", multiline-quotes = "double"}
 exclude = ["**/tests/**"]
