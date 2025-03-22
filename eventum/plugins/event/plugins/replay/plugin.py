@@ -46,7 +46,7 @@ class ReplayEventPlugin(
         Raises
         ------
         PluginConfigurationError
-            If file does not exist
+            If file does not exist.
 
         """
         if not self._config.path.exists():
@@ -62,12 +62,12 @@ class ReplayEventPlugin(
         Returns
         -------
         re.Pattern | None
-            Compiled pattern or none
+            Compiled pattern or none.
 
         Raises
         ------
         PluginConfigurationError
-            If pattern compilation fails
+            If pattern compilation fails.
 
         """
         if self._config.timestamp_pattern is not None:
@@ -91,17 +91,17 @@ class ReplayEventPlugin(
             Hint can be specified to control the number of lines read:
             no more lines will be read if the total size in bytes of
             all lines so far exceeds hint, by default there is not
-            limit
+            limit.
 
         Returns
         -------
         list[str]
-            Next lines read from the file
+            Next lines read from the file.
 
         Raises
         ------
         PluginProduceError
-            If error occurs during reading the file
+            If error occurs during reading the file.
 
         """
         try:
@@ -145,11 +145,11 @@ class ReplayEventPlugin(
         Yields
         ------
         str
-            Line
+            Line.
 
         Notes
         -----
-        Repeating file reading are handled
+        Repeating file reading are handled.
 
         """
         while True:
@@ -172,12 +172,12 @@ class ReplayEventPlugin(
         Parameters
         ----------
         timestamp : datetime
-            Timestamp to format
+            Timestamp to format.
 
         Returns
         -------
         str
-            Formatted timestamp
+            Formatted timestamp.
 
         """
         if self._config.timestamp_format is None:
@@ -199,26 +199,26 @@ class ReplayEventPlugin(
         Parameters
         ----------
         message : str
-            Original message
+            Original message.
 
         string : str
-            String to substitute
+            String to substitute.
 
         pattern : re.Pattern
-            Pattern that defines position of substitution
+            Pattern that defines position of substitution.
 
         group_name : str
-            Named group in pattern that defines position of substitution
+            Named group in pattern that defines position of substitution.
 
         Returns
         -------
         str
-            New message with substituted string
+            New message with substituted string.
 
         Raises
         ------
         ValueError
-            If substitution is failed
+            If substitution is failed.
 
         """
         msg_match = pattern.search(message)

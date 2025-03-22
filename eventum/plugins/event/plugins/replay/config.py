@@ -14,35 +14,35 @@ class ReplayEventPluginConfig(EventPluginConfig, frozen=True):
     Attributes
     ----------
     path : Path
-        Absolute path to log file
+        Absolute path to log file.
 
     timestamp_pattern : str | None, default=None
         Regular expression pattern to identify the timestamp
-        substitution position within the original message, the
-        substitution is performed over the named group "timestamp",
-        if value is not set or pattern does not match, then
-        substitution is not performed, for more information about
+        substitution position within the original message. The
+        substitution is performed over the named group "timestamp".
+        If value is not set or pattern does not match, then
+        substitution is not performed. For more information about
         python regex syntax see:
         https://docs.python.org/3/library/re.html#regular-expression-syntax
 
     timestamp_format : str | None, default=None
         Format string that defines how the actual timestamp should be
-        substituted in the log message, the format follows C89 standard,
-        for more information see:
+        substituted in the log message. The format follows C89 standard.
+        For more information see:
         https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
-        If value is not set, then default (ISO 8601) format is used
+        If value is not set, then default (ISO 8601) format is used.
 
     repeat : bool, default=False
-        Whether to repeat replaying after the end of file is reached
+        Whether to repeat replaying after the end of file is reached.
 
     chunk_size : int
-        Number of bytes to read from the file at a time, this parameter
+        Number of bytes to read from the file at a time. This parameter
         controls how often to access file and how many data will be
-        stored in in memory, if 0 is provided then the entire file is
-        read at once
+        stored in in memory. If 0 is provided then the entire file is
+        read at once.
 
     encoding : Encoding, default='utf_8'
-        Encoding of the log file
+        Encoding of the log file.
 
     """
 
