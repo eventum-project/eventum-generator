@@ -7,7 +7,7 @@ from clickhouse_connect import get_async_client
 from clickhouse_connect.driver.binding import quote_identifier as quote
 
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
-from eventum.plugins.output.exceptions import PluginWriteError
+from eventum.plugins.output.exceptions import PluginOpenError, PluginWriteError
 from eventum.plugins.output.plugins.clickhouse.config import (
     ClickhouseOutputPluginConfig,
 )
@@ -67,7 +67,7 @@ class ClickhouseOutputPlugin(
             )
         except Exception as e:
             msg = 'Cannot initialize ClickHouse client'
-            raise PluginWriteError(
+            raise PluginOpenError(
                 msg,
                 context={'reason': str(e)},
             ) from e
