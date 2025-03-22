@@ -27,17 +27,17 @@ def _get_subpackage_names(package: ModuleType) -> list[str]:
     Parameters
     ----------
     package : ModuleType
-        Package to inspect
+        Package to inspect.
 
     Returns
     -------
     list[str]
-        List of subpackage names
+        List of subpackage names.
 
     Raises
     ------
     ValueError
-        If specified package is not a package
+        If specified package is not a package.
 
     """
     if not hasattr(package, '__path__'):
@@ -57,15 +57,15 @@ def _construct_plugin_module_name(package: ModuleType, name: str) -> str:
     Parameters
     ----------
     package : ModuleType
-        Parent package of plugin package with plugins of specific type
+        Parent package of plugin package with plugins of specific type.
 
     name : str
-        Name of the plugin
+        Name of the plugin.
 
     Returns
     -------
     str
-        Absolute name of module
+        Absolute name of module.
 
     """
     return f'{package.__name__}.{name}.plugin'
@@ -77,18 +77,18 @@ def _invoke_plugin(package: ModuleType, name: str) -> None:
     Parameters
     ----------
     package : ModuleType
-        Parent package of plugin package with plugins of specific type
+        Parent package of plugin package with plugins of specific type.
 
     name : str
-        Name of the plugin
+        Name of the plugin.
 
     Raises
     ------
     PluginNotFoundError
-        If specified plugin is not found
+        If specified plugin is not found.
 
     PluginLoadError
-        If specified plugin is found but cannot be imported
+        If specified plugin is found but cannot be imported.
 
     """
     try:
@@ -115,23 +115,23 @@ def _load_plugin(package: ModuleType, name: str) -> PluginInfo:
     Parameters
     ----------
     package : ModuleType
-        Parent package of plugin package with plugins of specific type
+        Parent package of plugin package with plugins of specific type.
 
     name : str
-        Name of the plugin
+        Name of the plugin.
 
     Returns
     -------
     PluginInfo
-        Information of loaded plugin
+        Information of loaded plugin.
 
     Raises
     ------
     PluginNotFoundError
-        If specified plugin is not found
+        If specified plugin is not found.
 
     PluginLoadError
-        If specified plugin is found but cannot be loaded
+        If specified plugin is found but cannot be loaded.
 
     """
     if not PluginsRegistry.is_registered(package, name):
@@ -154,20 +154,20 @@ def load_input_plugin(name: str) -> PluginInfo:
     Parameters
     ----------
     name : str
-        Name of the plugin
+        Name of the plugin.
 
     Returns
     -------
     PluginInfo
-        Information about plugin
+        Information about plugin.
 
     Raises
     ------
     PluginNotFoundError
-        If specified plugin is not found
+        If specified plugin is not found.
 
     PluginLoadError
-        If plugin is found but cannot be loaded
+        If plugin is found but cannot be loaded.
 
     """
     return _load_plugin(input_plugins, name)
@@ -180,20 +180,20 @@ def load_event_plugin(name: str) -> PluginInfo:
     Parameters
     ----------
     name : str
-        Name of the plugin
+        Name of the plugin.
 
     Returns
     -------
     PluginInfo
-        Information about plugin
+        Information about plugin.
 
     Raises
     ------
     PluginNotFoundError
-        If specified plugin is not found
+        If specified plugin is not found.
 
     PluginLoadError
-        If plugin is found but cannot be loaded
+        If plugin is found but cannot be loaded.
 
     """
     return _load_plugin(event_plugins, name)
@@ -206,20 +206,20 @@ def load_output_plugin(name: str) -> PluginInfo:
     Parameters
     ----------
     name : str
-        Name of the plugin
+        Name of the plugin.
 
     Returns
     -------
     PluginInfo
-        Information about plugin
+        Information about plugin.
 
     Raises
     ------
     PluginNotFoundError
-        If specified plugin is not found
+        If specified plugin is not found.
 
     PluginLoadError
-        If plugin is found but cannot be loaded
+        If plugin is found but cannot be loaded.
 
     """
     return _load_plugin(output_plugins, name)
@@ -231,7 +231,7 @@ def get_input_plugin_names() -> list[str]:
     Returns
     -------
     list[str]
-        Names of existing input plugins
+        Names of existing input plugins.
 
     """
     return _get_subpackage_names(input_plugins)
@@ -243,7 +243,7 @@ def get_event_plugin_names() -> list[str]:
     Returns
     -------
     list[str]
-        Names of existing event plugins
+        Names of existing event plugins.
 
     """
     return _get_subpackage_names(event_plugins)
@@ -255,7 +255,7 @@ def get_output_plugin_names() -> list[str]:
     Returns
     -------
     list[str]
-        Names of existing output plugins
+        Names of existing output plugins.
 
     """
     return _get_subpackage_names(output_plugins)
