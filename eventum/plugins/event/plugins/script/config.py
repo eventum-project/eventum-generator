@@ -13,7 +13,7 @@ class ScriptEventPluginConfig(EventPluginConfig, frozen=True):
     Attributes
     ----------
     path : Path
-        Absolute path to script
+        Absolute path to script.
 
     """
 

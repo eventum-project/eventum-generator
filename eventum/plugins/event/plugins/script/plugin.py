@@ -27,7 +27,7 @@ class ScriptEventPlugin(
     def produce(params: ProduceParams) -> str | list[str]:
         ...
     ```
-    For more information see documentation string of ProduceParams
+    For more information see documentation string of `ProduceParams`.
 
     """
 
@@ -50,13 +50,13 @@ class ScriptEventPlugin(
         Returns
         -------
         Callable[[ProduceParams], str | list[str]]
-            Function
+            Function.
 
         Raises
         ------
         PluginConfigurationError
             If module is not found, function is not found in module or
-            other error occurred during module execution
+            other error occurred during module execution.
 
         """
         script_path = self._config.path
