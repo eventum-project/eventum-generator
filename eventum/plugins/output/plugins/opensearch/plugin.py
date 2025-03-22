@@ -173,7 +173,7 @@ class OpensearchOutputPlugin(
 
         Raises
         ------
-        PluginRuntimeError
+        PluginWriteError
             If events indexing fails
 
         """
@@ -255,7 +255,7 @@ class OpensearchOutputPlugin(
 
         Raises
         ------
-        PluginRuntimeError
+        PluginWriteError
             If events indexing fails
 
         """

@@ -100,7 +100,7 @@ class ReplayEventPlugin(
 
         Raises
         ------
-        PluginRuntimeError
+        PluginProduceError
             If error occurs during reading the file
 
         """

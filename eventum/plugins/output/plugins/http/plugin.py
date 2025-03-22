@@ -73,7 +73,7 @@ class HttpOutputPlugin(
 
         Raises
         ------
-        PluginRuntimeError
+        PluginWriteError
             If request failed or response status code differs from
             expected one
 
