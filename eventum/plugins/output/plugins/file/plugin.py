@@ -8,8 +8,8 @@ from typing import override
 import aiofiles
 from aiofiles.threadpool.text import AsyncTextIOWrapper
 
-from eventum.plugins.exceptions import PluginRuntimeError
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
+from eventum.plugins.output.exceptions import PluginOpenError, PluginWriteError
 from eventum.plugins.output.plugins.file.config import FileOutputPluginConfig
 
 
@@ -154,23 +154,21 @@ class FileOutputPlugin(
             self._file = await self._open_file()
         except OSError as e:
             msg = 'Failed to open file'
-            raise PluginRuntimeError(
+            raise PluginOpenError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=str(e),
-                    file_path=self._config.path,
-                ),
+                context={
+                    'reason': str(e),
+                    'file_path': self._config.path,
+                },
             ) from e
 
         if not await self._file.writable():
             msg = 'File is not writable'
-            raise PluginRuntimeError(
+            raise PluginOpenError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    file_path=self._config.path,
-                ),
+                context={
+                    'file_path': self._config.path,
+                },
             )
 
         self._flushing_task = self._loop.create_task(self._start_flushing())
@@ -194,13 +192,12 @@ class FileOutputPlugin(
                     self._file = await self._reopen_file()
                 except OSError as e:
                     msg = 'Failed to reopen file'
-                    raise PluginRuntimeError(
+                    raise PluginWriteError(
                         msg,
-                        context=dict(
-                            self.instance_info,
-                            reason=str(e),
-                            file_path=self._config.path,
-                        ),
+                        context={
+                            'reason': str(e),
+                            'file_path': self._config.path,
+                        },
                     ) from e
 
             if not self._cleaned_up:
@@ -217,13 +214,12 @@ class FileOutputPlugin(
                 )
             except OSError as e:
                 msg = 'Failed to write events to file'
-                raise PluginRuntimeError(
+                raise PluginWriteError(
                     msg,
-                    context=dict(
-                        self.instance_info,
-                        reason=str(e),
-                        file_path=self._config.path,
-                    ),
+                    context={
+                        'reason': str(e),
+                        'file_path': self._config.path,
+                    },
                 ) from e
 
             if self._config.flush_interval == 0:
