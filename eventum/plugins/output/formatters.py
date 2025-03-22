@@ -96,7 +96,7 @@ class Formatter(ABC, Generic[T]):
             registered_formatter = Formatter._registered_formatters[format]
             msg = (
                 f'Formatter {registered_formatter} is already registered '
-                f'for format "{format}"'
+                f'for format `{format}`'
             )
             raise ValueError(msg)
 
@@ -165,7 +165,7 @@ class Formatter(ABC, Generic[T]):
         try:
             return cls._registered_formatters[format]
         except KeyError:
-            msg = f'No formatter found for format "{format}"'
+            msg = f'No formatter found for format `{format}`'
             raise ValueError(msg) from None
 
 
