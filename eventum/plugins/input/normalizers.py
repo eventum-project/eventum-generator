@@ -102,7 +102,7 @@ def normalize_versatile_datetime(  # noqa: C901, PLR0912
                         },
                     )
                     if parsed_time is None:
-                        msg = f'Cannot parse expression "{value}"'
+                        msg = f'Cannot parse expression `{value}`'
                         raise ValueError(msg) from None
 
                     dt = parsed_time
@@ -178,7 +178,7 @@ def normalize_versatile_daterange(
 
     """
     if start == TimeKeyword.NEVER.value:
-        msg = f'Start time cannot be "{TimeKeyword.NEVER}"'
+        msg = f'Start time cannot be `{TimeKeyword.NEVER}`'
         raise ValueError(msg)
 
     try:

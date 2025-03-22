@@ -157,7 +157,7 @@ def _get_sample_loader(
             SampleType.JSON: _load_json_sample,
         }[sample_type]  # type: ignore[return-value]
     except KeyError as e:
-        msg = f'No loader is available for sample type "{e}"'
+        msg = f'No loader is available for sample type `{e}`'
         raise ValueError(msg) from e
 
 
@@ -184,7 +184,7 @@ class SamplesReader:
         try:
             return self._samples[name]
         except KeyError as e:
-            msg = f'No such sample "{e}"'
+            msg = f'No such sample `{e}`'
             raise KeyError(msg) from None
 
     def _load_samples(

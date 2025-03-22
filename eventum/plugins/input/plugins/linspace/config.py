@@ -42,7 +42,7 @@ class LinspaceInputPluginConfig(
         v: VersatileDatetimeStrict,
     ) -> VersatileDatetimeStrict:
         if isinstance(v, str) and v == TimeKeyword.NEVER.value:
-            msg = f'Value "{TimeKeyword.NEVER.value}" is not allowed here'
+            msg = f'Value `{TimeKeyword.NEVER.value}` is not allowed here'
             raise ValueError(msg)
 
         return v

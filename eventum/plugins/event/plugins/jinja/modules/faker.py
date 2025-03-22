@@ -14,7 +14,7 @@ class _Locale:
         try:
             generator = Faker(locale=locale)
         except AttributeError:
-            msg = f'Unknown locale "{locale}"'
+            msg = f'Unknown locale `{locale}`'
             raise KeyError(msg) from None
 
         self._dict[locale] = generator

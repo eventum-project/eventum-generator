@@ -19,7 +19,7 @@ class ReplayEventPluginConfig(EventPluginConfig, frozen=True):
     timestamp_pattern : str | None, default=None
         Regular expression pattern to identify the timestamp
         substitution position within the original message. The
-        substitution is performed over the named group "timestamp".
+        substitution is performed over the named group `timestamp`.
         If value is not set or pattern does not match, then
         substitution is not performed. For more information about
         python regex syntax see:

@@ -194,7 +194,7 @@ class InputPluginsMerger(
         skip_past: bool = True,
     ) -> Iterator[IdentifiedTimestamps]:
         if size < 1:
-            msg = 'Parameter "size" must be greater or equal to 1'
+            msg = 'Parameter `size` must be greater or equal to 1'
             raise ValueError(msg)
 
         consume_size = max(10_000, size // len(self._plugins))

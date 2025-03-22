@@ -70,11 +70,11 @@ class Buffer:
         Raises
         ------
         ValueError
-            If parameter "multiply" is less than 1.
+            If parameter `multiply` is less than 1.
 
         """
         if multiply < 1:
-            msg = 'Parameter "multiply" must be greater or equal to 1'
+            msg = 'Parameter `multiply` must be greater or equal to 1'
             raise ValueError(msg)
 
         self._buffer.append(
@@ -195,7 +195,7 @@ class Buffer:
         Raises
         ------
         ValueError
-            If  parameter "size" is less than 1.
+            If  parameter `size` is less than 1.
 
         Notes
         -----
@@ -204,7 +204,7 @@ class Buffer:
 
         """
         if size < 1:
-            msg = 'Parameter "size" must be greater or equal to 1'
+            msg = 'Parameter `size` must be greater or equal to 1'
             raise ValueError(msg)
 
         to_concatenate: list[NDArray[datetime64]] = []

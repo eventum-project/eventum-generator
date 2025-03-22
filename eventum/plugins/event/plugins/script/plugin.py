@@ -104,7 +104,7 @@ class ScriptEventPlugin(
             function = getattr(module, ScriptEventPlugin._FUNCTION_NAME)
         except AttributeError:
             msg = (
-                f'Definition of function "{ScriptEventPlugin._FUNCTION_NAME}" '
+                f'Definition of function `{ScriptEventPlugin._FUNCTION_NAME}` '
                 'is missing in script'
             )
             raise PluginConfigurationError(

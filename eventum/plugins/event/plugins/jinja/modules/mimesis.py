@@ -25,7 +25,7 @@ class _Locale:
         try:
             generator = Generic(Locale(locale))
         except ValueError:
-            msg = f'Unknown locale "{locale}"'
+            msg = f'Unknown locale `{locale}`'
             raise KeyError(msg) from None
 
         self._dict[locale] = generator
@@ -52,7 +52,7 @@ class _Spec:
                 'usa': USASpecProvider(),
             }[spec_name]
         except KeyError as e:
-            msg = f'Unknown spec "{e}"'
+            msg = f'Unknown spec `{e}`'
             raise KeyError(msg) from None
 
         self._dict[spec_name] = spec

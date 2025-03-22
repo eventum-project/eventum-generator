@@ -40,7 +40,7 @@ class IdentifiedTimestampsPluginAdapter(
         skip_past: bool = True,
     ) -> Iterator[IdentifiedTimestamps]:
         if size < 1:
-            msg = 'Parameter "size" must be greater or equal to 1'
+            msg = 'Parameter `size` must be greater or equal to 1'
             raise ValueError(msg)
 
         for array in self._plugin.generate(size=size, skip_past=skip_past):

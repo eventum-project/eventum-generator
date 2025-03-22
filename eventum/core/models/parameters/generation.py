@@ -85,5 +85,5 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
         if v in all_timezones_set:
             return v
 
-        msg = f'Unknown time zone "{v}"'
+        msg = f'Unknown time zone `{v}`'
         raise ValueError(msg)

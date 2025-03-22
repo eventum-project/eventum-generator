@@ -21,7 +21,7 @@ class TemplateAliasesUniquenessValidatorMixin:
 
             duplicated_keys = aliases.intersection(keys)
             if duplicated_keys:
-                msg = f'Template alias "{duplicated_keys.pop()}" is duplicated'
+                msg = f'Template alias `{duplicated_keys.pop()}` is duplicated'
                 raise ValueError(msg)
 
             aliases.update(keys)

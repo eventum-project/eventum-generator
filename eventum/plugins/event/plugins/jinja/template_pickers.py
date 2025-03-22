@@ -38,7 +38,7 @@ class TemplatePicker(ABC, Generic[T]):
             registered_picker = TemplatePicker._registered_pickers[mode]
             msg = (
                 f'Picker {registered_picker} is already registered '
-                f'for mode "{mode}"'
+                f'for mode `{mode}`'
             )
             raise ValueError(msg)
 
@@ -114,7 +114,7 @@ class TemplatePicker(ABC, Generic[T]):
         try:
             return cls._registered_pickers[picking_mode]
         except KeyError:
-            msg = f'No picker found for mode "{picking_mode}"'
+            msg = f'No picker found for mode `{picking_mode}`'
             raise ValueError(msg) from None
 
 
@@ -285,7 +285,7 @@ class ChainTemplatePicker(
         try:
             self._chain = common_config['chain']
         except KeyError as e:
-            msg = f'Common config parameter "{e}" is missing'
+            msg = f'Common config parameter `{e}` is missing'
             raise ValueError(msg) from None
 
         self._chain_index = 0

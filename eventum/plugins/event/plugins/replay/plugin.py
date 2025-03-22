@@ -231,11 +231,11 @@ class ReplayEventPlugin(
             match_start = msg_match.start(group_name)
             match_end = msg_match.end(group_name)
         except IndexError:
-            msg = f'No group "{group_name}" found in match'
+            msg = f'No group `{group_name}` found in match'
             raise ValueError(msg) from None
 
         if match_start == -1 or match_end == -1:
-            msg = f'Group "{group_name}" did not contribute to the match'
+            msg = f'Group `{group_name}` did not contribute to the match'
             raise ValueError(msg)
 
         return message[:match_start] + string + message[match_end:]

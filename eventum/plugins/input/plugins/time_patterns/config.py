@@ -149,7 +149,7 @@ class TriangularDistributionParameters(BaseModel, extra='forbid', frozen=True):
             self.left == self.mode == self.right
         ):
             return self
-        msg = 'Values do not comply "left <= mode <= right" condition'
+        msg = 'Values do not comply `left <= mode <= right` condition'
         raise ValueError(msg)
 
 
@@ -173,7 +173,7 @@ class UniformDistributionParameters(BaseModel, extra='forbid', frozen=True):
     def validate_points(self) -> Self:  # noqa: D102
         if self.low < self.high:
             return self
-        msg = 'Values do not comply "low < high" condition'
+        msg = 'Values do not comply `low < high` condition'
         raise ValueError(msg)
 
 

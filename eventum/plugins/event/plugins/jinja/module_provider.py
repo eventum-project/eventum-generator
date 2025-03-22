@@ -33,10 +33,10 @@ class ModuleProvider:
             try:
                 module = importlib.import_module(key)
             except ModuleNotFoundError:
-                msg = f'Module "{key}" is not found'
+                msg = f'Module `{key}` is not found'
                 raise KeyError(msg) from None
         except ImportError as e:
-            msg = f'Failed to import module "{key}": {e}'
+            msg = f'Failed to import module `{key}`: {e}'
             raise KeyError(msg) from None
 
         self._imported_modules[key] = module

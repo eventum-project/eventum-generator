@@ -12,7 +12,7 @@ from eventum.plugins.input.relative_time import parse_relative_time
 
 def _try_parse_human_datetime(v: str) -> str:
     if dateparser.parse(v) is None:
-        msg = f'Not valid datetime expression "{v}"'
+        msg = f'Not valid datetime expression `{v}`'
         raise ValueError(msg)
 
     return v
@@ -25,7 +25,7 @@ def _try_parse_relative_time(v: str) -> str:
     try:
         parse_relative_time(v)
     except ValueError:
-        msg = f'Not valid relative time expression "{v}"'
+        msg = f'Not valid relative time expression `{v}`'
         raise ValueError(msg) from None
     else:
         return v
@@ -45,7 +45,7 @@ def _try_parse_time_keyword(v: str) -> str:
     try:
         TimeKeyword(v)
     except ValueError:
-        msg = f'Not valid time keyword "{v}"'
+        msg = f'Not valid time keyword `{v}`'
         raise ValueError(msg) from None
     else:
         return v

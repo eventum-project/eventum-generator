@@ -131,7 +131,7 @@ class OpensearchOutputPlugin(
         if 'errors' not in bulk_response or 'items' not in bulk_response:
             msg = (
                 'Invalid bulk response structure, '
-                '"errors" and "items" fields must be presented'
+                '`errors` and `items` fields must be presented'
             )
             raise ValueError(msg)
 
@@ -152,7 +152,7 @@ class OpensearchOutputPlugin(
         except KeyError:
             msg = (
                 'Invalid bulk response structure, '
-                '"type" and "reason" must be presented in error info'
+                '`type` and `reason` must be presented in error info'
             )
             raise ValueError(msg) from None
 

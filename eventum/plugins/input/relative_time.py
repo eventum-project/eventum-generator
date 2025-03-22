@@ -61,7 +61,7 @@ def parse_relative_time(expression: str) -> timedelta:
         case '-':
             sign = -1
         case char:
-            msg = f'Unexpected sign "{char}"'
+            msg = f'Unexpected sign `{char}`'
             raise ValueError(msg)
 
     return timedelta(
