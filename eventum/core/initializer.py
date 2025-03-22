@@ -83,7 +83,7 @@ def init_plugin(
 
 def init_plugin(
     name: str,
-    type: Literal['input', 'event', 'output'],  # noqa: A002
+    type: Literal['input', 'event', 'output'],
     config: PluginConfigFields,
     params: InputPluginParams | EventPluginParams | OutputPluginParams,
 ) -> InputPlugin | EventPlugin | OutputPlugin:
@@ -174,7 +174,7 @@ def init_plugin(
 
 
 def init_plugins(
-    input: Iterable[PluginConfig],  # noqa: A002
+    input: Iterable[PluginConfig],
     event: PluginConfig,
     output: Iterable[PluginConfig],
     params: GeneratorParameters,
