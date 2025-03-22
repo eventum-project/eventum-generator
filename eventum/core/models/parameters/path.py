@@ -1,6 +1,8 @@
-import os
+"""Path parameters."""
 
-from pydantic import BaseModel, Field, field_validator
+from pathlib import Path
+
+from pydantic import BaseModel, field_validator
 
 
 class PathParameters(BaseModel, extra='forbid', frozen=True):
@@ -8,21 +10,26 @@ class PathParameters(BaseModel, extra='forbid', frozen=True):
 
     Attributes
     ----------
-    logs : str
+    logs : Path
         Absolute path to logs directory
 
-    generators : str
+    generators : Path
         Absolute path to file with generator definitions
 
-    db : str
+    db : Path
         Absolute path to database
+
     """
-    logs: str = Field(min_length=1)
-    generators: str = Field(min_length=1)
-    db: str = Field(min_length=1)
+
+    logs: Path
+    generators: Path
+    db: Path
 
     @field_validator('logs', 'generators', 'db')
-    def validate_paths(cls, v: str):
-        if os.path.isabs(v):
+    @classmethod
+    def validate_paths(cls, v: Path) -> Path:  # noqa: D102
+        if v.is_absolute():
             return v
-        raise ValueError('Path must be absolute')
+
+        msg = 'Path must be absolute'
+        raise ValueError(msg)

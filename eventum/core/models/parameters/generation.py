@@ -1,3 +1,5 @@
+"""Generation parameters."""
+
 from typing import Self
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -18,14 +20,17 @@ class BatchParameters(BaseModel, extra='forbid', frozen=True):
     Notes
     -----
     At least one parameter must be provided
+
     """
+
     size: int | None = Field(default=10_000, ge=1)
     delay: float | None = Field(default=1.0, ge=0.1)
 
     @model_validator(mode='after')
-    def validate_batch_params(self) -> Self:
+    def validate_batch_params(self) -> Self:  # noqa: D102
         if self.size is None and self.delay is None:
-            raise ValueError('Batch size or timeout must be provided')
+            msg = 'Batch size or timeout must be provided'
+            raise ValueError(msg)
 
         return self
 
@@ -37,7 +42,9 @@ class QueueParameters(BaseModel, extra='forbid', frozen=True):
     ----------
     max_batches : int, default=10
         Maximum number of batches in queue
+
     """
+
     max_batches: int = Field(default=10, ge=1)
 
 
@@ -65,6 +72,7 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
         output plugins
 
     """
+
     timezone: str = Field(default='UTC', min_length=3)
     batch: BatchParameters = Field(default_factory=BatchParameters)
     queue: QueueParameters = Field(default_factory=QueueParameters)
@@ -72,8 +80,10 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
     max_concurrency: int = Field(default=100)
 
     @field_validator('timezone')
-    def validate_timezone(cls, v: str) -> str:
+    @classmethod
+    def validate_timezone(cls, v: str) -> str:  # noqa: D102
         if v in all_timezones_set:
             return v
 
-        raise ValueError(f'Unknown time zone "{v}"')
+        msg = f'Unknown time zone "{v}"'
+        raise ValueError(msg)

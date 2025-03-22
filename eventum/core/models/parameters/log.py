@@ -1,3 +1,5 @@
+"""Log parameters."""
+
 from typing import Literal
 
 from pydantic import BaseModel
@@ -13,6 +15,8 @@ class LogParameters(BaseModel, extra='forbid', frozen=True):
 
     format : Literal['plain', 'json'], default='plain'
         Format format
+
     """
+
     level: Literal['info', 'warning', 'error', 'critical'] = 'info'
     format: Literal['plain', 'json'] = 'plain'

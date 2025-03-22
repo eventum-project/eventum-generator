@@ -1,4 +1,6 @@
-import os
+"""Generator parameters."""
+
+from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import Field, field_validator
@@ -14,7 +16,7 @@ class GeneratorParameters(GenerationParameters, frozen=True):
     id : str
         Generator unique identified
 
-    path : str
+    path : Path
         Absolute path to configuration
 
     time_mode : Literal['live', 'sample'], default='live'
@@ -28,15 +30,20 @@ class GeneratorParameters(GenerationParameters, frozen=True):
 
     params: dict[str, Any], default={}
         Parameters that can be used in generator configuration file
+
     """
+
     id: str = Field(min_length=1)
-    path: str = Field(min_length=1)
+    path: Path
     time_mode: Literal['live', 'sample'] = 'live'
     skip_past: bool = Field(default=True)
     params: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator('path')
-    def validate_path(cls, v: str):
-        if os.path.isabs(v):
+    @classmethod
+    def validate_path(cls, v: Path) -> Path:  # noqa: D102
+        if v.is_absolute():
             return v
-        raise ValueError('Path must be absolute')
+
+        msg = 'Path must be absolute'
+        raise ValueError(msg)
