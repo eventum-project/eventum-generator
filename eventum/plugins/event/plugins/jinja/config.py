@@ -34,10 +34,10 @@ class ItemsSampleConfig(BaseModel, frozen=True, extra='forbid'):
     Attributes
     ----------
     type : Literal[SampleType.CSV]
-        Discriminator field for sample configuration
+        Discriminator field for sample configuration.
 
     source : tuple
-        List of sample items
+        List of sample items.
 
     """
 
@@ -51,16 +51,16 @@ class CSVSampleConfig(BaseModel, frozen=True, extra='forbid'):
     Attributes
     ----------
     type : Literal[SampleType.CSV]
-        Discriminator field for sample configuration
+        Discriminator field for sample configuration.
 
     header : bool, default=False
-        Whether the provided csv sample includes header
+        Whether the provided csv sample includes header.
 
     delimiter : str, default=','
-        Delimiter for csv values
+        Delimiter for csv values.
 
     source : Path
-        Path to csv file
+        Path to csv file.
 
     """
 
@@ -76,10 +76,10 @@ class JSONSampleConfig(BaseModel, frozen=True, extra='forbid'):
     Attributes
     ----------
     type : Literal[SampleType.JSON]
-        Discriminator field for sample configuration
+        Discriminator field for sample configuration.
 
     source : Path
-        Path to json file
+        Path to json file.
 
     """
 
@@ -101,12 +101,12 @@ class SampleConfig(RootModel, frozen=True):
 class TemplatePickingMode(StrEnum):
     """Picking modes of templates.
 
-    - `all` - render all templates at a time
-    - `any` - render one randomly chosen template
-    - `chance` - render one template depending on specified chances
-    - `spin` - cyclically render one template after another
-    - `fsm` - render template depending on current state
-    - `chain` - cyclically render templates by user defined chain
+    - `all` - render all templates at a time;
+    - `any` - render one randomly chosen template;
+    - `chance` - render one template depending on specified chances;
+    - `spin` - cyclically render one template after another;
+    - `fsm` - render template depending on current state;
+    - `chain` - cyclically render templates by user defined chain;
     """
 
     ALL = 'all'
@@ -123,7 +123,7 @@ class TemplateConfigForGeneralModes(BaseModel, frozen=True, extra='forbid'):
     Attributes
     ----------
     template : Path
-        Path to template
+        Path to template.
 
     """
 
@@ -145,7 +145,7 @@ class TemplateConfigForChanceMode(TemplateConfigForGeneralModes, frozen=True):
     Attributes
     ----------
     chance : float
-        Proportional value of probability of rendering template
+        Proportional value of probability of rendering template.
 
     """
 
@@ -158,10 +158,10 @@ class TemplateTransition(BaseModel, frozen=True, extra='forbid'):
     Attributes
     ----------
     to : str
-        Name of target state for transition
+        Name of target state for transition.
 
     when : Condition
-        Condition for performing transition
+        Condition for performing transition.
 
     """
 
@@ -175,10 +175,10 @@ class TemplateConfigForFSMMode(TemplateConfigForGeneralModes, frozen=True):
     Attributes
     ----------
     transition : TemplateTransition | None, default=None
-        Transition configuration
+        Transition configuration.
 
     initial : bool, default=False
-        Whether to define state as initial
+        Whether to define state as initial.
 
     """
 
@@ -192,7 +192,7 @@ class TemplateConfigForChainMode(TemplateConfigForGeneralModes, frozen=True):
     Attributes
     ----------
     chain : list[str]
-        Chain of template aliases
+        Chain of template aliases.
 
     """
 
@@ -208,10 +208,10 @@ class JinjaEventPluginConfigCommonFields(
     Attributes
     ----------
     params : dict[str, Any]
-        Constant parameters passed to templates
+        Constant parameters passed to templates.
 
     sample : dict[str, SampleConfig]
-        Samples passed to templates
+        Samples passed to templates.
 
     """
 
@@ -224,7 +224,7 @@ class JinjaEventPluginConfigCommonFields(
         Returns
         -------
         dict[str, Any]
-            Field names to their values mapping
+            Field names to their values mapping.
 
         """
         return {}
@@ -246,10 +246,10 @@ class JinjaEventPluginConfigForGeneralModes(
         TemplatePickingMode.ANY,\
         TemplatePickingMode.SPIN\
     ]
-        Template picking mode
+        Template picking mode.
 
     templates : list[dict[str, TemplateConfigForGeneralModes]]
-        List of template configurations
+        List of template configurations.
 
     """
 
@@ -275,10 +275,10 @@ class JinjaEventPluginConfigForChanceMode(
     Attributes
     ----------
     mode : Literal[TemplatePickingMode.CHANCE]
-        Template picking mode
+        Template picking mode.
 
     templates : list[dict[str, TemplateConfigForChanceMode]]
-        List of template configurations
+        List of template configurations.
 
     """
 
@@ -299,10 +299,10 @@ class JinjaEventPluginConfigForFSMMode(
     Attributes
     ----------
     mode : Literal[TemplatePickingMode.FSM]
-        Template picking mode
+        Template picking mode.
 
     templates : list[dict[str, TemplateConfigForFSMMode]]
-        List of template configurations
+        List of template configurations.
 
     """
 
@@ -341,10 +341,10 @@ class JinjaEventPluginConfigForChainMode(
     Attributes
     ----------
     mode : Literal[TemplatePickingMode.CHAIN]
-        Template picking mode
+        Template picking mode.
 
     templates : list[dict[str, TemplateConfigForGeneralModes]]
-        List of template configurations
+        List of template configurations.
 
     """
 

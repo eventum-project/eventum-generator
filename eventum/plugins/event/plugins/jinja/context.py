@@ -16,7 +16,7 @@ class EventTimestampContext(BaseEventContext):
     Attributes
     ----------
     timestamp : datetime
-        Timestamp of event
+        Timestamp of event.
 
     """
 
@@ -29,7 +29,7 @@ class EventTagsContext(BaseEventContext):
     Attributes
     ----------
     tags : tuple[str, ...]
-        Tags from input plugin that generated timestamp
+        Tags from input plugin that generated timestamp.
 
     """
 
@@ -42,13 +42,13 @@ class EventStateContext(BaseEventContext):
     Attributes
     ----------
     locals : State
-        Local state of template
+        Local state of template.
 
     shared : State
-        Shared state of templates
+        Shared state of templates.
 
     globals : State
-        Global inter process state of templates
+        Global inter process state of templates.
 
     """
 
@@ -62,6 +62,6 @@ class EventContext(EventTimestampContext, EventTagsContext, EventStateContext):
 
     Notes
     -----
-    To see attributes description check base classes
+    To see attributes description check base classes.
 
     """

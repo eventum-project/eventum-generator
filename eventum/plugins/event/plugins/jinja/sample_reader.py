@@ -30,7 +30,7 @@ class Sample:
         Parameters
         ----------
         dataset : tablib.Dataset
-            Sample data
+            Sample data.
 
         """
         self._dataset = dataset
@@ -48,12 +48,12 @@ def _load_items_sample(config: ItemsSampleConfig) -> Sample:
     Parameters
     ----------
     config: ItemsSampleConfig
-        Sample configuration
+        Sample configuration.
 
     Returns
     -------
     Sample
-        Loaded sample
+        Loaded sample.
 
     """
     data = tablib.Dataset()
@@ -77,17 +77,17 @@ def _load_csv_sample(config: CSVSampleConfig) -> Sample:
     Parameters
     ----------
     config: CSVSampleConfig
-        Sample configuration
+        Sample configuration.
 
     Returns
     -------
     Sample
-        Loaded sample
+        Loaded sample.
 
     Raises
     ------
     Exception
-        If some error occurs during sample loading
+        If some error occurs during sample loading.
 
     """
     data = tablib.Dataset()
@@ -107,17 +107,17 @@ def _load_json_sample(config: JSONSampleConfig) -> Sample:
     Parameters
     ----------
     config: JSONSampleConfig
-        Sample configuration
+        Sample configuration.
 
     Returns
     -------
     Sample
-        Loaded sample
+        Loaded sample.
 
     Raises
     ------
     Exception
-        If some error occurs during sample loading
+        If some error occurs during sample loading.
 
     """
     data = tablib.Dataset()
@@ -137,17 +137,17 @@ def _get_sample_loader(
     Parameters
     ----------
     sample_type : SampleType
-        Type of sample
+        Type of sample.
 
     Returns
     -------
     Callable[[SampleConfig], Sample]
-        Function for loading sample of specified type
+        Function for loading sample of specified type.
 
     Raises
     ------
     ValueError
-        If no loader is registered for specified sample type
+        If no loader is registered for specified sample type.
 
     """
     try:
@@ -170,12 +170,12 @@ class SamplesReader:
         Parameters
         ----------
         config : dict[str, SampleConfig]
-            Sample names to their configurations mapping
+            Sample names to their configurations mapping.
 
         Raises
         ------
         SampleLoadError
-            If some error occurs during samples loading
+            If some error occurs during samples loading.
 
         """
         self._samples = self._load_samples(config)
@@ -196,17 +196,17 @@ class SamplesReader:
         Parameters
         ----------
         config : dict[str, SampleConfig]
-            Sample names to their configurations mapping
+            Sample names to their configurations mapping.
 
         Returns
         -------
         dict[str, Sample]
-            Sample names to their data mapping
+            Sample names to their data mapping.
 
         Raises
         ------
         SampleLoadError
-            If some error occurs during samples loading
+            If some error occurs during samples loading.
 
         """
         samples: dict[str, Sample] = {}

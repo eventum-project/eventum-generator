@@ -120,12 +120,12 @@ class JinjaEventPlugin(
         Returns
         -------
         SampleReader
-            Sample reader
+            Sample reader.
 
         Raises
         ------
         PluginConfigurationError
-            If error occurs during sample loading
+            If error occurs during sample loading.
 
         """
         try:
@@ -142,12 +142,12 @@ class JinjaEventPlugin(
         Parameters
         ----------
         loader : BaseLoader
-            Loader to use in environment
+            Loader to use in environment.
 
         Returns
         -------
         Environment
-            Initialized environment
+            Initialized environment.
 
         """
         env = Environment(
@@ -170,12 +170,12 @@ class JinjaEventPlugin(
         Returns
         -------
         dict[str, Template]
-            Aliases to templates mapping
+            Aliases to templates mapping.
 
         Raises
         ------
         PluginConfigurationError
-            If error occurs during template loading
+            If error occurs during template loading.
 
         """
         return {
@@ -197,7 +197,7 @@ class JinjaEventPlugin(
         -------
         dict[str, TemplateConfigForGeneralModes]
             Mapping with template configurations in values and their
-            aliases in keys
+            aliases in keys.
 
         """
         templates: dict[str, TemplateConfigForGeneralModes] = {}
@@ -218,20 +218,20 @@ class JinjaEventPlugin(
         Parameters
         ----------
         name : str
-            Name of the template to load
+            Name of the template to load.
 
         globals : MutableMapping[str, Any] | None, default=None
-            Parameter `globals` of `Environment.get_template` method
+            Parameter `globals` of `Environment.get_template` method.
 
         Returns
         -------
         Template
-            Loaded template
+            Loaded template.
 
         Raises
         ------
         PluginConfigurationError
-            If template cannot be loaded
+            If template cannot be loaded.
 
         """
         try:
@@ -270,12 +270,12 @@ class JinjaEventPlugin(
         Returns
         -------
         TemplatePicker
-            Template picker
+            Template picker.
 
         Raises
         ------
         PluginConfigurationError
-            If error occurs during picker initialization
+            If error occurs during picker initialization.
 
         """
         try:

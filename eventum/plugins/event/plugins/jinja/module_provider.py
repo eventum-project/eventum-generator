@@ -17,7 +17,7 @@ class ModuleProvider:
         Parameters
         ----------
         package_name : str
-            Absolute name of the package with modules
+            Absolute name of the package with modules.
 
         """
         self._package_name = package_name

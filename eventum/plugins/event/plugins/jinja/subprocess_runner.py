@@ -31,26 +31,26 @@ class SubprocessRunner:
         Parameters
         ----------
         command : str
-            Shell command to execute
+            Shell command to execute.
 
         cwd : str | None, default=None
-            Working directory
+            Working directory.
 
         env: dict[str, Any] | None, default=None
-            Environment variables
+            Environment variables.
 
         timeout: float | None, default=None
-            Timeout (in seconds) of command execution
+            Timeout (in seconds) of command execution.
 
         Returns
         -------
         SubprocessResult
-            Command result including its stdout, stderr and exit code
+            Command result including its stdout, stderr and exit code.
 
         Raises
         ------
         subprocess.TimeoutExpired
-            If command timed out
+            If command timed out.
 
         """
         proc = subprocess.run(

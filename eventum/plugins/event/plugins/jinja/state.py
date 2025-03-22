@@ -18,17 +18,17 @@ class State(ABC):
         Parameters
         ----------
         key : str
-            Key of the value to get
+            Key of the value to get.
 
         default : Any, default=None
             Default value to return if there is no value in state with
-            specified key
+            specified key.
 
         Returns
         -------
         Any
             Value from the state, or default value if there is no value
-            in state with specified key
+            in state with specified key.
 
         """
         ...
@@ -40,10 +40,10 @@ class State(ABC):
         Parameters
         ----------
         key : str
-            Key of the value to set
+            Key of the value to set.
 
         value : Any
-            Value to set
+            Value to set.
 
         """
         ...
@@ -55,7 +55,7 @@ class State(ABC):
         Parameters
         ----------
         m: dict[str, Any]
-            Values to update state with
+            Values to update state with.
 
         """
 
@@ -82,7 +82,7 @@ class SingleThreadState(State):
         Parameters
         ----------
         initial : dict[str, Any] | None = None
-            Initial state
+            Initial state.
 
         """
         self._state: dict[str, Any] = initial or {}
@@ -125,10 +125,10 @@ class MultiThreadState(State):
         Parameters
         ----------
         lock: RLock
-            Lock to use for inclusive access
+            Lock to use for inclusive access.
 
         initial : dict[str, Any] | None = None
-            Initial state
+            Initial state.
 
         """
         self._lock = lock

@@ -21,7 +21,7 @@ class TemplatePicker(ABC, Generic[T]):
     Other Parameters
     ----------------
     mode : TemplatePickingMode
-        Picking mode to which to bind picker class
+        Picking mode to which to bind picker class.
 
     """
 
@@ -56,15 +56,15 @@ class TemplatePicker(ABC, Generic[T]):
         Parameters
         ----------
         config : dict[str, T]
-            Template aliases to configs mapping
+            Template aliases to configs mapping.
 
         common_config : dict
-            Common parameter names to values mapping
+            Common parameter names to values mapping.
 
         Raises
         ------
         ValueError
-            If some required parameter is missing in config
+            If some required parameter is missing in config.
 
         """
         self._config = config
@@ -78,12 +78,12 @@ class TemplatePicker(ABC, Generic[T]):
         Parameters
         ----------
         context : EventContext
-            Context of event producing
+            Context of event producing.
 
         Returns
         -------
         tuple[str, ...]
-            Aliases of picked templates
+            Aliases of picked templates.
 
         """
         ...
@@ -98,17 +98,17 @@ class TemplatePicker(ABC, Generic[T]):
         Parameters
         ----------
         picking_mode : TemplatePickingMode
-            Picking mode
+            Picking mode.
 
         Returns
         -------
         type['TemplatePicker[Any]']
-            Picker class
+            Picker class.
 
         Raises
         ------
         ValueError
-            If no appropriate picker found for specified mode
+            If no appropriate picker found for specified mode.
 
         """
         try:
@@ -226,12 +226,12 @@ class FSMTemplatePicker(
         Returns
         -------
         str
-            Alias of state
+            Alias of state.
 
         Raises
         ------
         RuntimeError
-            If no initial state found
+            If no initial state found.
 
         """
         for alias, conf in self._config.items():
@@ -248,7 +248,7 @@ class FSMTemplatePicker(
         Parameters
         ----------
         context : EventContext
-            Context of event producing
+            Context of event producing.
 
         """
         transition = self._config[self._state].transition
@@ -309,17 +309,17 @@ def get_picker_class(
     Parameters
     ----------
     picking_mode : TemplatePickingMode
-        Picking mode
+        Picking mode.
 
     Returns
     -------
     type['TemplatePicker[Any]']
-        Picker class
+        Picker class.
 
     Raises
     ------
     ValueError
-        If no appropriate picker found for specified mode
+        If no appropriate picker found for specified mode.
 
     """
     return TemplatePicker.get_picker(picking_mode)

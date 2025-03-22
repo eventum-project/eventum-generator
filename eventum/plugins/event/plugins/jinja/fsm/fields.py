@@ -55,17 +55,17 @@ class Checkable(ABC, Generic[ContextT]):
         Parameters
         ----------
         context : ContextT
-            Event context parameters for checking condition
+            Event context parameters for checking condition.
 
         Returns
         -------
         bool
-            Result of condition check
+            Result of condition check.
 
         Raises
         ------
         KeyError
-            If required kwarg is missing
+            If required kwarg is missing.
 
         """
         ...
@@ -82,21 +82,21 @@ def _compare_with_state(
     Parameters
     ----------
     operator : Callable[[Any, Any], bool]
-        Binary operator for comparing values
+        Binary operator for comparing values.
 
     state : State
-        State with value for comparison
+        State with value for comparison.
 
     field_name : str
-        Field name of value in state that is compared with target value
+        Field name of value in state that is compared with target value.
 
     target_value : Any
-        Target value for comparison
+        Target value for comparison.
 
     Returns
     -------
     bool
-        Result of comparison
+        Result of comparison.
 
     """
     state_value = state.get(field_name)
