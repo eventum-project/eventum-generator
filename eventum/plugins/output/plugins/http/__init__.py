@@ -1,1 +1,1 @@
-"""Package with http output plugin implementation."""  # noqa: A005
+"""Package with http output plugin implementation."""
