@@ -25,7 +25,7 @@ def get_keyring_password() -> str:
     Returns
     -------
     str
-        Password for keyring
+        Password for keyring.
 
     """
     password = os.getenv(KEYRING_PASS_ENV_VAR)
@@ -46,24 +46,24 @@ def get_secret(name: str, path: Path | None = None) -> str:
     Parameters
     ----------
     name : str
-        Name of the secret
+        Name of the secret.
 
     path : Path | None, default=None
         Path to keyring file, default location is used if none is
-        provided
+        provided.
 
     Returns
     -------
     str
-        Secret
+        Secret.
 
     Raises
     ------
     ValueError
-        If name of secret is blank or missing in keyring
+        If name of secret is blank or missing in keyring.
 
     EnvironmentError
-        If any error occurs during obtaining secret from keyring
+        If any error occurs during obtaining secret from keyring.
 
     """
     if not name:
@@ -98,22 +98,22 @@ def set_secret(name: str, value: str, path: Path | None = None) -> None:
     Parameters
     ----------
     name : str
-        Name of the secret
+        Name of the secret.
 
     value : str
-        Value of the secret
+        Value of the secret.
 
     path : Path | None, default=None
         Path to keyring file, default location is used if none is
-        provided
+        provided.
 
     Raises
     ------
     ValueError
-        If name or value of secret are blank
+        If name or value of secret are blank.
 
     EnvironmentError
-        If any error occurs during setting secret to keyring
+        If any error occurs during setting secret to keyring.
 
     """
     if not name or not value:
@@ -143,19 +143,19 @@ def remove_secret(name: str, path: Path | None = None) -> None:
     Parameters
     ----------
     name : str
-        Name of the secret to remove
+        Name of the secret to remove.
 
     path : Path | None, default=None
         Path to keyring file, default location is used if none is
-        provided
+        provided.
 
     Raises
     ------
     ValueError
-        If name of secret is blank
+        If name of secret is blank.
 
     EnvironmentError
-        If any error occurs during removing secret from keyring
+        If any error occurs during removing secret from keyring.
 
     """
     if not name:
