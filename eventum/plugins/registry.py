@@ -19,16 +19,16 @@ class PluginInfo:
     Attributes
     ----------
     name : str
-        Plugin name
+        Plugin name.
 
     cls : type
-        Plugin class
+        Plugin class.
 
     config_cls : type
-        Class of config used to configure plugin
+        Class of config used to configure plugin.
 
     package : ModuleType
-        Parent package of plugin package with plugins of specific type
+        Parent package of plugin package with plugins of specific type.
 
     """
 
@@ -52,7 +52,7 @@ class PluginsRegistry:
         Parameters
         ----------
         plugin_info : PluginInfo
-            Information about plugin
+            Information about plugin.
 
         """
         location = plugin_info.package.__name__
@@ -70,20 +70,20 @@ class PluginsRegistry:
         ----------
         package : ModuleType
             Parent package of plugin package with plugins of specific
-            type
+            type.
 
         name : str
-            Plugin name
+            Plugin name.
 
         Returns
         -------
         PluginInfo
-            Information about plugin
+            Information about plugin.
 
         Raises
         ------
         ValueError
-            If specified plugin is not found in registry
+            If specified plugin is not found in registry.
 
         """
         try:
@@ -99,15 +99,15 @@ class PluginsRegistry:
         Parameters
         ----------
         package : ModuleType
-            Parent package with plugins of specific type
+            Parent package with plugins of specific type.
 
         name : str
-            Plugin name
+            Plugin name.
 
         Returns
         -------
         bool
-            `True` if plugin is registered else `False`
+            `True` if plugin is registered else `False`.
 
         """
         pkg_name = package.__name__
