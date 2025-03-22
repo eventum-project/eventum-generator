@@ -15,15 +15,15 @@ def prettify_validation_errors(
     Parameters
     ----------
     errors : Iterable[ErrorDetails]
-        Iterable of error details
+        Iterable of error details.
 
     sep : str, default='; '
-        Separator of error messages
+        Separator of error messages.
 
     Returns
     -------
     str
-        User-friendly description of errors
+        User-friendly description of errors.
 
     """
 
