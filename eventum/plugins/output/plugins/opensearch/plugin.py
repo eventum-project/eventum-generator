@@ -7,11 +7,9 @@ from typing import override
 
 import httpx
 
-from eventum.plugins.exceptions import (
-    PluginConfigurationError,
-    PluginRuntimeError,
-)
+from eventum.plugins.exceptions import PluginConfigurationError
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
+from eventum.plugins.output.exceptions import PluginWriteError
 from eventum.plugins.output.http_client import (
     create_client,
     create_ssl_context,
@@ -47,7 +45,7 @@ class OpensearchOutputPlugin(
             msg = 'Failed to create SSL context'
             raise PluginConfigurationError(
                 msg,
-                context=dict(self.instance_info, reason=str(e)),
+                context={'reason': str(e)},
             ) from e
 
         self._client: httpx.AsyncClient
@@ -188,13 +186,12 @@ class OpensearchOutputPlugin(
             )
         except httpx.RequestError as e:
             msg = 'Failed to perform bulk indexing'
-            raise PluginRuntimeError(
+            raise PluginWriteError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=str(e),
-                    url=host.host,
-                ),
+                context={
+                    'reason': str(e),
+                    'url': host.host,
+                },
             ) from e
 
         content = await response.aread()
@@ -202,40 +199,37 @@ class OpensearchOutputPlugin(
 
         if response.status_code != 200:  # noqa: PLR2004
             msg = 'Failed to perform bulk indexing'
-            raise PluginRuntimeError(
+            raise PluginWriteError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=text,
-                    http_status=response.status_code,
-                    url=host.host,
-                ),
+                context={
+                    'reason': text,
+                    'http_status': response.status_code,
+                    'url': host.host,
+                },
             )
 
         try:
             result = json.loads(text)
         except json.JSONDecodeError as e:
             msg = 'Failed to decode bulk response'
-            raise PluginRuntimeError(
+            raise PluginWriteError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=str(e),
-                    url=host.host,
-                ),
+                context={
+                    'reason': str(e),
+                    'url': host.host,
+                },
             ) from None
 
         try:
             errors = self._get_bulk_response_errors(result)
         except ValueError as e:
             msg = 'Failed to process bulk response'
-            raise PluginRuntimeError(
+            raise PluginWriteError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=str(e),
-                    url=host.host,
-                ),
+                context={
+                    'reason': str(e),
+                    'url': host.host,
+                },
             ) from None
 
         if errors:
@@ -274,27 +268,25 @@ class OpensearchOutputPlugin(
             )
         except httpx.RequestError as e:
             msg = 'Failed to post document'
-            raise PluginRuntimeError(
+            raise PluginWriteError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=str(e),
-                    url=host.host,
-                ),
+                context={
+                    'reason': str(e),
+                    'url': host.host,
+                },
             ) from e
 
         if response.status_code != 201:  # noqa: PLR2004
             content = await response.aread()
             text = content.decode()
             msg = 'Failed to post document'
-            raise PluginRuntimeError(
+            raise PluginWriteError(
                 msg,
-                context=dict(
-                    self.instance_info,
-                    reason=text,
-                    http_status=response.status_code,
-                    url=host.host,
-                ),
+                context={
+                    'reason': text,
+                    'http_status': response.status_code,
+                    'url': host.host,
+                },
             )
 
         return 1
