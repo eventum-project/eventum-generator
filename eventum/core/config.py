@@ -180,7 +180,7 @@ def _prepare_secrets(used_secrets: Iterable[str]) -> dict[str, Any]:
             try:
                 value = get_secret(secret)
             except (OSError, ValueError) as e:
-                msg = f'Cannot obtain secret "{secret}": {e}'
+                msg = f'Cannot obtain secret `{secret}`: {e}'
                 raise ValueError(msg) from None
 
             rendering_secrets[secret] = value
