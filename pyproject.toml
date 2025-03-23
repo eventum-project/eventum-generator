@@ -62,6 +62,7 @@ dependencies = [
     "structlog>=25.1.0",
     "tablib>=3.8.0",
     "uvicorn[standard]>=0.34.0",
+    "uvloop>=0.21.0",
 ]
 dynamic = ["version"]
 

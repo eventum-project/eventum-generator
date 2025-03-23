@@ -291,6 +291,7 @@ dependencies = [
     { name = "structlog" },
     { name = "tablib" },
     { name = "uvicorn", extra = ["standard"] },
+    { name = "uvloop" },
 ]
 
 [package.dev-dependencies]
@@ -340,6 +341,7 @@ requires-dist = [
     { name = "structlog", specifier = ">=25.1.0" },
     { name = "tablib", specifier = ">=3.8.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34.0" },
+    { name = "uvloop", specifier = ">=0.21.0" },
 ]
 
 [package.metadata.requires-dev]
