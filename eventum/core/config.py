@@ -27,16 +27,16 @@ def _extract_tokens(content: str, prefix: str | None = None) -> list[str]:
     Parameters
     ----------
     content : str
-        Content to search for tokens
+        Content to search for tokens.
 
     prefix : str | None, default=None
         Prefix to filter tokens (the part before the first dot), if not
-        provided, all tokens will be extracted
+        provided, all tokens will be extracted.
 
     Returns
     -------
     list[str]
-        List of extracted tokens
+        List of extracted tokens.
 
     """
     matches: list[str] = re.findall(pattern=TOKEN_PATTERN, string=content)
@@ -63,12 +63,12 @@ def extract_params(content: str) -> list[str]:
     Parameters
     ----------
     content : str
-        Content of configuration
+        Content of configuration.
 
     Returns
     -------
     list[str]
-        List of extracted param names
+        List of extracted param names.
 
     """
     tokens = _extract_tokens(content, prefix='params')
@@ -90,12 +90,12 @@ def extract_secrets(content: str) -> list[str]:
     Parameters
     ----------
     content : str
-        Content of configuration
+        Content of configuration.
 
     Returns
     -------
     list[str]
-        List of extracted secret names
+        List of extracted secret names.
 
     """
     tokens = _extract_tokens(content, prefix='secrets')
@@ -120,20 +120,20 @@ def _prepare_params(
     Parameters
     ----------
     used_params : Iterable[str]
-        Param names used in substitution
+        Param names used in substitution.
 
     provided_params : dict[str, Any]
-        Params provided by user
+        Params provided by user.
 
     Returns
     -------
     dict[str, Any]
-        Params prepared for substitution
+        Params prepared for substitution.
 
     Raises
     ------
     ValueError
-        If some parameters are missing
+        If some parameters are missing.
 
     """
     used_params = set(used_params)
@@ -159,17 +159,17 @@ def _prepare_secrets(used_secrets: Iterable[str]) -> dict[str, Any]:
     Parameters
     ----------
     used_secrets : Iterable[str]
-        Secret names used in substitution
+        Secret names used in substitution.
 
     Returns
     -------
     dict[str, Any]
-        Secrets prepared for substitution
+        Secrets prepared for substitution.
 
     Raises
     ------
     ValueError
-        If some secrets are missing or cannot be read from keyring
+        If some secrets are missing or cannot be read from keyring.
 
     """
     used_secrets = set(used_secrets)
@@ -198,23 +198,23 @@ def _substitute_tokens(
     Parameters
     ----------
     params : dict[str, Any]
-        Params
+        Params.
 
     secrets : dict[str, Any]
-        Secrets
+        Secrets.
 
     content : str
-        Content of configuration
+        Content of configuration.
 
     Returns
     -------
     str
-        Content of configuration with substituted tokens
+        Content of configuration with substituted tokens.
 
     Raises
     ------
     ValueError
-        If any error occurs during tokens substitution
+        If any error occurs during tokens substitution.
 
     """
     rendering_kwargs = {
@@ -245,20 +245,20 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
     Parameters
     ----------
     path : Path
-        Configuration path
+        Configuration path.
 
     params : dict[str, Any]
-        Parameters to substitute in configuration content
+        Parameters to substitute in configuration content.
 
     Returns
     -------
     GeneratorConfig
-        Loaded generator configuration
+        Loaded generator configuration.
 
     Raises
     ------
     ConfigurationLoadError
-        If configuration cannot be loaded
+        If configuration cannot be loaded.
 
     """
     try:

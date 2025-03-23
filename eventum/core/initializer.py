@@ -39,13 +39,13 @@ class InitializedPlugins:
     Attributes
     ----------
     input : list[InputPlugin]
-        List of initialized input plugins
+        List of initialized input plugins.
 
     event : EventPlugin
-        Initialized event plugin
+        Initialized event plugin.
 
     output : list[OutputPlugin]
-        List of initialized output plugins
+        List of initialized output plugins.
 
     """
 
@@ -92,26 +92,26 @@ def init_plugin(
     Parameters
     ----------
     name : str
-        Name of plugin to use
+        Name of plugin to use.
 
     type : Literal['input', 'event', 'output']
-        Type of plugin
+        Type of plugin.
 
     config : PluginConfigFields
-        Config for plugin instance
+        Config for plugin instance.
 
     params : InputPluginParams | EventPluginParams | OutputPluginParams
-        Parameters for plugin instance
+        Parameters for plugin instance.
 
     Returns
     -------
     InputPlugin | EventPlugin | OutputPlugin
-        Initialized plugin
+        Initialized plugin.
 
     Raises
     ------
     InitializationError
-        If any error occurs during initializing
+        If any error occurs during initializing.
 
     """
     try:
@@ -184,27 +184,27 @@ def init_plugins(
     Parameters
     ----------
     input : Iterable[PluginConfig]
-        Input plugin configurations
+        Input plugin configurations.
 
     event : PluginConfig
-        Event plugin configuration
+        Event plugin configuration.
 
     output : Iterable[PluginConfig]
-        Output plugin configurations
+        Output plugin configurations.
 
     params : GeneratorParameters
         Generators parameters that can be needed for plugins
-        initialization (plugin params, e.g. timezone)
+        initialization (plugin params, e.g. timezone).
 
     Returns
     -------
     InitializedPlugins
-        Initialized plugins
+        Initialized plugins.
 
     Raises
     ------
     InitializationError
-        If any error occurs during initializing
+        If any error occurs during initializing.
 
     """
     input_plugins: list[InputPlugin] = []
