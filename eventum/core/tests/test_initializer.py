@@ -1,4 +1,6 @@
 import os
+import tempfile
+from pathlib import Path
 
 from eventum.core.initializer import init_plugins
 from eventum.core.models.parameters.generator import GeneratorParameters
@@ -36,7 +38,9 @@ def test_initializer():
         event=event_config,
         output=output_config,
         params=GeneratorParameters(
-            id='test', time_mode='sample', path='/tmp/test.yml'
+            id='test',
+            time_mode='sample',
+            path=Path(tempfile.gettempdir()) / 'ephemeral.yml',
         ),
     )
 
