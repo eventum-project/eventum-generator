@@ -1,20 +1,24 @@
-from typing import Annotated, Any, TypeAlias
+"""Generator configuration model."""
+
+from typing import Annotated, Any
 
 from pydantic import BaseModel, Field, field_validator
 
-from eventum.plugins.loader import (get_event_plugin_names,
-                                    get_input_plugin_names,
-                                    get_output_plugin_names)
+from eventum.plugins.loader import (
+    get_event_plugin_names,
+    get_input_plugin_names,
+    get_output_plugin_names,
+)
 
 INPUT_PLUGIN_NAMES = set(get_input_plugin_names())
 EVENT_PLUGIN_NAMES = set(get_event_plugin_names())
 OUTPUT_PLUGIN_NAMES = set(get_output_plugin_names())
 
-PluginConfigFields: TypeAlias = dict[str, Any]
+type PluginConfigFields = dict[str, Any]
 
-PluginConfig: TypeAlias = Annotated[
+type PluginConfig = Annotated[
     dict[str, PluginConfigFields],
-    Field(min_length=1, max_length=1)
+    Field(min_length=1, max_length=1),
 ]
 
 
@@ -24,50 +28,57 @@ class GeneratorConfig(BaseModel, frozen=True, extra='forbid'):
     Attributes
     ----------
     input : list[PluginConfig]
-        List of input plugin configurations
+        List of input plugin configurations.
 
     event : PluginConfig
-        Event plugin configuration
+        Event plugin configuration.
 
     output : list[PluginConfig]
-        List of output plugin configurations
+        List of output plugin configurations.
+
     """
+
     input: list[PluginConfig] = Field(min_length=1)
     event: PluginConfig
     output: list[PluginConfig] = Field(min_length=1)
 
     @field_validator('input')
-    def validate_input_plugin_names(
+    @classmethod
+    def validate_input_plugin_names(  # noqa: D102
         cls,
-        v: list[PluginConfig]
+        v: list[PluginConfig],
     ) -> list[PluginConfig]:
         for plugin_config in v:
-            for key in plugin_config.keys():
+            for key in plugin_config:
                 if key not in INPUT_PLUGIN_NAMES:
-                    raise ValueError(f'Unknown input plugin "{key}"')
+                    msg = f'Unknown input plugin `{key}`'
+                    raise ValueError(msg)
 
         return v
 
     @field_validator('event')
-    def validate_event_plugin_names(
+    @classmethod
+    def validate_event_plugin_names(  # noqa: D102
         cls,
-        v: PluginConfig
+        v: PluginConfig,
     ) -> PluginConfig:
-        for key in v.keys():
+        for key in v:
             if key not in EVENT_PLUGIN_NAMES:
-                raise ValueError(f'Unknown event plugin "{key}"')
+                msg = f'Unknown event plugin `{key}`'
+                raise ValueError(msg)
 
         return v
 
     @field_validator('output')
-    def validate_output_plugin_names(
+    @classmethod
+    def validate_output_plugin_names(  # noqa: D102
         cls,
-        v: list[PluginConfig]
+        v: list[PluginConfig],
     ) -> list[PluginConfig]:
-
         for plugin_config in v:
-            for key in plugin_config.keys():
+            for key in plugin_config:
                 if key not in OUTPUT_PLUGIN_NAMES:
-                    raise ValueError(f'Unknown output plugin "{key}"')
+                    msg = f'Unknown output plugin `{key}`'
+                    raise ValueError(msg)
 
         return v

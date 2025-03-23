@@ -1,4 +1,4 @@
-"""Generation parameters."""
+"""Generation parameters used across all generators."""
 
 from typing import Self
 
@@ -12,14 +12,14 @@ class BatchParameters(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     size : int | None, default=10000
-        Batch size for generating events
+        Batch size for generating events.
 
     delay : float | None, default=1.0
-        Batch delay (in seconds) for generating events
+        Batch delay (in seconds) for generating events.
 
     Notes
     -----
-    At least one parameter must be provided
+    At least one parameter must be not `None`.
 
     """
 
@@ -41,7 +41,7 @@ class QueueParameters(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     max_batches : int, default=10
-        Maximum number of batches in queue
+        Maximum number of batches in queue.
 
     """
 
@@ -55,21 +55,21 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     timezone : str, default='UTC'
-        Time zone for generating timestamps
+        Time zone for generating timestamps.
 
     batch : BatchParameters, default=BatchParameters(...)
-        Batch parameters
+        Batch parameters.
 
     queue : QueueParameters, default=QueueParameters(...)
-        Queue parameters
+        Queue parameters.
 
     keep_order : bool, default=False
         Whether to keep chronological order of timestamps by disabling
-        output plugins concurrency
+        output plugins concurrency.
 
     max_concurrency : int, default=100
         Maximum number of concurrent write operations performed by
-        output plugins
+        output plugins.
 
     """
 

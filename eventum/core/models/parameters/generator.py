@@ -1,4 +1,4 @@
-"""Generator parameters."""
+"""Generator specific parameters."""
 
 from pathlib import Path
 from typing import Any, Literal
@@ -14,22 +14,22 @@ class GeneratorParameters(GenerationParameters, frozen=True):
     Attributes
     ----------
     id : str
-        Generator unique identified
+        Generator unique identified.
 
     path : Path
-        Absolute path to configuration
+        Absolute path to configuration.
 
     time_mode : Literal['live', 'sample'], default='live'
         Whether to use live mode and generate events at moments defined
         by timestamp values or sample mode to generate all events at a
-        time
+        time.
 
     skip_past : bool, default=True
         Whether to skip past timestamps when starting generation in
-        live mode
+        live mode.
 
     params: dict[str, Any], default={}
-        Parameters that can be used in generator configuration file
+        Parameters that can be used in generator configuration file.
 
     """
 

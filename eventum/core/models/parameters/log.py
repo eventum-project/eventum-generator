@@ -1,4 +1,4 @@
-"""Log parameters."""
+"""Logging parameters."""
 
 from typing import Literal
 
@@ -11,10 +11,10 @@ class LogParameters(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     level : Literal['info', 'warning', 'error', 'critical'], default='info'
-        Log level
+        Log level.
 
     format : Literal['plain', 'json'], default='plain'
-        Format format
+        Format format.
 
     """
 

@@ -11,13 +11,13 @@ class PathParameters(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     logs : Path
-        Absolute path to logs directory
+        Absolute path to logs directory.
 
     generators : Path
-        Absolute path to file with generator definitions
+        Absolute path to file with generator definitions.
 
     db : Path
-        Absolute path to database
+        Absolute path to database.
 
     """
 

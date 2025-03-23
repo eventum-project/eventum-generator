@@ -12,19 +12,19 @@ class SSLParameters(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     enabled : bool, default=True
-        Whether to enable SSL
+        Whether to enable SSL.
 
     verify_mode : Literal['none', 'optional', 'required'], default='optional'
-        Verification mode of SSL connections
+        Verification mode of SSL connections.
 
     ca_cert: Path | None, default=None
-        Absolute path to CA certificate
+        Absolute path to CA certificate.
 
     cert: Path | None, default=None
-        Absolute path to server certificate
+        Absolute path to server certificate.
 
     cert_key: Path | None, default=None
-        Absolute path to server certificate key
+        Absolute path to server certificate key.
 
     """
 
@@ -68,16 +68,16 @@ class APIParameters(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     enabled : bool, default = True
-        Whether to enable REST API
+        Whether to enable REST API.
 
     host : str, default='0.0.0.0'
-        Bind address for API
+        Bind address for API.
 
     port : int, default=9474
-        Bind port for API
+        Bind port for API,
 
     ssl : SSLParameters, default=SSLParameters(...)
-        SSL parameters
+        SSL parameters.
 
     """
 

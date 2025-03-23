@@ -1,3 +1,5 @@
+"""Model for the main settings of the application."""
+
 from pydantic import BaseModel
 
 from eventum.core.models.parameters.api import APIParameters
@@ -12,17 +14,19 @@ class Settings(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     api: APIParameters
-        API parameters
+        API parameters.
 
     generation: GenerationParameters
-        Generation parameters
+        Generation parameters.
 
     log : LogParameters
-        Log parameters
+        Log parameters.
 
     path : PathParameters
-        Path parameters
+        Path parameters.
+
     """
+
     api: APIParameters
     generation: GenerationParameters
     log: LogParameters
