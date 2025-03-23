@@ -1,4 +1,4 @@
-"""Definitions of pickers for template picking modes."""
+"""Pickers for template picking modes."""
 
 import random
 from abc import ABC, abstractmethod

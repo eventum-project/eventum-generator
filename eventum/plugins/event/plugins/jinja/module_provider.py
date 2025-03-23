@@ -1,4 +1,4 @@
-"""Definition of module provider for accessing modules from templates."""
+"""Module provider for accessing modules from templates."""
 
 import importlib
 from types import ModuleType

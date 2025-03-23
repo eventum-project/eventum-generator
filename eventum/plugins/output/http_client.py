@@ -1,4 +1,4 @@
-"""Helper function for http based output plugins."""
+"""Helper functions for http based output plugins."""
 
 import ssl
 from pathlib import Path

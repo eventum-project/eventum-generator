@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class BaseBatchScheduler:
     """Scheduler of timestamp batches. Scheduler iterates over batches
     of timestamps and does not yield them immediately, but it waits
-    until current time reaches the last timestamps in the batch.
+    until current time reaches the last timestamp in the batch.
     """
 
     def __init__(

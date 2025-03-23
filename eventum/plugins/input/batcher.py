@@ -1,4 +1,4 @@
-"""Size and delay based batching of timestamp arrays."""
+"""Size and delay based batcher of timestamp arrays."""
 
 from collections.abc import Iterator
 from datetime import timedelta

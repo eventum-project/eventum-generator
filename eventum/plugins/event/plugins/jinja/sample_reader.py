@@ -1,5 +1,5 @@
-"""Definition of sample reader that provides unified interface for
-accessing samples of different types.
+"""Sample reader that provides unified interface for accessing samples
+of different types.
 """
 
 from collections.abc import Callable, Iterable

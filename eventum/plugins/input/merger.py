@@ -23,7 +23,7 @@ logger = structlog.stdlib.get_logger()
 class InputPluginsMerger(
     SupportsIdentifiedTimestampsSizedIterate,
 ):
-    """Merger of timestamp generating by multiple input plugins."""
+    """Merger of timestamps generating by multiple input plugins."""
 
     def __init__(self, plugins: Iterable[InputPlugin]) -> None:
         """Initialize merger.

@@ -1,5 +1,5 @@
-"""Definition of states that provide preserving and sharing template
-variables across template renders, different templates and generators.
+"""States that provide preserving and sharing template variables across
+template renders, different templates and generators.
 """
 
 from abc import ABC, abstractmethod

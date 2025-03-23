@@ -1,5 +1,5 @@
-"""Definition of subprocess runner that provides interface for running
-shell commands and obtaining their results from templates.
+"""Subprocess runner that provides interface for running shell commands
+and obtaining their results from templates.
 """
 
 import subprocess
