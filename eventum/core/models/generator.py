@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 from pydantic import Field, field_validator
 
-from eventum.core.models.parameters.generation import GenerationParameters
+from eventum.core.models.generation import GenerationParameters
 
 
 class GeneratorParameters(GenerationParameters, frozen=True):

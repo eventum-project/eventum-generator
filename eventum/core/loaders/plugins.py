@@ -1,6 +1,4 @@
-"""Module that provides loading, initialization and configuring
-plugins.
-"""
+"""Functions for loading, initialization and configuring plugins."""
 
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -10,7 +8,7 @@ from pydantic import ValidationError
 from pytz import timezone
 
 from eventum.core.models.config import PluginConfig, PluginConfigFields
-from eventum.core.models.parameters.generator import GeneratorParameters
+from eventum.core.models.generator import GeneratorParameters
 from eventum.exceptions import ContextualError
 from eventum.plugins.event.base.plugin import EventPlugin, EventPluginParams
 from eventum.plugins.exceptions import (

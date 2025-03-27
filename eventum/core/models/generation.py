@@ -1,4 +1,4 @@
-"""Generation parameters used across all generators."""
+"""Common generation parameters."""
 
 from typing import Self
 

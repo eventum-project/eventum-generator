@@ -2,8 +2,8 @@ import os
 import tempfile
 from pathlib import Path
 
-from eventum.core.initializer import init_plugins
-from eventum.core.models.parameters.generator import GeneratorParameters
+from eventum.core.loaders.plugins import init_plugins
+from eventum.core.models.generator import GeneratorParameters
 from eventum.plugins.event.plugins.jinja.plugin import JinjaEventPlugin
 from eventum.plugins.input.plugins.cron.plugin import CronInputPlugin
 from eventum.plugins.input.plugins.static.plugin import StaticInputPlugin

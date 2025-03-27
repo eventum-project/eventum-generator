@@ -9,7 +9,7 @@ import structlog
 import uvloop
 from pytz import timezone
 
-from eventum.core.models.parameters.generator import GeneratorParameters
+from eventum.core.models.generator import GeneratorParameters
 from eventum.exceptions import ContextualError
 from eventum.plugins.event.base.plugin import EventPlugin, ProduceParams
 from eventum.plugins.event.exceptions import (

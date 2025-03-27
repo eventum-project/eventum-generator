@@ -1,4 +1,4 @@
-"""Functions for application configuration loading."""
+"""Functions for generator configuration loading."""
 
 import re
 from collections.abc import Iterable

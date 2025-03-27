@@ -1,1 +1,1 @@
-"""Application models."""
+"""Core models."""
