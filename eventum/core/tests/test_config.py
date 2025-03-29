@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from eventum.core.loaders.config import ConfigurationLoadError, load
-from eventum.core.models.config import GeneratorConfig
+from eventum.core.config import GeneratorConfig
+from eventum.core.config_loader import ConfigurationLoadError, load
 
 BASE_PATH = Path(__file__).parent
 

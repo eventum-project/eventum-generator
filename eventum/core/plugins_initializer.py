@@ -7,8 +7,8 @@ from typing import Literal, assert_never, overload
 from pydantic import ValidationError
 from pytz import timezone
 
-from eventum.core.models.config import PluginConfig, PluginConfigFields
-from eventum.core.models.generator import GeneratorParameters
+from eventum.core.config import PluginConfig, PluginConfigFields
+from eventum.core.parameters import GeneratorParameters
 from eventum.exceptions import ContextualError
 from eventum.plugins.event.base.plugin import EventPlugin, EventPluginParams
 from eventum.plugins.exceptions import (

@@ -9,7 +9,7 @@ import yaml
 from jinja2 import BaseLoader, Environment, TemplateSyntaxError
 from pydantic import ValidationError
 
-from eventum.core.models.config import GeneratorConfig
+from eventum.core.config import GeneratorConfig
 from eventum.exceptions import ContextualError
 from eventum.security.manage import get_secret
 from eventum.utils.validation_prettier import prettify_validation_errors

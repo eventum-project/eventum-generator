@@ -6,19 +6,19 @@ from threading import Thread, get_native_id
 
 import structlog
 
+from eventum.core.config import GeneratorConfig
+from eventum.core.config_loader import ConfigurationLoadError, load
 from eventum.core.executor import (
     ExecutionError,
     Executor,
     ImproperlyConfiguredError,
 )
-from eventum.core.loaders.config import ConfigurationLoadError, load
-from eventum.core.loaders.plugins import (
+from eventum.core.parameters import GeneratorParameters
+from eventum.core.plugins_initializer import (
     InitializationError,
     InitializedPlugins,
     init_plugins,
 )
-from eventum.core.models.config import GeneratorConfig
-from eventum.core.models.generator import GeneratorParameters
 from eventum.logging_context import propagate_logger_context
 
 logger = structlog.stdlib.get_logger()
