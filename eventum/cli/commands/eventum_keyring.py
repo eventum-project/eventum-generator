@@ -1,3 +1,7 @@
+"""Commands for managing keyring."""
+
+import sys
+
 import click
 from pwinput import pwinput  # type: ignore[import-untyped]
 from setproctitle import setproctitle
@@ -8,9 +12,8 @@ setproctitle('eventum-keyring')
 
 
 @click.group('eventum-keyring')
-def cli():
+def cli():  # noqa: ANN201
     """Tool for managing keyring secrets."""
-    pass
 
 
 @cli.command()
@@ -20,9 +23,9 @@ def get(name: str) -> None:
     try:
         secret = get_secret(name=name)
         click.echo(secret)
-    except (ValueError, EnvironmentError) as e:
+    except (OSError, ValueError) as e:
         click.echo(f'Error: {e}', err=True)
-        exit(1)
+        sys.exit(1)
 
 
 @cli.command()
@@ -31,16 +34,16 @@ def get(name: str) -> None:
 def set(name: str, value: str | None) -> None:
     """Set secret to keyring."""
     if value is None:
-        value = pwinput(f'Enter password of "{name}": ')
+        value = pwinput(f'Enter password of `{name}`: ')
 
     try:
         set_secret(name=name, value=value)
     except ValueError as e:
         click.echo(f'Error: {e}', err=True)
-        exit(1)
-    except EnvironmentError as e:
+        sys.exit(1)
+    except OSError as e:
         click.echo(f'Error: {e}', err=True)
-        exit(1)
+        sys.exit(1)
     else:
         click.echo('Done', err=True)
 
@@ -53,10 +56,10 @@ def remove(name: str) -> None:
         remove_secret(name=name)
     except ValueError as e:
         click.echo(f'Error: {e}', err=True)
-        exit(1)
-    except EnvironmentError as e:
+        sys.exit(1)
+    except OSError as e:
         click.echo(f'Error: {e}', err=True)
-        exit(1)
+        sys.exit(1)
     else:
         click.echo('Done', err=True)
 
