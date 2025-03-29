@@ -115,6 +115,19 @@
     </tr>
 </table>
 
+## OS
+
+<table>
+    <th>Name</th>
+    <th>Description</th>
+    <th>Data type</th>
+    <tr>
+        <td>signal</td>
+        <td>Name of the signal</td>
+        <td>str</td>
+    </tr>
+</table>
+
 ## App
 
 <table>
