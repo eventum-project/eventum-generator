@@ -1,4 +1,4 @@
-"""Mail application definition."""
+"""Main application definition."""
 
 from collections.abc import Iterable
 
