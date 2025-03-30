@@ -7,7 +7,7 @@ import structlog
 
 from eventum.core.generator import Generator
 from eventum.core.parameters import GeneratorParameters
-from eventum.logging_context import propagate_logger_context
+from eventum.logging.context import propagate_logger_context
 
 logger = structlog.stdlib.get_logger()
 
