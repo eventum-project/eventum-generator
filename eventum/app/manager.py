@@ -7,6 +7,7 @@ import structlog
 
 from eventum.core.generator import Generator
 from eventum.core.parameters import GeneratorParameters
+from eventum.logging_context import propagate_logger_context
 
 logger = structlog.stdlib.get_logger()
 
@@ -82,7 +83,9 @@ class GeneratorManager:
                     generator = self._generators[id]
 
                     if generator.is_running:
-                        executor.submit(generator.stop)
+                        executor.submit(
+                            propagate_logger_context()(generator.stop),
+                        )
 
                 del self._generators[id]
 
@@ -164,7 +167,9 @@ class GeneratorManager:
                     generator = self._generators[id]
 
                     if generator.is_running:
-                        executor.submit(generator.stop)
+                        executor.submit(
+                            propagate_logger_context()(generator.stop),
+                        )
 
     def bulk_join(self, generator_ids: Iterable[str]) -> None:
         """Wait until all running generator terminates.
@@ -181,7 +186,9 @@ class GeneratorManager:
                     generator = self._generators[id]
 
                     if generator.is_running:
-                        executor.submit(generator.join)
+                        executor.submit(
+                            propagate_logger_context()(generator.join),
+                        )
 
     def get_generator(self, generator_id: str) -> Generator:
         """Get generator from list of managed generators.
