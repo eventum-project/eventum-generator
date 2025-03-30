@@ -4,23 +4,12 @@ import logging
 from collections.abc import Callable, Iterable
 from typing import Any
 
-from structlog.typing import EventDict
+from structlog.typing import EventDict, Processor
 
 
 def derive_extras(
     extras: Iterable[str],
-) -> Callable[
-    [
-        Callable[
-            [logging.Logger, str, EventDict],
-            tuple[tuple[EventDict], dict[str, dict[str, Any]]],
-        ],
-    ],
-    Callable[
-        [logging.Logger, str, EventDict],
-        tuple[tuple[EventDict], dict[str, dict[str, Any]]],
-    ],
-]:
+) -> Callable[[Processor], Processor]:
     """Return decorator that adds specified extras to kwargs of last
     processor.
 
@@ -32,22 +21,35 @@ def derive_extras(
 
     Returns
     -------
-    Callable[...]
+    Callable[[Processor], Processor]
         Decorator.
+
+    Raises
+    ------
+    TypeError
+        If not `structlog.stdlib.ProcessorFormatter.wrap_for_formatter`
+        is used as last processor.
+
+    Notes
+    -----
+    Only `structlog.stdlib.ProcessorFormatter.wrap_for_formatter` is
+    supported as the last processor.
 
     """
 
-    def wrapper(
-        f: Callable[
-            [logging.Logger, str, EventDict],
-            tuple[tuple[EventDict], dict[str, dict[str, Any]]],
-        ],
-    ) -> Callable[
-        [logging.Logger, str, EventDict],
-        tuple[tuple[EventDict], dict[str, dict[str, Any]]],
-    ]:
+    def wrapper(f: Processor) -> Processor:
         def wrapped(*args: Any, **kwargs: Any) -> Any:
-            log_args, log_kwargs = f(*args, **kwargs)
+            result = f(*args, **kwargs)
+
+            if not isinstance(result, tuple):
+                msg = (
+                    'Please use '
+                    '`structlog.stdlib.ProcessorFormatter.wrap_for_formatter` '
+                    'as the last processor'
+                )
+                raise TypeError(msg)
+
+            log_args, log_kwargs = result
             event_dict = log_args[0]
 
             if 'extra' not in log_kwargs:
