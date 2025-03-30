@@ -21,8 +21,6 @@ from eventum.core.plugins_initializer import (
 )
 from eventum.logging_context import propagate_logger_context
 
-logger = structlog.stdlib.get_logger()
-
 
 class Generator:
     """Thread-wrapped generator."""
@@ -43,6 +41,10 @@ class Generator:
         self._executor: Executor | None = None
 
         self._thread: Thread | None = None
+
+        self._logger = structlog.stdlib.get_logger().bind(
+            generator_id=self._params.id,
+        )
 
     def _start(self) -> None:
         """Start generation.
@@ -67,7 +69,7 @@ class Generator:
 
         structlog.contextvars.bind_contextvars(generator_id=self._params.id)
 
-        logger.info(
+        self._logger.info(
             'Generator is started',
             process_id=os.getpid(),
             thread_id=get_native_id(),
@@ -75,21 +77,21 @@ class Generator:
 
         init_start_time = time.monotonic()
 
-        logger.info('Loading configuration', file_path=self._params.path)
+        self._logger.info('Loading configuration', file_path=self._params.path)
         try:
             self._config = load(self._params.path, self._params.params)
         except ConfigurationLoadError as e:
-            logger.error(str(e), **e.context)
+            self._logger.error(str(e), **e.context)
             raise
         except Exception as e:
-            logger.exception(
+            self._logger.exception(
                 'Unexpected error occurred during loading config',
                 reason=str(e),
                 file_path=self._params.path,
             )
             raise
 
-        logger.info('Initializing plugins')
+        self._logger.info('Initializing plugins')
         try:
             self._plugins = init_plugins(
                 input=self._config.input,
@@ -98,16 +100,16 @@ class Generator:
                 params=self._params,
             )
         except InitializationError as e:
-            logger.error(str(e), **e.context)
+            self._logger.error(str(e), **e.context)
             raise
         except Exception as e:
-            logger.exception(
+            self._logger.exception(
                 'Unexpected error occurred during initializing plugins',
                 reason=str(e),
             )
             raise
 
-        logger.info('Initializing plugins executor')
+        self._logger.info('Initializing plugins executor')
         try:
             self._executor = Executor(
                 input=self._plugins.input,
@@ -116,27 +118,27 @@ class Generator:
                 params=self._params,
             )
         except ImproperlyConfiguredError as e:
-            logger.error(str(e), **e.context)
+            self._logger.error(str(e), **e.context)
             raise
         except Exception as e:
-            logger.exception(
+            self._logger.exception(
                 'Unexpected error occurred during initializing',
                 reason=str(e),
             )
             raise
 
         init_time = round(time.monotonic() - init_start_time, 3)
-        logger.info('Initialization completed', seconds=init_time)
+        self._logger.info('Initialization completed', seconds=init_time)
 
-        logger.info('Starting execution', parameters=self._params)
+        self._logger.info('Starting execution', parameters=self._params)
 
         try:
             self._executor.execute()
         except ExecutionError as e:
-            logger.error(str(e), **e.context)
+            self._logger.error(str(e), **e.context)
             raise
         except Exception as e:
-            logger.exception(
+            self._logger.exception(
                 'Unexpected error occurred during execution',
                 reason=str(e),
             )
@@ -191,9 +193,9 @@ class Generator:
         try:
             self._thread.join()  # type: ignore[union-attr]
         except Exception:  # noqa: BLE001
-            logger.error('Generator stopped with errors')
+            self._logger.error('Generator stopped with errors')
         else:
-            logger.info('Generator stopped successfully')
+            self._logger.info('Generator stopped successfully')
 
     def join(self) -> None:
         """Wait until generator terminates.
@@ -217,9 +219,9 @@ class Generator:
         try:
             self._thread.join()  # type: ignore[union-attr]
         except Exception:  # noqa: BLE001
-            logger.error('Generator ended up with errors')
+            self._logger.error('Generator ended up with errors')
         else:
-            logger.info('Generator ended up successfully')
+            self._logger.info('Generator ended up successfully')
 
     def get_plugins_info(self) -> InitializedPlugins:
         """Get plugins information.
