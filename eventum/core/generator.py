@@ -19,7 +19,7 @@ from eventum.core.plugins_initializer import (
     InitializedPlugins,
     init_plugins,
 )
-from eventum.logging_context import propagate_logger_context
+from eventum.logging.context import propagate_logger_context
 
 
 class Generator:

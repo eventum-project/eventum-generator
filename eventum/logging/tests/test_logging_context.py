@@ -3,7 +3,7 @@ from threading import Thread
 import pytest
 import structlog
 
-from eventum.logging_context import propagate_logger_context
+from eventum.logging.context import propagate_logger_context
 
 logger = structlog.stdlib.get_logger()
 

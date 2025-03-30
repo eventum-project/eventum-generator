@@ -11,7 +11,7 @@ from numpy import datetime64
 from numpy.typing import NDArray
 from pydantic import BaseModel, Field
 
-from eventum.logging_context import propagate_logger_context
+from eventum.logging.context import propagate_logger_context
 from eventum.plugins.input.base.plugin import InputPlugin, InputPluginParams
 from eventum.plugins.input.exceptions import PluginGenerationError
 from eventum.plugins.input.plugins.http.config import HttpInputPluginConfig

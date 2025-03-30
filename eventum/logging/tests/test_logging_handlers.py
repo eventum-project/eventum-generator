@@ -5,7 +5,7 @@ from typing import Hashable
 
 import pytest
 
-from eventum.logging_handlers import RoutingHandler
+from eventum.logging.handlers import RoutingHandler
 
 
 class AppendingHandler(logging.Handler):
