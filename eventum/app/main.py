@@ -163,22 +163,26 @@ class App:
             List of generator parameters.
 
         """
-        running_generators: list[str] = []
-        non_running_generators: list[str] = []
+        added_generators: list[str] = []
+        not_added_generators: list[str] = []
 
         for params in generators_params:
             logger.info('Starting generator', generator_id=params.id)
             try:
                 self._manager.add(params)
-                self._manager.start(params.id)
-                running_generators.append(params.id)
+                added_generators.append(params.id)
             except ManagingError as e:
-                non_running_generators.append(params.id)
+                not_added_generators.append(params.id)
                 logger.error(
                     'Failed to start generator',
                     generator_id=params.id,
                     reason=str(e),
                 )
+
+        running_generators, non_running_generators = self._manager.bulk_start(
+            generator_ids=added_generators,
+        )
+        non_running_generators.extend(not_added_generators)
 
         if len(running_generators) > 0:
             message = 'Generators are running'
