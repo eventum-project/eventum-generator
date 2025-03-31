@@ -2,7 +2,7 @@
 
 import os
 import time
-from threading import Thread, get_native_id
+from threading import Event, Lock, Thread, get_native_id
 
 import structlog
 
@@ -41,32 +41,17 @@ class Generator:
         self._executor: Executor | None = None
 
         self._thread: Thread | None = None
+        self._initialized_event = Event()
+        self._successfully_done_event = Event()
 
         self._logger = structlog.stdlib.get_logger().bind(
             generator_id=self._params.id,
         )
 
-    def _start(self) -> None:
-        """Start generation.
+        self._lock = Lock()
 
-        Raises
-        ------
-        ConfigurationLoadError
-            If error occurs during configuration loading.
-
-        InitializationError
-            If error occurs during plugin initialization.
-
-        ImproperlyConfiguredError
-            If error occurs during executor initialization.
-
-        ExecutionError
-            If any error occurs during execution.
-
-        """
-        # All exceptions are logged before propagated because we want to
-        # inform user about potential errors in logs as soon as possible
-
+    def _start(self) -> None:  # noqa: PLR0911
+        """Start generation."""
         structlog.contextvars.bind_contextvars(generator_id=self._params.id)
 
         self._logger.info(
@@ -82,14 +67,14 @@ class Generator:
             self._config = load(self._params.path, self._params.params)
         except ConfigurationLoadError as e:
             self._logger.error(str(e), **e.context)
-            raise
+            return
         except Exception as e:
             self._logger.exception(
                 'Unexpected error occurred during loading config',
                 reason=str(e),
                 file_path=self._params.path,
             )
-            raise
+            return
 
         self._logger.info('Initializing plugins')
         try:
@@ -101,13 +86,13 @@ class Generator:
             )
         except InitializationError as e:
             self._logger.error(str(e), **e.context)
-            raise
+            return
         except Exception as e:
             self._logger.exception(
                 'Unexpected error occurred during initializing plugins',
                 reason=str(e),
             )
-            raise
+            return
 
         self._logger.info('Initializing plugins executor')
         try:
@@ -119,109 +104,78 @@ class Generator:
             )
         except ImproperlyConfiguredError as e:
             self._logger.error(str(e), **e.context)
-            raise
+            return
         except Exception as e:
             self._logger.exception(
                 'Unexpected error occurred during initializing',
                 reason=str(e),
             )
-            raise
+            return
 
         init_time = round(time.monotonic() - init_start_time, 3)
         self._logger.info('Initialization completed', seconds=init_time)
 
         self._logger.info('Starting execution', parameters=self._params)
 
+        self._initialized_event.set()
         try:
             self._executor.execute()
         except ExecutionError as e:
             self._logger.error(str(e), **e.context)
-            raise
+            return
         except Exception as e:
             self._logger.exception(
                 'Unexpected error occurred during execution',
                 reason=str(e),
             )
-            raise
+            return
+        else:
+            self._logger.info('Ending execution')
+            self._successfully_done_event.set()
 
-    def start(self) -> None:
-        """Start generator in separate thread. Ignore call if generator
-        is already running.
+    def start(self) -> bool:
+        """Start generator in separate thread waiting for its
+        initialization. Ignore call if generator is already running.
 
-        Raises
-        ------
-        RuntimeError
-            If generator is initializing.
+        Returns
+        -------
+        bool
+            `True` if generator successfully started or it is already
+            running, `False` otherwise.
 
         """
-        if self.is_running:
-            return
+        with self._lock:
+            if self.is_running:
+                return True
 
-        if self.is_initializing:
-            msg = 'Generator is initializing'
-            raise RuntimeError(msg)
+            self._initialized_event.clear()
+            self._successfully_done_event.clear()
 
-        self._config = None
-        self._plugins = None
-        self._executor = None
+            self._thread = Thread(
+                target=propagate_logger_context()(self._start),
+            )
+            self._thread.start()
 
-        self._thread = Thread(target=propagate_logger_context()(self._start))
-        self._thread.start()
+            while self.is_initializing:
+                time.sleep(0.1)
+
+            return self._initialized_event.is_set()
 
     def stop(self) -> None:
         """Stop generator with joining underlying thread. Ignore call
         if generator is not running.
-
-        Raises
-        ------
-        RuntimeError
-            If generator is initializing.
-
         """
-        if not self.is_running:
-            return
+        with self._lock:
+            if not self.is_running:
+                return
 
-        if self.is_initializing:
-            msg = (
-                'Generator is initializing, wait for initialization '
-                'to complete'
-            )
-            raise RuntimeError(msg)
-
-        self._executor.request_stop()  # type: ignore[union-attr]
-
-        try:
+            self._executor.request_stop()  # type: ignore[union-attr]
             self._thread.join()  # type: ignore[union-attr]
-        except Exception:  # noqa: BLE001
-            self._logger.error('Generator stopped with errors')
-        else:
-            self._logger.info('Generator stopped successfully')
 
     def join(self) -> None:
-        """Wait until generator terminates.
-
-        Raises
-        ------
-        RuntimeError
-            If generator is initializing.
-
-        """
-        if not self.is_running:
-            return
-
-        if self.is_initializing:
-            msg = (
-                'Generator is initializing, wait for initialization '
-                'to complete'
-            )
-            raise RuntimeError(msg)
-
-        try:
-            self._thread.join()  # type: ignore[union-attr]
-        except Exception:  # noqa: BLE001
-            self._logger.error('Generator ended up with errors')
-        else:
-            self._logger.info('Generator ended up successfully')
+        """Wait until generator terminates."""
+        if self._thread is not None:
+            self._thread.join()
 
     def get_plugins_info(self) -> InitializedPlugins:
         """Get plugins information.
@@ -271,7 +225,7 @@ class Generator:
         return (
             self._thread is not None
             and self._thread.is_alive()
-            and not self.is_running
+            and not self._initialized_event.is_set()
         )
 
     @property
@@ -280,7 +234,10 @@ class Generator:
         return (
             self._thread is not None
             and self._thread.is_alive()
-            and self._config is not None
-            and self._plugins is not None
-            and self._executor is not None
+            and self._initialized_event.is_set()
         )
+
+    @property
+    def status(self) -> bool:
+        """Whether the generator has ended execution successfully."""
+        return self._successfully_done_event.is_set()
