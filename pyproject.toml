@@ -111,6 +111,7 @@ select = ["ALL"]
 ignore = [
     "A001",     # builtin-variable-shadowing
     "A002",     # builtin-argument-shadowing
+    "A006",     # builtin-lambda-argument-shadowing
     "ANN401",   # any-type
     "D105",     # undocumented-magic-method
     "D205",     # missing-blank-line-after-summary
