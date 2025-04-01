@@ -1,0 +1,185 @@
+"""Configuration for logging system."""
+
+import logging
+import logging.config
+import logging.handlers
+from pathlib import Path
+from typing import TYPE_CHECKING, Literal, assert_never
+
+import structlog
+
+from eventum.logging.handlers import RoutingHandler
+from eventum.logging.processors import derive_extras, remove_keys_processor
+
+if TYPE_CHECKING:
+    from structlog.typing import Processor
+
+type LogLevel = Literal['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+
+
+def disable() -> None:
+    """Disable all logging system."""
+    logging.disable()
+    structlog.configure(
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        wrapper_class=structlog.stdlib.BoundLogger,
+        cache_logger_on_first_use=True,
+    )
+
+
+def use_stderr(level: LogLevel) -> None:
+    """Configure logging for writing to console.
+
+    Parameters
+    ----------
+    level : LogLevel
+        Log level.
+
+    """
+    logging.config.dictConfig(
+        {
+            'version': 1,
+            'formatters': {
+                'stderr-formatter': {
+                    '()': structlog.stdlib.ProcessorFormatter,
+                    'processor': structlog.dev.ConsoleRenderer(colors=True),
+                },
+            },
+            'handlers': {
+                'stderr': {
+                    'level': level,
+                    'formatter': 'stderr-formatter',
+                    'class': 'logging.StreamHandler',
+                    'stream': 'ext://sys.stderr',
+                },
+            },
+            'loggers': {
+                '': {
+                    'handlers': ['stderr'],
+                    'level': 'DEBUG',
+                    'propagate': True,
+                },
+            },
+        },
+    )
+
+    structlog.configure(
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.PositionalArgumentsFormatter(),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
+        context_class=dict,
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        wrapper_class=structlog.stdlib.BoundLogger,
+        cache_logger_on_first_use=True,
+    )
+
+
+def use_console_and_file(
+    format: Literal['plain', 'json'],
+    level: LogLevel,
+    logs_dir: Path,
+    max_bytes: int,
+    backup_count: int,
+) -> None:
+    """Configure logging for writing to console and file.
+
+    Parameters
+    ----------
+    format : Literal['plain', 'json']
+        Log format.
+
+    level : LogLevel
+        Log level.
+
+    logs_dir : Path
+        Directory for log files.
+
+    max_bytes : int
+        Max bytes for log file before triggering rollover.
+
+    backup_count : int
+        Number of rolled over log files to keep.
+
+    """
+    match format:
+        case 'json':
+            extension = 'json'
+            renderer: Processor = structlog.processors.JSONRenderer()
+        case 'plain':
+            extension = 'log'
+            renderer = structlog.dev.ConsoleRenderer(
+                colors=False,
+            )
+        case f:
+            assert_never(f)
+
+    if not logs_dir.exists():
+        logs_dir.mkdir(parents=True)
+
+    console_formatter = structlog.stdlib.ProcessorFormatter(
+        processor=renderer,
+    )
+    file_formatter = structlog.stdlib.ProcessorFormatter(
+        processors=[
+            remove_keys_processor(['generator_id']),
+            structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+            renderer,
+        ],
+    )
+
+    # Console handler
+    stderr_handler = logging.StreamHandler()
+    stderr_handler.setLevel(logging.DEBUG)
+    stderr_handler.setFormatter(console_formatter)
+
+    # Default routing handler
+    default_routing_handler = logging.handlers.RotatingFileHandler(
+        filename=logs_dir / f'main.{extension}',
+        maxBytes=max_bytes,
+        backupCount=backup_count,
+    )
+    default_routing_handler.setLevel(logging.DEBUG)
+    default_routing_handler.setFormatter(file_formatter)
+
+    # Routing handler
+    routing_handler = RoutingHandler(
+        attribute='generator_id',
+        handler_factory=lambda attr: logging.handlers.RotatingFileHandler(
+            filename=logs_dir / f'generator_{attr}.{extension}',
+            maxBytes=max_bytes,
+            backupCount=backup_count,
+        ),
+        default_handler=default_routing_handler,
+        formatter=file_formatter,
+    )
+    routing_handler.setLevel(logging.DEBUG)
+    routing_handler.setFormatter(file_formatter)
+
+    logger = logging.getLogger()
+    logger.addHandler(stderr_handler)
+    logger.addHandler(routing_handler)
+    logger.setLevel(level)
+
+    structlog.configure(
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.PositionalArgumentsFormatter(),
+            structlog.processors.TimeStamper(fmt='iso', utc=True),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            derive_extras(['generator_id'])(
+                structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+            ),
+        ],
+        wrapper_class=structlog.stdlib.BoundLogger,
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
