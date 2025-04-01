@@ -1,7 +1,10 @@
+"""Commands for starting app or single generator."""
+
+import os
 import signal
-import time
+import sys
 from io import TextIOWrapper
-from typing import Literal, TypeAlias
+from typing import Literal, NoReturn
 
 import click
 import structlog
@@ -10,15 +13,105 @@ from flatten_dict import unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError
 from setproctitle import setproctitle
 
-import eventum.cli.logging_config as logconf
+import eventum
+import eventum.logging.config as logconf
+from eventum.app.main import App, AppError
+from eventum.app.models.settings import Settings
 from eventum.cli.pydantic_converter import from_model
+from eventum.cli.splash_screen import SPLASH_SCREEN
 from eventum.core.generator import Generator
-from eventum.core.main import App, AppError
-from eventum.core.models.parameters.generator import GeneratorParameters
-from eventum.core.models.settings import Settings
+from eventum.core.parameters import GeneratorParameters
 from eventum.utils.validation_prettier import prettify_validation_errors
 
-VerbosityLevel: TypeAlias = Literal[0, 1, 2, 3, 4, 5]
+setproctitle('eventum')
+logger = structlog.stdlib.get_logger()
+
+
+@click.group('eventum')
+@click.version_option(
+    version=eventum.__version__,
+    package_name=eventum.__name__,
+    message=SPLASH_SCREEN,
+)
+def cli():  # noqa: ANN201
+    """Events generation platform."""
+
+
+@cli.command
+@click.option(
+    '-c',
+    '--config',
+    required=True,
+    help='Path to main configuration file',
+    type=click.File(),
+)
+def run(config: TextIOWrapper) -> None:
+    """Run application with all defined generators."""
+    try:
+        data = yaml.load(config, Loader=yaml.SafeLoader)
+    except yaml.error.YAMLError as e:
+        click.echo(
+            f'Error: Failed to parse configuration YAML content: {e}',
+            err=True,
+        )
+        sys.exit(1)
+
+    data = unflatten(data, splitter='dot')
+
+    try:
+        settings = Settings.model_validate(data)
+    except ValidationError as e:
+        click.echo(
+            (
+                'Error: Failed to validate settings:'
+                + os.linesep
+                + prettify_validation_errors(e.errors(), sep=os.linesep)
+            ),
+            err=True,
+        )
+        sys.exit(1)
+
+    logconf.use_console_and_file(
+        format=settings.log.format,
+        level=settings.log.level.upper(),  # type: ignore[arg-type]
+        logs_dir=settings.path.logs,
+        backup_count=settings.log.backups,
+        max_bytes=settings.log.max_bytes,
+    )
+
+    click.echo('Starting application...')
+    click.echo(SPLASH_SCREEN)
+
+    app = App(settings)
+
+    try:
+        app.start()
+    except AppError as e:
+        logger.error(str(e), **e.context)
+        sys.exit(1)
+    except Exception as e:
+        logger.exception(
+            'Unexpected error occurred during app execution',
+            reason=str(e),
+        )
+        sys.exit(1)
+
+    def handle_termination(signal_num: int) -> NoReturn:
+        logger.info(
+            'Termination signal is received',
+            signal=signal.Signals(signal_num).name,
+        )
+        app.stop()
+        sys.exit(1)
+
+    signal.signal(signal.SIGINT, lambda sig, __: handle_termination(sig))
+    signal.signal(signal.SIGTERM, lambda sig, __: handle_termination(sig))
+    signal.pause()
+    sys.exit(0)
+
+
+type VerbosityLevel = Literal[1, 2, 3, 4, 5]
+type NonVerbose = Literal[0]
 
 VERBOSITY_TO_LOG_LEVEL: dict[VerbosityLevel, logconf.LogLevel] = {
     1: 'CRITICAL',
@@ -28,76 +121,12 @@ VERBOSITY_TO_LOG_LEVEL: dict[VerbosityLevel, logconf.LogLevel] = {
     5: 'DEBUG',
 }
 
-setproctitle('eventum')
-logger = structlog.stdlib.get_logger()
-
-
-@click.group('eventum')
-def cli():
-    """Events generation platform."""
-    pass
-
-
-@cli.command
-@click.option(
-    '-c', '--config',
-    required=True,
-    help='Path to main configuration file',
-    type=click.File()
-)
-def run(config: TextIOWrapper) -> None:
-    """Run application with all defined generators."""
-    logconf.direct_to_stderr()
-
-    try:
-        data = yaml.load(config, Loader=yaml.SafeLoader)
-    except yaml.error.YAMLError as e:
-        logger.error(
-            'Failed to parse configuration YAML content',
-            reason=str(e)
-        )
-        exit(1)
-
-    data = unflatten(data, splitter='dot')
-
-    try:
-        settings = Settings.model_validate(data)
-    except ValidationError as e:
-        logger.error(
-            'Failed to validate settings',
-            reason=prettify_validation_errors(e.errors())
-        )
-        exit(1)
-
-    logconf.configure_for_stderr_and_file(
-        format=settings.log.format,
-        level=settings.log.level.upper(),   # type: ignore[arg-type]
-        logs_dir=settings.path.logs,
-        log_basename='main'
-    )
-
-    app = App(settings)
-
-    try:
-        app.start()
-    except AppError as e:
-        logger.error(str(e), **e.context)
-        exit(1)
-
-    def handle_termination(signal_num):
-        logger.info(f'{signal.Signals(signal_num).name} signal is received')
-        app.stop()
-        exit(1)
-
-    signal.signal(signal.SIGINT, lambda sig, __: handle_termination(sig))
-    signal.signal(signal.SIGTERM, lambda sig, __: handle_termination(sig))
-    signal.pause()
-
 
 @cli.command
 @from_model(GeneratorParameters)
 @click.option(
-    '-v', '--verbose',
+    '-v',
+    '--verbose',
     count=True,
     type=click.IntRange(0, 5),
     default=0,
@@ -106,54 +135,38 @@ def run(config: TextIOWrapper) -> None:
         'Level of verbosity for printed logs '
         '(default: disabled, -v: critical, -vv: errors, '
         '-vvv: warnings, -vvvv: info, -vvvvv: debug)'
-    )
-)
-@click.option(
-    '-m', '--metrics-interval',
-    type=click.FloatRange(min=1),
-    default=30,
-    show_default=True,
-    help='Time interval (in seconds) of metrics gauging'
+    ),
 )
 def generate(
     generator_parameters: GeneratorParameters,
-    verbose: VerbosityLevel,
-    metrics_interval: float
+    verbose: NonVerbose | VerbosityLevel,
 ) -> None:
     """Generate events using single generator."""
-    if verbose > 0:
-        logconf.direct_to_stderr(level=VERBOSITY_TO_LOG_LEVEL[verbose])
-    else:
+    if verbose == 0:
         logconf.disable()
+    else:
+        logconf.use_stderr(level=VERBOSITY_TO_LOG_LEVEL[verbose])
 
     generator = Generator(generator_parameters)
-    generator.start()
+    status = generator.start()
 
-    def handle_termination(signal_num: int):
-        logger.info(f'{signal.Signals(signal_num).name} signal is received')
+    if not status:
+        logger.error('Failed to start generator')
+        sys.exit(1)
+
+    def handle_termination(signal_num: int) -> NoReturn:
+        logger.info(
+            'Termination signal is received',
+            signal=signal.Signals(signal_num).name,
+        )
         generator.stop()
-
-        metrics = generator.get_metrics()
-        logger.info('Publishing eventual metrics', metrics=metrics)
-
-        exit(128 + signal_num)
+        sys.exit(128 + signal_num)
 
     signal.signal(signal.SIGINT, lambda sig, __: handle_termination(sig))
     signal.signal(signal.SIGTERM, lambda sig, __: handle_termination(sig))
 
-    last_metrics_time = time.monotonic()
-
-    while generator.is_running:
-        current_time = time.monotonic()
-        if (current_time - last_metrics_time) > metrics_interval:
-            last_metrics_time = current_time
-            metrics = generator.get_metrics()
-            logger.info('Publishing actual metric', metrics=metrics)
-
-        time.sleep(0.1)
-
-    logger.info('Generator ended execution')
-    exit(0)
+    generator.join()
+    sys.exit(0)
 
 
 if __name__ == '__main__':
