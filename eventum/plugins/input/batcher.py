@@ -145,7 +145,7 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
                 np.searchsorted(
                     a=array,
                     v=latest,  # type: ignore[assignment]
-                    side='right',
+                    side='left',
                 ),
             )
 

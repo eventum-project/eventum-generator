@@ -65,8 +65,7 @@ def test_delay_batching(delay_source):
     batches = list(batcher.iterate(skip_past=False))
 
     assert len(batches) == 6
-    assert all([batch.size == 11 for batch in batches[:-1]])
-    assert batches[-1].size == 5
+    assert all([batch.size == 10 for batch in batches])
 
 
 @pytest.fixture
@@ -102,4 +101,4 @@ def test_delay_with_size_batching(uneven_delay_source):
 
     batches = list(batcher.iterate(skip_past=False))
 
-    assert [batch.size for batch in batches] == [11, 11, 8, 15, 5]
+    assert [batch.size for batch in batches] == [10, 10, 10, 15, 5]
