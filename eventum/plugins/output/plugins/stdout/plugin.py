@@ -1,9 +1,10 @@
 """Definition of opensearch output plugin."""
 
 import asyncio
-import sys
 from collections.abc import Sequence
 from typing import assert_never, override
+
+from aioconsole import get_standard_streams  # type: ignore[import-untyped]
 
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
 from eventum.plugins.output.exceptions import PluginWriteError
@@ -41,23 +42,13 @@ class StdoutOutputPlugin(
     async def _open(self) -> None:
         match self._config.stream:
             case 'stdout':
-                pipe = sys.stdout
+                use_stderr = False
             case 'stderr':
-                pipe = sys.stderr
+                use_stderr = True
             case val:
                 assert_never(val)
 
-        loop = asyncio.get_event_loop()
-        w_transport, w_protocol = await loop.connect_write_pipe(
-            protocol_factory=asyncio.streams.FlowControlMixin,
-            pipe=pipe,
-        )
-        self._writer = asyncio.StreamWriter(
-            transport=w_transport,
-            protocol=w_protocol,
-            reader=None,
-            loop=loop,
-        )
+        _, self._writer = await get_standard_streams(use_stderr=use_stderr)
         self._flushing_task = self._loop.create_task(self._start_flushing())
 
     @override
