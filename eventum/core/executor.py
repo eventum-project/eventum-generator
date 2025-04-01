@@ -201,9 +201,7 @@ class Executor:
             msg = 'Failed to open some of the output plugins'
             raise ExecutionError(msg, context={}) from None
         except* Exception as e:
-            await asyncio.gather(
-                *[logger.aexception(str(exc)) for exc in e.exceptions],
-            )
+            await logger.aexception(str(e))
             msg = 'Unexpected error occurred during opening output plugins'
             raise ExecutionError(msg, context={}) from e
 
