@@ -1,6 +1,5 @@
 """Definition of base plugin."""
 
-import importlib
 import inspect
 from abc import ABC
 from collections.abc import Iterator
@@ -44,35 +43,14 @@ class _PluginRegistrationInfo:
     type : str
         Type of the plugin (e.g. input, event, ...).
 
-    package : ModuleType
-        Parent package of plugin package.
+    module : ModuleType
+        Module of plugin class definition
 
     """
 
     name: str
     type: str
-    package: ModuleType
-
-
-class PluginInstanceInfo(TypedDict):
-    """Information about instance of plugin.
-
-    Attributes
-    ----------
-    plugin_name : str
-        Name of the plugin.
-
-    plugin_type : str
-        Type of the plugin.
-
-    plugin_id : int
-        ID of the plugin instance.
-
-    """
-
-    plugin_name: str
-    plugin_type: str
-    plugin_id: int
+    module: ModuleType
 
 
 def _inspect_plugin(plugin_cls: type) -> _PluginRegistrationInfo:
@@ -109,7 +87,6 @@ def _inspect_plugin(plugin_cls: type) -> _PluginRegistrationInfo:
         module_parts = class_module.__name__.split('.')
         plugin_name = module_parts[-2]
         plugin_type = module_parts[-4]
-        plugin_parent_package_name = '.'.join(module_parts[:-2])
     except IndexError:
         msg = (
             'Plugin is defined in unexpected location: '
@@ -118,19 +95,10 @@ def _inspect_plugin(plugin_cls: type) -> _PluginRegistrationInfo:
         )
         raise ValueError(msg) from None
 
-    try:
-        package = importlib.import_module(plugin_parent_package_name)
-    except ImportError as e:
-        msg = (
-            'Cannot import parent package of plugin package '
-            f'"{plugin_parent_package_name}": {e}'
-        )
-        raise ValueError(msg) from e
-
     return _PluginRegistrationInfo(
         name=plugin_name,
         type=plugin_type,
-        package=package,
+        module=class_module,
     )
 
 
@@ -204,7 +172,7 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
 
         self._base_path = params.get('base_path', Path.cwd())
 
-        self._logger = logger.bind(
+        self._logger = self.logger.bind(
             plugin_name=self.name,
             plugin_type=self.type,
             plugin_id=self.id,
@@ -256,11 +224,6 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
 
         log = logger.bind(**context)
 
-        if not register:
-            cls._plugin_name = '[unregistered]'  # type: ignore[attr-defined]
-            cls._plugin_type = '[unregistered]'  # type: ignore[attr-defined]
-            return
-
         try:
             registration_info = _inspect_plugin(cls)
         except ValueError as e:
@@ -269,6 +232,14 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
                 msg,
                 context=dict(context, reason=str(e)),
             ) from e
+
+        logger_name = registration_info.module.__name__
+        cls._logger = structlog.stdlib.get_logger(logger_name)  # type: ignore[attr-defined]
+
+        if not register:
+            cls._plugin_name = '[unregistered]'  # type: ignore[attr-defined]
+            cls._plugin_type = '[unregistered]'  # type: ignore[attr-defined]
+            return
 
         plugin_name = registration_info.name
         plugin_type = registration_info.type
@@ -306,7 +277,7 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
                 name=registration_info.name,
                 cls=cls,
                 config_cls=config_cls,
-                package=registration_info.package,
+                type=plugin_type,
             ),
         )
 
@@ -341,3 +312,8 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
     def config(self) -> ConfigT:
         """Plugin config."""
         return self._config
+
+    @property
+    def logger(self) -> structlog.stdlib.BoundLogger:
+        """Plugin logger."""
+        return self._logger  # type: ignore[attr-defined]
