@@ -1,17 +1,23 @@
-import subprocess as subprocess
+"""Subprocess runner that provides interface for running shell commands
+and obtaining their results from templates.
+"""
+
+import subprocess
 from dataclasses import dataclass
 from typing import Any
 
 
 @dataclass
 class SubprocessResult:
+    """Result of subprocess."""
+
     stdout: str
     stderr: str
     exit_code: int
 
 
 class SubprocessRunner:
-    """Runner of commands in subprocesses."""
+    """Runner of shell commands in subprocesses."""
 
     def run(
         self,
@@ -25,26 +31,27 @@ class SubprocessRunner:
         Parameters
         ----------
         command : str
-            Shell command to execute
+            Shell command to execute.
 
         cwd : str | None, default=None
-            Working directory
+            Working directory.
 
         env: dict[str, Any] | None, default=None
-            Environment variables
+            Environment variables.
 
         timeout: float | None, default=None
-            Timeout (in seconds) of command execution
+            Timeout (in seconds) of command execution.
 
         Returns
         -------
         SubprocessResult
-            Command result including its stdout, stderr and exit code
+            Command result including its stdout, stderr and exit code.
 
         Raises
         ------
         subprocess.TimeoutExpired
-            If command timed out
+            If command timed out.
+
         """
         proc = subprocess.run(
             args=command,
@@ -53,10 +60,11 @@ class SubprocessRunner:
             cwd=cwd,
             env=env,
             timeout=timeout,
+            check=False,
         )
 
         return SubprocessResult(
             stdout=proc.stdout.decode(),
             stderr=proc.stderr.decode(),
-            exit_code=proc.returncode
+            exit_code=proc.returncode,
         )

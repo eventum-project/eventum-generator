@@ -3,22 +3,45 @@ from datetime import datetime
 
 import pytest
 
-from eventum.plugins.event.plugins.jinja.context import (EventContext,
-                                                         EventStateContext,
-                                                         EventTagsContext,
-                                                         EventTimestampContext)
+from eventum.plugins.event.plugins.jinja.context import (
+    EventContext,
+    EventStateContext,
+    EventTagsContext,
+    EventTimestampContext,
+)
 from eventum.plugins.event.plugins.jinja.fsm.fields import (
-    After, And, Before, Contains, Defined, Eq, Ge, Gt, HasTags, In, Le, LenEq,
-    LenGe, LenGt, LenLe, LenLt, Lt, Matches, Not, Or, TimestampComponents)
-from eventum.plugins.event.plugins.jinja.state import \
-    SingleThreadState as State
+    After,
+    And,
+    Before,
+    Contains,
+    Defined,
+    Eq,
+    Ge,
+    Gt,
+    HasTags,
+    In,
+    Le,
+    LenEq,
+    LenGe,
+    LenGt,
+    LenLe,
+    LenLt,
+    Lt,
+    Matches,
+    Not,
+    Or,
+    TimestampComponents,
+)
+from eventum.plugins.event.plugins.jinja.state import (
+    SingleThreadState as State,
+)
 
 
 def test_eq():
     context = EventStateContext(
         locals=State({'field': 10}),
         shared=...,
-        globals=...
+        globals=...,
     )
     assert Eq(eq={'locals.field': 10}).check(context)
     assert not Eq(eq={'locals.field': 5}).check(context)
@@ -29,7 +52,7 @@ def test_gt():
     context = EventStateContext(
         locals=State({'field': 10}),
         shared=...,
-        globals=...
+        globals=...,
     )
     assert Gt(gt={'locals.field': 5}).check(context)
     assert not Gt(gt={'locals.field': 10}).check(context)
@@ -40,7 +63,7 @@ def test_ge():
     context = EventStateContext(
         locals=State({'field': 10}),
         shared=...,
-        globals=...
+        globals=...,
     )
     assert Ge(ge={'locals.field': 5}).check(context)
     assert Ge(ge={'locals.field': 10}).check(context)
@@ -51,7 +74,7 @@ def test_lt():
     context = EventStateContext(
         locals=State({'field': 10}),
         shared=...,
-        globals=...
+        globals=...,
     )
     assert Lt(lt={'locals.field': 15}).check(context)
     assert not Lt(lt={'locals.field': 10}).check(context)
@@ -62,7 +85,7 @@ def test_le():
     context = EventStateContext(
         locals=State({'field': 10}),
         shared=...,
-        globals=...
+        globals=...,
     )
     assert Le(le={'locals.field': 15}).check(context)
     assert Le(le={'locals.field': 10}).check(context)
@@ -73,7 +96,7 @@ def test_len_eq():
     context = EventStateContext(
         locals=State({'field': [1, 2, 3]}),
         shared=...,
-        globals=...
+        globals=...,
     )
     assert LenEq(len_eq={'locals.field': 3}).check(context)
     assert not LenEq(len_eq={'locals.field': 2}).check(context)
@@ -83,7 +106,7 @@ def test_len_gt():
     context = EventStateContext(
         locals=State({'field': [1, 2, 3]}),
         shared=...,
-        globals=...
+        globals=...,
     )
     assert LenGt(len_gt={'locals.field': 2}).check(context)
     assert not LenGt(len_gt={'locals.field': 3}).check(context)
@@ -93,7 +116,7 @@ def test_len_ge():
     context = EventStateContext(
         locals=State({'field': [1, 2, 3]}),
         shared=...,
-        globals=...
+        globals=...,
     )
     assert LenGe(len_ge={'locals.field': 2}).check(context)
     assert LenGe(len_ge={'locals.field': 3}).check(context)
@@ -104,7 +127,7 @@ def test_len_lt():
     context = EventStateContext(
         locals=State({'field': [1, 2, 3]}),
         shared=...,
-        globals=...
+        globals=...,
     )
     assert LenLt(len_lt={'locals.field': 4}).check(context)
     assert not LenLt(len_lt={'locals.field': 3}).check(context)
@@ -114,7 +137,7 @@ def test_len_le():
     context = EventStateContext(
         locals=State({'field': [1, 2, 3]}),
         shared=...,
-        globals=...
+        globals=...,
     )
     assert LenLe(len_le={'locals.field': 4}).check(context)
     assert LenLe(len_le={'locals.field': 3}).check(context)
@@ -125,7 +148,7 @@ def test_contains():
     context = EventStateContext(
         locals=State({'field': [5, 10, 15]}),
         shared=...,
-        globals=...
+        globals=...,
     )
     assert Contains(contains={'locals.field': 10}).check(context)
     assert not Contains(contains={'locals.field': 2}).check(context)
@@ -135,165 +158,165 @@ def test_in():
     context = EventStateContext(
         locals=State({'field': 5}),
         shared=...,
-        globals=...
+        globals=...,
     )
     assert In(
-        in_={'locals.field': [5, 10, 15]}
+        in_={'locals.field': [5, 10, 15]},
     ).check(context)
     assert not In(
-        in_={'locals.field': [2, 4, 6]}
+        in_={'locals.field': [2, 4, 6]},
     ).check(context)
 
 
 def test_has_tags():
     assert HasTags(has_tags='tag1').check(
-        EventTagsContext(tags=('tag1', 'tag2'))
+        EventTagsContext(tags=('tag1', 'tag2')),
     )
     assert HasTags(has_tags=['tag1', 'tag2']).check(
-        EventTagsContext(tags=('tag1', 'tag2', 'tag3'))
+        EventTagsContext(tags=('tag1', 'tag2', 'tag3')),
     )
     assert not HasTags(has_tags='tag3').check(
-        EventTagsContext(tags=('tag1', 'tag2'))
+        EventTagsContext(tags=('tag1', 'tag2')),
     )
 
 
 def test_before():
     context = EventTimestampContext(
-        timestamp=datetime.fromisoformat('2023-10-27T10:30:20.500000Z')
+        timestamp=datetime.fromisoformat('2023-10-27T10:30:20.500000Z'),
     )
 
     assert Before(
-        before=TimestampComponents(year=2024)
+        before=TimestampComponents(year=2024),
     ).check(context)
 
     assert Before(
-        before=TimestampComponents(month=11)
+        before=TimestampComponents(month=11),
     ).check(context)
 
     assert Before(
-        before=TimestampComponents(day=28)
+        before=TimestampComponents(day=28),
     ).check(context)
 
     assert Before(
-        before=TimestampComponents(hour=11)
+        before=TimestampComponents(hour=11),
     ).check(context)
 
     assert Before(
-        before=TimestampComponents(minute=31)
+        before=TimestampComponents(minute=31),
     ).check(context)
 
     assert Before(
-        before=TimestampComponents(second=21)
+        before=TimestampComponents(second=21),
     ).check(context)
 
     assert Before(
-        before=TimestampComponents(microsecond=600_000)
+        before=TimestampComponents(microsecond=600_000),
     ).check(context)
 
     assert Before(
-        before=TimestampComponents(year=2023, month=11)
+        before=TimestampComponents(year=2023, month=11),
     ).check(context)
 
     assert Before(
-        before=TimestampComponents(year=2023, month=10, day=28)
+        before=TimestampComponents(year=2023, month=10, day=28),
     ).check(context)
 
     assert Before(
-        before=TimestampComponents(year=2023, month=10, day=27, hour=11)
+        before=TimestampComponents(year=2023, month=10, day=27, hour=11),
     ).check(context)
 
     assert not Before(
-        before=TimestampComponents(year=2023)
+        before=TimestampComponents(year=2023),
     ).check(context)
 
     assert not Before(
-        before=TimestampComponents(month=10)
+        before=TimestampComponents(month=10),
     ).check(context)
 
     assert not Before(
-        before=TimestampComponents(day=27)
+        before=TimestampComponents(day=27),
     ).check(context)
 
     assert not Before(
-        before=TimestampComponents(hour=10)
+        before=TimestampComponents(hour=10),
     ).check(context)
 
     assert not Before(
-        before=TimestampComponents(year=2022, month=12)
+        before=TimestampComponents(year=2022, month=12),
     ).check(context)
 
     assert not Before(
-        before=TimestampComponents(year=2022, month=12, day=31)
+        before=TimestampComponents(year=2022, month=12, day=31),
     ).check(context)
 
 
 def test_after():
     context = EventTimestampContext(
-        timestamp=datetime.fromisoformat('2023-10-27T10:30:20.500000Z')
+        timestamp=datetime.fromisoformat('2023-10-27T10:30:20.500000Z'),
     )
 
     assert After(
-        after=TimestampComponents(year=2022)
+        after=TimestampComponents(year=2022),
     ).check(context)
 
     assert After(
-        after=TimestampComponents(month=9)
+        after=TimestampComponents(month=9),
     ).check(context)
 
     assert After(
-        after=TimestampComponents(day=26)
+        after=TimestampComponents(day=26),
     ).check(context)
 
     assert After(
-        after=TimestampComponents(hour=9)
+        after=TimestampComponents(hour=9),
     ).check(context)
 
     assert After(
-        after=TimestampComponents(minute=29)
+        after=TimestampComponents(minute=29),
     ).check(context)
 
     assert After(
-        after=TimestampComponents(second=19)
+        after=TimestampComponents(second=19),
     ).check(context)
 
     assert After(
-        after=TimestampComponents(microsecond=400_000)
+        after=TimestampComponents(microsecond=400_000),
     ).check(context)
 
     assert After(
-        after=TimestampComponents(year=2023)
+        after=TimestampComponents(year=2023),
     ).check(context)
 
     assert After(
-        after=TimestampComponents(month=10)
+        after=TimestampComponents(month=10),
     ).check(context)
 
     assert After(
-        after=TimestampComponents(day=27)
+        after=TimestampComponents(day=27),
     ).check(context)
 
     assert After(
-        after=TimestampComponents(hour=10)
+        after=TimestampComponents(hour=10),
     ).check(context)
 
     assert After(
-        after=TimestampComponents(year=2023, month=10)
+        after=TimestampComponents(year=2023, month=10),
     ).check(context)
 
     assert After(
-        after=TimestampComponents(year=2023, month=10, day=27)
+        after=TimestampComponents(year=2023, month=10, day=27),
     ).check(context)
 
     assert After(
-        after=TimestampComponents(year=2023, month=10, day=27, hour=10)
+        after=TimestampComponents(year=2023, month=10, day=27, hour=10),
     ).check(context)
 
     assert not After(
-        after=TimestampComponents(hour=11)
+        after=TimestampComponents(hour=11),
     ).check(context)
 
     assert not After(
-        after=TimestampComponents(year=2023, month=10, day=27, hour=11)
+        after=TimestampComponents(year=2023, month=10, day=27, hour=11),
     ).check(context)
 
 
@@ -301,13 +324,13 @@ def test_matches():
     context = EventStateContext(
         locals=State({'field': 'abc'}),
         shared=...,
-        globals=...
+        globals=...,
     )
     assert Matches(
-        matches={'locals.field': r'^a.*c$'}
+        matches={'locals.field': r'^a.*c$'},
     ).check(context)
     assert not Matches(
-        matches={'locals.field': r'^b.*c$'}
+        matches={'locals.field': r'^b.*c$'},
     ).check(context)
 
 
@@ -315,7 +338,7 @@ def test_defined():
     context = EventStateContext(
         locals=State({'field': 10}),
         shared=...,
-        globals=...
+        globals=...,
     )
     assert Defined(defined='locals.field').check(context)
     assert not Defined(defined='locals.other_field').check(context)
@@ -324,79 +347,79 @@ def test_defined():
 def test_or():
     context = EventContext(
         timestamp=...,
-        tags=('tag1', ),
+        tags=('tag1',),
         locals=State({'field': 10}),
         shared=...,
-        globals=...
+        globals=...,
     )
 
     assert Or(
         or_=[
             Eq(eq={'locals.field': 5}),
-            HasTags(has_tags='tag1')
-        ]
+            HasTags(has_tags='tag1'),
+        ],
     ).check(context)
 
     assert not Or(
         or_=[
             Eq(eq={'locals.field': 5}),
-            HasTags(has_tags='tag2')
-        ]
+            HasTags(has_tags='tag2'),
+        ],
     ).check(context)
 
 
 def test_and():
     context = EventContext(
         timestamp=...,
-        tags=('tag1', ),
+        tags=('tag1',),
         locals=State({'field': 15}),
         shared=...,
-        globals=...
+        globals=...,
     )
 
     assert And(
         and_=[
             Gt(gt={'locals.field': 10}),
-            HasTags(has_tags='tag1')
-        ]
+            HasTags(has_tags='tag1'),
+        ],
     ).check(context)
 
     assert not And(
         and_=[
             Gt(gt={'locals.field': 10}),
-            HasTags(has_tags='tag2')
-        ]
+            HasTags(has_tags='tag2'),
+        ],
     ).check(context)
 
 
 def test_not():
     context = EventContext(
         timestamp=...,
-        tags=('tag1', ),
+        tags=('tag1',),
         locals=State({'field': 5}),
         shared=...,
-        globals=...
+        globals=...,
     )
 
     assert Not(
         not_=Eq(
-            eq={'locals.field': 10}
-        )
+            eq={'locals.field': 10},
+        ),
     ).check(context)
     assert not Not(
         not_=Eq(
-            eq={'locals.field': 5}
-        )
+            eq={'locals.field': 5},
+        ),
     ).check(context)
 
 
 def test_complex_condition():
     context = EventContext(
         timestamp=...,
-        tags=('tag1', ),
+        tags=('tag1',),
         locals=State({'field1': 10, 'field2': 'abc'}),
         shared=...,
-        globals=...
+        globals=...,
     )
 
     condition = Or(
@@ -404,15 +427,15 @@ def test_complex_condition():
             And(
                 and_=[
                     Gt(gt={'locals.field1': 5}),
-                    Lt(lt={'locals.field1': 15})
-                ]
+                    Lt(lt={'locals.field1': 15}),
+                ],
             ),
             Not(
                 not_=Matches(
-                    matches={'locals.field2': r'^a.*c$'}
-                )
-            )
-        ]
+                    matches={'locals.field2': r'^a.*c$'},
+                ),
+            ),
+        ],
     )
 
     assert condition.check(context)

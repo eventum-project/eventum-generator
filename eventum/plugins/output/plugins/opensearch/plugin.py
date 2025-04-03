@@ -1,28 +1,34 @@
+"""Definition of opensearch output plugin."""
+
 import itertools
 import json
-from typing import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Iterator, Sequence
+from typing import override
 
-import aiohttp
-from yarl import URL
+import httpx
 
-from eventum.plugins.exceptions import (PluginConfigurationError,
-                                        PluginRuntimeError)
+from eventum.plugins.exceptions import PluginConfigurationError
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
-from eventum.plugins.output.http_session import (create_session,
-                                                 create_ssl_context)
-from eventum.plugins.output.plugins.opensearch.config import \
-    OpensearchOutputPluginConfig
+from eventum.plugins.output.exceptions import PluginWriteError
+from eventum.plugins.output.http_client import (
+    create_client,
+    create_ssl_context,
+)
+from eventum.plugins.output.plugins.opensearch.config import (
+    OpensearchOutputPluginConfig,
+)
 
 
 class OpensearchOutputPlugin(
-    OutputPlugin[OpensearchOutputPluginConfig, OutputPluginParams]
+    OutputPlugin[OpensearchOutputPluginConfig, OutputPluginParams],
 ):
     """Output plugin for indexing events to OpenSearch."""
 
+    @override
     def __init__(
         self,
         config: OpensearchOutputPluginConfig,
-        params: OutputPluginParams
+        params: OutputPluginParams,
     ) -> None:
         super().__init__(config, params)
 
@@ -33,44 +39,50 @@ class OpensearchOutputPlugin(
                 verify=config.verify,
                 ca_cert=config.ca_cert,
                 client_cert=config.client_cert,
-                client_key=config.client_cert_key
+                client_key=config.client_cert_key,
             )
         except OSError as e:
+            msg = 'Failed to create SSL context'
             raise PluginConfigurationError(
-                'Failed to create SSL context',
-                context=dict(self.instance_info, reason=str(e))
-            )
+                msg,
+                context={'reason': str(e)},
+            ) from e
 
-        self._session: aiohttp.ClientSession
+        self._client: httpx.AsyncClient
 
+    @override
     async def _open(self) -> None:
-        self._session = create_session(
+        self._client = create_client(
             ssl_context=self._ssl_context,
             username=self._config.username,
             password=self._config.password,
             headers={
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
             connect_timeout=self._config.connect_timeout,
-            request_timeout=self._config.request_timeout
+            request_timeout=self._config.request_timeout,
+            proxy_url=(
+                str(self._config.proxy_url) if self._config.proxy_url else None
+            ),
         )
 
+    @override
     async def _close(self) -> None:
-        await self._session.close()
+        await self._client.aclose()
 
-    def _choose_host(self) -> Iterator[URL]:
+    def _choose_host(self) -> Iterator[httpx.URL]:
         """Choose host from hosts list specified in config.
 
         Yields
         ------
-        yarl.URL
-            Chosen host URL
-        """
-        host_urls = [URL(str(host)) for host in self._config.hosts]
+        httpx.URL
+            Chosen host URL.
 
-        for host in itertools.cycle(host_urls):
-            yield host
+        """
+        host_urls = [httpx.URL(str(host)) for host in self._config.hosts]
+
+        yield from itertools.cycle(host_urls)
 
     def _create_bulk_data(self, events: Iterable[str]) -> str:
         """Create body for bulk request. It is expected that events
@@ -79,12 +91,13 @@ class OpensearchOutputPlugin(
         Parameters
         ----------
         events : Iterable[str]
-            Events for bulk request
+            Events for bulk request.
 
         Returns
         -------
         str
-            Bulk data for request body
+            Bulk data for request body.
+
         """
         bulk_lines = []
         operation = json.dumps({'index': {'_index': self._config.index}})
@@ -98,26 +111,29 @@ class OpensearchOutputPlugin(
     @staticmethod
     def _get_bulk_response_errors(bulk_response: dict) -> list[str]:
         """Get list of errors in bulk response.
+
         Parameters
         ----------
         bulk_response : dict
-            Original response of bulk request
+            Original response of bulk request.
 
         Return
         ------
         list[str]
-            List of error messages
+            List of error messages.
 
         Raises
         ------
         ValueError
-            If bulk response has invalid structure
+            If bulk response has invalid structure.
+
         """
         if 'errors' not in bulk_response or 'items' not in bulk_response:
-            raise ValueError(
+            msg = (
                 'Invalid bulk response structure, '
-                '"errors" and "items" fields must be presented'
+                '`errors` and `items` fields must be presented'
             )
+            raise ValueError(msg)
 
         has_errors = bulk_response['errors']
 
@@ -134,10 +150,11 @@ class OpensearchOutputPlugin(
                     error = info['error']
                     errors.append(f'{error["type"]} - {error["reason"]}')
         except KeyError:
-            raise ValueError(
+            msg = (
                 'Invalid bulk response structure, '
-                '"type" and "reason" must be presented in error info'
+                '`type` and `reason` must be presented in error info'
             )
+            raise ValueError(msg) from None
 
         return errors
 
@@ -147,79 +164,78 @@ class OpensearchOutputPlugin(
         Parameters
         ----------
         events : Sequence[str]
-            Events to index
+            Events to index.
 
         Returns
         -------
         int
-            Number of successfully written events
+            Number of successfully written events.
 
         Raises
         ------
-        PluginRuntimeError
-            If events indexing fails
+        PluginWriteError
+            If events indexing fails.
+
         """
         host = next(self._hosts)
 
         try:
-            response = await self._session.post(
-                url=host.with_path('_bulk'),
-                data=self._create_bulk_data(events),
-                proxy=(
-                    str(self._config.proxy_url)
-                    if self._config.proxy_url else None
-                )
+            response = await self._client.post(
+                url=host.join('/_bulk'),
+                content=self._create_bulk_data(events),
             )
-            text = await response.text()
-        except aiohttp.ClientError as e:
-            raise PluginRuntimeError(
-                'Failed to perform bulk indexing',
-                context=dict(
-                    self.instance_info,
-                    reason=str(e),
-                    url=host.host
-                )
+        except httpx.RequestError as e:
+            msg = 'Failed to perform bulk indexing'
+            raise PluginWriteError(
+                msg,
+                context={
+                    'reason': str(e),
+                    'url': host.host,
+                },
             ) from e
 
-        if response.status != 200:
-            raise PluginRuntimeError(
-                'Failed to perform bulk indexing',
-                context=dict(
-                    self.instance_info,
-                    reason=text,
-                    http_status=response.status,
-                    url=host.host
-                )
+        content = await response.aread()
+        text = content.decode()
+
+        if response.status_code != 200:  # noqa: PLR2004
+            msg = 'Failed to perform bulk indexing'
+            raise PluginWriteError(
+                msg,
+                context={
+                    'reason': text,
+                    'http_status': response.status_code,
+                    'url': host.host,
+                },
             )
 
         try:
             result = json.loads(text)
         except json.JSONDecodeError as e:
-            raise PluginRuntimeError(
-                'Failed to decode bulk response',
-                context=dict(
-                    self.instance_info,
-                    reason=str(e),
-                    url=host.host
-                )
+            msg = 'Failed to decode bulk response'
+            raise PluginWriteError(
+                msg,
+                context={
+                    'reason': str(e),
+                    'url': host.host,
+                },
             ) from None
 
         try:
             errors = self._get_bulk_response_errors(result)
         except ValueError as e:
-            raise PluginRuntimeError(
-                'Failed to process bulk response',
-                context=dict(
-                    self.instance_info,
-                    reason=str(e),
-                    url=host.host
-                )
+            msg = 'Failed to process bulk response'
+            raise PluginWriteError(
+                msg,
+                context={
+                    'reason': str(e),
+                    'url': host.host,
+                },
             ) from None
 
         if errors:
             await self._logger.aerror(
                 'Some events were not indexed using bulk request',
-                reason=f'First 3/{len(errors)} errors are shown: {errors[:3]}'
+                reason=f'First 3/{len(errors)} errors are shown: {errors[:3]}',
             )
 
         return len(events) - len(errors)
@@ -230,55 +246,53 @@ class OpensearchOutputPlugin(
         Parameters
         ----------
         event : str
-            Event to index
+            Event to index.
 
         Returns
         -------
         int
-            Number of successfully written events (always 1)
+            Number of successfully written events (always 1).
 
         Raises
         ------
-        PluginRuntimeError
-            If events indexing fails
+        PluginWriteError
+            If events indexing fails.
+
         """
         host = next(self._hosts)
 
         try:
-            response = await self._session.post(
-                url=host.with_path(f'{self._config.index}/_doc'),
-                data=event,
-                proxy=(
-                    str(self._config.proxy_url)
-                    if self._config.proxy_url else None
-                )
+            response = await self._client.post(
+                url=host.join(f'/{self._config.index}/_doc'),
+                content=event,
             )
-            text = await response.text()
-        except aiohttp.ClientError as e:
-            raise PluginRuntimeError(
-                'Failed to post document',
-                context=dict(
-                    self.instance_info,
-                    reason=str(e),
-                    url=host.host
-                )
+        except httpx.RequestError as e:
+            msg = 'Failed to post document'
+            raise PluginWriteError(
+                msg,
+                context={
+                    'reason': str(e),
+                    'url': host.host,
+                },
             ) from e
 
-        if response.status != 201:
-            raise PluginRuntimeError(
-                'Failed to post document',
-                context=dict(
-                    self.instance_info,
-                    reason=text,
-                    http_status=response.status,
-                    url=host.host
-                )
+        if response.status_code != 201:  # noqa: PLR2004
+            content = await response.aread()
+            text = content.decode()
+            msg = 'Failed to post document'
+            raise PluginWriteError(
+                msg,
+                context={
+                    'reason': text,
+                    'http_status': response.status_code,
+                    'url': host.host,
+                },
             )
 
         return 1
 
+    @override
     async def _write(self, events: Sequence[str]) -> int:
         if len(events) > 1:
             return await self._post_bulk(events)
-        else:
-            return await self._post_doc(events[0])
+        return await self._post_doc(events[0])

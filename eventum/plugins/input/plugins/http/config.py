@@ -1,25 +1,35 @@
-from ipaddress import IPv4Address
-from pydantic import Field, IPvAnyAddress
+"""Definition of http input plugin config."""
+
+from pydantic import Field
 
 from eventum.plugins.input.base.config import InputPluginConfig
 
 
 class HttpInputPluginConfig(
     InputPluginConfig,
-    frozen=True
+    frozen=True,
 ):
     """Configuration for `http` input plugin.
 
     Attributes
     ----------
-    ip : IPvAnyAddress, default='0.0.0.0'
-        IP to listen
+    host : str, default='0.0.0.0'
+        Bind address.
 
     port : int
-        Port to listen
+        Bind port.
+
+    max_pending_requests : int, default=100
+        Maximum number of incoming requests to store in queue before
+        they are processed. If a request is received and the queue is
+        full a 429 response will be returned immediately.
+
     """
-    ip: IPvAnyAddress = Field(
-        default=IPv4Address('0.0.0.0'),
-        validate_default=True
+
+    host: str = Field(
+        default='0.0.0.0',  # noqa: S104
+        min_length=1,
+        validate_default=True,
     )
     port: int = Field(ge=1)
+    max_pending_requests: int = Field(default=100, ge=1)

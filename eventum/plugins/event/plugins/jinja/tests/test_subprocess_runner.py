@@ -5,8 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from eventum.plugins.event.plugins.jinja.subprocess_runner import \
-    SubprocessRunner
+from eventum.plugins.event.plugins.jinja.subprocess_runner import (
+    SubprocessRunner,
+)
 
 
 def test_subprocess():
@@ -34,10 +35,7 @@ def test_subprocess_stderr():
 def test_subprocess_cwd():
     home_dir = str(Path.home())
 
-    result = SubprocessRunner().run(
-        command='pwd',
-        cwd=home_dir
-    )
+    result = SubprocessRunner().run(command='pwd', cwd=home_dir)
     assert result is not None
     assert result.stdout == home_dir + os.linesep
 
@@ -45,13 +43,11 @@ def test_subprocess_cwd():
 def test_subprocess_env():
     if platform.system() == 'Windows':
         result = SubprocessRunner().run(
-            command='echo %MY_VAR%',
-            env={'MY_VAR': 'VALUE'}
+            command='echo %MY_VAR%', env={'MY_VAR': 'VALUE'}
         )
     else:
         result = SubprocessRunner().run(
-            command='echo $MY_VAR',
-            env={'MY_VAR': 'VALUE'}
+            command='echo $MY_VAR', env={'MY_VAR': 'VALUE'}
         )
 
     assert result is not None

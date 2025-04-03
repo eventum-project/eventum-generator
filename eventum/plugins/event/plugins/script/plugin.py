@@ -1,15 +1,21 @@
-import importlib.util as util
-from typing import Callable
+"""Definition of replay event plugin."""
 
-from eventum.plugins.event.base.plugin import (EventPlugin, EventPluginParams,
-                                               ProduceParams)
+from collections.abc import Callable
+from importlib import util
+from typing import override
+
+from eventum.plugins.event.base.plugin import (
+    EventPlugin,
+    EventPluginParams,
+    ProduceParams,
+)
+from eventum.plugins.event.exceptions import PluginProduceError
 from eventum.plugins.event.plugins.script.config import ScriptEventPluginConfig
-from eventum.plugins.exceptions import (PluginConfigurationError,
-                                        PluginRuntimeError)
+from eventum.plugins.exceptions import PluginConfigurationError
 
 
 class ScriptEventPlugin(
-    EventPlugin[ScriptEventPluginConfig, EventPluginParams]
+    EventPlugin[ScriptEventPluginConfig, EventPluginParams],
 ):
     """Event plugin for producing events using script with user
     defined logic.
@@ -21,15 +27,17 @@ class ScriptEventPlugin(
     def produce(params: ProduceParams) -> str | list[str]:
         ...
     ```
-    For more information see documentation string of ProduceParams
+    For more information see documentation string of `ProduceParams`.
+
     """
 
     _FUNCTION_NAME = 'produce'
 
+    @override
     def __init__(
         self,
         config: ScriptEventPluginConfig,
-        params: EventPluginParams
+        params: EventPluginParams,
     ) -> None:
         super().__init__(config, params)
 
@@ -42,87 +50,108 @@ class ScriptEventPlugin(
         Returns
         -------
         Callable[[ProduceParams], str | list[str]]
-            Function
+            Function.
 
         Raises
         ------
         PluginConfigurationError
             If module is not found, function is not found in module or
-            other error occurred during module execution
+            other error occurred during module execution.
+
         """
         script_path = self._config.path
         spec = util.spec_from_file_location('user_module', script_path)
 
         if spec is None:
+            msg = 'Cannot get spec of script module'
             raise PluginConfigurationError(
-                'Cannot get spec of script module',
-                context=dict(self.instance_info, file_path=script_path)
+                msg,
+                context={'file_path': script_path},
             )
 
         try:
             module = util.module_from_spec(spec)
-
-            if spec.loader is not None:
-                spec.loader.exec_module(module)
-            else:
-                raise PluginConfigurationError(
-                    'Script cannot be executed due to loader problem',
-                    context=dict(self.instance_info, file_path=script_path)
-                )
         except Exception as e:
+            msg = 'Failed to import script as external module'
             raise PluginConfigurationError(
-                'Failed to import script as external module',
-                context=dict(
-                    self.instance_info,
-                    reason=str(e),
-                    file_path=script_path
-                )
+                msg,
+                context={
+                    'reason': str(e),
+                    'file_path': script_path,
+                },
+            ) from e
+
+        if spec.loader is None:
+            msg = 'Script cannot be executed due to loader problem'
+            raise PluginConfigurationError(
+                msg,
+                context={'file_path': script_path},
             )
+
+        try:
+            spec.loader.exec_module(module)
+        except Exception as e:
+            msg = 'Exception occurred during script execution'
+            raise PluginConfigurationError(
+                msg,
+                context={
+                    'reason': str(e),
+                    'file_path': script_path,
+                },
+            ) from e
 
         try:
             function = getattr(module, ScriptEventPlugin._FUNCTION_NAME)
         except AttributeError:
-            raise PluginConfigurationError(
-                f'Definition of function "{ScriptEventPlugin._FUNCTION_NAME}" '
-                'is missing in script',
-                context=dict(self.instance_info, file_path=script_path)
+            msg = (
+                f'Definition of function `{ScriptEventPlugin._FUNCTION_NAME}` '
+                'is missing in script'
             )
+            raise PluginConfigurationError(
+                msg,
+                context={'file_path': script_path},
+            ) from None
 
         return function
 
-    def produce(self, params: ProduceParams) -> list[str]:
+    @override
+    def _produce(self, params: ProduceParams) -> list[str]:
         try:
             result = self._function(params)
         except Exception as e:
-            raise PluginRuntimeError(
-                'Exception occurred during function execution',
-                context=dict(
-                    self.instance_info,
-                    reason=f'{e.__class__.__name__}: {e}'
-                )
-            )
+            msg = 'Exception occurred during function execution'
+            raise PluginProduceError(
+                msg,
+                context={
+                    'reason': f'{e.__class__.__name__}: {e}',
+                },
+            ) from e
 
         if isinstance(result, str):
             return [result]
-        elif isinstance(result, list):
-            types = set(map(lambda el: el.__class__.__name__, result))
+        if isinstance(result, list):
+            types = {el.__class__.__name__ for el in result}
             if (not result) or ('str' in types and len(types) == 1):
                 return result
-            else:
-                raise PluginRuntimeError(
-                    'Function returned object of invalid type, '
-                    'string or list of strings are expected',
-                    context=dict(
-                        self.instance_info,
-                        reason=(
-                            'Elements of next types encountered '
-                            f'in list: {types}'
-                        )
-                    )
-                )
-        else:
-            raise PluginRuntimeError(
+
+            msg = (
                 'Function returned object of invalid type, '
-                'string or list of strings are expected',
-                context=dict(self.instance_info)
+                'string or list of strings are expected'
             )
+            raise PluginProduceError(
+                msg,
+                context={
+                    'reason': (
+                        f'Elements of next types encountered in list: {types}'
+                    ),
+                },
+            )
+
+        msg = (
+            'Function returned object of invalid type, '
+            'string or list of strings are expected'
+        )
+        raise PluginProduceError(
+            msg,
+            context={},
+        )

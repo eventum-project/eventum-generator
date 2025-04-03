@@ -1,3 +1,5 @@
+"""Mixins for configuration models."""
+
 from typing import Any
 
 from pydantic import field_validator
@@ -7,9 +9,10 @@ class TemplateAliasesUniquenessValidatorMixin:
     """Mixin for validation aliases uniqueness in templates list."""
 
     @field_validator('templates')
-    def validate_template_aliases_uniqueness(
+    @classmethod
+    def validate_template_aliases_uniqueness(  # noqa: D102
         cls,
-        v: list[dict[str, Any]]
+        v: list[dict[str, Any]],
     ) -> list[dict[str, Any]]:
         aliases: set[str] = set()
 
@@ -18,10 +21,8 @@ class TemplateAliasesUniquenessValidatorMixin:
 
             duplicated_keys = aliases.intersection(keys)
             if duplicated_keys:
-                raise ValueError(
-                    f'Template alias "{duplicated_keys.pop()}" '
-                    'is duplicated'
-                )
+                msg = f'Template alias `{duplicated_keys.pop()}` is duplicated'
+                raise ValueError(msg)
 
             aliases.update(keys)
 
@@ -30,15 +31,18 @@ class TemplateAliasesUniquenessValidatorMixin:
 
 class TemplateSingleItemElementsValidatorMixin:
     """Mixin for validation that each element of templates list is a
-    dictionary with only one element."""
+    dictionary with only one element.
+    """
 
     @field_validator('templates')
-    def validate_template_single_item_elements(
+    @classmethod
+    def validate_template_single_item_elements(  # noqa: D102
         cls,
-        v: list[dict[str, Any]]
+        v: list[dict[str, Any]],
     ) -> list[dict[str, Any]]:
         for item in v:
             if len(item) != 1:
-                raise ValueError('Each element must include exactly one key')
+                msg = 'Each element must include exactly one key'
+                raise ValueError(msg)
 
         return v

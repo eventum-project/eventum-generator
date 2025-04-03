@@ -1,18 +1,20 @@
 import os
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pytest
 from numpy import datetime64
 from pytz import timezone
 
-from eventum.plugins.input.plugins.timestamps.config import \
-    TimestampsInputPluginConfig
-from eventum.plugins.input.plugins.timestamps.plugin import \
-    TimestampsInputPlugin
+from eventum.plugins.input.plugins.timestamps.config import (
+    TimestampsInputPluginConfig,
+)
+from eventum.plugins.input.plugins.timestamps.plugin import (
+    TimestampsInputPlugin,
+)
 
 
-def test_timestamps_sample():
+def test_plugin():
     config = TimestampsInputPluginConfig(
         source=[
             datetime.fromisoformat('2024-01-01T00:00:00.000Z'),
@@ -21,51 +23,16 @@ def test_timestamps_sample():
         ]
     )
     plugin = TimestampsInputPlugin(
-        config=config,
-        params={
-            'id': 1,
-            'live_mode': False,
-            'timezone': timezone('UTC')
-        }
+        config=config, params={'id': 1, 'timezone': timezone('UTC')}
     )
     timestamps = []
-    for batch in plugin.generate():
+    for batch in plugin.generate(size=100, skip_past=False):
         timestamps.extend(batch)
 
     assert timestamps == [
         datetime64('2024-01-01T00:00:00.000'),
         datetime64('2024-01-01T00:00:00.050'),
         datetime64('2024-01-01T00:00:00.100'),
-    ]
-
-
-def test_timestamps_live():
-    now = datetime.now(tz=timezone('UTC'))
-    config = TimestampsInputPluginConfig(
-        source=[
-            now + timedelta(seconds=0.3),
-            now + timedelta(seconds=0.4),
-            now + timedelta(seconds=0.5)
-        ]
-    )
-    plugin = TimestampsInputPlugin(
-        config=config,
-        params={
-            'id': 1,
-            'live_mode': True,
-            'timezone': timezone('UTC')
-        }
-    )
-
-    timestamps = []
-
-    for batch in plugin.generate():
-        timestamps.extend(batch)
-
-    assert timestamps == [
-        datetime64((now + timedelta(seconds=0.3)).replace(tzinfo=None)),
-        datetime64((now + timedelta(seconds=0.4)).replace(tzinfo=None)),
-        datetime64((now + timedelta(seconds=0.5)).replace(tzinfo=None)),
     ]
 
 
@@ -73,9 +40,9 @@ def test_timestamps_live():
 def timestamps_filename():
     filename = tempfile.mktemp()
     with open(filename, 'w') as f:
-        f.write(f'2024-01-01T00:00:00.000{os.linesep}')
-        f.write(f'2024-01-01T00:00:00.050{os.linesep}')
-        f.write(f'2024-01-01T00:00:00.100{os.linesep}')
+        f.write(f'2024-01-01T00:00:00.000Z{os.linesep}')
+        f.write(f'2024-01-01T00:00:00.050Z{os.linesep}')
+        f.write(f'2024-01-01T00:00:00.100Z{os.linesep}')
 
     return filename
 
@@ -83,20 +50,15 @@ def timestamps_filename():
 def test_timestamps_from_file(timestamps_filename):
     config = TimestampsInputPluginConfig(source=timestamps_filename)
     plugin = TimestampsInputPlugin(
-        config=config,
-        params={
-            'id': 1,
-            'live_mode': False,
-            'timezone': timezone('UTC')
-        }
+        config=config, params={'id': 1, 'timezone': timezone('Europe/Moscow')}
     )
 
     timestamps = []
-    for batch in plugin.generate():
+    for batch in plugin.generate(size=100, skip_past=False):
         timestamps.extend(batch)
 
     assert timestamps == [
-        datetime64('2024-01-01T00:00:00.000'),
-        datetime64('2024-01-01T00:00:00.050'),
-        datetime64('2024-01-01T00:00:00.100'),
+        datetime64('2024-01-01T03:00:00.000'),
+        datetime64('2024-01-01T03:00:00.050'),
+        datetime64('2024-01-01T03:00:00.100'),
     ]

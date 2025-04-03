@@ -1,58 +1,56 @@
-import importlib
+"""Definition of base plugin."""
+
 import inspect
 from abc import ABC
+from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import dataclass
+from pathlib import Path
 from types import ModuleType
-from typing import (Any, Generic, Iterator, NotRequired, Required, TypedDict,
-                    TypeVar, get_args)
+from typing import (
+    Any,
+    Generic,
+    NotRequired,
+    Required,
+    TypedDict,
+    TypeVar,
+    get_args,
+)
+from uuid import uuid4
 
 import structlog
 from pydantic import RootModel
 
 from eventum.plugins.base.config import PluginConfig
-from eventum.plugins.exceptions import (PluginConfigurationError,
-                                        PluginRegistrationError)
+from eventum.plugins.exceptions import (
+    PluginConfigurationError,
+    PluginRegistrationError,
+)
 from eventum.plugins.registry import PluginInfo, PluginsRegistry
 
 logger = structlog.stdlib.get_logger()
 
 
-class _PluginRegistrationInfo(TypedDict):
+@dataclass(frozen=True)
+class _PluginRegistrationInfo:
     """Information about plugin for registration.
 
     Attributes
     ----------
     name : str
-        Name of the plugin
+        Name of the plugin.
 
     type : str
-        Type of the plugin (i.e. parent package name)
+        Type of the plugin (e.g. input, event, ...).
 
-    package : ModuleType
-        Parent package containing plugin package
+    module : ModuleType
+        Module of plugin class definition
+
     """
+
     name: str
     type: str
-    package: ModuleType
-
-
-class PluginInstanceInfo(TypedDict):
-    """Information about instance of plugin.
-
-    Attributes
-    ----------
-    plugin_name : str
-        Name of the plugin
-
-    plugin_type : str
-        Type of the plugin
-
-    plugin_id : int
-        ID of the plugin instance
-    """
-    plugin_name: str
-    plugin_type: str
-    plugin_id: int
+    module: ModuleType
 
 
 def _inspect_plugin(plugin_cls: type) -> _PluginRegistrationInfo:
@@ -61,24 +59,27 @@ def _inspect_plugin(plugin_cls: type) -> _PluginRegistrationInfo:
     Parameters
     ----------
     plugin_cls : type
-        Class of the plugin to inspect
+        Class of the plugin to inspect.
 
     Returns
     -------
     _PluginRegistrationInfo
-        Information for plugin registration
+        Information for plugin registration.
 
     Raises
     ------
-    TypeError
-        If provided class cannot be inspected
+    ValueError
+        If provided class cannot be inspected.
+
     """
     class_module = inspect.getmodule(plugin_cls)
     if class_module is None:
-        raise TypeError('Cannot get module of plugin class definition')
+        msg = 'Cannot found the module of plugin class definition'
+        raise ValueError(msg)
 
     if class_module.__name__ == '__main__':
-        raise TypeError('Plugin can be used only as external module')
+        msg = 'Plugin can be used only as external module'
+        raise ValueError(msg)
 
     try:
         # expected structure for extraction:
@@ -86,25 +87,18 @@ def _inspect_plugin(plugin_cls: type) -> _PluginRegistrationInfo:
         module_parts = class_module.__name__.split('.')
         plugin_name = module_parts[-2]
         plugin_type = module_parts[-4]
-        plugin_type_package_name = '.'.join(module_parts[:-2])
     except IndexError:
-        raise TypeError(
-            'Cannot extract information from plugin '
-            f'module name "{class_module.__name__}"'
-        ) from None
-
-    try:
-        package = importlib.import_module(plugin_type_package_name)
-    except ImportError as e:
-        raise TypeError(
-            'Cannot import parent package of plugin '
-            f'"{plugin_type_package_name}": {e}'
+        msg = (
+            'Plugin is defined in unexpected location: '
+            f'"{class_module.__name__}", expecting following location: '
+            '"eventum.plugins.<plugin_type>.plugins.<plugin_name>.plugin"'
         )
+        raise ValueError(msg) from None
 
     return _PluginRegistrationInfo(
         name=plugin_name,
         type=plugin_type,
-        package=package
+        module=class_module,
     )
 
 
@@ -114,21 +108,28 @@ class PluginParams(TypedDict):
     Attributes
     ----------
     id : int
-        Numeric plugin identifier
+        Numeric plugin identifier.
 
     ephemeral_name : str
         Ephemeral name of plugin, might be helpful when plugin is not
         registered but it needs representable name to moment of
-        initialization
+        initialization.
 
     ephemeral_type : str
         Ephemeral type of plugin, might be helpful when plugin is not
         registered but it needs representable type to moment of
-        initialization
+        initialization.
+
+    base_path : Required[Path]
+        Base path for all relative paths used in plugin configurations,
+        if it is not provided then current working directory is used.
+
     """
+
     id: Required[int]
     ephemeral_name: NotRequired[str]
     ephemeral_type: NotRequired[str]
+    base_path: NotRequired[Path]
 
 
 ConfigT = TypeVar('ConfigT', bound=(PluginConfig | RootModel))
@@ -138,114 +139,152 @@ ParamsT = TypeVar('ParamsT', bound=PluginParams)
 class Plugin(ABC, Generic[ConfigT, ParamsT]):
     """Base class for all plugins.
 
-    Parameters
-    ----------
-    config : ConfigT
-        Configuration for the plugin
-
-    params : ParamsT
-        Parameters for plugin (see `PluginParams`)
-
     Other Parameters
     ----------------
     register : bool, default=True
-        Whether to register class as complete plugin
+        Whether to register plugin in registry.
 
-    Notes
-    -----
-    All subclasses of this class is considered as complete plugins
-    if inheritance parameter `register` is set to `True`. Complete
-    plugins are automatically registered in `PluginsRegistry`.
     """
 
     def __init__(self, config: ConfigT, params: ParamsT) -> None:
-        with self.required_params():
+        """Initialize plugin.
+
+        Parameters
+        ----------
+        config : ConfigT
+            Configuration for the plugin.
+
+        params : ParamsT
+            Parameters for plugin (see `PluginParams`).
+
+        """
+        self._config = config
+
+        if 'ephemeral_name' in params:
+            self._plugin_name = params['ephemeral_name']
+        if 'ephemeral_type' in params:
+            self._plugin_type = params['ephemeral_type']
+
+        with self._required_params():
             self._id = params['id']
 
-        self._config = config
-        self._logger = logger.bind(**self.instance_info)
+        self._guid = str(uuid4())
+
+        self._base_path = params.get('base_path', Path.cwd())
+
+        self._logger = self.logger.bind(
+            plugin_name=self.name,
+            plugin_type=self.type,
+            plugin_id=self.id,
+        )
 
     @contextmanager
-    def required_params(self) -> Iterator:
+    def _required_params(self) -> Iterator:
         """Context manager for handling missing keys in plugin parameters.
 
         Raises
         ------
         PluginConfigurationError
-            If `KeyError` is raised
+            If `KeyError` is raised.
+
         """
         try:
             yield
         except KeyError as e:
+            if str(e) == 'id':
+                context: dict[str, Any] = {
+                    'plugin_name': self.name,
+                    'plugin_type': self.type,
+                }
+            else:
+                context = {
+                    'plugin_name': self.name,
+                    'plugin_type': self.type,
+                    'plugin_id': self.id,
+                }
+
+            msg = 'Missing required parameter'
             raise PluginConfigurationError(
-                'Missing required parameter',
-                context=dict(self.instance_info, reason=str(e))
+                msg,
+                context=dict(**context, reason=str(e)),
             ) from None
 
     def __str__(self) -> str:
-        return (
-            f'<{self.plugin_name} {self.plugin_type} plugin [{self._id}]>'
-        )
+        return f'<{self.name} {self.type} plugin [{self.id}]>'
 
-    def __init_subclass__(cls, register: bool = True, **kwargs: Any):
+    def __init_subclass__(
+        cls,
+        *,
+        register: bool = True,
+        **kwargs: Any,
+    ) -> None:
         super().__init_subclass__(**kwargs)
 
         context = {'plugin_class': cls.__name__}
 
         log = logger.bind(**context)
 
-        if not register:
-            setattr(cls, '_plugin_name', '[unregistered]')
-            setattr(cls, '_plugin_type', '[unregistered]')
-            return
-
-        log.info('Registering plugin')
-
         try:
             registration_info = _inspect_plugin(cls)
-        except TypeError as e:
+        except ValueError as e:
+            msg = 'Unable to inspect plugin'
             raise PluginRegistrationError(
-                'Unable to inspect plugin',
-                context=dict(context, reason=str(e))
-            )
+                msg,
+                context=dict(context, reason=str(e)),
+            ) from e
 
-        setattr(cls, '_plugin_name', registration_info['name'])
-        setattr(cls, '_plugin_type', registration_info['type'])
+        logger_name = registration_info.module.__name__
+        cls._logger = structlog.stdlib.get_logger(logger_name)  # type: ignore[attr-defined]
+
+        if not register:
+            cls._plugin_name = '[unregistered]'  # type: ignore[attr-defined]
+            cls._plugin_type = '[unregistered]'  # type: ignore[attr-defined]
+            return
+
+        plugin_name = registration_info.name
+        plugin_type = registration_info.type
+        cls._plugin_name = plugin_name  # type: ignore[attr-defined]
+        cls._plugin_type = plugin_type  # type: ignore[attr-defined]
 
         try:
             (config_cls, *_) = get_args(
-                cls.__orig_bases__[0]   # type: ignore[attr-defined]
+                cls.__orig_bases__[0],  # type: ignore[attr-defined]
             )
         except ValueError:
+            msg = (
+                'Generic parameters must be specified for plugin registration'
+            )
             raise PluginRegistrationError(
-                'Generic parameters must be specified',
-                context=context
+                msg,
+                context=context,
             ) from None
         except Exception as e:
+            msg = 'Unable to determine plugin config class'
             raise PluginRegistrationError(
-                'Unable to define config class',
-                context=dict(context, reason=str(e))
-            )
+                msg,
+                context=dict(context, reason=str(e)),
+            ) from e
 
         if isinstance(config_cls, TypeVar):
-            raise PluginRegistrationError(
-                'Config class cannot have generic type',
-                context=context
+            msg = (
+                'Concrete classes must be specified as generic parameters '
+                'for plugin registration'
             )
+            raise PluginRegistrationError(msg, context=context)
 
         PluginsRegistry.register_plugin(
             PluginInfo(
-                name=registration_info['name'],
+                name=registration_info.name,
                 cls=cls,
                 config_cls=config_cls,
-                package=registration_info['package']
-            )
+                type=plugin_type,
+            ),
         )
 
         log.info(
-            'Plugin successfully registered',
-            plugin_type=registration_info['type'],
-            plugin_name=registration_info['name'],
+            'Plugin is registered',
+            plugin_type=registration_info.type,
+            plugin_name=registration_info.name,
             plugin_config_class=config_cls.__name__,
         )
 
@@ -255,20 +294,26 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
         return self._id
 
     @property
-    def plugin_name(self) -> str:
+    def guid(self) -> str:
+        """GUID of the plugin."""
+        return self._guid
+
+    @property
+    def name(self) -> str:
         """Canonical name of the plugin."""
-        return getattr(self, '_plugin_name')
+        return self._plugin_name
 
     @property
-    def plugin_type(self) -> str:
+    def type(self) -> str:
         """Type of the plugin."""
-        return getattr(self, '_plugin_type')
+        return self._plugin_type
 
     @property
-    def instance_info(self) -> PluginInstanceInfo:
-        """Information about plugin instance."""
-        return {
-            'plugin_name': self.plugin_name,
-            'plugin_type': self.plugin_type,
-            'plugin_id': self.id
-        }
+    def config(self) -> ConfigT:
+        """Plugin config."""
+        return self._config
+
+    @property
+    def logger(self) -> structlog.stdlib.BoundLogger:
+        """Plugin logger."""
+        return self._logger  # type: ignore[attr-defined]

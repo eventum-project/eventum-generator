@@ -1,9 +1,11 @@
 import numpy as np
 
-from eventum.plugins.input.utils.array_utils import (chunk_array,
-                                                     get_future_slice,
-                                                     get_past_slice,
-                                                     merge_arrays)
+from eventum.plugins.input.utils.array_utils import (
+    chunk_array,
+    get_future_slice,
+    get_past_slice,
+    merge_arrays,
+)
 
 
 def test_get_future_slice():

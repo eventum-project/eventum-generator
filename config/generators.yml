@@ -1,0 +1,50 @@
+####################### Generators Configuration Example ######################
+
+# Each element of list defines generator to run with its own parameters.
+
+# ============================ Generator Parameters ===========================
+
+# Generator unique identified
+# Required, there is no default value
+# - id: "test"
+  
+  # Absolute path to configuration
+  # Required, there is no default value
+  # path: "/app/eventum/config/conf.d/test/config.yml"
+  
+  # Wether to use live mode and generate events at moments defined by timestamp
+  # values or sample mode to generate all events at a time
+  # Optional, default is "live"
+  # time_mode: "live"
+
+  # Whether to skip past timestamps when starting generation in live mode
+  # Optional, default is true
+  # skip_past: true
+
+  # Parameters that can be used in generator configuration file
+  # Optional, default is an empty map
+  # params: {"a": 1, "b": 2}
+
+  # Params can be also defined in nested yaml form, e.g.:
+  # params:
+  #   a: 1
+  #   b: 2
+
+
+# =========================== Generation Parameters ===========================
+
+# Generation parameters set in main configuration can be overridden from
+# generator level. In this case it is applied only to specific generator and
+# does not reflect to other generators.
+#
+# See full list of generation in eventum.yml
+
+# - id: "test2"
+#   path: "/app/eventum/config/conf.d/test2/config.yml"
+#   batch.size: 1
+#   batch.delay: 0.1
+#   keep_order: true
+
+# - id: "test3"
+#   path: "/app/eventum/config/conf.d/test3/config.yml"
+#   timezone: "Europe/Moscow"

@@ -1,4 +1,6 @@
-import os
+"""Definition of script event plugin config."""
+
+from pathlib import Path
 
 from pydantic import field_validator
 
@@ -10,14 +12,18 @@ class ScriptEventPluginConfig(EventPluginConfig, frozen=True):
 
     Attributes
     ----------
-    path : str
-        Absolute path to script
+    path : Path
+        Absolute path to script.
+
     """
-    path: str
+
+    path: Path
 
     @field_validator('path')
-    def validate_path(cls, v: str):
-        if os.path.isabs(v):
+    @classmethod
+    def validate_path(cls, v: Path) -> Path:  # noqa: D102
+        if v.is_absolute():
             return v
 
-        raise ValueError('Path must be absolute')
+        msg = 'Path must be absolute'
+        raise ValueError(msg)

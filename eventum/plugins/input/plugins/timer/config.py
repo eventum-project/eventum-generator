@@ -1,3 +1,4 @@
+"""Definition of timer input plugin config."""
 
 from pydantic import Field
 
@@ -11,18 +12,20 @@ class TimerInputPluginConfig(InputPluginConfig, frozen=True):
     Attributes
     ----------
     start : VersatileDatetime
-        Start time of timer countdown, if not set current time is used
+        Start time of timer countdown, if not set current time is used.
 
     seconds : float
-        Number of seconds to wait before generating timestamp
+        Number of seconds to wait before generating timestamp.
 
     count : int
-        Number of timestamps to generate
+        Number of timestamps to generate.
 
     repeat : bool
-        Number of cycles to repeat, if value is not set (only for live
-        mode) repeat infinitely
+        Number of cycles to repeat, if value is not set, then repeat
+        infinitely.
+
     """
+
     start: VersatileDatetime = Field(default=None, union_mode='left_to_right')
     seconds: float = Field(ge=0.1)
     count: int = Field(ge=1)

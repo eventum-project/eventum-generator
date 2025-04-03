@@ -1,3 +1,5 @@
+"""Parser of relative time expressions."""
+
 import re
 from datetime import timedelta
 
@@ -17,20 +19,24 @@ def parse_relative_time(expression: str) -> timedelta:
         <value> ::= <integer>
         <unit> ::= 'd' | 'h' | 'm' | 's'
         ```
-        Example expressions: `+1d12h`; `1h30m10s`; `-3d4h`; `-1d2h30m`
+        Example expressions: `+1d12h`; `1h30m10s`; `-3d4h`; `-1d2h30m`.
 
     Returns
     -------
     timedelta
-        Parsed expression represented as timedelta object
+        Parsed expression represented as timedelta object.
 
     Raises
     ------
     ValueError
-        If expression cannot be parsed due to invalid format
+        If expression cannot be parsed due to invalid format.
+
     """
+    expression = expression.strip()
+
     if not expression:
-        raise ValueError('Empty expression is provided')
+        msg = 'Empty expression is provided'
+        raise ValueError(msg)
 
     pattern = (
         r'^(?P<sign>[-+])?'
@@ -42,7 +48,8 @@ def parse_relative_time(expression: str) -> timedelta:
     match = re.match(pattern, expression)
 
     if match is None or match.start() != 0 or match.end() != (len(expression)):
-        raise ValueError('Failed to parse expression')
+        msg = 'Failed to parse expression'
+        raise ValueError(msg)
 
     groups = match.groupdict()
 
@@ -54,12 +61,13 @@ def parse_relative_time(expression: str) -> timedelta:
         case '-':
             sign = -1
         case char:
-            raise ValueError(f'Unexpected sign "{char}"')
+            msg = f'Unexpected sign `{char}`'
+            raise ValueError(msg)
 
     return timedelta(
         **{
             unit: int(value) * sign
             for unit, value in groups.items()
             if value is not None
-        }
+        },
     )

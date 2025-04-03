@@ -1,32 +1,47 @@
-from numpy import full
+"""Definition of static input plugin."""
+
+from collections.abc import Iterator
+from datetime import datetime
+from typing import override
+
+from numpy import datetime64
+from numpy.typing import NDArray
 
 from eventum.plugins.input.base.plugin import InputPlugin, InputPluginParams
 from eventum.plugins.input.plugins.static.config import StaticInputPluginConfig
-from eventum.plugins.input.utils.time_utils import now64
 
 
-class StaticInputPlugin(InputPlugin[StaticInputPluginConfig]):
+class StaticInputPlugin(
+    InputPlugin[StaticInputPluginConfig, InputPluginParams],
+):
     """Input plugin for generating specified number of timestamps with
     static value. All timestamps have a value of time when generation
     was started.
     """
 
+    @override
     def __init__(
         self,
         config: StaticInputPluginConfig,
-        params: InputPluginParams
+        params: InputPluginParams,
     ) -> None:
         super().__init__(config, params)
 
-    def _generate_sample(self) -> None:
-        self._logger.info('Generating at current timestamp')
-        timestamps = full(
-            shape=self._config.count,
-            fill_value=now64(timezone=self._timezone),
-            dtype='datetime64[us]'
+    @override
+    def _generate(
+        self,
+        size: int,
+        *,
+        skip_past: bool = True,
+    ) -> Iterator[NDArray[datetime64]]:
+        now = datetime.now().astimezone(self._timezone)
+        self._logger.info(
+            'Generating in range',
+            start_timestamp=now.isoformat(),
+            end_timestamp=now.isoformat(),
         )
-
-        self._enqueue(timestamps)
-
-    def _generate_live(self) -> None:
-        self._generate_sample()
+        self._buffer.m_push(
+            timestamp=datetime64(now.replace(tzinfo=None)),
+            multiply=self._config.count,
+        )
+        yield from self._buffer.read(size, partial=True)

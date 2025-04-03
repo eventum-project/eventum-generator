@@ -25,24 +25,14 @@
     <th>Description</th>
     <th>Data type</th>
     <tr>
-        <td>ip</td>
-        <td>IP address</td>
-        <td>str</td>
-    </tr>
-    <tr>
         <td>host</td>
-        <td>IP address or hostname</td>
+        <td>Network address (ip or hostname)</td>
         <td>str</td>
     </tr>
     <tr>
         <td>port</td>
         <td>Port number</td>
         <td>int</td>
-    </tr>
-    <tr>
-        <td>request_info</td>
-        <td>Information about request</td>
-        <td>str</td>
     </tr>
     <tr>
         <td>url</td>
@@ -56,7 +46,7 @@
     </tr>
 </table>
 
-## Files
+## File system
 
 <table>
     <th>Name</th>
@@ -68,14 +58,81 @@
         <td>str</td>
     </tr>
     <tr>
-        <td>cert_file_path</td>
-        <td>Path to certificate file (used in combination with key_file_path)</td>
+        <td>path</td>
+        <td>Directory path</td>
+        <td>str</td>
+    </tr>
+</table>
+
+## Time
+
+<table>
+    <th>Name</th>
+    <th>Description</th>
+    <th>Data type</th>
+    <tr>
+        <td>seconds</td>
+        <td>Duration in seconds</td>
+        <td>float</td>
+    </tr>
+</table>
+
+## Threads and Processes
+
+<table>
+    <th>Name</th>
+    <th>Description</th>
+    <th>Data type</th>
+    <tr>
+        <td>process_id</td>
+        <td>ID of the process</td>
+        <td>int</td>
+    </tr>
+    <tr>
+        <td>thread_id</td>
+        <td>ID of the thread</td>
+        <td>int</td>
+    </tr>
+</table>
+
+## OS
+
+<table>
+    <th>Name</th>
+    <th>Description</th>
+    <th>Data type</th>
+    <tr>
+        <td>signal</td>
+        <td>Name of the signal</td>
+        <td>str</td>
+    </tr>
+</table>
+
+## App
+
+<table>
+    <th>Name</th>
+    <th>Description</th>
+    <th>Data type</th>
+    <tr>
+        <td>generator_id</td>
+        <td>ID of the generator</td>
         <td>str</td>
     </tr>
     <tr>
-        <td>key_file_path</td>
-        <td>Path to certificate key file (used in combination with cert_file_path)</td>
-        <td>str</td>
+        <td>running_generators</td>
+        <td>IDs of running generators</td>
+        <td>list[str]</td>
+    </tr>
+    <tr>
+        <td>non_running_generators</td>
+        <td>IDs of non running generators</td>
+        <td>list[str]</td>
+    </tr>
+    <tr>
+        <td>parameters</td>
+        <td>Parameters dictionary</td>
+        <td>dict</td>
     </tr>
 </table>
 
@@ -119,16 +176,6 @@
     <th>Description</th>
     <th>Data type</th>
     <tr>
-        <td>first_timestamp</td>
-        <td>First timestamp in some collection (e.g in batch) in ISO8601 format</td>
-        <td>str</td>
-    </tr>
-    <tr>
-        <td>last_timestamp</td>
-        <td>Last timestamp in some collection (e.g in batch) in ISO8601 format</td>
-        <td>str</td>
-    </tr>
-    <tr>
         <td>start_timestamp</td>
         <td>Start timestamp of plugin generation in ISO8601 format</td>
         <td>str</td>
@@ -150,7 +197,12 @@
     <th>Data type</th>
     <tr>
         <td>template_alias</td>
-        <td>Alias of template</td>
+        <td>Alias of template (used in generic context or when file_path is not known)</td>
+        <td>str</td>
+    </tr>
+    <tr>
+        <td>sample_alias</td>
+        <td>Alias of sample (used in generic context or when file_path is not known)</td>
         <td>str</td>
     </tr>
 </table>
@@ -162,18 +214,8 @@
     <th>Description</th>
     <th>Data type</th>
     <tr>
-        <td>format</td>
-        <td>Format of outcome event (e.g. "plain", "ndjson" etc.)</td>
-        <td>str</td>
-    </tr>
-    <tr>
         <td>original_event</td>
-        <td>Original unformatted event</td>
-        <td>str</td>
-    </tr>
-    <tr>
-        <td>formatted_event</td>
-        <td>Formatted event</td>
+        <td>Original event</td>
         <td>str</td>
     </tr>
 </table>

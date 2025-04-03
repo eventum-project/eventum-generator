@@ -1,3 +1,5 @@
+"""Mixins for configuration models."""
+
 from typing import Self
 
 from pydantic import model_validator
@@ -12,19 +14,26 @@ class DaterangeValidatorMixin:
     """
 
     @model_validator(mode='after')
-    def validate_interval(self) -> Self:
+    def validate_interval(self) -> Self:  # noqa: D102
         # raises ValueError if start > end
         try:
+            # test for both earliest and latest timezones
             normalize_versatile_daterange(
-                start=self.start,   # type: ignore[attr-defined]
-                end=self.end,       # type: ignore[attr-defined]
-                timezone=timezone('Pacific/Kiritimati'),    # latest tz
+                start=self.start,  # type: ignore[attr-defined]
+                end=self.end,  # type: ignore[attr-defined]
+                timezone=timezone('Etc/GMT-14'),
                 none_start='min',
-                none_end='max'
+                none_end='max',
+            )
+            normalize_versatile_daterange(
+                start=self.start,  # type: ignore[attr-defined]
+                end=self.end,  # type: ignore[attr-defined]
+                timezone=timezone('Etc/GMT+12'),
+                none_start='min',
+                none_end='max',
             )
         except OverflowError:
-            raise ValueError(
-                'Unable to validate date range due to datetime overflow'
-            ) from None
+            msg = 'Unable to validate date range due to datetime overflow'
+            raise ValueError(msg) from None
 
         return self

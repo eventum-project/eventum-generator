@@ -1,3 +1,14 @@
+"""Functions for plugins loading.
+
+Plugins loading is performed using registry (see `registry` module), so
+plugin can be loaded only if it is presented in registry.
+
+It is expected that plugins register themselves using class hooks.
+Therefore during loading specific plugins, module with plugin is
+imported to execute that hook if that plugin is not currently presented
+in registry. This is so called "plugin invocation".
+"""
+
 import importlib
 import pkgutil
 from functools import cache
@@ -16,20 +27,22 @@ def _get_subpackage_names(package: ModuleType) -> list[str]:
     Parameters
     ----------
     package : ModuleType
-        Package to inspect
+        Package to inspect.
 
     Returns
     -------
     list[str]
-        List of subpackage names
+        List of subpackage names.
 
     Raises
     ------
     ValueError
-        If specified package is not a package
+        If specified package is not a package.
+
     """
     if not hasattr(package, '__path__'):
-        raise ValueError(f'"{package.__name__}" is not a package') from None
+        msg = f'"{package.__name__}" is not a package'
+        raise ValueError(msg) from None
 
     return [
         module.name
@@ -44,17 +57,37 @@ def _construct_plugin_module_name(package: ModuleType, name: str) -> str:
     Parameters
     ----------
     package : ModuleType
-        Parent package with plugins of specific type
+        Common package with plugins of specific type.
 
     name : str
-        Name of the plugin
+        Name of the plugin.
 
     Returns
     -------
     str
-        Absolute name of module
+        Absolute name of module with plugin class definition.
+
     """
     return f'{package.__name__}.{name}.plugin'
+
+
+def _extract_plugins_type_name(package: ModuleType) -> str:
+    """Extract plugins type name from package with plugins of specific
+    type.
+
+    Parameters
+    ----------
+    package : ModuleType
+        Common package with plugins of specific type.
+
+    Returns
+    -------
+    str
+        Plugins type name.
+
+    """
+    parts = package.__name__.split('.')
+    return parts[-2]
 
 
 def _invoke_plugin(package: ModuleType, name: str) -> None:
@@ -63,31 +96,34 @@ def _invoke_plugin(package: ModuleType, name: str) -> None:
     Parameters
     ----------
     package : ModuleType
-        Parent package with plugins of specific type
+        Common package with plugins of specific type.
 
     name : str
-        Name of the plugin
+        Name of the plugin.
 
     Raises
     ------
     PluginNotFoundError
-        If specified plugin is not found
+        If specified plugin is not found.
 
     PluginLoadError
-        If specified plugin is found but cannot be imported
+        If specified plugin is found but cannot be imported.
+
     """
     try:
         importlib.import_module(_construct_plugin_module_name(package, name))
     except ModuleNotFoundError:
+        msg = 'Plugin not found'
         raise PluginNotFoundError(
-            'Plugin not found',
-            context=dict(plugin_name=name)
-        )
+            msg,
+            context={'plugin_name': name},
+        ) from None
     except ImportError as e:
+        msg = 'Error during importing plugin module'
         raise PluginLoadError(
-            'Error during importing plugin module',
-            context=dict(reason=str(e), plugin_name=name)
-        )
+            msg,
+            context={'reason': str(e), 'plugin_name': name},
+        ) from e
 
 
 def _load_plugin(package: ModuleType, name: str) -> PluginInfo:
@@ -98,34 +134,37 @@ def _load_plugin(package: ModuleType, name: str) -> PluginInfo:
     Parameters
     ----------
     package : ModuleType
-        Parent package with plugins of specific type
+        Common package with plugins of specific type.
 
     name : str
-        Name of the plugin
+        Name of the plugin.
 
     Returns
     -------
     PluginInfo
-        Information of loaded plugin
+        Information of loaded plugin.
 
     Raises
     ------
     PluginNotFoundError
-        If specified plugin is not found
+        If specified plugin is not found.
 
     PluginLoadError
-        If specified plugin is found but cannot be loaded
+        If specified plugin is found but cannot be loaded.
+
     """
-    if not PluginsRegistry.is_registered(package, name):
+    type = _extract_plugins_type_name(package)
+    if not PluginsRegistry.is_registered(type, name):
         _invoke_plugin(package, name)
 
     try:
-        return PluginsRegistry.get_plugin_info(package, name)
+        return PluginsRegistry.get_plugin_info(type, name)
     except ValueError:
+        msg = 'Plugin was imported but was not found in registry'
         raise PluginLoadError(
-            'Plugin was imported but was not found in registry',
-            context=dict(plugin_name=name)
-        )
+            msg,
+            context={'plugin_name': name},
+        ) from None
 
 
 @cache
@@ -135,20 +174,21 @@ def load_input_plugin(name: str) -> PluginInfo:
     Parameters
     ----------
     name : str
-        Name of the plugin
+        Name of the plugin.
 
     Returns
     -------
     PluginInfo
-        Information about plugin
+        Information about plugin.
 
     Raises
     ------
     PluginNotFoundError
-        If specified plugin is not found
+        If specified plugin is not found.
 
     PluginLoadError
-        If plugin is found but cannot be loaded
+        If plugin is found but cannot be loaded.
+
     """
     return _load_plugin(input_plugins, name)
 
@@ -160,20 +200,21 @@ def load_event_plugin(name: str) -> PluginInfo:
     Parameters
     ----------
     name : str
-        Name of the plugin
+        Name of the plugin.
 
     Returns
     -------
     PluginInfo
-        Information about plugin
+        Information about plugin.
 
     Raises
     ------
     PluginNotFoundError
-        If specified plugin is not found
+        If specified plugin is not found.
 
     PluginLoadError
-        If plugin is found but cannot be loaded
+        If plugin is found but cannot be loaded.
+
     """
     return _load_plugin(event_plugins, name)
 
@@ -185,20 +226,21 @@ def load_output_plugin(name: str) -> PluginInfo:
     Parameters
     ----------
     name : str
-        Name of the plugin
+        Name of the plugin.
 
     Returns
     -------
     PluginInfo
-        Information about plugin
+        Information about plugin.
 
     Raises
     ------
     PluginNotFoundError
-        If specified plugin is not found
+        If specified plugin is not found.
 
     PluginLoadError
-        If plugin is found but cannot be loaded
+        If plugin is found but cannot be loaded.
+
     """
     return _load_plugin(output_plugins, name)
 
@@ -209,7 +251,8 @@ def get_input_plugin_names() -> list[str]:
     Returns
     -------
     list[str]
-        Names of existing input plugins
+        Names of existing input plugins.
+
     """
     return _get_subpackage_names(input_plugins)
 
@@ -220,7 +263,8 @@ def get_event_plugin_names() -> list[str]:
     Returns
     -------
     list[str]
-        Names of existing event plugins
+        Names of existing event plugins.
+
     """
     return _get_subpackage_names(event_plugins)
 
@@ -231,6 +275,14 @@ def get_output_plugin_names() -> list[str]:
     Returns
     -------
     list[str]
-        Names of existing output plugins
+        Names of existing output plugins.
+
     """
     return _get_subpackage_names(output_plugins)
+
+
+def clear_cache() -> None:
+    """Clear cache of functions that load plugins."""
+    load_input_plugin.cache_clear()
+    load_event_plugin.cache_clear()
+    load_output_plugin.cache_clear()

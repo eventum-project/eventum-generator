@@ -1,16 +1,34 @@
-class FormatError(Exception):
-    """Exception for formatting errors.
+"""Exceptions used across output plugins."""
 
-    Parameters
-    ----------
-    original_event : str | None, default=NOne
-        Original event
-    """
+from eventum.plugins.exceptions import PluginError
+
+
+class FormatError(Exception):
+    """Exception for formatting errors."""
 
     def __init__(
         self,
         *args: object,
-        original_event: str | None = None
+        original_event: str | None = None,
     ) -> None:
+        """Initialize error.
+
+        Parameters
+        ----------
+        *args: object
+            Exceptions arguments.
+
+        original_event : str | None, default=None
+            Original event.
+
+        """
         super().__init__(*args)
         self.original_event = original_event
+
+
+class PluginOpenError(PluginError):
+    """Error during opening plugin."""
+
+
+class PluginWriteError(PluginError):
+    """Events cannot be written."""

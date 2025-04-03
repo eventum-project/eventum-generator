@@ -1,22 +1,10 @@
-from typing import Any
+"""Plugin exceptions."""
+
+from eventum.exceptions import ContextualError
 
 
-class PluginError(Exception):
-    """Base plugin error.
-
-    Parameters
-    ----------
-    context : dict[str, Any]
-        Context information about plugin (e.g. plugin id, name etc.)
-    """
-
-    def __init__(
-        self,
-        *args: Any,
-        context: dict[str, Any]
-    ) -> None:
-        super().__init__(*args)
-        self.context = context
+class PluginError(ContextualError):
+    """Base plugin error."""
 
 
 class PluginRegistrationError(PluginError):
@@ -27,13 +15,9 @@ class PluginLoadError(PluginError):
     """Error during plugin loading."""
 
 
-class PluginNotFoundError(PluginLoadError):
+class PluginNotFoundError(PluginError):
     """Plugin is not found."""
 
 
 class PluginConfigurationError(PluginError):
     """Configuration for plugin is invalid."""
-
-
-class PluginRuntimeError(PluginError):
-    """Error during plugin execution."""

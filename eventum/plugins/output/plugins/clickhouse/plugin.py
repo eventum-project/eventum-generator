@@ -1,37 +1,40 @@
-import contextlib
-import re
-from typing import Sequence
+"""Definition of clickhouse output plugin."""
+
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, override
 
 from clickhouse_connect import get_async_client
-from clickhouse_connect.driver.asyncclient import AsyncClient
 from clickhouse_connect.driver.binding import quote_identifier as quote
 
-from eventum.plugins.exceptions import PluginRuntimeError
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
-from eventum.plugins.output.plugins.clickhouse.config import \
-    ClickhouseOutputPluginConfig
+from eventum.plugins.output.exceptions import PluginOpenError, PluginWriteError
+from eventum.plugins.output.plugins.clickhouse.config import (
+    ClickhouseOutputPluginConfig,
+)
+
+if TYPE_CHECKING:
+    from clickhouse_connect.driver.asyncclient import AsyncClient
 
 
 class ClickhouseOutputPlugin(
-    OutputPlugin[ClickhouseOutputPluginConfig, OutputPluginParams]
+    OutputPlugin[ClickhouseOutputPluginConfig, OutputPluginParams],
 ):
     """Output plugin for indexing events to OpenSearch."""
 
+    @override
     def __init__(
         self,
         config: ClickhouseOutputPluginConfig,
-        params: OutputPluginParams
+        params: OutputPluginParams,
     ) -> None:
         super().__init__(config, params)
 
         self._fq_table_name = '.'.join(
-            [quote(config.database), quote(config.table)]
+            [quote(config.database), quote(config.table)],
         )
-
-        self._fmt_error_row_pattern = re.compile(r'\(at row (?P<row>\d+)\)')
-
         self._client: AsyncClient
 
+    @override
     async def _open(self) -> None:
         try:
             self._client = await get_async_client(
@@ -53,48 +56,48 @@ class ClickhouseOutputPlugin(
                 tls_mode=self._config.tls_mode,
                 http_proxy=(
                     str(self._config.proxy_url)
-                    if self._config.proxy_url else None
+                    if self._config.proxy_url
+                    else None
                 ),
                 https_proxy=(
                     str(self._config.proxy_url)
-                    if self._config.proxy_url else None
-                )
+                    if self._config.proxy_url
+                    else None
+                ),
             )
         except Exception as e:
-            raise PluginRuntimeError(
-                'Cannot initialize ClickHouse client',
-                context=dict(self.instance_info, reason=str(e))
-            )
+            msg = 'Cannot initialize ClickHouse client'
+            raise PluginOpenError(
+                msg,
+                context={'reason': str(e)},
+            ) from e
 
         await self._logger.ainfo('ClickHouse client is initialized')
 
+    @override
     async def _close(self) -> None:
-        self._client.close
+        await self._client.close()
 
+    @override
     async def _write(self, events: Sequence[str]) -> int:
         try:
-            response = await self._client.raw_insert(
+            result = await self._client.raw_insert(
                 table=self._fq_table_name,
-                insert_block=(self._config.separator.join(events) + '\n'),
-                fmt=self._config.input_format
+                insert_block=(
+                    self._config.header
+                    + self._config.separator.join(events)
+                    + self._config.footer
+                ),
+                fmt=self._config.input_format,
             )
         except Exception as e:
-            context = dict(
-                self.instance_info,
-                reason=str(e),
-                host=self._config.host
-            )
-
-            # try to enrich exception with original (formatted) event
-            pos_match = re.search(self._fmt_error_row_pattern, str(e))
-            if pos_match is not None:
-                row = int(pos_match.group('row'))
-                with contextlib.suppress(IndexError):
-                    context.update(formatted_event=events[row - 1])
-
-            raise PluginRuntimeError(
-                'Failed to insert events to ClickHouse',
-                context=context
+            msg = 'Failed to insert events to ClickHouse'
+            raise PluginWriteError(
+                msg,
+                context={
+                    'reason': str(e),
+                    'host': self._config.host,
+                },
             ) from e
-
-        return response.written_rows
+        else:
+            return result.written_rows

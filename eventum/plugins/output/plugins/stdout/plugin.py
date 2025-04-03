@@ -1,22 +1,28 @@
-import asyncio
-import sys
-from typing import Sequence, assert_never
+"""Definition of opensearch output plugin."""
 
-from eventum.plugins.exceptions import PluginRuntimeError
+import asyncio
+from collections.abc import Sequence
+from typing import assert_never, override
+
+from aioconsole import get_standard_streams  # type: ignore[import-untyped]
+
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
-from eventum.plugins.output.plugins.stdout.config import \
-    StdoutOutputPluginConfig
+from eventum.plugins.output.exceptions import PluginWriteError
+from eventum.plugins.output.plugins.stdout.config import (
+    StdoutOutputPluginConfig,
+)
 
 
 class StdoutOutputPlugin(
-    OutputPlugin[StdoutOutputPluginConfig, OutputPluginParams]
+    OutputPlugin[StdoutOutputPluginConfig, OutputPluginParams],
 ):
     """Output plugin for writing events to stdout."""
 
+    @override
     def __init__(
         self,
         config: StdoutOutputPluginConfig,
-        params: OutputPluginParams
+        params: OutputPluginParams,
     ) -> None:
         super().__init__(config, params)
 
@@ -32,46 +38,39 @@ class StdoutOutputPlugin(
             await asyncio.sleep(self._config.flush_interval)
             await self._writer.drain()
 
+    @override
     async def _open(self) -> None:
         match self._config.stream:
             case 'stdout':
-                pipe = sys.stdout
+                use_stderr = False
             case 'stderr':
-                pipe = sys.stderr
+                use_stderr = True
             case val:
                 assert_never(val)
 
-        loop = asyncio.get_event_loop()
-        w_transport, w_protocol = await loop.connect_write_pipe(
-            protocol_factory=asyncio.streams.FlowControlMixin,
-            pipe=pipe
-        )
-        self._writer = asyncio.StreamWriter(
-            transport=w_transport,
-            protocol=w_protocol,
-            reader=None,
-            loop=loop
-        )
+        _, self._writer = await get_standard_streams(use_stderr=use_stderr)
         self._flushing_task = self._loop.create_task(self._start_flushing())
 
+    @override
     async def _close(self) -> None:
         self._flushing_task.cancel()
         await self._writer.drain()
-        self._writer.close()
 
+    @override
     async def _write(self, events: Sequence[str]) -> int:
         try:
             lines = [
                 f'{event}{self._config.separator}'.encode(
-                    encoding=self._config.encoding
+                    encoding=self._config.encoding,
                 )
                 for event in events
             ]
         except UnicodeEncodeError as e:
-            raise PluginRuntimeError(
-                'Cannot encode events',
-                context=dict(self.instance_info, reason=str(e))
-            )
+            msg = 'Cannot encode events'
+            raise PluginWriteError(
+                msg,
+                context={'reason': str(e)},
+            ) from e
 
         self._writer.writelines(lines)
 

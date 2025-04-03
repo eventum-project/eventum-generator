@@ -1,7 +1,9 @@
+"""Definition of time_patterns input plugin config."""
 
 from abc import ABC
 from enum import StrEnum
-from typing import Literal, TypeAlias
+from pathlib import Path
+from typing import Literal, Self
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -12,6 +14,7 @@ from eventum.plugins.input.mixins import DaterangeValidatorMixin
 
 class TimeUnit(StrEnum):
     """Time units for oscillator."""
+
     WEEKS = 'weeks'
     DAYS = 'days'
     HOURS = 'hours'
@@ -23,6 +26,7 @@ class TimeUnit(StrEnum):
 
 class Distribution(StrEnum):
     """Distributions for spreader."""
+
     UNIFORM = 'uniform'
     TRIANGULAR = 'triangular'
     BETA = 'beta'
@@ -30,6 +34,7 @@ class Distribution(StrEnum):
 
 class RandomizerDirection(StrEnum):
     """Directions for randomizer."""
+
     DECREASE = 'decrease'
     INCREASE = 'increase'
     MIXED = 'mixed'
@@ -39,27 +44,28 @@ class OscillatorConfig(
     DaterangeValidatorMixin,
     BaseModel,
     extra='forbid',
-    frozen=True
+    frozen=True,
 ):
     """Configuration of oscillator.
 
     Attributes
     ----------
     period : float
-        Duration of one period
+        Duration of one period.
 
     unit : TimeUnit
-        Time unit of the period
+        Time unit of the period.
 
     start : VersatileDatetimeStrict
-        Start time of the distribution;
-        if relative time is provided current time used as relative base
+        Start time of the distribution. If relative time is provided
+        current time used as relative base.
 
     end : VersatileDatetimeStrict
-        End time of the distribution;
-        if relative time is provided start time of distribution used as
-        relative base
+        End time of the distribution. If relative time is provided
+        start time of distribution used as relative base.
+
     """
+
     period: float = Field(gt=0)
     unit: TimeUnit
     start: VersatileDatetimeStrict = Field(union_mode='left_to_right')
@@ -72,8 +78,10 @@ class MultiplierConfig(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     ratio : int
-        Multiplication ratio
+        Multiplication ratio.
+
     """
+
     ratio: int = Field(ge=1)
 
 
@@ -83,14 +91,16 @@ class RandomizerConfig(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     deviation : float
-        Deviation ratio
+        Deviation ratio.
 
     direction : RandomizerDirection
-        Direction of deviation
+        Direction of deviation.
 
     sampling : int, default=1024
-        Size of sample with random deviation ratios
+        Size of sample with random deviation ratios.
+
     """
+
     deviation: float = Field(ge=0, le=1)
     direction: RandomizerDirection
     sampling: int = Field(default=1024, ge=16)
@@ -102,11 +112,13 @@ class BetaDistributionParameters(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     a : float
-        Parameter alpha for the distribution
+        Parameter alpha for the distribution.
 
     b : float
-        Parameter beta for the distribution
+        Parameter beta for the distribution.
+
     """
+
     a: float = Field(ge=0)
     b: float = Field(ge=0)
 
@@ -117,28 +129,28 @@ class TriangularDistributionParameters(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     left : float
-        Left edge of the distribution
+        Left edge of the distribution.
 
     mode : float
-        Mode position of the distribution
+        Mode position of the distribution.
 
     right : float
-        Right edge of the distribution
+        Right edge of the distribution.
+
     """
+
     left: float = Field(ge=0, lt=1)
     mode: float = Field(ge=0, le=1)
     right: float = Field(gt=0, le=1)
 
     @model_validator(mode='after')
-    def validate_points(self):
-        if (
-            self.left <= self.mode <= self.right
-            and not (self.left == self.mode == self.right)
+    def validate_points(self) -> Self:  # noqa: D102
+        if self.left <= self.mode <= self.right and not (
+            self.left == self.mode == self.right
         ):
             return self
-        raise ValueError(
-            'Values do not comply "left <= mode <= right" condition'
-        )
+        msg = 'Values do not comply `left <= mode <= right` condition'
+        raise ValueError(msg)
 
 
 class UniformDistributionParameters(BaseModel, extra='forbid', frozen=True):
@@ -147,21 +159,22 @@ class UniformDistributionParameters(BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     low : float
-        Low edge of the distribution
+        Low edge of the distribution.
 
     high : float
-        High edge of the distribution
+        High edge of the distribution.
+
     """
+
     low: float = Field(ge=0, lt=1)
     high: float = Field(gt=0, le=1)
 
     @model_validator(mode='after')
-    def validate_points(self):
+    def validate_points(self) -> Self:  # noqa: D102
         if self.low < self.high:
             return self
-        raise ValueError(
-            'Values do not comply "low < high" condition'
-        )
+        msg = 'Values do not comply `low < high` condition'
+        raise ValueError(msg)
 
 
 class BaseSpreaderConfig(ABC, BaseModel, extra='forbid', frozen=True):
@@ -170,30 +183,36 @@ class BaseSpreaderConfig(ABC, BaseModel, extra='forbid', frozen=True):
     Attributes
     ----------
     distribution: Distribution
-        Distribution function for spreading
+        Distribution function for spreading.
 
     parameters: DistributionParameters
-        Parameters of distribution
+        Parameters of distribution.
+
     """
-    ...
 
 
 class UniformSpreaderConfig(BaseSpreaderConfig, frozen=True):
+    """Configuration of uniform spreader."""
+
     distribution: Literal[Distribution.UNIFORM]
     parameters: UniformDistributionParameters
 
 
 class TriangularSpreaderConfig(BaseSpreaderConfig, frozen=True):
+    """Configuration of triangular spreader."""
+
     distribution: Literal[Distribution.TRIANGULAR]
     parameters: TriangularDistributionParameters
 
 
 class BetaSpreaderConfig(BaseSpreaderConfig, frozen=True):
+    """Configuration of beta spreader."""
+
     distribution: Literal[Distribution.BETA]
     parameters: BetaDistributionParameters
 
 
-SpreaderConfig: TypeAlias = (
+type SpreaderConfig = (
     UniformSpreaderConfig | TriangularSpreaderConfig | BetaSpreaderConfig
 )
 
@@ -204,20 +223,22 @@ class TimePatternConfig(InputPluginConfig, extra='forbid', frozen=True):
     Attributes
     ----------
     label: str
-        Label with a description
+        Label with a description.
 
     oscillator: OscillatorConfig
-        Configuration of oscillator
+        Configuration of oscillator.
 
     multiplier: MultiplierConfig
-        Configuration of multiplier
+        Configuration of multiplier.
 
     randomizer: RandomizerConfig
-        Configuration of randomizer
+        Configuration of randomizer.
 
     spreader: SpreaderConfig
-        Configuration of spreader
+        Configuration of spreader.
+
     """
+
     label: str = Field(min_length=1)
     oscillator: OscillatorConfig
     multiplier: MultiplierConfig
@@ -230,14 +251,9 @@ class TimePatternsInputPluginConfig(InputPluginConfig, frozen=True):
 
     Attributes
     ----------
-    patterns : list[str]
-        File paths to time pattern configurations
+    patterns : list[Path]
+        File paths to time pattern configurations.
 
-    ordered_merging : bool, default = False
-        Whether to merge timestamps from different patterns with
-        keeping resulting timestamps sequence ordered (actual only for
-        live mode with usage of multiple configs)
     """
 
-    patterns: list[str] = Field(min_length=1)
-    ordered_merging: bool = False
+    patterns: list[Path] = Field(min_length=1)

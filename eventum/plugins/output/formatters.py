@@ -1,17 +1,37 @@
-import os
+"""Formatters for output events."""
+
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Generic, Sequence, TypeVar
+from pathlib import Path
+from typing import (
+    Any,
+    ClassVar,
+    Generic,
+    Required,
+    TypedDict,
+    TypeVar,
+    override,
+)
 
 import msgspec
-from jinja2 import (BaseLoader, Environment, FileSystemLoader, Template,
-                    TemplateError, TemplateNotFound)
+from jinja2 import (
+    BaseLoader,
+    Environment,
+    FileSystemLoader,
+    Template,
+    TemplateError,
+    TemplateNotFound,
+)
 
 from eventum.plugins.output.exceptions import FormatError
-from eventum.plugins.output.fields import (BaseFormatterConfig, Format,
-                                           JsonFormatterConfig,
-                                           SimpleFormatterConfig,
-                                           TemplateFormatterConfig)
+from eventum.plugins.output.fields import (
+    BaseFormatterConfig,
+    Format,
+    JsonFormatterConfig,
+    SimpleFormatterConfig,
+    TemplateFormatterConfig,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,17 +45,19 @@ class FormattingResult:
         original or not due to formatting errors of specific events
         from the entire provided list or reduction behavior of specific
         formatters which take multiple events and produce for example
-        one aggregated event
+        one aggregated event.
 
     formatted_count : int
         Number of successfully formatted events, this field is helpful
         for tracking number of successfully formatted events with taking
-        into account possible events aggregation
+        into account possible events aggregation.
 
     errors : list[FormatError]
         List with formatting errors of specific events or entire
-        sequence of events (for specific aggregating formatters)
+        sequence of events (for specific aggregating formatters).
+
     """
+
     events: list[str]
     formatted_count: int
     errors: list[FormatError]
@@ -44,44 +66,64 @@ class FormattingResult:
 T = TypeVar('T', bound=BaseFormatterConfig)
 
 
+class FormatterParams(TypedDict):
+    """Parameters for formatter.
+
+    Attributes
+    ----------
+    base_path : Required[Path]
+        Base path for all relative paths in formatter configs.
+
+    """
+
+    base_path: Required[Path]
+
+
 class Formatter(ABC, Generic[T]):
     """Base formatter.
-
-    Parameters
-    ----------
-    config : T
-        Formatter config
-
-    Raises
-    ------
-    ValueError
-        If any error occurs during formatter initialization for
-        parameters specified in provided config
 
     Other Parameters
     ----------------
     format : Format
-        Format to which to bind formatter class
+        Format to which to bind formatter class.
+
     """
-    _registered_formatters: dict[
-        Format,
-        type['Formatter[Any]']
-    ] = dict()
+
+    _registered_formatters: ClassVar[dict[Format, type['Formatter[Any]']]] = {}
 
     def __init_subclass__(cls, format: Format, **kwargs: Any) -> None:
         if format in Formatter._registered_formatters:
             registered_formatter = Formatter._registered_formatters[format]
-            raise ValueError(
+            msg = (
                 f'Formatter {registered_formatter} is already registered '
-                f'for format "{format}"'
+                f'for format `{format}`'
             )
+            raise ValueError(msg)
 
         Formatter._registered_formatters[format] = cls
 
         return super().__init_subclass__(**kwargs)
 
-    def __init__(self, config: T) -> None:
+    def __init__(self, config: T, params: FormatterParams) -> None:
+        """Initialize formatter.
+
+        Parameters
+        ----------
+        config : T
+            Formatter config.
+
+        params : FormatterParams
+            Formatter params.
+
+        Raises
+        ------
+        ValueError
+            If any error occurs during formatter initialization for
+            parameters specified in provided config.
+
+        """
         self._config = config
+        self._params = params
 
     @abstractmethod
     def format_events(self, events: Sequence[str]) -> FormattingResult:
@@ -89,18 +131,14 @@ class Formatter(ABC, Generic[T]):
 
         Parameters
         ----------
-        Sequence[str]
-            Events to format
+        events : Sequence[str]
+            Events to format.
 
         Returns
         -------
         FormattingResult
-            Result of events formatting
+            Result of events formatting.
 
-        Notes
-        -----
-        Note that this method only applies formatting, encoding and
-        separator are considered to be used separately
         """
         ...
 
@@ -111,44 +149,58 @@ class Formatter(ABC, Generic[T]):
         Parameters
         ----------
         format : Format
-            Format
+            Format.
 
         Returns
         -------
         type['Formatter[Any]']
-            Formatter
+            Formatter.
 
         Raises
         ------
         ValueError
-            If no appropriate formatter found for format
+            If no appropriate formatter found for format.
+
         """
         try:
             return cls._registered_formatters[format]
         except KeyError:
-            raise ValueError(f'No formatter found for format "{format}"')
+            msg = f'No formatter found for format `{format}`'
+            raise ValueError(msg) from None
 
 
 class PlainFormatter(Formatter[SimpleFormatterConfig], format=Format.PLAIN):
     """Formatter that preserves original format of events."""
 
-    def __init__(self, config: SimpleFormatterConfig) -> None:
-        super().__init__(config)
+    @override
+    def __init__(
+        self,
+        config: SimpleFormatterConfig,
+        params: FormatterParams,
+    ) -> None:
+        super().__init__(config, params)
 
+    @override
     def format_events(self, events: Sequence[str]) -> FormattingResult:
         return FormattingResult(
             events=list(events),
             formatted_count=len(events),
-            errors=[]
+            errors=[],
         )
 
 
 class JsonFormatter(Formatter[JsonFormatterConfig], format=Format.JSON):
     """Formatter that formats events as JSON."""
 
-    def __init__(self, config: JsonFormatterConfig) -> None:
-        super().__init__(config)
+    @override
+    def __init__(
+        self,
+        config: JsonFormatterConfig,
+        params: FormatterParams,
+    ) -> None:
+        super().__init__(config, params)
 
+    @override
     def format_events(self, events: Sequence[str]) -> FormattingResult:
         formatted_events: list[str] = []
         errors: list[FormatError] = []
@@ -156,7 +208,7 @@ class JsonFormatter(Formatter[JsonFormatterConfig], format=Format.JSON):
         for event in events:
             try:
                 formatted_events.append(
-                    msgspec.json.format(event, indent=self._config.indent)
+                    msgspec.json.format(event, indent=self._config.indent),
                 )
             except msgspec.DecodeError as e:
                 errors.append(FormatError(str(e), original_event=event))
@@ -164,19 +216,25 @@ class JsonFormatter(Formatter[JsonFormatterConfig], format=Format.JSON):
         return FormattingResult(
             events=formatted_events,
             formatted_count=len(formatted_events),
-            errors=errors
+            errors=errors,
         )
 
 
 class JsonBatchFormatter(
     Formatter[JsonFormatterConfig],
-    format=Format.JSON_BATCH
+    format=Format.JSON_BATCH,
 ):
     """Formatter that formats events into a single JSON list."""
 
-    def __init__(self, config: JsonFormatterConfig) -> None:
-        super().__init__(config)
+    @override
+    def __init__(
+        self,
+        config: JsonFormatterConfig,
+        params: FormatterParams,
+    ) -> None:
+        super().__init__(config, params)
 
+    @override
     def format_events(self, events: Sequence[str]) -> FormattingResult:
         validated_events: list[str] = []
         errors: list[FormatError] = []
@@ -189,13 +247,13 @@ class JsonBatchFormatter(
 
         event = msgspec.json.format(
             f'[{",".join(validated_events)}]',
-            indent=self._config.indent
+            indent=self._config.indent,
         )
 
         return FormattingResult(
             events=[event],
             formatted_count=len(validated_events),
-            errors=errors
+            errors=errors,
         )
 
 
@@ -205,80 +263,100 @@ def _load_template_from_string(template: str) -> Template:
     Parameters
     ----------
     template : str
-        Template source
+        Template source.
 
     Returns
     -------
     Template
-        Loaded template
+        Loaded template.
 
     Raises
     ------
     ValueError
-        If template cannot be loaded
+        If template cannot be loaded.
+
     """
     env = Environment(loader=BaseLoader())
 
     try:
         return env.from_string(template)
     except TemplateError as e:
-        raise ValueError(f'Cannot load template: {e}')
+        msg = f'Cannot load template: {e}'
+        raise ValueError(msg) from e
 
 
-def _load_template_from_file(template_path: str) -> Template:
+def _load_template_from_file(base_dir: Path, template_path: Path) -> Template:
     """Load template from file.
 
     Parameters
     ----------
-    template_path : str
-        Path to file with template source
+    base_dir : Path
+        Base dir for resolving relative template path.
+
+    template_path : Path
+        Relative path to file with template source.
 
     Returns
     -------
     Template
-        Loaded template
+        Loaded template.
 
     Raises
     ------
     ValueError
-        If template cannot be loaded
+        If `base_dir` is relative or `template_path` is absolute.
+
+    ValueError
+        If template is not found or cannot be loaded.
+
     """
-    if os.path.isabs(template_path):
-        base_path = os.path.dirname(template_path)
-        template_name = os.path.basename(template_path)
-    else:
-        base_path = os.getcwd()
-        template_name = template_path
+    if not base_dir.is_absolute():
+        msg = 'Base dir must be absolute'
+        raise ValueError(msg)
+
+    if template_path.is_absolute():
+        msg = 'Template path must be relative'
+        raise ValueError(msg)
 
     env = Environment(
-        loader=FileSystemLoader(searchpath=base_path)
+        loader=FileSystemLoader(searchpath=base_dir),
     )
     try:
-        return env.get_template(template_name)
+        return env.get_template(template_path.as_posix())
     except TemplateNotFound:
-        raise ValueError('Template is not found')
+        msg = 'Template is not found'
+        raise ValueError(msg) from None
     except TemplateError as e:
-        raise ValueError(f'Cannot load template: {e}')
+        msg = f'Cannot load template: {e}'
+        raise ValueError(msg) from e
 
 
 class TemplateFormatter(
     Formatter[TemplateFormatterConfig],
-    format=Format.TEMPLATE
+    format=Format.TEMPLATE,
 ):
     """Formatter that formats events using user defined template."""
 
-    def __init__(self, config: TemplateFormatterConfig) -> None:
-        super().__init__(config)
+    @override
+    def __init__(
+        self,
+        config: TemplateFormatterConfig,
+        params: FormatterParams,
+    ) -> None:
+        super().__init__(config, params)
 
         if config.template_path is not None:
-            self._template = _load_template_from_file(config.template_path)
+            self._template = _load_template_from_file(
+                base_dir=params['base_path'],
+                template_path=config.template_path,
+            )
         elif config.template is not None:
             self._template = _load_template_from_string(config.template)
         else:
-            raise AssertionError(
-                'Missing config validation for template formatter'
-            )
+            msg = 'Template or template path must be provided'
+            raise ValueError(msg)
 
+    @override
     def format_events(self, events: Sequence[str]) -> FormattingResult:
         formatted_events: list[str] = []
         errors: list[FormatError] = []
@@ -286,80 +364,94 @@ class TemplateFormatter(
         for event in events:
             try:
                 formatted_events.append(self._template.render(event=event))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append(
                     FormatError(
                         (
                             f'Failed to render template: '
                             f'{e.__class__.__name__}: {e}',
                         ),
-                        original_event=event
-                    )
+                        original_event=event,
+                    ),
                 )
 
         return FormattingResult(
             events=formatted_events,
             formatted_count=len(formatted_events),
-            errors=errors
+            errors=errors,
         )
 
 
 class TemplateBatchFormatter(
     Formatter[TemplateFormatterConfig],
-    format=Format.TEMPLATE_BATCH
+    format=Format.TEMPLATE_BATCH,
 ):
     """Formatter that formats events into a single event using user
     defined template.
     """
 
-    def __init__(self, config: TemplateFormatterConfig) -> None:
-        super().__init__(config)
+    @override
+    def __init__(
+        self,
+        config: TemplateFormatterConfig,
+        params: FormatterParams,
+    ) -> None:
+        super().__init__(config, params)
 
         if config.template_path is not None:
-            self._template = _load_template_from_file(config.template_path)
+            self._template = _load_template_from_file(
+                base_dir=params['base_path'],
+                template_path=config.template_path,
+            )
         elif config.template is not None:
             self._template = _load_template_from_string(config.template)
         else:
-            raise AssertionError(
-                'Missing config validation for template formatter'
-            )
+            msg = 'Template or template path must be provided'
+            raise ValueError(msg)
 
+    @override
     def format_events(self, events: Sequence[str]) -> FormattingResult:
         formatted_events: list[str] = []
         errors: list[FormatError] = []
 
         try:
             formatted_events.append(self._template.render(events=events))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             errors.append(
                 FormatError(
-                    f'Failed render template: {e.__class__.__name__}: {e}'
-                )
+                    f'Failed render template: {e.__class__.__name__}: {e}',
+                ),
             )
 
         return FormattingResult(
             events=formatted_events,
             formatted_count=len(events),
-            errors=errors
+            errors=errors,
         )
 
 
 class EventumHttpInputFormatter(
     Formatter[SimpleFormatterConfig],
-    format=Format.EVENTUM_HTTP_INPUT
+    format=Format.EVENTUM_HTTP_INPUT,
 ):
     """Formatter that formats events into request body for Eventum HTTP
     input plugin.
     """
 
-    def __init__(self, config: SimpleFormatterConfig) -> None:
-        super().__init__(config)
+    @override
+    def __init__(
+        self,
+        config: SimpleFormatterConfig,
+        params: FormatterParams,
+    ) -> None:
+        super().__init__(config, params)
 
+    @override
     def format_events(self, events: Sequence[str]) -> FormattingResult:
         return FormattingResult(
             events=[f'{{"count": {len(events)}}}'],
             formatted_count=len(events),
-            errors=[]
+            errors=[],
         )
 
 
@@ -369,16 +461,17 @@ def get_formatter_class(format: Format) -> type[Formatter[Any]]:
     Parameters
     ----------
     format : Format
-        Format
+        Format.
 
     Returns
     -------
     type[Formatter[Any]]
-        Formatter class
+        Formatter class.
 
     Raises
     ------
     ValueError
-        If no appropriate formatter found for specified format
+        If no appropriate formatter found for specified format.
+
     """
     return Formatter.get_formatter(format)

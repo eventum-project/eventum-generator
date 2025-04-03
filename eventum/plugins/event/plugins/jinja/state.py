@@ -1,10 +1,11 @@
+"""States that provide preserving and sharing template variables across
+template renders, different templates and generators.
+"""
+
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from multiprocessing.shared_memory import SharedMemory
-from multiprocessing.synchronize import RLock
-from typing import Any
-
-import msgspec
+from threading import RLock
+from typing import Any, override
 
 
 class State(ABC):
@@ -17,17 +18,18 @@ class State(ABC):
         Parameters
         ----------
         key : str
-            Key of the value to get
+            Key of the value to get.
 
         default : Any, default=None
             Default value to return if there is no value in state with
-            specified key
+            specified key.
 
         Returns
         -------
         Any
             Value from the state, or default value if there is no value
-            in state with specified key
+            in state with specified key.
+
         """
         ...
 
@@ -38,10 +40,11 @@ class State(ABC):
         Parameters
         ----------
         key : str
-            Key of the value to set
+            Key of the value to set.
 
         value : Any
-            Value to set
+            Value to set.
+
         """
         ...
 
@@ -51,11 +54,9 @@ class State(ABC):
 
         Parameters
         ----------
-        key : str
-            Key of the value to set
+        m: dict[str, Any]
+            Values to update state with.
 
-        value : Any
-            Value to set
         """
 
     @abstractmethod
@@ -68,232 +69,107 @@ class State(ABC):
         """Get dictionary representation of state."""
         ...
 
+    @abstractmethod
+    def __getitem__(self, key: Any) -> Any: ...
+
 
 class SingleThreadState(State):
     """Key-value state for single thread."""
 
-    __slots__ = ('_state', )
-
     def __init__(self, initial: dict[str, Any] | None = None) -> None:
-        self._state: dict[str, Any] = initial or dict()
+        """Initialize state.
 
+        Parameters
+        ----------
+        initial : dict[str, Any] | None = None
+            Initial state.
+
+        """
+        self._state: dict[str, Any] = initial or {}
+
+    @override
     def get(self, key: str, default: Any | None = None) -> Any:
-        try:
-            return self._state[key]
-        except KeyError:
-            return default
+        return self._state.get(key, default)
 
+    @override
     def set(self, key: str, value: Any) -> None:
         self._state[key] = value
 
+    @override
     def update(self, m: dict[str, Any], /) -> None:
         self._state.update(m)
 
+    @override
     def clear(self) -> None:
         self._state.clear()
 
+    @override
     def as_dict(self) -> dict[str, Any]:
         return deepcopy(self._state)
 
+    @override
+    def __getitem__(self, key: Any) -> Any:
+        return self.get(key)
 
-class MultiProcessState(State):
-    """Key-value state for multiple processes.
 
-    Parameters
-    ----------
-    name : str
-        Name that enables one process to create a state shared across
-        processes so that a different processes can attach to that same
-        shared state using that same name
-
-    create : bool
-        Whether to create new state or connect to existing state
-
-    max_bytes : int
-        Maximum size of state in bytes
-
-    lock : RLock
-        Lock for synchronization across processes
-
-    Raises
-    ------
-    ValueError
-        If `create` is `True` but state already exists
-
-    ValueError
-        If `create` is `False` but state does not exist
-
-    ValueError
-        If `create` is `False` but `initial` is provided
-
-    RuntimeError
-        If state cannot be created due to other shared memory error
-    """
-
-    __slots__ = ('_shm', '_lock', '_encoder', '_decoder', '_state_to_update')
-    _HEADER_SIZE = 8
+class MultiThreadState(State):
+    """Thread-safe key-value state."""
 
     def __init__(
         self,
-        name: str,
-        create: bool,
-        max_bytes: int,
         lock: RLock,
-        initial: dict[str, Any] | None = None
+        initial: dict[str, Any] | None = None,
     ) -> None:
-        if initial is not None and not create:
-            raise ValueError(
-                'Parameter `initial` must be none when `create` is `False`'
-            )
-        try:
-            self._shm = SharedMemory(name=name, create=create, size=max_bytes)
-        except FileExistsError:
-            raise ValueError(
-                f'State with name "{name}" already exists'
-            ) from None
-        except FileNotFoundError:
-            raise ValueError(
-                f'State with name "{name}" does not exist'
-            ) from None
-        except OSError as e:
-            raise RuntimeError(f'Cannot create shared state: {e}')
+        """Initialize state.
 
+        Parameters
+        ----------
+        lock: RLock
+            Lock to use for inclusive access.
+
+        initial : dict[str, Any] | None = None
+            Initial state.
+
+        """
         self._lock = lock
-        self._encoder = msgspec.msgpack.Encoder()
-        self._decoder = msgspec.msgpack.Decoder()
-        self._state_to_update: dict[str, Any] | None = None
 
-        if create:
-            self._write_state(initial or dict())
+        self._state: dict[str, Any] = initial or {}
+        self._state_to_update: dict[str, Any] = {}
 
-    def get(self, key: str, default: Any = None) -> Any:
-        state: dict[str, Any] = self._load_state()
+    @override
+    def get(self, key: str, default: Any | None = None) -> Any:
+        with self._lock:
+            return self._state.get(key, default)
 
-        if key not in state:
-            return default
-        else:
-            return state[key]
-
+    @override
     def set(self, key: str, value: Any) -> None:
         with self._lock:
-            if self._state_to_update is None:
-                state: dict[str, Any] = self._load_state()
-            else:
-                state = self._state_to_update
+            self._state[key] = value
 
-            state[key] = value
-            self._write_state(state)
-
-        if self._state_to_update is not None:
-            self._state_to_update = None
-            self._lock.release()
-
+    @override
     def update(self, m: dict[str, Any], /) -> None:
         with self._lock:
-            if self._state_to_update is None:
-                state: dict[str, Any] = self._load_state()
-            else:
-                state = self._state_to_update
+            self._state.update(m)
 
-            state.update(m)
-            self._write_state(state)
-
-        if self._state_to_update is not None:
-            self._state_to_update = None
-            self._lock.release()
-
+    @override
     def clear(self) -> None:
         with self._lock:
-            self._write_state(dict())
+            self._state.clear()
 
-    def get_for_update(self, key: str, default: Any = None) -> Any:
-        """Get value from state for next update with acquiring state lock
-        until next set.
+    @override
+    def as_dict(self) -> dict[str, Any]:
+        with self._lock:
+            return deepcopy(self._state)
 
-        Parameters
-        ----------
-        key : str
-            Key of the value to get
-
-        default : Any, default=None
-            Default value to return if there is no value in state with
-            specified key
-
-        Returns
-        -------
-        Any
-            Value from the state, or default value if there is no value
-            in state with specified key
-        """
+    def acquire(self) -> None:
+        """Acquire state lock."""
         self._lock.acquire()
-        state: dict[str, Any] = self._load_state()
-        self._state_to_update = state
 
-        if key not in state:
-            return default
-        else:
-            return state[key]
-
-    def cancel_update(self) -> None:
-        """Release state lock acquired by `get_for_update` method."""
+    def release(self) -> None:
+        """Release state lock."""
         self._lock.release()
 
-    def as_dict(self) -> dict[str, Any]:
-        state: dict[str, Any] = self._load_state()
-        return state
-
-    def close(self) -> None:
-        """Close state for caller process."""
-        self._shm.close()
-
-    def destroy(self) -> None:
-        """Destroy state with releasing resources. This method should
-        be called once after closing state in all related processes.
-        """
-        self._shm.unlink()
-
-    def _write_state(self, object: Any) -> None:
-        """Write object to shared memory.
-
-        Parameters
-        ----------
-        object : Any
-            Object to write
-
-        Raises
-        ------
-        ValueError
-            If object is too large
-        """
-        encoded_obj = self._encoder.encode(object)
-        header = len(encoded_obj).to_bytes(self._HEADER_SIZE)
-
-        data = header + encoded_obj
-        total_size = len(data)
-
-        if total_size > self._shm.size:
-            raise ValueError('State size limit exceeded')
-
+    @override
+    def __getitem__(self, key: Any) -> Any:
         with self._lock:
-            self._shm.buf[:total_size] = data
-
-    def _load_state(self) -> Any:
-        """Load object from the shared memory.
-
-        Returns
-        -------
-        Any
-            Loaded object
-        """
-        with self._lock:
-            size = int.from_bytes(self._shm.buf[:self._HEADER_SIZE])
-
-            try:
-                object = self._decoder.decode(
-                    self._shm.buf[self._HEADER_SIZE:self._HEADER_SIZE + size]
-                )
-                return object
-            except msgspec.DecodeError as e:
-                raise RuntimeError(
-                    f'Cannot decode data from shared memory: {e}'
-                ) from None
+            return self.get(key)

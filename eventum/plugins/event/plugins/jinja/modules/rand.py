@@ -1,10 +1,18 @@
+"""Rand module."""
+
 import datetime as dt
 import ipaddress
 import random
 import uuid
-from string import (ascii_letters, ascii_lowercase, ascii_uppercase, digits,
-                    punctuation)
-from typing import Sequence, TypeVar
+from collections.abc import Sequence
+from string import (
+    ascii_letters,
+    ascii_lowercase,
+    ascii_uppercase,
+    digits,
+    punctuation,
+)
+from typing import TypeVar
 
 T = TypeVar('T')
 
@@ -15,9 +23,8 @@ def shuffle(items: Sequence[T]) -> list[T] | str:
     random.shuffle(seq)
 
     if isinstance(items, str):
-        return ''.join(seq)     # type: ignore[arg-type]
-    else:
-        return seq
+        return ''.join(seq)  # type: ignore[arg-type]
+    return seq
 
 
 def choice(items: Sequence[T]) -> T:
@@ -40,7 +47,7 @@ def weighted_choice(items: Sequence[T], weights: Sequence[float]) -> T:
 def weighted_choices(
     items: Sequence[T],
     weights: Sequence[float],
-    n: int
+    n: int,
 ) -> list[T]:
     """Return `n` random items from non empty sequence with `weights`
     probability.
@@ -48,7 +55,7 @@ def weighted_choices(
     return random.choices(items, weights=weights, k=n)
 
 
-class number:
+class number:  # noqa: N801
     """Namespace for generating random numbers."""
 
     @staticmethod
@@ -69,7 +76,7 @@ class number:
         return random.gauss(mu, sigma)
 
 
-class string:
+class string:  # noqa: N801
     """Namespace for generating random strings."""
 
     @staticmethod
@@ -116,7 +123,9 @@ class string:
         return ''.join(random.choices(hexdigits, k=size))
 
 
-class network:
+class network:  # noqa: N801
+    """Namespace for generating random network entities."""
+
     @staticmethod
     def ip_v4() -> str:
         """Return random IPv4 address."""
@@ -127,7 +136,7 @@ class network:
         """Return random private IPv4 address of Class A."""
         ipv4_int = random.randint(
             int(ipaddress.IPv4Address('10.0.0.0')),
-            int(ipaddress.IPv4Address('10.255.255.255'))
+            int(ipaddress.IPv4Address('10.255.255.255')),
         )
         return str(ipaddress.IPv4Address(ipv4_int))
 
@@ -136,7 +145,7 @@ class network:
         """Return random private IPv4 address of Class B."""
         ipv4_int = random.randint(
             int(ipaddress.IPv4Address('172.16.0.0')),
-            int(ipaddress.IPv4Address('172.31.255.255'))
+            int(ipaddress.IPv4Address('172.31.255.255')),
         )
         return str(ipaddress.IPv4Address(ipv4_int))
 
@@ -145,7 +154,7 @@ class network:
         """Return random private IPv4 address of Class C."""
         ipv4_int = random.randint(
             int(ipaddress.IPv4Address('192.168.0.0')),
-            int(ipaddress.IPv4Address('192.168.255.255'))
+            int(ipaddress.IPv4Address('192.168.255.255')),
         )
         return str(ipaddress.IPv4Address(ipv4_int))
 
@@ -165,30 +174,31 @@ class network:
             ('192.169.0.0', '198.17.255.255'),
             ('198.20.0.0', '198.51.99.255'),
             ('198.51.101.0', '203.0.112.255'),
-            ('203.0.114.0', '223.255.255.255')
+            ('203.0.114.0', '223.255.255.255'),
         ]
 
         start, end = random.choices(
             population=public_ranges,
             weights=[5, 8, 6, 7, 4, 9, 3, 4, 5, 6, 4, 6, 8],
-            k=1
+            k=1,
         ).pop()
         ipv4_int = random.randint(
             int(ipaddress.IPv4Address(start)),
-            int(ipaddress.IPv4Address(end))
+            int(ipaddress.IPv4Address(end)),
         )
         return str(ipaddress.IPv4Address(ipv4_int))
 
     @staticmethod
     def mac() -> str:
         """Return random MAC address."""
-        mac = [random.randint(0x00, 0xff) for _ in range(6)]
-        mac_address = ':'.join(map(lambda x: '{:02x}'.format(x), mac))
+        mac = [random.randint(0x00, 0xFF) for _ in range(6)]
 
-        return mac_address
+        return ':'.join(f'{x:02x}' for x in mac)
 
 
-class crypto:
+class crypto:  # noqa: N801
+    """Namespace for generating random cryptographic entities."""
+
     @staticmethod
     def uuid4() -> str:
         """Return universally unique identifier of version 4."""
@@ -197,15 +207,17 @@ class crypto:
     @staticmethod
     def md5() -> str:
         """Return random MD5 hash."""
-        return '{:32x}'.format(random.getrandbits(128))
+        return f'{random.getrandbits(128):32x}'
 
     @staticmethod
     def sha256() -> str:
         """Return random SHA-256 hash."""
-        return '{:64x}'.format(random.getrandbits(256))
+        return f'{random.getrandbits(256):64x}'
 
 
-class datetime:
+class datetime:  # noqa: N801
+    """Namespace for generating random dates."""
+
     @staticmethod
     def timestamp(start: str, end: str) -> str:
         """Return random timestamp in range [start; end]."""
@@ -215,6 +227,5 @@ class datetime:
         delta_seconds = (end_date - start_date).total_seconds()
 
         return (
-            start_date
-            + dt.timedelta(seconds=random.uniform(0, delta_seconds))
+            start_date + dt.timedelta(seconds=random.uniform(0, delta_seconds))
         ).isoformat()

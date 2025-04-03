@@ -1,3 +1,5 @@
+"""Context of event producing."""
+
 from datetime import datetime
 from typing import TypedDict
 
@@ -5,7 +7,7 @@ from eventum.plugins.event.plugins.jinja.state import State
 
 
 class BaseEventContext(TypedDict):
-    """Base event context"""
+    """Base event context."""
 
 
 class EventTimestampContext(BaseEventContext):
@@ -14,8 +16,10 @@ class EventTimestampContext(BaseEventContext):
     Attributes
     ----------
     timestamp : datetime
-        Timestamp of event
+        Timestamp of event.
+
     """
+
     timestamp: datetime
 
 
@@ -25,8 +29,10 @@ class EventTagsContext(BaseEventContext):
     Attributes
     ----------
     tags : tuple[str, ...]
-        Tags from input plugin that generated timestamp
+        Tags from input plugin that generated timestamp.
+
     """
+
     tags: tuple[str, ...]
 
 
@@ -36,14 +42,16 @@ class EventStateContext(BaseEventContext):
     Attributes
     ----------
     locals : State
-        Local state of template
+        Local state of template.
 
     shared : State
-        Shared state of templates
+        Shared state of templates.
 
     globals : State
-        Global inter process state of templates
+        Global inter process state of templates.
+
     """
+
     locals: State
     shared: State
     globals: State
@@ -54,5 +62,6 @@ class EventContext(EventTimestampContext, EventTagsContext, EventStateContext):
 
     Notes
     -----
-    To see attributes description check base classes
+    To see attributes description check base classes.
+
     """

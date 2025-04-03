@@ -1,3 +1,5 @@
+"""Module provider for accessing modules from templates."""
+
 import importlib
 from types import ModuleType
 
@@ -7,16 +9,19 @@ class ModuleProvider:
     By default custom modules are searched in `package_name` package,
     if module is not found there, then it is searched in environment
     packages.
-
-    Parameters
-    ----------
-    package_name : str
-        Absolute name of the package with modules
     """
 
     def __init__(self, package_name: str) -> None:
+        """Initialize module provider.
+
+        Parameters
+        ----------
+        package_name : str
+            Absolute name of the package with modules.
+
+        """
         self._package_name = package_name
-        self._imported_modules: dict[str, ModuleType] = dict()
+        self._imported_modules: dict[str, ModuleType] = {}
 
     def __getitem__(self, key: str) -> ModuleType:
         if key in self._imported_modules:
@@ -28,9 +33,11 @@ class ModuleProvider:
             try:
                 module = importlib.import_module(key)
             except ModuleNotFoundError:
-                raise KeyError(f'Module "{key}" is not found') from None
+                msg = f'Module `{key}` is not found'
+                raise KeyError(msg) from None
         except ImportError as e:
-            raise KeyError(f'Failed to import module "{key}": {e}') from None
+            msg = f'Failed to import module `{key}`: {e}'
+            raise KeyError(msg) from None
 
         self._imported_modules[key] = module
 

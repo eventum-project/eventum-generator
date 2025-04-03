@@ -1,10 +1,15 @@
+"""Pickers for template picking modes."""
+
 import random
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Any, ClassVar, Generic, TypeVar, override
 
 from eventum.plugins.event.plugins.jinja.config import (
-    TemplateConfigForChanceMode, TemplateConfigForFSMMode,
-    TemplateConfigForGeneralModes, TemplatePickingMode)
+    TemplateConfigForChanceMode,
+    TemplateConfigForFSMMode,
+    TemplateConfigForGeneralModes,
+    TemplatePickingMode,
+)
 from eventum.plugins.event.plugins.jinja.context import EventContext
 
 T = TypeVar('T', bound=TemplateConfigForGeneralModes)
@@ -12,40 +17,30 @@ T = TypeVar('T', bound=TemplateConfigForGeneralModes)
 
 class TemplatePicker(ABC, Generic[T]):
     """Base picker of templates.
-    Parameters
-    ----------
-    config : dict[str, T]
-        Template aliases to configs mapping
-
-    common_config : dict
-        Common parameter names to values mapping
-
-    Raises
-    ------
-    ValueError
-        If some required parameter is missing in config
 
     Other Parameters
     ----------------
     mode : TemplatePickingMode
-        Picking mode to which to bind picker class
+        Picking mode to which to bind picker class.
+
     """
-    _registered_pickers: dict[
-        TemplatePickingMode,
-        type['TemplatePicker[Any]']
-    ] = dict()
+
+    _registered_pickers: ClassVar[
+        dict[TemplatePickingMode, type['TemplatePicker[Any]']]
+    ] = {}
 
     def __init_subclass__(
         cls,
         mode: TemplatePickingMode,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         if mode in TemplatePicker._registered_pickers:
             registered_picker = TemplatePicker._registered_pickers[mode]
-            raise ValueError(
+            msg = (
                 f'Picker {registered_picker} is already registered '
-                f'for mode "{mode}"'
+                f'for mode `{mode}`'
             )
+            raise ValueError(msg)
 
         TemplatePicker._registered_pickers[mode] = cls
 
@@ -54,8 +49,24 @@ class TemplatePicker(ABC, Generic[T]):
     def __init__(
         self,
         config: dict[str, T],
-        common_config: dict[str, Any]
+        common_config: dict[str, Any],
     ) -> None:
+        """Initialize picker.
+
+        Parameters
+        ----------
+        config : dict[str, T]
+            Template aliases to configs mapping.
+
+        common_config : dict
+            Common parameter names to values mapping.
+
+        Raises
+        ------
+        ValueError
+            If some required parameter is missing in config.
+
+        """
         self._config = config
         self._common_config = common_config
         self._aliases = tuple(self._config.keys())
@@ -67,111 +78,122 @@ class TemplatePicker(ABC, Generic[T]):
         Parameters
         ----------
         context : EventContext
-            Context of event producing
+            Context of event producing.
 
         Returns
         -------
         tuple[str, ...]
-            Aliases of picked templates
+            Aliases of picked templates.
+
         """
         ...
 
     @classmethod
     def get_picker(
         cls,
-        picking_mode: TemplatePickingMode
+        picking_mode: TemplatePickingMode,
     ) -> type['TemplatePicker[Any]']:
         """Get appropriate picker for specified picking mode.
 
         Parameters
         ----------
         picking_mode : TemplatePickingMode
-            Picking mode
+            Picking mode.
 
         Returns
         -------
         type['TemplatePicker[Any]']
-            Picker class
+            Picker class.
 
         Raises
         ------
         ValueError
-            If no appropriate picker found for specified mode
+            If no appropriate picker found for specified mode.
+
         """
         try:
             return cls._registered_pickers[picking_mode]
         except KeyError:
-            raise ValueError(f'No picker found for mode "{picking_mode}"')
+            msg = f'No picker found for mode `{picking_mode}`'
+            raise ValueError(msg) from None
 
 
 class AllTemplatePicker(
     TemplatePicker[TemplateConfigForGeneralModes],
-    mode=TemplatePickingMode.ALL
+    mode=TemplatePickingMode.ALL,
 ):
     """Picker of templates for `all` picking mode."""
 
+    @override
     def __init__(
         self,
         config: dict[str, TemplateConfigForGeneralModes],
-        common_config: dict[str, Any]
+        common_config: dict[str, Any],
     ) -> None:
         super().__init__(config, common_config)
 
+    @override
     def pick(self, context: EventContext) -> tuple[str, ...]:
         return self._aliases
 
 
 class AnyTemplatePicker(
     TemplatePicker[TemplateConfigForGeneralModes],
-    mode=TemplatePickingMode.ANY
+    mode=TemplatePickingMode.ANY,
 ):
     """Picker of templates for `any` picking mode."""
 
+    @override
     def __init__(
         self,
         config: dict[str, TemplateConfigForGeneralModes],
-        common_config: dict[str, Any]
+        common_config: dict[str, Any],
     ) -> None:
         super().__init__(config, common_config)
 
+    @override
     def pick(self, context: EventContext) -> tuple[str, ...]:
-        return (random.choice(self._aliases), )
+        return (random.choice(self._aliases),)
 
 
 class ChanceTemplatePicker(
     TemplatePicker[TemplateConfigForChanceMode],
-    mode=TemplatePickingMode.CHANCE
+    mode=TemplatePickingMode.CHANCE,
 ):
     """Picker of templates for `chance` picking mode."""
 
+    @override
     def __init__(
         self,
         config: dict[str, TemplateConfigForChanceMode],
-        common_config: dict[str, Any]
+        common_config: dict[str, Any],
     ) -> None:
         super().__init__(config, common_config)
         self._chances = [conf.chance for conf in self._config.values()]
 
+    @override
     def pick(self, context: EventContext) -> tuple[str, ...]:
         return tuple(
-            random.choices(self._aliases, weights=self._chances, k=1)
+            random.choices(self._aliases, weights=self._chances, k=1),
         )
 
 
 class SpinTemplatePicker(
     TemplatePicker[TemplateConfigForGeneralModes],
-    mode=TemplatePickingMode.SPIN
+    mode=TemplatePickingMode.SPIN,
 ):
     """Picker of templates for `spin` picking mode."""
 
+    @override
     def __init__(
         self,
         config: dict[str, TemplateConfigForGeneralModes],
-        common_config: dict[str, Any]
+        common_config: dict[str, Any],
     ) -> None:
         super().__init__(config, common_config)
         self._spin_index = 0
 
+    @override
     def pick(self, context: EventContext) -> tuple[str, ...]:
         alias = self._aliases[self._spin_index]
 
@@ -179,19 +201,20 @@ class SpinTemplatePicker(
         if self._spin_index == len(self._aliases):
             self._spin_index = 0
 
-        return (alias, )
+        return (alias,)
 
 
 class FSMTemplatePicker(
     TemplatePicker[TemplateConfigForFSMMode],
-    mode=TemplatePickingMode.FSM
+    mode=TemplatePickingMode.FSM,
 ):
     """Picker of templates for `fsm` picking mode."""
 
+    @override
     def __init__(
         self,
         config: dict[str, TemplateConfigForFSMMode],
-        common_config: dict[str, Any]
+        common_config: dict[str, Any],
     ) -> None:
         super().__init__(config, common_config)
         self._state = self._get_initial_state()
@@ -203,18 +226,20 @@ class FSMTemplatePicker(
         Returns
         -------
         str
-            Alias of state
+            Alias of state.
 
         Raises
         ------
         RuntimeError
-            If no initial state found
+            If no initial state found.
+
         """
         for alias, conf in self._config.items():
             if conf.initial:
                 return alias
 
-        raise RuntimeError('No initial state found')
+        msg = 'No initial state found'
+        raise RuntimeError(msg)
 
     def _check_transition(self, context: EventContext) -> None:
         """Check condition of current state and perform transition to
@@ -223,7 +248,8 @@ class FSMTemplatePicker(
         Parameters
         ----------
         context : EventContext
-            Context of event producing
+            Context of event producing.
+
         """
         transition = self._config[self._state].transition
 
@@ -233,34 +259,38 @@ class FSMTemplatePicker(
         if transition.when.check(context):
             self._state = transition.to
 
+    @override
     def pick(self, context: EventContext) -> tuple[str, ...]:
         if self._initial_pick:
             self._initial_pick = False
         else:
             self._check_transition(context)
 
-        return (self._state, )
+        return (self._state,)
 
 
 class ChainTemplatePicker(
     TemplatePicker[TemplateConfigForGeneralModes],
-    mode=TemplatePickingMode.CHAIN
+    mode=TemplatePickingMode.CHAIN,
 ):
     """Picker of templates for `chain` picking mode."""
 
+    @override
     def __init__(
         self,
         config: dict[str, TemplateConfigForGeneralModes],
-        common_config: dict[str, Any]
+        common_config: dict[str, Any],
     ) -> None:
         super().__init__(config, common_config)
         try:
             self._chain = common_config['chain']
         except KeyError as e:
-            raise ValueError(f'Common config parameter "{e}" is missing')
+            msg = f'Common config parameter `{e}` is missing'
+            raise ValueError(msg) from None
 
         self._chain_index = 0
 
+    @override
     def pick(self, context: EventContext) -> tuple[str, ...]:
         alias = self._chain[self._chain_index]
 
@@ -268,27 +298,28 @@ class ChainTemplatePicker(
         if self._chain_index == len(self._chain):
             self._chain_index = 0
 
-        return (alias, )
+        return (alias,)
 
 
 def get_picker_class(
-    picking_mode: TemplatePickingMode
+    picking_mode: TemplatePickingMode,
 ) -> type[TemplatePicker[Any]]:
     """Return specific picker class depending on picking mode.
 
     Parameters
     ----------
     picking_mode : TemplatePickingMode
-        Picking mode
+        Picking mode.
 
     Returns
     -------
     type['TemplatePicker[Any]']
-        Picker class
+        Picker class.
 
     Raises
     ------
     ValueError
-        If no appropriate picker found for specified mode
+        If no appropriate picker found for specified mode.
+
     """
     return TemplatePicker.get_picker(picking_mode)

@@ -1,3 +1,4 @@
+"""Definition of cron input plugin config."""
 
 from croniter import croniter
 from pydantic import Field, field_validator
@@ -10,7 +11,7 @@ from eventum.plugins.input.mixins import DaterangeValidatorMixin
 class CronInputPluginConfig(
     DaterangeValidatorMixin,
     InputPluginConfig,
-    frozen=True
+    frozen=True,
 ):
     """Configuration for `cron` input plugin.
 
@@ -18,11 +19,11 @@ class CronInputPluginConfig(
     ----------
     start : VersatileDatetime, default = None
         Start of the generating date range, if not set, current time
-        is used
+        is used.
 
     end : VersatileDatetime, default = None
-        End of the generating date range, if not set (only for live
-        mode), never end generation
+        End of the generating date range, if not set, then never end
+        generation.
 
     expression : str
         Cron expression (supports specifying seconds, years, random
@@ -30,16 +31,20 @@ class CronInputPluginConfig(
         https://pypi.org/project/croniter/#about-second-repeats)
 
     count : int
-        Number of events to generate for every interval
+        Number of events to generate for every interval.
+
     """
+
     start: VersatileDatetime = Field(default=None, union_mode='left_to_right')
     end: VersatileDatetime = Field(default=None, union_mode='left_to_right')
     expression: str
     count: int = Field(gt=0)
 
     @field_validator('expression')
-    def validate_expression(cls, v: str):
+    @classmethod
+    def validate_expression(cls, v: str) -> str:  # noqa: D102
         if croniter.is_valid(v):
             return v
 
-        raise ValueError('Invalid cron expression')
+        msg = 'Invalid cron expression'
+        raise ValueError(msg)

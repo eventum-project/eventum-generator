@@ -1,101 +1,115 @@
-import logging
+"""Definition of timestamps input plugin."""
+
+from collections.abc import Iterator
 from datetime import datetime
+from pathlib import Path
+from typing import override
 
 from numpy import array, astype, datetime64
 from numpy.typing import NDArray
 
 from eventum.plugins.exceptions import PluginConfigurationError
 from eventum.plugins.input.base.plugin import InputPlugin, InputPluginParams
-from eventum.plugins.input.plugins.timestamps.config import \
-    TimestampsInputPluginConfig
+from eventum.plugins.input.plugins.timestamps.config import (
+    TimestampsInputPluginConfig,
+)
 from eventum.plugins.input.utils.array_utils import get_future_slice
 from eventum.plugins.input.utils.time_utils import now64, to_naive
 
-logger = logging.getLogger(__name__)
 
-
-class TimestampsInputPlugin(InputPlugin[TimestampsInputPluginConfig]):
+class TimestampsInputPlugin(
+    InputPlugin[TimestampsInputPluginConfig, InputPluginParams],
+):
     """Input plugin for generating events at specified timestamps."""
 
+    @override
     def __init__(
         self,
         config: TimestampsInputPluginConfig,
-        params: InputPluginParams
+        params: InputPluginParams,
     ) -> None:
         super().__init__(config, params)
 
-        if isinstance(config.source, str):
+        if isinstance(config.source, Path):
             timestamps: list[datetime] = [
                 to_naive(ts, self._timezone)
                 for ts in self._read_timestamps_from_file(config.source)
             ]
-            if not timestamps:
-                raise PluginConfigurationError(
-                    'No timestamps are in the file',
-                    context=dict(self.instance_info, file_path=config.source)
-                )
             self._logger.info(
                 'Timestamps are read from the file',
-                file_path=config.source,
-                count=len(timestamps)
+                file_path=str(config.source),
+                count=len(timestamps),
             )
         else:
-            timestamps = [
-                to_naive(ts, self._timezone) for ts in config.source
-            ]
+            timestamps = [to_naive(ts, self._timezone) for ts in config.source]
             self._logger.info(
-                'Timestamps are read from the configuration',
-                count=len(timestamps)
+                'Timestamps are read from configuration',
+                file_path=str(config.source),
+                count=len(timestamps),
+            )
+
+        if not timestamps:
+            msg = 'Timestamps sequence is empty'
+            raise PluginConfigurationError(
+                msg,
+                context={'file_path': config.source},
             )
 
         self._timestamps: NDArray[datetime64] = array(
             timestamps,
-            dtype='datetime64[us]'
+            dtype='datetime64[us]',
         )
 
-    def _read_timestamps_from_file(self, filename: str) -> list[datetime]:
+    def _read_timestamps_from_file(self, filename: Path) -> list[datetime]:
         """Read timestamps from specified file.
 
         Parameters
         ----------
         filename : str
             Path to file with timestamps that are delimited with new
-            line
+            line.
 
         Returns
         -------
         list[datetime]
-            List of datetime objects
+            List of datetime objects.
 
         Raises
         ------
         PluginConfigurationError
             If cannot read content of the specified file or parse
-            timestamps
+            timestamps.
+
         """
         try:
-            with open(filename) as f:
+            with filename.open() as f:
                 return [
                     datetime.fromisoformat(line.strip())
-                    for line in f.readlines() if line.strip()
+                    for line in f.readlines()
+                    if line.strip()
                 ]
         except (OSError, ValueError) as e:
+            msg = 'Failed to read timestamps from file'
             raise PluginConfigurationError(
-                'Failed to read timestamps from file',
-                context=dict(
-                    self.instance_info,
-                    file_path=filename,
-                    reason=str(e)
-                )
+                msg,
+                context={
+                    'file_path': filename,
+                    'reason': str(e),
+                },
             ) from None
 
-    def _log_generation_range(self) -> None:
-        """Log generation range."""
+    @override
+    def _generate(
+        self,
+        size: int,
+        *,
+        skip_past: bool = True,
+    ) -> Iterator[NDArray[datetime64]]:
         start = self._timezone.localize(
-            astype(self._timestamps[0], datetime)   # type: ignore[arg-type]
+            astype(self._timestamps[0], datetime),  # type: ignore[arg-type]
         )
         end = self._timezone.localize(
-            astype(self._timestamps[-1], datetime)  # type: ignore[arg-type]
+            astype(self._timestamps[-1], datetime),  # type: ignore[arg-type]
         )
         self._logger.info(
             'Generating in range',
@@ -103,19 +117,13 @@ class TimestampsInputPlugin(InputPlugin[TimestampsInputPluginConfig]):
             end_timestamp=end.isoformat(),
         )
 
-    def _generate_sample(self) -> None:
-        self._log_generation_range()
-        self._enqueue(self._timestamps)
+        if skip_past:
+            timestamps = get_future_slice(
+                timestamps=self._timestamps,
+                after=now64(timezone=self._timezone),
+            )
+        else:
+            timestamps = self._timestamps
 
-    def _generate_live(self) -> None:
-        self._log_generation_range()
-
-        future_timestamps = get_future_slice(
-            timestamps=self._timestamps,
-            after=now64(timezone=self._timezone)
-        )
-
-        if len(future_timestamps) < len(self._timestamps):
-            self._logger.info('Past timestamp are skipped')
-
-        self._enqueue(future_timestamps)
+        self._buffer.mv_push(timestamps)
+        yield from self._buffer.read(size, partial=True)

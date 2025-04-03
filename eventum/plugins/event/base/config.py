@@ -1,3 +1,5 @@
+"""Definition of base event plugin config."""
+
 from abc import ABC
 
 from eventum.plugins.base.config import PluginConfig

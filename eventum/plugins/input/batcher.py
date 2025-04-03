@@ -1,64 +1,31 @@
-import time
-from collections import deque
-from concurrent.futures import ThreadPoolExecutor
-from threading import Condition, RLock
-from typing import Iterator
+"""Size and delay based batcher of timestamp arrays."""
 
-from numpy import concatenate, datetime64
+from collections.abc import Iterator
+from datetime import timedelta
+from typing import cast, override
+
+import numpy as np
 from numpy.typing import NDArray
-from pytz import timezone
-from pytz.tzinfo import BaseTzInfo
 
-from eventum.plugins.input.utils.array_utils import chunk_array, get_past_slice
-from eventum.plugins.input.utils.time_utils import now64
-
-
-class BatcherClosedError(Exception):
-    """Adding timestamps to a closed batcher."""
+from eventum.plugins.input.protocols import (
+    IdentifiedTimestamps,
+    SupportsIdentifiedTimestampsIterate,
+    SupportsIdentifiedTimestampsSizedIterate,
+)
+from eventum.plugins.input.utils.array_utils import chunk_array
 
 
-class BatcherFullError(Exception):
-    """Maximum size of batcher input queue exceeded."""
-
-
-class TimestampsBatcher:
+class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
     """Batcher of timestamps.
 
     Attributes
     ----------
     MIN_BATCH_SIZE : int
-        Minimum batch size that can be configured for batcher
+        Minimum batch size that can be configured for batcher.
 
     MIN_BATCH_DELAY : float
-        Minimum batch delay that can be configured for batcher
+        Minimum batch delay that can be configured for batcher.
 
-    Parameters
-    ----------
-    batch_size : int | None, default=100_000
-        Maximum size of producing batches, not limited if value is
-        `None`, cannot be greater than `max_queue_size` parameter and
-        less than `MIN_BATCH_SIZE` attribute
-
-    batch_delay: float | None, default=None
-        Maximum time (in seconds) for single batch to accumulate
-        incoming timestamps, not limited if value is `None`, cannot be
-        less then `MIN_BATCH_DELAY` attribute
-
-    scheduling : bool, default=False
-        Whether to respect timestamp values and publish them according
-        to real time
-
-    timezone : BaseTzInfo, default=pytz.timezone('UTC')
-        Timezone of incoming timestamps, used to track current time
-        when `scheduling` parameter is set to `True`
-
-    max_queue_size : int, default=1_000_000
-        Maximum size of queue for added timestamps to prepare batches
-
-    Raises
-    ------
-    ValueError
-        If some parameter is out of allowed range
     """
 
     MIN_BATCH_SIZE = 1
@@ -66,352 +33,235 @@ class TimestampsBatcher:
 
     def __init__(
         self,
+        source: SupportsIdentifiedTimestampsSizedIterate,
         batch_size: int | None = 100_000,
         batch_delay: float | None = None,
-        scheduling: bool = False,
-        timezone: BaseTzInfo = timezone('UTC'),
-        queue_max_size: int = 100_000_000
     ) -> None:
-        if batch_size is None and batch_delay is None:
-            raise ValueError(
-                'Parameters `batch_size` and `batch_delay` '
-                'cannot be both `None`'
-            )
-
-        if (
-            batch_size is not None
-            and not (self.MIN_BATCH_SIZE <= batch_size <= queue_max_size)
-        ):
-            raise ValueError(
-                'Parameter `batch_size` must be in range '
-                f'[{self.MIN_BATCH_SIZE}; {queue_max_size}]'
-            )
-
-        if batch_delay is not None and batch_delay < self.MIN_BATCH_DELAY:
-            raise ValueError(
-                'Parameter `batch_delay` must be greater or equal to '
-                f'{self.MIN_BATCH_DELAY}'
-            )
-
-        if queue_max_size < 1:
-            raise ValueError('`queue_max_size` must be greater than 1')
-
-        self._batch_size = batch_size
-        self._batch_delay = batch_delay
-        self._scheduling = scheduling
-        self._timezone = timezone
-        self._queue_max_size = queue_max_size
-
-        self._timestamp_arrays_queue: deque[NDArray[datetime64]] = deque()
-        self._lock = RLock()
-
-        # When `scheduling` is `False`, the first item is considered
-        # to be any item in the queue.
-        #
-        # When `scheduling` is `True`, the first item is considered
-        # to be the item in the queue with the timestamp in the past.
-        self._wait_first_item_condition = Condition(self._lock)
-        self._flush_condition = Condition(self._lock)
-        self._queue_consumed_condition = Condition(self._lock)
-
-        self._is_closed = False
-        self._is_waiting_first_item = True
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
-
-    def add(self, timestamps: NDArray[datetime64], block: bool = True) -> None:
-        """Add timestamps to batcher.
+        """Initialize batcher.
 
         Parameters
         ----------
-        timestamps : NDArray[np.datetime64]
-            Timestamps to add
+        source : SupportsIdentifiedTimestampsSizedIterate
+            Source of identified timestamp arrays.
 
-        block : bool, default=True
-            Whether to block execution of method if batcher queue
-            doesn't have enough space at moment of addition timestamps
-            and wait until it is enough space.
+        batch_size : int | None, default=100_000
+            Maximum size of producing batches, not limited if value is
+            `None`, cannot be  less than `MIN_BATCH_SIZE` attribute.
+
+        batch_delay: float | None, default=None
+            Maximum time (in seconds) for single batch to accumulate
+            incoming timestamps, not limited if value is `None`, cannot be
+            less then `MIN_BATCH_DELAY` attribute.
 
         Raises
         ------
-        BatcherFullError
-            If batcher queue doesn't have enough space at moment of
-            addition timestamps and `block` parameter is `False`
+        ValueError
+            If some parameter is out of allowed range.
 
-        BatcherClosedError
-            If batcher is already closed
         """
-        if timestamps.size == 0:
-            return
+        if batch_size is None and batch_delay is None:
+            msg = 'Batch size and delay cannot be both omitted'
+            raise ValueError(msg)
 
-        with self._lock:
-            if self._is_closed:
-                raise BatcherClosedError('Batcher is closed')
+        if batch_size is not None and not batch_size >= self.MIN_BATCH_SIZE:
+            msg = (
+                f'Batch size must be greater or equal to {self.MIN_BATCH_SIZE}'
+            )
+            raise ValueError(msg)
 
-            if not block and timestamps.size > self.queue_available_size:
-                raise BatcherFullError(
-                    'Not enough available size in batcher queue'
+        if batch_delay is not None and batch_delay < self.MIN_BATCH_DELAY:
+            msg = (
+                'Batch delay must be greater or equal to '
+                f'{self.MIN_BATCH_DELAY}'
+            )
+            raise ValueError(msg)
+
+        self._batch_size = batch_size
+        self._batch_delay = batch_delay
+
+        self._source = source
+
+    def _iterate_without_delay(
+        self,
+        iterator: Iterator[IdentifiedTimestamps],
+    ) -> Iterator[IdentifiedTimestamps]:
+        """Iterate over batches without a set delay parameter.
+
+        Parameters
+        ----------
+        iterator: Iterator[IdentifiedTimestamps]
+            Iterator to use.
+
+        """
+        self._batch_size = cast('int', self._batch_size)
+        current_size = 0
+        to_concatenate: list[IdentifiedTimestamps] = []
+
+        for array in iterator:
+            to_concatenate.append(array)
+            current_size += array.size
+
+            if current_size >= self._batch_size:
+                chunks = chunk_array(
+                    array=np.concatenate(to_concatenate),
+                    size=self._batch_size,
                 )
+                to_concatenate.clear()
+                current_size = 0
 
-            while timestamps.size > 0:
-                if self.queue_available_size == 0:
-                    self._queue_consumed_condition.wait()
+                if chunks[-1].size < self._batch_size:
+                    last_partial_chunk = chunks.pop()
+                    to_concatenate.append(last_partial_chunk)
+                    current_size += last_partial_chunk.size
 
-                queue_available_size = self.queue_available_size
-                addition = timestamps[:queue_available_size]
-                timestamps = timestamps[queue_available_size:]
+                yield from chunks
 
-                self._timestamp_arrays_queue.append(addition)
+        if to_concatenate:
+            yield np.concatenate(to_concatenate)
 
-                # With active scheduling first item and flush conditions
-                # are controlled by `_track_past_timestamps`
-                if not self._scheduling:
-                    if self._is_waiting_first_item:
-                        self._wait_first_item_condition.notify_all()
-                        self._is_waiting_first_item = False
-                    elif (
-                        self._batch_size is not None
-                        and self.queue_current_size >= self._batch_size
-                    ):
-                        self._flush_condition.notify_all()
+    def _get_cutoff_index_by_delay(
+        self,
+        latest: np.datetime64,
+        array: NDArray[np.datetime64],
+    ) -> int:
+        """Get cutoff index by delay condition.
 
-    def close(self) -> None:
-        """Close batcher to indicate that no new timestamps are going
-        to be added.
+        Parameters
+        ----------
+        latest : np.datetime64
+            Latest timestamp for the batch.
+
+        array : NDArray[np.datetime64]
+            Array to find index for.
+
+        Returns
+        -------
+        int
+            Cutoff index.
+
         """
-        if self._is_closed:
-            return
+        if latest < array[-1]:
+            return int(
+                np.searchsorted(
+                    a=array,
+                    v=latest,  # type: ignore[assignment]
+                    side='left',
+                ),
+            )
 
-        with self._lock:
-            self._is_closed = True
+        return array.size
 
-            if not self._scheduling:
-                if self._is_waiting_first_item:
-                    self._wait_first_item_condition.notify_all()
-                    self._is_waiting_first_item = False
-                else:
-                    self._flush_condition.notify_all()
+    def _get_cutoff_index_by_size(
+        self,
+        current_size: int,
+        array: NDArray,
+    ) -> int:
+        """Get cutoff index by size condition.
 
-    def scroll(self) -> Iterator[NDArray[datetime64]]:
-        """Scroll over timestamp batches. After iterating over all
-        complete timestamp batches, execution is blocked until
-        `close` method is called by producer or new timestamps are
-        added and new batch is complete.
+        Parameters
+        ----------
+        current_size : int
+            Current size of batch.
 
-        Yields
-        ------
-        NDArray[datetime64]
-            Batches of timestamps
+        array : NDArray
+            Array to find index for.
+
+        Returns
+        -------
+        int
+            Cutoff index.
+
         """
-        if self._scheduling:
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                executor.submit(self._track_past_timestamps)
-                yield from self._produce_batches_with_scheduling()
-        else:
-            yield from self._produce_batches()
+        if self._batch_size is None:
+            return array.size
 
-    def _produce_batches(self) -> Iterator[NDArray[datetime64]]:
-        """Produce batches of timestamps from queue without real time
-        scheduling.
+        if (current_size + array.size) >= self._batch_size:
+            return self._batch_size - current_size
 
-        Yields
-        -----
-        NDArray[datetime64]
-            Batches of timestamps
+        return array.size
+
+    def _iterate_with_delay(
+        self,
+        iterator: Iterator[IdentifiedTimestamps],
+    ) -> Iterator[IdentifiedTimestamps]:
+        """Iterate over batches with a set delay parameter.
+
+        Parameters
+        ----------
+        iterator: Iterator[IdentifiedTimestamps]
+            Iterator to use.
+
         """
+        self._batch_delay = cast('float', self._batch_delay)
+
+        delta = np.timedelta64(  # type: ignore[call-overload]
+            timedelta(seconds=self._batch_delay),
+            'us',
+        )
+        to_concatenate = []
+        prev_array: IdentifiedTimestamps | None = None
+
+        current_size = 0
+        latest_timestamp: np.datetime64 | None = None
+
         while True:
-            with self._lock:
-                if not self._is_closed and not self._timestamp_arrays_queue:
-                    self._is_waiting_first_item = True
-                    self._wait_first_item_condition.wait()
-
-                if self._is_closed and not self._timestamp_arrays_queue:
+            if prev_array is None:
+                try:
+                    array = next(iterator)
+                except StopIteration:
                     break
-
-                queue_current_size = self.queue_current_size
-                if (
-                    not self._is_closed and (
-                        self._batch_size is None
-                        or queue_current_size < self._batch_size
-                    )
-                ):
-                    self._flush_condition.wait(timeout=self._batch_delay)
-
-                array = concatenate(self._timestamp_arrays_queue)
-
-                if (
-                    self._batch_size is not None
-                    and array.size > self._batch_size
-                ):
-                    batches = chunk_array(array, self._batch_size)
-                    if len(batches[-1]) < self._batch_size:
-                        self._timestamp_arrays_queue.clear()
-                        self._timestamp_arrays_queue.append(batches.pop())
-                    else:
-                        self._timestamp_arrays_queue.clear()
-                else:
-                    batches = [array, ]
-                    self._timestamp_arrays_queue.clear()
-
-                self._queue_consumed_condition.notify_all()
-
-            for batch in batches:
-                yield batch
-
-    def _produce_batches_with_scheduling(
-        self
-    ) -> Iterator[NDArray[datetime64]]:
-        """Produce batches of timestamps from queue with real time
-        scheduling.
-
-        Yields
-        -----
-        NDArray[datetime64]
-            Batches of timestamps
-        """
-        while True:
-            with self._lock:
-                past_timestamps_count = self._past_timestamps_count
-                if (
-                    (not self._is_closed or self._timestamp_arrays_queue)
-                    and past_timestamps_count == 0
-                ):
-                    self._is_waiting_first_item = True
-                    self._wait_first_item_condition.wait()
-
-                if self._is_closed and not self._timestamp_arrays_queue:
-                    break
-
-                past_timestamps_count = self._past_timestamps_count
-                if (
-                    self._batch_size is None
-                    or past_timestamps_count < self._batch_size
-                ):
-                    self._flush_condition.wait(timeout=self._batch_delay)
-
-                array = concatenate(self._timestamp_arrays_queue)
-
-                past_timestamps_count = self._past_timestamps_count
-                past_timestamps = array[:past_timestamps_count]
-                future_timestamps = array[past_timestamps_count:]
-
-                if (
-                    self._batch_size is not None
-                    and past_timestamps.size > self._batch_size
-                ):
-                    batches = chunk_array(past_timestamps, self._batch_size)
-                    if len(batches[-1]) < self._batch_size:
-                        self._timestamp_arrays_queue.clear()
-                        self._timestamp_arrays_queue.append(batches.pop())
-                    else:
-                        self._timestamp_arrays_queue.clear()
-                else:
-                    batches = [past_timestamps, ]
-                    self._timestamp_arrays_queue.clear()
-
-                if future_timestamps.size > 0:
-                    self._timestamp_arrays_queue.append(future_timestamps)
-
-                self._queue_consumed_condition.notify_all()
-
-            for batch in batches:
-                yield batch
-
-    def _track_past_timestamps(self) -> None:
-        """Continuously track the number of timestamps in the past and
-        notify dependent thread about the first item and publish
-        conditions.
-        """
-        while True:
-            with self._lock:
-                if (
-                    self._is_closed
-                    and not self._timestamp_arrays_queue
-                ):
-                    if self._is_waiting_first_item:
-                        self._wait_first_item_condition.notify_all()
-                        self._is_waiting_first_item = False
-                    break
-
-                past_count = self._past_timestamps_count
-
-                if past_count > 0:
-                    if self._is_waiting_first_item:
-                        self._wait_first_item_condition.notify_all()
-                        self._is_waiting_first_item = False
-                    elif (
-                        (
-                            self._batch_size is not None
-                            and past_count >= self._batch_size
-                        ) or (
-                            self._batch_size is not None
-                            and self._batch_delay is None
-                            and self._is_closed
-                            and past_count == self.queue_current_size
-                        )
-                    ):
-                        self._flush_condition.notify_all()
-
-            time.sleep(self.MIN_BATCH_DELAY / 2)
-
-    @property
-    def _past_timestamps_count(self) -> int:
-        """Count of timestamps in queue that are in the past."""
-        now = now64(self._timezone)
-
-        if not self._timestamp_arrays_queue:
-            return 0
-
-        count = 0
-
-        for array in self._timestamp_arrays_queue:
-            if array.size == 0:
-                continue
-
-            if now < array[0]:
-                return count
-            elif now > array[-1]:
-                count += array.size
             else:
-                past_slice = get_past_slice(array, now)
-                return count + past_slice.size
+                array = prev_array
+                prev_array = None
 
-        return count
+            if latest_timestamp is None:
+                latest_timestamp = array['timestamp'][0] + delta
 
-    @property
-    def queue_current_size(self) -> int:
-        """Current size of input queue."""
-        return sum(
-            [arr.size for arr in self._timestamp_arrays_queue]
+            delay_cutoff_index = self._get_cutoff_index_by_delay(
+                latest=latest_timestamp,  # type: ignore[arg-type]
+                array=array['timestamp'],
+            )
+            size_cutoff_index = self._get_cutoff_index_by_size(
+                current_size=current_size,
+                array=array,
+            )
+            cutoff_index = min(delay_cutoff_index, size_cutoff_index)
+
+            # process cutoff index
+            if cutoff_index >= array.size:
+                to_concatenate.append(array)
+                current_size += array.size
+            else:
+                left_part = array[:cutoff_index]
+                right_part = array[cutoff_index:]
+
+                if left_part.size > 0:
+                    to_concatenate.append(left_part)
+
+                if right_part.size > 0:
+                    prev_array = right_part
+
+                yield np.concatenate(to_concatenate)
+
+                to_concatenate.clear()
+                current_size = 0
+                latest_timestamp = None
+
+        if to_concatenate:
+            yield np.concatenate(to_concatenate)
+
+    @override
+    def iterate(
+        self,
+        *,
+        skip_past: bool = True,
+    ) -> Iterator[IdentifiedTimestamps]:
+        iterator = self._source.iterate(
+            size=self._batch_size or 10_000,
+            skip_past=skip_past,
         )
 
-    @property
-    def queue_available_size(self) -> int:
-        """Number of elements currently available to be added to the
-        input queue.
-        """
-        return max(self.queue_max_size - self.queue_current_size, 0)
-
-    @property
-    def queue_max_size(self) -> int:
-        """Maximum size of input queue."""
-        return self._queue_max_size
-
-    @property
-    def scheduling(self) -> bool:
-        """Scheduling status."""
-        return self._scheduling
-
-    @property
-    def batch_size(self) -> int | None:
-        """Batch size."""
-        return self._batch_size
-
-    @property
-    def batch_delay(self) -> float | None:
-        """Batch delay."""
-        return self._batch_delay
+        if self._batch_delay is None:
+            yield from self._iterate_without_delay(iterator=iterator)
+        else:
+            yield from self._iterate_with_delay(iterator=iterator)
