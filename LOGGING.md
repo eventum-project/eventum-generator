@@ -62,16 +62,6 @@
         <td>Directory path</td>
         <td>str</td>
     </tr>
-    <tr>
-        <td>cert_file_path</td>
-        <td>Path to certificate file (used in combination with key_file_path)</td>
-        <td>str</td>
-    </tr>
-    <tr>
-        <td>key_file_path</td>
-        <td>Path to certificate key file (used in combination with cert_file_path)</td>
-        <td>str</td>
-    </tr>
 </table>
 
 ## Time
@@ -94,19 +84,9 @@
     <th>Description</th>
     <th>Data type</th>
     <tr>
-        <td>process_name</td>
-        <td>Name of the process</td>
-        <td>str</td>
-    </tr>
-    <tr>
         <td>process_id</td>
         <td>ID of the process</td>
         <td>int</td>
-    </tr>
-    <tr>
-        <td>thread_name</td>
-        <td>Name of the thread</td>
-        <td>str</td>
     </tr>
     <tr>
         <td>thread_id</td>
@@ -154,11 +134,6 @@
         <td>Parameters dictionary</td>
         <td>dict</td>
     </tr>
-    <tr>
-        <td>metrics</td>
-        <td>Metrics dictionary</td>
-        <td>dict</td>
-    </tr>
 </table>
 
 ## Plugins
@@ -201,16 +176,6 @@
     <th>Description</th>
     <th>Data type</th>
     <tr>
-        <td>first_timestamp</td>
-        <td>First timestamp in some collection (e.g in batch) in ISO8601 format</td>
-        <td>str</td>
-    </tr>
-    <tr>
-        <td>last_timestamp</td>
-        <td>Last timestamp in some collection (e.g in batch) in ISO8601 format</td>
-        <td>str</td>
-    </tr>
-    <tr>
         <td>start_timestamp</td>
         <td>Start timestamp of plugin generation in ISO8601 format</td>
         <td>str</td>
@@ -249,18 +214,8 @@
     <th>Description</th>
     <th>Data type</th>
     <tr>
-        <td>format</td>
-        <td>Format of outcome event (e.g. "plain", "ndjson" etc.)</td>
-        <td>str</td>
-    </tr>
-    <tr>
         <td>original_event</td>
-        <td>Original unformatted event</td>
-        <td>str</td>
-    </tr>
-    <tr>
-        <td>formatted_event</td>
-        <td>Formatted event</td>
+        <td>Original event</td>
         <td>str</td>
     </tr>
 </table>
