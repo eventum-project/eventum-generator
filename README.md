@@ -1,2 +1,3 @@
-# eventum-plugins
-Plugins for **Eventum** generator
+# Eventum Generator
+
+Events generation platform
