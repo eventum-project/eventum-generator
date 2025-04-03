@@ -57,7 +57,7 @@ def _construct_plugin_module_name(package: ModuleType, name: str) -> str:
     Parameters
     ----------
     package : ModuleType
-        Parent package of plugin package with plugins of specific type.
+        Common package with plugins of specific type.
 
     name : str
         Name of the plugin.
@@ -65,10 +65,29 @@ def _construct_plugin_module_name(package: ModuleType, name: str) -> str:
     Returns
     -------
     str
-        Absolute name of module.
+        Absolute name of module with plugin class definition.
 
     """
     return f'{package.__name__}.{name}.plugin'
+
+
+def _extract_plugins_type_name(package: ModuleType) -> str:
+    """Extract plugins type name from package with plugins of specific
+    type.
+
+    Parameters
+    ----------
+    package : ModuleType
+        Common package with plugins of specific type.
+
+    Returns
+    -------
+    str
+        Plugins type name.
+
+    """
+    parts = package.__name__.split('.')
+    return parts[-2]
 
 
 def _invoke_plugin(package: ModuleType, name: str) -> None:
@@ -77,7 +96,7 @@ def _invoke_plugin(package: ModuleType, name: str) -> None:
     Parameters
     ----------
     package : ModuleType
-        Parent package of plugin package with plugins of specific type.
+        Common package with plugins of specific type.
 
     name : str
         Name of the plugin.
@@ -115,7 +134,7 @@ def _load_plugin(package: ModuleType, name: str) -> PluginInfo:
     Parameters
     ----------
     package : ModuleType
-        Parent package of plugin package with plugins of specific type.
+        Common package with plugins of specific type.
 
     name : str
         Name of the plugin.
@@ -134,11 +153,12 @@ def _load_plugin(package: ModuleType, name: str) -> PluginInfo:
         If specified plugin is found but cannot be loaded.
 
     """
-    if not PluginsRegistry.is_registered(package, name):
+    type = _extract_plugins_type_name(package)
+    if not PluginsRegistry.is_registered(type, name):
         _invoke_plugin(package, name)
 
     try:
-        return PluginsRegistry.get_plugin_info(package, name)
+        return PluginsRegistry.get_plugin_info(type, name)
     except ValueError:
         msg = 'Plugin was imported but was not found in registry'
         raise PluginLoadError(
