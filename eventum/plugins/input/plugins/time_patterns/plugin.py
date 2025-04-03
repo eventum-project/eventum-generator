@@ -357,7 +357,7 @@ class TimePatternsInputPlugin(
         for pattern_path in self._config.patterns:
             self._logger.info(
                 'Initializing time pattern for configuration',
-                file_path=pattern_path,
+                file_path=str(pattern_path),
             )
             try:
                 with pattern_path.open() as f:

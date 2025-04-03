@@ -125,7 +125,7 @@ class ReplayEventPlugin(
         if not lines:
             self._logger.info(
                 'End of file is reached',
-                file_path=self._config.path,
+                file_path=str(self._config.path),
             )
             return lines
 
@@ -161,7 +161,7 @@ class ReplayEventPlugin(
             else:
                 self._logger.info(
                     'Reset read position to beginning of the file',
-                    file_path=self._config.path,
+                    file_path=str(self._config.path),
                 )
 
             self._last_read_position = 0

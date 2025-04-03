@@ -37,14 +37,14 @@ class TimestampsInputPlugin(
             ]
             self._logger.info(
                 'Timestamps are read from the file',
-                file_path=config.source,
+                file_path=str(config.source),
                 count=len(timestamps),
             )
         else:
             timestamps = [to_naive(ts, self._timezone) for ts in config.source]
             self._logger.info(
                 'Timestamps are read from configuration',
-                file_path=config.source,
+                file_path=str(config.source),
                 count=len(timestamps),
             )
 

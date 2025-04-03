@@ -131,7 +131,7 @@ class HttpOutputPlugin(
                         self._logger.aerror(
                             'Failed to perform request',
                             reason=str(result),
-                            url=self._config.url,
+                            url=str(self._config.url),
                         ),
                     ),
                 )

@@ -115,7 +115,7 @@ class App:
         """
         logger.info(
             'Loading generators list',
-            file_path=self._settings.path.generators,
+            file_path=str(self._settings.path.generators),
         )
         try:
             with self._settings.path.generators.open() as f:

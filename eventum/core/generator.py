@@ -62,7 +62,10 @@ class Generator:
 
         init_start_time = time.monotonic()
 
-        self._logger.info('Loading configuration', file_path=self._params.path)
+        self._logger.info(
+            'Loading configuration',
+            file_path=str(self._params.path),
+        )
         try:
             self._config = load(self._params.path, self._params.params)
         except ConfigurationLoadError as e:
@@ -72,7 +75,7 @@ class Generator:
             self._logger.exception(
                 'Unexpected error occurred during loading config',
                 reason=str(e),
-                file_path=self._params.path,
+                file_path=str(self._params.path),
             )
             return
 
@@ -115,7 +118,10 @@ class Generator:
         init_time = round(time.monotonic() - init_start_time, 3)
         self._logger.info('Initialization completed', seconds=init_time)
 
-        self._logger.info('Starting execution', parameters=self._params)
+        self._logger.info(
+            'Starting execution',
+            parameters=self._params.model_dump_json(),
+        )
 
         self._initialized_event.set()
         try:

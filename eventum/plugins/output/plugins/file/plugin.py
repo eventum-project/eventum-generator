@@ -83,7 +83,10 @@ class FileOutputPlugin(
 
             self._cleaned_up = True
 
-        await self._logger.ainfo('File is closed', file_path=self._config.path)
+        await self._logger.ainfo(
+            'File is closed',
+            file_path=str(self._config.path),
+        )
 
     def _create_descriptor(self, path: str, flags: int) -> int:
         """Create file descriptor opened for writing with specified
@@ -124,7 +127,10 @@ class FileOutputPlugin(
             encoding=self._config.encoding,
             opener=self._create_descriptor,
         )
-        await self._logger.ainfo('File is opened', file_path=self._config.path)
+        await self._logger.ainfo(
+            'File is opened',
+            file_path=str(self._config.path),
+        )
         return f
 
     async def _reopen_file(self) -> AsyncTextIOWrapper:
@@ -144,7 +150,7 @@ class FileOutputPlugin(
         )
         await self._logger.ainfo(
             'File is reopened',
-            file_path=self._config.path,
+            file_path=str(self._config.path),
         )
         return f
 
