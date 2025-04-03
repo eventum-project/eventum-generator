@@ -7,12 +7,12 @@ packages = ["eventum"]
 
 [project.urls]
 Homepage = 'https://github.com/eventum-project'
-Source = 'https://github.com/eventum-project/eventum-sdk'
+Source = 'https://github.com/eventum-project/eventum-generator'
 Documentation = 'https://eventum-project.github.io/website/'
 Changelog = 'https://github.com/eventum-project/eventum-generator/blob/master/CHANGELOG.md'
 
 [project]
-name = "eventum-sdk"
+name = "eventum-generator"
 description = "Flexible event generator"
 authors = [
     {name="Nikita Reznikov", email="nikita.reznikov.public@mail.ru"}
