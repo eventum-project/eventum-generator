@@ -270,7 +270,7 @@ wheels = [
 ]
 
 [[package]]
-name = "eventum-sdk"
+name = "eventum-generator"
 source = { editable = "." }
 dependencies = [
     { name = "aioconsole" },
