@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { routes } from '@/routes/index';
+import { ROUTE_PATHS } from '@/routes/routePaths';
 import { KeyRound, List, LucideProps } from 'lucide-react';
 
 type SidebarItemData = {
@@ -22,16 +22,16 @@ type SidebarItemData = {
 
 type SidebarGroupData = {
   name: string;
-  items: Array<SidebarItemData>;
+  items: SidebarItemData[];
 };
 
-const groups: Array<SidebarGroupData> = [
+const groups: SidebarGroupData[] = [
   {
     name: 'Generators',
     items: [
       {
         title: 'Instances',
-        url: routes.generatorInstances,
+        url: ROUTE_PATHS.GENERATOR_INSTANCES,
         icon: List,
       },
     ],
@@ -41,7 +41,7 @@ const groups: Array<SidebarGroupData> = [
     items: [
       {
         title: 'Manage secrets',
-        url: routes.secretsManagement,
+        url: ROUTE_PATHS.SECRETS_MANAGEMENT,
         icon: KeyRound,
       },
     ],
