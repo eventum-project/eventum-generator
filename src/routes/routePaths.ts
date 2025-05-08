@@ -1,5 +1,5 @@
 export const ROUTE_PATHS = {
-  OVERVIEW: '/overview',
+  OVERVIEW: '/',
   GENERATORS: '/generators',
   SECRETS: '/secrets',
   TAGS: '/tags',
