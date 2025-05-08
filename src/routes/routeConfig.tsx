@@ -1,20 +1,19 @@
-// src/routes/routeConfig.tsx
-import Layout from '@/layout/Layout';
+import AppLayout from '@/components/layout/AppLayout';
 import { lazy } from 'react';
 import { RouteObject } from 'react-router-dom';
 
 import { ROUTE_PATHS } from './routePaths';
 
-const GeneratorInstancesPage = lazy(() => import('@/pages/GeneratorInstances'));
+const GeneratorsPage = lazy(() => import('@/pages/Generators'));
 const NotFoundPage = lazy(() => import('@/pages/NotFound'));
 
 export const routes: RouteObject[] = [
   {
-    path: ROUTE_PATHS.GENERATOR_INSTANCES,
+    path: ROUTE_PATHS.GENERATORS,
     element: (
-      <Layout>
-        <GeneratorInstancesPage />
-      </Layout>
+      <AppLayout>
+        <GeneratorsPage />
+      </AppLayout>
     ),
   },
   {

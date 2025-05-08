@@ -1,4 +1,3 @@
-// src/routes/index.tsx
 import { useRoutes } from 'react-router-dom';
 
 import { routes } from './routeConfig';

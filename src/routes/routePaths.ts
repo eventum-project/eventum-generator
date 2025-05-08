@@ -1,4 +1,7 @@
 export const ROUTE_PATHS = {
-  GENERATOR_INSTANCES: '/generators/instances',
-  SECRETS_MANAGEMENT: '/security/secrets',
+  OVERVIEW: '/overview',
+  GENERATORS: '/generators',
+  SECRETS: '/secrets',
+  TAGS: '/tags',
+  SETTINGS: '/settings',
 };
