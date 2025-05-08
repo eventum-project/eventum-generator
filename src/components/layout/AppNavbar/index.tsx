@@ -12,7 +12,7 @@ export function AppNavbar() {
     <NavigationMenu>
       <NavigationMenuList>
         {NAVBAR_ITEMS.map((item) => (
-          <NavigationMenuItem id={item.name}>
+          <NavigationMenuItem key={item.name}>
             <NavigationMenuLink href={item.link}>{item.name}</NavigationMenuLink>
           </NavigationMenuItem>
         ))}
