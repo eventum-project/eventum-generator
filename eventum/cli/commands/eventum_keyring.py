@@ -1,6 +1,7 @@
 """Commands for managing keyring."""
 
 import sys
+from typing import Any
 
 import click
 from pwinput import pwinput  # type: ignore[import-untyped]
@@ -12,7 +13,7 @@ setproctitle('eventum-keyring')
 
 
 @click.group('eventum-keyring')
-def cli():  # noqa: ANN201
+def cli() -> Any:
     """Tool for managing keyring secrets."""
 
 
