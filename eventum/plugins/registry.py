@@ -10,6 +10,10 @@ direct usage of registry.
 from dataclasses import dataclass
 from typing import ClassVar
 
+import structlog
+
+logger = structlog.stdlib.get_logger()
+
 
 @dataclass(frozen=True)
 class PluginInfo:
@@ -54,6 +58,7 @@ class PluginsRegistry:
             Information about plugin.
 
         """
+        logger.debug('Registering plugin', parameters=plugin_info)
         if plugin_info.type not in cls._registry:
             cls._registry[plugin_info.type] = {}
 
