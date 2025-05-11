@@ -16,6 +16,11 @@
         <td>Reason of event (e.g. exception message)</td>
         <td>str</td>
     </tr>
+    <tr>
+        <td>parameters</td>
+        <td>Complex parameters or configuration dictionary</td>
+        <td>dict</td>
+    </tr>
 </table>
 
 ## Network
@@ -120,6 +125,11 @@
         <td>str</td>
     </tr>
     <tr>
+        <td>generator_ids</td>
+        <td>ID of generators</td>
+        <td>list[str]</td>
+    </tr>
+    <tr>
         <td>running_generators</td>
         <td>IDs of running generators</td>
         <td>list[str]</td>
@@ -128,11 +138,6 @@
         <td>non_running_generators</td>
         <td>IDs of non running generators</td>
         <td>list[str]</td>
-    </tr>
-    <tr>
-        <td>parameters</td>
-        <td>Parameters dictionary</td>
-        <td>dict</td>
     </tr>
 </table>
 
