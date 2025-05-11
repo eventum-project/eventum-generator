@@ -122,7 +122,6 @@ class Generator:
             'Starting execution',
             parameters=self._params.model_dump_json(),
         )
-
         self._initialized_event.set()
         try:
             self._executor.execute()
@@ -150,6 +149,7 @@ class Generator:
             running, `False` otherwise.
 
         """
+        self._logger.info('Starting generator')
         self._logger.debug('Acquiring lock')
         with self._lock:
             if self.is_running:
@@ -176,6 +176,7 @@ class Generator:
         """Stop generator with joining underlying thread. Ignore call
         if generator is not running.
         """
+        self._logger.info('Stopping generator')
         self._logger.debug('Acquiring lock')
         with self._lock:
             if not self.is_running:

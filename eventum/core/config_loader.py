@@ -279,7 +279,7 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
 
     logger.debug('Extracting params used in config file')
     extracted_params = extract_params(content)
-    logger.debug('Extracted params', value=extracted_params)
+    logger.debug('Params is extracted', value=extracted_params)
 
     logger.debug('Preparing param values')
     try:
@@ -296,7 +296,7 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
 
     logger.debug('Extracting secrets used in config file')
     extracted_secrets = extract_secrets(content)
-    logger.debug('Extracted secrets', value=extracted_secrets)
+    logger.debug('Secrets is extracted', value=extracted_secrets)
 
     logger.debug('Preparing secret values')
     try:
