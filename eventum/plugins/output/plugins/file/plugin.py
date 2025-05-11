@@ -83,7 +83,7 @@ class FileOutputPlugin(
 
             self._cleaned_up = True
 
-        await self._logger.ainfo(
+        await self._logger.adebug(
             'File is closed',
             file_path=str(self._config.path),
         )
@@ -127,7 +127,7 @@ class FileOutputPlugin(
             encoding=self._config.encoding,
             opener=self._create_descriptor,
         )
-        await self._logger.ainfo(
+        await self._logger.adebug(
             'File is opened',
             file_path=str(self._config.path),
         )
@@ -148,7 +148,7 @@ class FileOutputPlugin(
             encoding=self._config.encoding,
             opener=self._create_descriptor,
         )
-        await self._logger.ainfo(
+        await self._logger.adebug(
             'File is reopened',
             file_path=str(self._config.path),
         )
