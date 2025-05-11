@@ -79,11 +79,11 @@ def run(config: TextIOWrapper) -> None:
         max_bytes=settings.log.max_bytes,
     )
 
-    click.echo('Starting application...')
     click.echo(SPLASH_SCREEN)
 
     app = App(settings)
 
+    logger.info('Starting application')
     try:
         app.start()
     except AppError as e:
@@ -147,6 +147,7 @@ def generate(
     else:
         logconf.use_stderr(level=VERBOSITY_TO_LOG_LEVEL[verbose])
 
+    logger.info('Starting generator')
     generator = Generator(generator_parameters)
     status = generator.start()
 
