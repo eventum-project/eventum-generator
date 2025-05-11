@@ -87,7 +87,10 @@ class TimePatternInputPlugin(
     ) -> None:
         super().__init__(config, params)
 
+        self._logger.debug('Creating RNG')
         self._rng = np.random.default_rng()
+
+        self._logger.debug('Generating randomizer factors')
         self._randomizer_factors = self._generate_randomizer_factors(
             count=self._config.randomizer.sampling,
         )
@@ -253,7 +256,7 @@ class TimePatternInputPlugin(
                 context={'reason': str(e)},
             ) from None
 
-        self._logger.info(
+        self._logger.debug(
             'Generating in range',
             start_timestamp=start_dt.isoformat(),
             end_timestamp=end_dt.isoformat(),
@@ -338,7 +341,7 @@ class TimePatternsInputPlugin(
     ) -> None:
         super().__init__(config, params)
 
-        self._logger.info('Loading time patterns')
+        self._logger.debug('Loading time patterns')
         self._time_patterns = self._init_time_patterns(params)
 
     def _init_time_patterns(
@@ -355,8 +358,8 @@ class TimePatternsInputPlugin(
         """
         time_patterns: list[TimePatternInputPlugin] = []
         for pattern_path in self._config.patterns:
-            self._logger.info(
-                'Initializing time pattern for configuration',
+            self._logger.debug(
+                'Reading time pattern configuration',
                 file_path=str(pattern_path),
             )
             try:
@@ -394,6 +397,10 @@ class TimePatternsInputPlugin(
                     },
                 ) from None
 
+            self._logger.debug(
+                'Initializing time pattern plugin for configuration',
+                file_path=str(pattern_path),
+            )
             try:
                 time_pattern_plugin = TimePatternInputPlugin(
                     config=time_pattern,
@@ -424,9 +431,10 @@ class TimePatternsInputPlugin(
         *,
         skip_past: bool = True,
     ) -> Iterator[NDArray[np.datetime64]]:
+        self._logger.debug('Merging time patterns')
         merger = InputPluginsMerger(plugins=self._time_patterns)
 
-        self._logger.info('Generating in range of merged time patterns')
+        self._logger.debug('Generating in range of merged time patterns')
 
         for arr in merger.iterate(size, skip_past=skip_past):
             yield arr['timestamp']

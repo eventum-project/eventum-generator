@@ -66,7 +66,7 @@ class TimerInputPlugin(InputPlugin[TimerInputPluginConfig, InputPluginParams]):
                     context={},
                 ) from None
 
-        self._logger.info(
+        self._logger.debug(
             'Generating in range',
             start_timestamp=start.isoformat(),
             end_timestamp=end.isoformat(),

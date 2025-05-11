@@ -31,22 +31,17 @@ class TimestampsInputPlugin(
         super().__init__(config, params)
 
         if isinstance(config.source, Path):
+            self._logger.debug(
+                'Reading timestamps from the file',
+                file_path=str(config.source),
+            )
             timestamps: list[datetime] = [
                 to_naive(ts, self._timezone)
                 for ts in self._read_timestamps_from_file(config.source)
             ]
-            self._logger.info(
-                'Timestamps are read from the file',
-                file_path=str(config.source),
-                count=len(timestamps),
-            )
         else:
+            self._logger.debug('Reading timestamps from configuration')
             timestamps = [to_naive(ts, self._timezone) for ts in config.source]
-            self._logger.info(
-                'Timestamps are read from configuration',
-                file_path=str(config.source),
-                count=len(timestamps),
-            )
 
         if not timestamps:
             msg = 'Timestamps sequence is empty'
@@ -111,7 +106,7 @@ class TimestampsInputPlugin(
         end = self._timezone.localize(
             astype(self._timestamps[-1], datetime),  # type: ignore[arg-type]
         )
-        self._logger.info(
+        self._logger.debug(
             'Generating in range',
             start_timestamp=start.isoformat(),
             end_timestamp=end.isoformat(),

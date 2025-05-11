@@ -125,7 +125,7 @@ class HttpInputPlugin(
                 status_code=429,
                 detail='Too Many Requests',
             )
-        await self._logger.ainfo(
+        await self._logger.adebug(
             'Generate request is received',
             count=data.count,
         )
@@ -177,7 +177,7 @@ class HttpInputPlugin(
             )
             future.add_done_callback(self._watch_server)
 
-            self._logger.info('Waiting for incoming generation requests')
+            self._logger.debug('Waiting for incoming generation requests')
             while not (future.done() and self._request_queue.empty()):
                 try:
                     count = self._request_queue.get(timeout=0.1)
