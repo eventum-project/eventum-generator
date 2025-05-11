@@ -28,6 +28,24 @@
     </tr>
 </table>
 
+## Python
+
+<table>
+    <th>Name</th>
+    <th>Description</th>
+    <th>Data type</th>
+    <tr>
+        <td>package_name</td>
+        <td>Name of the package</td>
+        <td>str</td>
+    </tr>
+    <tr>
+        <td>module_name</td>
+        <td>Name of the module</td>
+        <td>str</td>
+    </tr>
+</table>
+
 ## Network
 
 <table>

@@ -14,11 +14,15 @@ import pkgutil
 from functools import cache
 from types import ModuleType
 
+import structlog
+
 import eventum.plugins.event.plugins as event_plugins
 import eventum.plugins.input.plugins as input_plugins
 import eventum.plugins.output.plugins as output_plugins
 from eventum.plugins.exceptions import PluginLoadError, PluginNotFoundError
 from eventum.plugins.registry import PluginInfo, PluginsRegistry
+
+logger = structlog.stdlib.get_logger()
 
 
 def _get_subpackage_names(package: ModuleType) -> list[str]:
@@ -110,8 +114,17 @@ def _invoke_plugin(package: ModuleType, name: str) -> None:
         If specified plugin is found but cannot be imported.
 
     """
+    log = logger.bind(
+        package_name=package.__name__,
+        plugin_name=name,
+    )
+
+    log.debug('Constructing plugin module name')
+    module_name = _construct_plugin_module_name(package, name)
+
+    log.debug('Importing module', module_name=module_name)
     try:
-        importlib.import_module(_construct_plugin_module_name(package, name))
+        importlib.import_module(module_name)
     except ModuleNotFoundError:
         msg = 'Plugin not found'
         raise PluginNotFoundError(
@@ -153,11 +166,20 @@ def _load_plugin(package: ModuleType, name: str) -> PluginInfo:
         If specified plugin is found but cannot be loaded.
 
     """
+    log = logger.bind(plugin_name=name)
+
+    log.debug('Defining plugin type')
     type = _extract_plugins_type_name(package)
+
+    log = log.bind(plugin_type=type)
+
+    log.debug('Checking if plugin is registered')
     if not PluginsRegistry.is_registered(type, name):
+        logger.debug('Invoking plugin for registration')
         _invoke_plugin(package, name)
 
     try:
+        log.debug('Getting plugin info from registry')
         return PluginsRegistry.get_plugin_info(type, name)
     except ValueError:
         msg = 'Plugin was imported but was not found in registry'
