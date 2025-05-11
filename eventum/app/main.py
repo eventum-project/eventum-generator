@@ -183,10 +183,6 @@ class App:
         not_added_generators: list[str] = []
 
         for params in generators_params:
-            logger.debug(
-                'Adding generator to execution manager',
-                generator_id=params.id,
-            )
             try:
                 self._manager.add(params)
                 added_generators.append(params.id)
