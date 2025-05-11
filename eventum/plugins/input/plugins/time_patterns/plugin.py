@@ -341,7 +341,7 @@ class TimePatternsInputPlugin(
     ) -> None:
         super().__init__(config, params)
 
-        self._logger.debug('Loading time patterns')
+        self._logger.debug('Initializing time patterns')
         self._time_patterns = self._init_time_patterns(params)
 
     def _init_time_patterns(
