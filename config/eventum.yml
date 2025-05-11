@@ -76,7 +76,7 @@ generation.max_concurrency: 100
 # =============================== Log Parameters ==============================
 
 # Log level
-# Available value are "info", "warning", "error", "critical"
+# Available value are "debug", "info", "warning", "error", "critical"
 # Optional, default is "info"
 log.level: "info"
 
