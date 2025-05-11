@@ -115,6 +115,12 @@ def init_plugin(
         If any error occurs during initializing.
 
     """
+    log = logger.bind(
+        plugin_name=name,
+        plugin_type=type,
+        plugin_id=params['id'],
+    )
+    log.debug('Loading plugin')
     try:
         match type:
             case 'input':
@@ -141,6 +147,7 @@ def init_plugin(
     PluginCls = plugin_info.cls  # noqa: N806
     ConfigCls = plugin_info.config_cls  # noqa: N806
 
+    log.debug('Validating plugin config')
     try:
         plugin_config = ConfigCls.model_validate(  # type: ignore[attr-defined]
             config,
@@ -157,6 +164,7 @@ def init_plugin(
             },
         ) from None
 
+    log.debug('Instantiating plugin')
     try:
         return PluginCls(config=plugin_config, params=params)
     except PluginConfigurationError as e:
@@ -212,34 +220,55 @@ def init_plugins(
     input_plugins: list[InputPlugin] = []
     for i, conf in enumerate(input, start=1):
         plugin_name, plugin_conf = next(iter(conf.items()))
+        plugin_id = i
+        logger.debug(
+            'Initializing input plugin',
+            plugin_name=plugin_name,
+            plugin_id=plugin_id,
+        )
         input_plugins.append(
             init_plugin(
                 name=plugin_name,
                 type='input',
                 config=plugin_conf,
-                params={'id': i, 'timezone': timezone(params.timezone)},
+                params={
+                    'id': plugin_id,
+                    'timezone': timezone(params.timezone),
+                },
             ),
         )
 
     logger.debug('Initializing event plugin')
     plugin_name, plugin_conf = next(iter(event.items()))
+    plugin_id = 1
+    logger.debug(
+        'Initializing event plugin',
+        plugin_name=plugin_name,
+        plugin_id=plugin_id,
+    )
     event_plugin = init_plugin(
         name=plugin_name,
         type='event',
         config=plugin_conf,
-        params={'id': 1},
+        params={'id': plugin_id},
     )
 
     logger.debug('Initializing output plugins')
     output_plugins: list[OutputPlugin] = []
     for i, conf in enumerate(output, start=1):
         plugin_name, plugin_conf = next(iter(conf.items()))
+        plugin_id = i
+        logger.debug(
+            'Initializing output plugin',
+            plugin_name=plugin_name,
+            plugin_id=plugin_id,
+        )
         output_plugins.append(
             init_plugin(
                 name=plugin_name,
                 type='output',
                 config=plugin_conf,
-                params={'id': i},
+                params={'id': plugin_id},
             ),
         )
 
