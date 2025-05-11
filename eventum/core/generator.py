@@ -150,18 +150,23 @@ class Generator:
             running, `False` otherwise.
 
         """
+        self._logger.debug('Acquiring lock')
         with self._lock:
             if self.is_running:
+                self._logger.debug('Generator is already running')
                 return True
 
+            self._logger.debug('Clearing status')
             self._initialized_event.clear()
             self._successfully_done_event.clear()
 
+            self._logger.debug('Creating and starting thread')
             self._thread = Thread(
                 target=propagate_logger_context()(self._start),
             )
             self._thread.start()
 
+            self._logger.debug('Waiting for initialization')
             while self.is_initializing:
                 time.sleep(0.1)
 
@@ -171,17 +176,24 @@ class Generator:
         """Stop generator with joining underlying thread. Ignore call
         if generator is not running.
         """
+        self._logger.debug('Acquiring lock')
         with self._lock:
             if not self.is_running:
+                self._logger.debug('Generator is not running')
                 return
 
+            self._logger.debug('Requesting executor to stop')
             self._executor.request_stop()  # type: ignore[union-attr]
+
+            self._logger.debug('Joining executing thread')
             self._thread.join()  # type: ignore[union-attr]
 
     def join(self) -> None:
         """Wait until generator terminates."""
         if self._thread is not None:
             self._thread.join()
+        else:
+            self._logger.debug('There is no executing thread')
 
     def get_plugins_info(self) -> InitializedPlugins:
         """Get plugins information.
@@ -244,6 +256,18 @@ class Generator:
         )
 
     @property
-    def status(self) -> bool:
+    def is_ended_up(self) -> bool:
+        """Whether the generator has ended execution with or without
+        errors.
+        """
+        return self._thread is not None and not self._thread.is_alive()
+
+    @property
+    def is_ended_up_successfully(self) -> bool:
         """Whether the generator has ended execution successfully."""
-        return self._successfully_done_event.is_set()
+        return self.is_ended_up and self._successfully_done_event.is_set()
+
+    @property
+    def is_ended_up_with_error(self) -> bool:
+        """Whether the generator has ended execution with error."""
+        return self.is_ended_up and not self._successfully_done_event.is_set()
