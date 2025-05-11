@@ -21,6 +21,11 @@
         <td>Complex parameters or configuration dictionary</td>
         <td>dict</td>
     </tr>
+    <tr>
+        <td>value</td>
+        <td>Specific value related to event message</td>
+        <td>Any</td>
+    </tr>
 </table>
 
 ## Network
