@@ -170,7 +170,7 @@ class Executor:
                 context={'reason': str(e)},
             ) from None
 
-        if self._params.time_mode == 'live':
+        if self._params.live_mode:
             return AsyncBatchScheduler(
                 source=batcher,
                 timezone=self._timezone,
@@ -264,7 +264,7 @@ class Executor:
 
     async def _execute_input(self) -> None:
         """Execute input plugins."""
-        skip_past = self._params.time_mode == 'live' and self._params.skip_past
+        skip_past = self._params.live_mode and self._params.skip_past
 
         try:
             async for timestamps in self._configured_input.iterate(

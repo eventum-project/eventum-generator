@@ -39,7 +39,7 @@ def test_initializer():
         output=output_config,
         params=GeneratorParameters(
             id='test',
-            time_mode='sample',
+            live_mode=False,
             path=Path(tempfile.gettempdir()) / 'ephemeral.yml',
         ),
     )

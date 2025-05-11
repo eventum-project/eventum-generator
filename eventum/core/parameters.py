@@ -1,7 +1,7 @@
 """Generator parameters."""
 
 from pathlib import Path
-from typing import Any, Literal, Self
+from typing import Any, Self
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pytz import all_timezones_set
@@ -101,7 +101,7 @@ class GeneratorParameters(GenerationParameters, frozen=True):
     path : Path
         Absolute path to configuration.
 
-    time_mode : Literal['live', 'sample'], default='live'
+    live_mode : bool, default=True
         Whether to use live mode and generate events at moments defined
         by timestamp values or sample mode to generate all events at a
         time.
@@ -117,7 +117,7 @@ class GeneratorParameters(GenerationParameters, frozen=True):
 
     id: str = Field(min_length=1)
     path: Path
-    time_mode: Literal['live', 'sample'] = 'live'
+    live_mode: bool = True
     skip_past: bool = Field(default=True)
     params: dict[str, Any] = Field(default_factory=dict)
 
