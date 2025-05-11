@@ -93,6 +93,7 @@ class Executor:
             msg = 'At least one output plugin must be provided'
             raise ValueError(msg)
 
+        logger.debug('Initializing queues')
         self._input_queue: asyncio.Queue[IdentifiedTimestamps | None] = (
             asyncio.Queue(maxsize=params.queue.max_batches)
         )
@@ -100,7 +101,10 @@ class Executor:
             maxsize=params.queue.max_batches,
         )
 
+        logger.debug('Collecting input plugin tags')
         self._input_tags = self._build_input_tags_map()
+
+        logger.debug('Configuring input')
         self._configured_input = self._configure_input()
 
         self._output_tasks: set[asyncio.Task] = set()
@@ -142,6 +146,7 @@ class Executor:
 
         """
         if len(self._input) > 1:
+            logger.debug('Merging input plugins')
             try:
                 input: SupportsIdentifiedTimestampsSizedIterate = (
                     InputPluginsMerger(plugins=self._input)
@@ -153,10 +158,12 @@ class Executor:
                     context={'reason': str(e)},
                 ) from None
         else:
+            logger.debug('Adapting single input plugin')
             input = IdentifiedTimestampsPluginAdapter(
                 plugin=self._input[0],
             )
 
+        logger.debug('Wrapping to timestamps batcher')
         try:
             batcher = TimestampsBatcher(
                 source=input,
@@ -171,10 +178,13 @@ class Executor:
             ) from None
 
         if self._params.live_mode:
+            logger.debug('Wrapping to batch scheduler')
             return AsyncBatchScheduler(
                 source=batcher,
                 timezone=self._timezone,
             )
+
+        logger.debug('Adapting batcher for async iteration')
         return AsyncIdentifiedTimestampsSyncAdapter(target=batcher)
 
     async def _open_output_plugins(self) -> None:
@@ -221,29 +231,36 @@ class Executor:
             If any error occurs during execution.
 
         """
+        await logger.adebug('Getting event loop')
         loop = asyncio.get_running_loop()
 
+        await logger.adebug('Opening output plugins')
         await self._open_output_plugins()
 
+        await logger.adebug('Starting input, event and output tasks')
         input_task = loop.create_task(self._execute_input())
         event_task = loop.create_task(self._execute_event())
         output_task = loop.create_task(self._execute_output())
 
+        await logger.adebug('Entering execution loop')
         while True:
             if input_task.done() and event_task.done() and output_task.done():
                 break
 
             if self._stop_event.is_set():
+                await logger.adebug('Stop event is detected, canceling tasks')
                 input_task.cancel()
                 event_task.cancel()
                 output_task.cancel()
 
                 self._stop_event.clear()
 
+                await logger.adebug('Breaking execution loop')
                 break
 
             await asyncio.sleep(0.1)
 
+        await logger.adebug('Closing output plugins')
         await self._close_output_plugins()
 
     def execute(self) -> None:
@@ -266,31 +283,33 @@ class Executor:
         """Execute input plugins."""
         skip_past = self._params.live_mode and self._params.skip_past
 
+        await logger.adebug('Starting to produce to input queue')
         try:
             async for timestamps in self._configured_input.iterate(
                 skip_past=skip_past,
             ):
                 await self._input_queue.put(timestamps)
         except asyncio.QueueShutDown:
-            logger.info(
+            await logger.ainfo(
                 'Stopping input plugins execution due to downstream queue '
                 'is closed',
             )
         except PluginGenerationError as e:
-            logger.error(str(e), **e.context)
-        except Exception as e:
-            logger.exception(
+            await logger.aerror(str(e), **e.context)
+        except Exception as e:  # noqa: BLE001
+            await logger.aexception(
                 'Unexpected error during input plugins execution',
                 reason=str(e),
             )
 
-        logger.info('Finishing input plugins execution')
+        await logger.ainfo('Finishing input plugins execution')
         await self._input_queue.put(None)
 
     async def _execute_event(self) -> None:
         """Execute event plugin."""
         exhausted = False
 
+        await logger.adebug('Starting to consume input queue')
         while not exhausted:
             timestamps = await self._input_queue.get()
 
@@ -314,14 +333,16 @@ class Executor:
                 try:
                     events.extend(self._event.produce(params=params))
                 except PluginProduceError as e:
-                    logger.error(str(e), **e.context)
+                    await logger.aerror(str(e), **e.context)
                 except PluginExhaustedError:
-                    logger.info('Events exhausted, closing upstream queue')
+                    await logger.ainfo(
+                        'Events exhausted, closing upstream queue',
+                    )
                     self._input_queue.shutdown(immediate=True)
                     exhausted = True
                     break
-                except Exception as e:
-                    logger.exception(
+                except Exception as e:  # noqa: BLE001
+                    await logger.aexception(
                         'Unexpected error during event plugin execution',
                         reason=str(e),
                     )
@@ -358,6 +379,7 @@ class Executor:
         loop = asyncio.get_running_loop()
 
         gathering_tasks: list[asyncio.Task] = []
+        await logger.adebug('Starting to consume event queue')
         while True:
             events = await self._event_queue.get()
 
