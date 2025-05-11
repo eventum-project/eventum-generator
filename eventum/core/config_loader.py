@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+import structlog
 import yaml
 from jinja2 import BaseLoader, Environment, TemplateSyntaxError
 from pydantic import ValidationError
@@ -13,6 +14,8 @@ from eventum.core.config import GeneratorConfig
 from eventum.exceptions import ContextualError
 from eventum.security.manage import get_secret
 from eventum.utils.validation_prettier import prettify_validation_errors
+
+logger = structlog.stdlib.get_logger()
 
 TOKEN_PATTERN = re.compile(pattern=r'\${\s*?(\S*?)\s*?}')
 
@@ -115,7 +118,8 @@ def _prepare_params(
     used_params: Iterable[str],
     provided_params: dict[str, Any],
 ) -> dict[str, Any]:
-    """Prepare params for config substitution.
+    """Prepare params for config substitution by getting it from
+    provided params.
 
     Parameters
     ----------
@@ -154,7 +158,8 @@ def _prepare_params(
 
 
 def _prepare_secrets(used_secrets: Iterable[str]) -> dict[str, Any]:
-    """Prepare secrets for config substitution.
+    """Prepare secrets for config substitution by getting it from
+    secrets storage.
 
     Parameters
     ----------
@@ -261,6 +266,7 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
         If configuration cannot be loaded.
 
     """
+    logger.debug('Reading file', file_path=str(path))
     try:
         with path.open() as f:
             content = f.read()
@@ -271,29 +277,40 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
             context={'reason': str(e), 'file_path': path},
         ) from None
 
+    logger.debug('Extracting params used in config file')
+    extracted_params = extract_params(content)
+    logger.debug('Extracted params', value=extracted_params)
+
+    logger.debug('Preparing param values')
     try:
         rendering_params = _prepare_params(
-            used_params=extract_params(content),
+            used_params=extracted_params,
             provided_params=params,
         )
     except ValueError as e:
-        msg = 'Failed to substitute params to configuration'
+        msg = 'Failed to obtain params used in configuration'
         raise ConfigurationLoadError(
             msg,
             context={'reason': str(e), 'file_path': path},
         ) from None
 
+    logger.debug('Extracting secrets used in config file')
+    extracted_secrets = extract_secrets(content)
+    logger.debug('Extracted secrets', value=extracted_secrets)
+
+    logger.debug('Preparing secret values')
     try:
         rendering_secrets = _prepare_secrets(
-            used_secrets=extract_secrets(content),
+            used_secrets=extracted_secrets,
         )
     except ValueError as e:
-        msg = 'Failed to substitute secrets to configuration'
+        msg = 'Failed to obtain secrets used in configuration'
         raise ConfigurationLoadError(
             msg,
             context={'reason': str(e), 'file_path': path},
         ) from None
 
+    logger.debug('Substituting params and secrets to config')
     try:
         substituted_content = _substitute_tokens(
             params=rendering_params,
@@ -310,6 +327,7 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
             },
         ) from None
 
+    logger.debug('Parsing yaml content of config')
     try:
         config_data = yaml.load(substituted_content, yaml.SafeLoader)
     except yaml.error.YAMLError as e:
@@ -322,6 +340,7 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
             },
         ) from None
 
+    logger.debug('Validating config')
     try:
         return GeneratorConfig.model_validate(config_data)
     except ValidationError as e:
