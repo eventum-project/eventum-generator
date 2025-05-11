@@ -224,6 +224,9 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
 
         log = logger.bind(**context)
 
+        log.debug('Initializing plugin subclass')
+
+        log.debug('Inspecting plugin')
         try:
             registration_info = _inspect_plugin(cls)
         except ValueError as e:
@@ -233,19 +236,23 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
                 context=dict(context, reason=str(e)),
             ) from e
 
+        log.debug('Binding logger to plugin')
         logger_name = registration_info.module.__name__
         cls._logger = structlog.stdlib.get_logger(logger_name)  # type: ignore[attr-defined]
 
         if not register:
+            log.debug('Plugin registration is skipped')
             cls._plugin_name = '[unregistered]'  # type: ignore[attr-defined]
             cls._plugin_type = '[unregistered]'  # type: ignore[attr-defined]
             return
 
+        log.debug('Preparing info for plugin registration')
         plugin_name = registration_info.name
         plugin_type = registration_info.type
         cls._plugin_name = plugin_name  # type: ignore[attr-defined]
         cls._plugin_type = plugin_type  # type: ignore[attr-defined]
 
+        log.debug('Determining configuration class of plugin')
         try:
             (config_cls, *_) = get_args(
                 cls.__orig_bases__[0],  # type: ignore[attr-defined]
@@ -272,6 +279,7 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
             )
             raise PluginRegistrationError(msg, context=context)
 
+        log.debug('Passing information about plugin to registry')
         PluginsRegistry.register_plugin(
             PluginInfo(
                 name=registration_info.name,
@@ -281,8 +289,8 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
             ),
         )
 
-        log.info(
-            'Plugin is registered',
+        log.debug(
+            'Plugin subclass initialization completed',
             plugin_type=registration_info.type,
             plugin_name=registration_info.name,
             plugin_config_class=config_cls.__name__,
