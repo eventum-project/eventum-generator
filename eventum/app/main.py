@@ -32,6 +32,10 @@ class App:
             Settings of the applications.
 
         """
+        logger.info(
+            'Initializing app with provided settings',
+            parameters=settings.model_dump(),
+        )
         self._settings = settings
         self._manager = GeneratorManager()
 
@@ -44,10 +48,14 @@ class App:
             If error occurs during initialization.
 
         """
+        logger.info('Loading generators list')
         gen_list = self._load_generators_list()
+
+        logger.info('Starting generators')
         self._start_generators(generators_params=gen_list)
 
         if self._settings.api.enabled:
+            logger.info('Starting API')
             self._start_api()
 
     def stop(self) -> None:
@@ -75,7 +83,7 @@ class App:
         -------
         list[GeneratorParameters]
             Validated list of generators parameters applied above
-            generation parameters from setting.
+            generation parameters from settings.
 
         Raises
         ------
@@ -86,8 +94,14 @@ class App:
         generators_parameters: list[GeneratorParameters] = []
 
         base_params = self._settings.generation.model_dump()
+        base_params = flatten(base_params, reducer='dot')
+
+        logger.debug(
+            'Next base generation parameters will be used for generators',
+            parameters=base_params,
+        )
+
         for params in object:
-            base_params = flatten(base_params, reducer='dot')
             generator_params = flatten(params, reducer='dot')
 
             generator_params = base_params | generator_params
@@ -100,12 +114,12 @@ class App:
         return generators_parameters
 
     def _load_generators_list(self) -> list[GeneratorParameters]:
-        """Load generators list from specified file.
+        """Load generators list from file specified in config.
 
         Returns
         -------
         list[GeneratorParameters]
-            List of defined generators parameters.
+            List of defined generators.
 
         Raises
         ------
@@ -113,8 +127,8 @@ class App:
             If error occurs during loading generators list.
 
         """
-        logger.info(
-            'Loading generators list',
+        logger.debug(
+            'Reading generators list file',
             file_path=str(self._settings.path.generators),
         )
         try:
@@ -130,6 +144,7 @@ class App:
                 },
             ) from None
 
+        logger.debug('Parsing yaml content of generators list')
         try:
             obj = yaml.load(content, Loader=yaml.SafeLoader)
         except yaml.error.YAMLError as e:
@@ -142,6 +157,7 @@ class App:
                 },
             ) from None
 
+        logger.debug('Validating generators list')
         try:
             return self._validate_generators_list(obj)
         except ValidationError as e:
@@ -167,18 +183,25 @@ class App:
         not_added_generators: list[str] = []
 
         for params in generators_params:
-            logger.info('Starting generator', generator_id=params.id)
+            logger.debug(
+                'Adding generator to execution manager',
+                generator_id=params.id,
+            )
             try:
                 self._manager.add(params)
                 added_generators.append(params.id)
             except ManagingError as e:
                 not_added_generators.append(params.id)
                 logger.error(
-                    'Failed to start generator',
+                    'Failed to add generator to execution manager',
                     generator_id=params.id,
                     reason=str(e),
                 )
 
+        logger.debug(
+            'Bulk starting generators',
+            generator_ids=added_generators,
+        )
         running_generators, non_running_generators = self._manager.bulk_start(
             generator_ids=added_generators,
         )
@@ -198,7 +221,12 @@ class App:
 
     def _stop_generators(self) -> None:
         """Stop generators."""
-        self._manager.bulk_stop(self._manager.generator_ids)
+        generator_ids = self._manager.generator_ids
+        logger.debug(
+            'Bulk stopping generators',
+            generator_ids=generator_ids,
+        )
+        self._manager.bulk_stop(generator_ids)
 
     def _start_api(self) -> None:
         """Start application API."""

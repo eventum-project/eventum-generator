@@ -1,1 +1,1 @@
-"""Package that centralizes app functionality."""
+"""Managing app functionality."""
