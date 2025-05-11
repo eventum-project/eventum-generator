@@ -32,7 +32,7 @@ class App:
             Settings of the applications.
 
         """
-        logger.info(
+        logger.debug(
             'Initializing app with provided settings',
             parameters=settings.model_dump(),
         )
