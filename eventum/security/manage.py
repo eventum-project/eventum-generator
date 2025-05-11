@@ -66,6 +66,7 @@ def get_secret(name: str, path: Path | None = None) -> str:
         If any error occurs during obtaining secret from keyring.
 
     """
+    logger.info('Secret is accessed', secret=name)
     if not name:
         msg = 'Name of secret cannot be blank'
         raise ValueError(msg)
@@ -116,6 +117,8 @@ def set_secret(name: str, value: str, path: Path | None = None) -> None:
         If any error occurs during setting secret to keyring.
 
     """
+    logger.info('Secret is set', secret=name)
+
     if not name or not value:
         msg = 'Name and value of secret cannot be empty'
         raise ValueError(msg)
@@ -158,6 +161,8 @@ def remove_secret(name: str, path: Path | None = None) -> None:
         If any error occurs during removing secret from keyring.
 
     """
+    logger.info('Secret is removed', secret=name)
+
     if not name:
         msg = 'Name of secret cannot be blank'
         raise ValueError(msg)

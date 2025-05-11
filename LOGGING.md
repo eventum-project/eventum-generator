@@ -229,3 +229,16 @@
         <td>str</td>
     </tr>
 </table>
+
+## Security
+
+<table>
+    <th>Name</th>
+    <th>Description</th>
+    <th>Data type</th>
+    <tr>
+        <td>secret</td>
+        <td>Name of the secret</td>
+        <td>str</td>
+    </tr>
+</table>
