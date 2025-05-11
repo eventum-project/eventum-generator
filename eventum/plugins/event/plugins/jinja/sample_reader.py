@@ -5,6 +5,7 @@ of different types.
 from collections.abc import Callable, Iterable
 from typing import Any
 
+import structlog
 import tablib  # type: ignore[import-untyped]
 
 from eventum.exceptions import ContextualError
@@ -15,6 +16,8 @@ from eventum.plugins.event.plugins.jinja.config import (
     SampleConfig,
     SampleType,
 )
+
+logger = structlog.stdlib.get_logger()
 
 
 class SampleLoadError(ContextualError):
@@ -212,6 +215,7 @@ class SamplesReader:
         samples: dict[str, Sample] = {}
 
         for name, sample_config in config.items():
+            logger.debug('Loading sample', sample_alias=name)
             loader = _get_sample_loader(sample_config.root.type)
             try:
                 sample = loader(sample_config.root)  # type: ignore[arg-type]

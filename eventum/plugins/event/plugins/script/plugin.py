@@ -41,8 +41,8 @@ class ScriptEventPlugin(
     ) -> None:
         super().__init__(config, params)
 
+        self._logger.debug('Importing function from external module')
         self._function = self._import_function()
-        self._logger.info('External function is imported successfully')
 
     def _import_function(self) -> Callable[[ProduceParams], str | list[str]]:
         """Import the function from the user defined module.
