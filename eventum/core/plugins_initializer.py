@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal, assert_never, overload
 
+import structlog
 from pydantic import ValidationError
 from pytz import timezone
 
@@ -24,6 +25,8 @@ from eventum.plugins.loader import (
 )
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
 from eventum.utils.validation_prettier import prettify_validation_errors
+
+logger = structlog.stdlib.get_logger()
 
 
 class InitializationError(ContextualError):
@@ -205,6 +208,7 @@ def init_plugins(
         If any error occurs during initializing.
 
     """
+    logger.debug('Initializing input plugins')
     input_plugins: list[InputPlugin] = []
     for i, conf in enumerate(input, start=1):
         plugin_name, plugin_conf = next(iter(conf.items()))
@@ -217,6 +221,7 @@ def init_plugins(
             ),
         )
 
+    logger.debug('Initializing event plugin')
     plugin_name, plugin_conf = next(iter(event.items()))
     event_plugin = init_plugin(
         name=plugin_name,
@@ -225,6 +230,7 @@ def init_plugins(
         params={'id': 1},
     )
 
+    logger.debug('Initializing output plugins')
     output_plugins: list[OutputPlugin] = []
     for i, conf in enumerate(output, start=1):
         plugin_name, plugin_conf = next(iter(conf.items()))
