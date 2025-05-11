@@ -4,16 +4,6 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, Field, field_validator
 
-from eventum.plugins.loader import (
-    get_event_plugin_names,
-    get_input_plugin_names,
-    get_output_plugin_names,
-)
-
-INPUT_PLUGIN_NAMES = set(get_input_plugin_names())
-EVENT_PLUGIN_NAMES = set(get_event_plugin_names())
-OUTPUT_PLUGIN_NAMES = set(get_output_plugin_names())
-
 type PluginConfigFields = dict[str, Any]
 
 type PluginConfig = Annotated[
@@ -42,15 +32,38 @@ class GeneratorConfig(BaseModel, frozen=True, extra='forbid'):
     event: PluginConfig
     output: list[PluginConfig] = Field(min_length=1)
 
+    @staticmethod
+    def _get_input_plugin_names() -> set[str]:
+        """Get available names of input plugins."""
+        from eventum.plugins.loader import get_input_plugin_names
+
+        return set(get_input_plugin_names())
+
+    @staticmethod
+    def _get_event_plugin_names() -> set[str]:
+        """Get available names of event plugins."""
+        from eventum.plugins.loader import get_event_plugin_names
+
+        return set(get_event_plugin_names())
+
+    @staticmethod
+    def _get_output_plugin_names() -> set[str]:
+        """Get available names of output plugins."""
+        from eventum.plugins.loader import get_output_plugin_names
+
+        return set(get_output_plugin_names())
+
     @field_validator('input')
     @classmethod
     def validate_input_plugin_names(  # noqa: D102
         cls,
         v: list[PluginConfig],
     ) -> list[PluginConfig]:
+        available_names = cls._get_input_plugin_names()
+
         for plugin_config in v:
             for key in plugin_config:
-                if key not in INPUT_PLUGIN_NAMES:
+                if key not in available_names:
                     msg = f'Unknown input plugin `{key}`'
                     raise ValueError(msg)
 
@@ -62,8 +75,10 @@ class GeneratorConfig(BaseModel, frozen=True, extra='forbid'):
         cls,
         v: PluginConfig,
     ) -> PluginConfig:
+        available_names = cls._get_event_plugin_names()
+
         for key in v:
-            if key not in EVENT_PLUGIN_NAMES:
+            if key not in available_names:
                 msg = f'Unknown event plugin `{key}`'
                 raise ValueError(msg)
 
@@ -75,9 +90,11 @@ class GeneratorConfig(BaseModel, frozen=True, extra='forbid'):
         cls,
         v: list[PluginConfig],
     ) -> list[PluginConfig]:
+        available_names = cls._get_output_plugin_names()
+
         for plugin_config in v:
             for key in plugin_config:
-                if key not in OUTPUT_PLUGIN_NAMES:
+                if key not in available_names:
                     msg = f'Unknown output plugin `{key}`'
                     raise ValueError(msg)
 
