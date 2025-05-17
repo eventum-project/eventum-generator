@@ -72,6 +72,9 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
         Maximum number of concurrent write operations performed by
         output plugins.
 
+    write_timeout : int, default=10
+        Timeout (in seconds) before canceling single write task.
+
     """
 
     timezone: str = Field(default='UTC', min_length=3)
@@ -79,6 +82,7 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
     queue: QueueParameters = Field(default_factory=QueueParameters)
     keep_order: bool = Field(default=False)
     max_concurrency: int = Field(default=100)
+    write_timeout: int = Field(default=10, ge=1)
 
     @field_validator('timezone')
     @classmethod
