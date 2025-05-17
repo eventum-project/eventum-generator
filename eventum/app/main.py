@@ -204,16 +204,19 @@ class App:
         non_running_generators.extend(not_added_generators)
 
         if len(running_generators) > 0:
-            message = 'Generators are running'
+            logger.info(
+                'Generators are running',
+                count=len(running_generators),
+                running_generators=running_generators,
+                non_running_generators=non_running_generators,
+            )
         else:
-            message = 'No generators are running'
-
-        logger.info(
-            message,
-            count=len(running_generators),
-            running_generators=running_generators,
-            non_running_generators=non_running_generators,
-        )
+            logger.warning(
+                'No generators are running',
+                count=len(running_generators),
+                running_generators=running_generators,
+                non_running_generators=non_running_generators,
+            )
 
     def _stop_generators(self) -> None:
         """Stop generators."""
