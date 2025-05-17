@@ -365,11 +365,23 @@ class Executor:
             task.result()
         except PluginWriteError as e:
             logger.error(str(e), **e.context)
+        except TimeoutError:
+            logger.warning(
+                (
+                    'Write operation timed out, EPS is to high '
+                    'for output target, consider decreasing EPS '
+                    'or changing batching settings to avoid loosing events'
+                ),
+                task_name=task.get_name(),
+                timeout=self._params.write_timeout,
+            )
         except Exception as e:
             logger.exception(
                 'Unexpected error occurred during output plugin write',
                 reason=str(e),
             )
+        except asyncio.CancelledError:
+            logger.warning('Write operation discarded')
         finally:
             self._output_semaphore.release()
             self._output_tasks.remove(task)
@@ -389,7 +401,13 @@ class Executor:
             for plugin in self._output:
                 await self._output_semaphore.acquire()
 
-                task = loop.create_task(plugin.write(events))
+                task = loop.create_task(
+                    asyncio.wait_for(
+                        plugin.write(events),
+                        self._params.write_timeout,
+                    ),
+                    name=f'Writing with {plugin}',
+                )
                 self._output_tasks.add(task)
                 gathering_tasks.append(task)
 
