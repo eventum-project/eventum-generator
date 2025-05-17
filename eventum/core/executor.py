@@ -32,6 +32,7 @@ from eventum.plugins.input.protocols import (
 from eventum.plugins.input.scheduler import AsyncBatchScheduler
 from eventum.plugins.output.base.plugin import OutputPlugin
 from eventum.plugins.output.exceptions import PluginOpenError, PluginWriteError
+from eventum.utils.throttler import AsyncThrottler
 
 logger = structlog.stdlib.get_logger()
 
@@ -94,11 +95,11 @@ class Executor:
             raise ValueError(msg)
 
         logger.debug('Initializing queues')
-        self._input_queue: asyncio.Queue[IdentifiedTimestamps | None] = (
-            asyncio.Queue(maxsize=params.queue.max_batches)
+        self._timestamps_queue: asyncio.Queue[IdentifiedTimestamps | None] = (
+            asyncio.Queue(maxsize=params.queue.max_timestamp_batches)
         )
-        self._event_queue: asyncio.Queue[list[str] | None] = asyncio.Queue(
-            maxsize=params.queue.max_batches,
+        self._events_queue: asyncio.Queue[list[str] | None] = asyncio.Queue(
+            maxsize=params.queue.max_event_batches,
         )
 
         logger.debug('Collecting input plugin tags')
@@ -283,12 +284,24 @@ class Executor:
         """Execute input plugins."""
         skip_past = self._params.live_mode and self._params.skip_past
 
-        await logger.adebug('Starting to produce to input queue')
+        throttler = AsyncThrottler(limit=1, period=10)
+
+        await logger.adebug('Starting to produce to timestamps queue')
         try:
             async for timestamps in self._configured_input.iterate(
                 skip_past=skip_past,
             ):
-                await self._input_queue.put(timestamps)
+                if self._timestamps_queue.full() and self._params.live_mode:
+                    await throttler(
+                        logger.awarning,
+                        (
+                            'Timestamps queue is full, consider decreasing EPS'
+                            ' or changing batching settings to avoid time lag '
+                            'with actual event timestamps'
+                        ),
+                    )
+
+                await self._timestamps_queue.put(timestamps)
         except asyncio.QueueShutDown:
             await logger.ainfo(
                 'Stopping input plugins execution due to downstream queue '
@@ -303,15 +316,17 @@ class Executor:
             )
 
         await logger.ainfo('Finishing input plugins execution')
-        await self._input_queue.put(None)
+        await self._timestamps_queue.put(None)
 
     async def _execute_event(self) -> None:
         """Execute event plugin."""
         exhausted = False
 
-        await logger.adebug('Starting to consume input queue')
+        throttler = AsyncThrottler(limit=1, period=10)
+
+        await logger.adebug('Starting to consume timestamps queue')
         while not exhausted:
-            timestamps = await self._input_queue.get()
+            timestamps = await self._timestamps_queue.get()
 
             if timestamps is None:
                 break
@@ -338,7 +353,7 @@ class Executor:
                     await logger.ainfo(
                         'Events exhausted, closing upstream queue',
                     )
-                    self._input_queue.shutdown(immediate=True)
+                    self._timestamps_queue.shutdown(immediate=True)
                     exhausted = True
                     break
                 except Exception as e:  # noqa: BLE001
@@ -348,9 +363,19 @@ class Executor:
                     )
 
             if events:
-                await self._event_queue.put(events)
+                if self._events_queue.full() and self._params.live_mode:
+                    await throttler(
+                        logger.awarning,
+                        (
+                            'Events queue is full, consider decreasing EPS '
+                            'or changing batching settings to avoid time lag '
+                            'with actual event timestamps'
+                        ),
+                    )
 
-        await self._event_queue.put(None)
+                await self._events_queue.put(events)
+
+        await self._events_queue.put(None)
 
     def _handle_write_result(self, task: asyncio.Task[int]) -> None:
         """Handle result of output plugin write task.
@@ -391,9 +416,9 @@ class Executor:
         loop = asyncio.get_running_loop()
 
         gathering_tasks: list[asyncio.Task] = []
-        await logger.adebug('Starting to consume event queue')
+        await logger.adebug('Starting to consume events queue')
         while True:
-            events = await self._event_queue.get()
+            events = await self._events_queue.get()
 
             if events is None:
                 break

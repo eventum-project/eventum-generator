@@ -41,12 +41,16 @@ class QueueParameters(BaseModel, extra='forbid', frozen=True):
 
     Attributes
     ----------
-    max_batches : int, default=10
-        Maximum number of batches in queue.
+    max_timestamp_batches : int, default=10
+        Maximum number of batches in timestamps queue.
+
+    max_event_batches : int, default=10
+        Maximum number of batches in events queue.
 
     """
 
-    max_batches: int = Field(default=10, ge=1)
+    max_timestamp_batches: int = Field(default=10, ge=1)
+    max_event_batches: int = Field(default=10, ge=1)
 
 
 class GenerationParameters(BaseModel, extra='forbid', frozen=True):

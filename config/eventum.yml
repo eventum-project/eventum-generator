@@ -59,9 +59,13 @@ generation.batch.delay: 1.0
 
 # Queue parameters
 
-# Maximum number of batches in queue
+# Maximum number of batches in timestamps queue
 # Optional, default is 10
-generation.queue.max_batches: 10
+generation.queue.max_timestamp_batches: 10
+
+# Maximum number of batches in events queue
+# Optional, default is 10
+generation.queue.max_event_batches: 10
 
 
 # Whether to keep chronological order of timestamps by disabling output plugins
