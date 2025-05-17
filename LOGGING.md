@@ -26,6 +26,12 @@
         <td>Specific value related to event message</td>
         <td>Any</td>
     </tr>
+    <tr>
+        <td>timeout</td>
+        <td>Timeout in seconds</td>
+        <td>int</td>
+    </tr>
+
 </table>
 
 ## Python
@@ -42,6 +48,19 @@
     <tr>
         <td>module_name</td>
         <td>Name of the module</td>
+        <td>str</td>
+    </tr>
+</table>
+
+## Asynchrony
+
+<table>
+    <th>Name</th>
+    <th>Description</th>
+    <th>Data type</th>
+    <tr>
+        <td>task_name</td>
+        <td>Name of the task</td>
         <td>str</td>
     </tr>
 </table>
