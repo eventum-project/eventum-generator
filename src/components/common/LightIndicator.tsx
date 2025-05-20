@@ -4,11 +4,11 @@ import { VariantProps, cva } from 'class-variance-authority';
 const indicatorVariants = cva('shrink-0 bg-radial to-black from-35% to-200%', {
   variants: {
     color: {
-      green: 'from-green-400 shadow-[0_0_1px_1px_rgba(34,197,94,0.6)]',
-      orange: 'from-amber-400 shadow-[0_0_1px_1px_rgba(245,171,0,0.6)]',
+      green: 'from-green-400 shadow-[0_0_4px_2px_rgba(34,197,94,0.4)]',
+      orange: 'from-amber-400 shadow-[0_0_4px_2px_rgba(245,171,0,0.4)]',
       inactive: 'from-slate-600',
-      redInactive: 'from-red-800',
-      greenInactive: 'from-green-800',
+      redInactive: 'from-red-900',
+      greenInactive: 'from-green-900',
     },
   },
   defaultVariants: {
