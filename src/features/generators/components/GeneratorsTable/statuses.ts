@@ -1,4 +1,4 @@
-import { LightIndicatorProps } from '@/components/ui/LightIndicator';
+import { LightIndicatorProps } from '@/components/common/LightIndicator';
 
 export enum GeneratorStatus {
   Starting = 'starting',
@@ -9,35 +9,29 @@ export enum GeneratorStatus {
 }
 
 type GeneratorStatusInfo = {
-  value: GeneratorStatus;
   label: string;
   indicatorProps: LightIndicatorProps;
 };
 
-export const GENERATOR_STATUSES: GeneratorStatusInfo[] = [
-  {
-    value: GeneratorStatus.Starting,
+export const GENERATOR_STATUSES: Record<GeneratorStatus, GeneratorStatusInfo> = {
+  [GeneratorStatus.Starting]: {
     label: 'Starting',
     indicatorProps: { color: 'orange' },
   },
-  {
-    value: GeneratorStatus.Running,
+  [GeneratorStatus.Running]: {
     label: 'Running',
     indicatorProps: { color: 'green' },
   },
-  {
-    value: GeneratorStatus.NotRunning,
+  [GeneratorStatus.NotRunning]: {
     label: 'Not running',
-    indicatorProps: { color: 'gray' },
+    indicatorProps: { color: 'inactive' },
   },
-  {
-    value: GeneratorStatus.Exited0,
+  [GeneratorStatus.Exited0]: {
     label: 'Exited (0)',
     indicatorProps: { color: 'greenInactive' },
   },
-  {
-    value: GeneratorStatus.Exited1,
+  [GeneratorStatus.Exited1]: {
     label: 'Exited (1)',
     indicatorProps: { color: 'redInactive' },
   },
-];
+};
