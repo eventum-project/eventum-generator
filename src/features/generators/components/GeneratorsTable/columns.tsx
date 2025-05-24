@@ -1,6 +1,7 @@
 'use client';
 
 import { LightIndicator } from '@/components/common/LightIndicator';
+import { RelativeDate } from '@/components/common/RelativeDate';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ColumnDef } from '@tanstack/react-table';
@@ -62,7 +63,7 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
       return (
         <div className="flex w-[100px] items-center space-x-2">
           <LightIndicator {...status.indicatorProps} />
-          <span>{status.label}</span>
+          <span className="">{status.label}</span>
         </div>
       );
     },
@@ -74,22 +75,14 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
     accessorKey: 'lastStarted',
     header: ({ column }) => <ColumnHeader column={column} title="Last started" />,
     cell: ({ row }) => {
-      return (
-        <div className="flex space-x-2">
-          <span className="max-w-[300px] truncate font-medium">{row.getValue('lastStarted')}</span>
-        </div>
-      );
+      return RelativeDate({ date: new Date(row.getValue('lastStarted')) });
     },
   },
   {
     accessorKey: 'created',
     header: ({ column }) => <ColumnHeader column={column} title="Created" />,
     cell: ({ row }) => {
-      return (
-        <div className="flex space-x-2">
-          <span className="max-w-[300px] truncate font-medium">{row.getValue('created')}</span>
-        </div>
-      );
+      return RelativeDate({ date: new Date(row.getValue('created')) });
     },
   },
   {
