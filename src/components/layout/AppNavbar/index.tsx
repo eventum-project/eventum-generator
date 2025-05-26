@@ -19,12 +19,13 @@ export function AppNavbar() {
     <header className="w-full border-b bg-background">
       <div className="mx-8 h-15 flex items-center justify-between">
         <div className="flex items-center gap-12">
-          <a
-            href={ROUTE_PATHS.OVERVIEW}
-            className="flex items-center gap-2 text-lg font-normal tracking-wide"
-          >
-            <img src="/logo.svg" alt="Logo" className="h-9 w-9" />
-            Eventum Studio
+          <a href={ROUTE_PATHS.OVERVIEW} className="flex items-center gap-3">
+            <img
+              src="/logo.svg"
+              alt="Logo"
+              className="h-7 w-7 transition drop-shadow-[0_0_3px_rgba(106,144,252,0.9)]"
+            />
+            <span className="text-lg font-normal tracking-wide">Eventum Studio</span>
           </a>
 
           <NavigationMenu>
@@ -37,7 +38,7 @@ export function AppNavbar() {
                     <NavigationMenuLink
                       href={item.link}
                       className={clsx(
-                        'text-sm font-medium px-3 py-1.5 transition-colors',
+                        'text-sm font-medium px-3 py-1.5 transition-colors duration-300',
                         isActive ? 'bg-muted' : ''
                       )}
                     >
