@@ -61,7 +61,7 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
       const status = GENERATOR_STATUSES[status_value];
 
       return (
-        <div className="flex w-[100px] items-center space-x-2">
+        <div className="flex w-[100px] items-center space-x-3">
           <LightIndicator {...status.indicatorProps} />
           <span className="">{status.label}</span>
         </div>
