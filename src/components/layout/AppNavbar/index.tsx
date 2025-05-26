@@ -18,7 +18,7 @@ export function AppNavbar() {
   return (
     <header className="w-full border-b bg-background">
       <div className="mx-8 h-15 flex items-center justify-between">
-        <div className="flex items-center gap-16">
+        <div className="flex items-center gap-12">
           <a href={ROUTE_PATHS.OVERVIEW} className="flex items-center gap-3">
             <img
               src="/logo.svg"
