@@ -25,7 +25,7 @@ export function AppNavbar() {
               alt="Logo"
               className="h-7 w-7 transition drop-shadow-[0_0_3px_rgba(106,144,252,0.9)]"
             />
-            <span className="text-lg font-normal tracking-wider">Eventum Studio</span>
+            <span className="text-lg font-normal tracking-wide">Eventum Studio</span>
           </a>
 
           <NavigationMenu>
