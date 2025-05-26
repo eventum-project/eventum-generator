@@ -6,8 +6,6 @@ import { ROUTE_PATHS } from './routePaths';
 
 const OverviewPage = lazy(() => import('@/pages/Overview'));
 const GeneratorsPage = lazy(() => import('@/pages/Generators'));
-const TagsPage = lazy(() => import('@/pages/Tags'));
-const SecretsPage = lazy(() => import('@/pages/Secrets'));
 const SettingsPage = lazy(() => import('@/pages/Settings'));
 const NotFoundPage = lazy(() => import('@/pages/NotFound'));
 
@@ -25,22 +23,6 @@ export const routes: RouteObject[] = [
     element: (
       <AppLayout>
         <GeneratorsPage />
-      </AppLayout>
-    ),
-  },
-  {
-    path: ROUTE_PATHS.TAGS,
-    element: (
-      <AppLayout>
-        <TagsPage />
-      </AppLayout>
-    ),
-  },
-  {
-    path: ROUTE_PATHS.SECRETS,
-    element: (
-      <AppLayout>
-        <SecretsPage />
       </AppLayout>
     ),
   },

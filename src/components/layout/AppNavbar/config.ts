@@ -15,14 +15,6 @@ export const NAVBAR_ITEMS: NavbarItem[] = [
     link: ROUTE_PATHS.GENERATORS,
   },
   {
-    name: 'Tags',
-    link: ROUTE_PATHS.TAGS,
-  },
-  {
-    name: 'Secrets',
-    link: ROUTE_PATHS.SECRETS,
-  },
-  {
     name: 'Settings',
     link: ROUTE_PATHS.SETTINGS,
   },
