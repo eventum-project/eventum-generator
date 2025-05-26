@@ -18,7 +18,7 @@ export function AppNavbar() {
   return (
     <header className="w-full border-b bg-background">
       <div className="mx-8 h-15 flex items-center justify-between">
-        <div className="flex items-center gap-12">
+        <div className="flex items-center gap-16">
           <a href={ROUTE_PATHS.OVERVIEW} className="flex items-center gap-3">
             <img
               src="/logo.svg"
@@ -38,7 +38,7 @@ export function AppNavbar() {
                     <NavigationMenuLink
                       href={item.link}
                       className={clsx(
-                        'text-sm font-medium px-3 py-1.5 transition-colors duration-300',
+                        'text-sm font-medium px-4 py-1.5 transition-colors duration-300',
                         isActive ? 'bg-muted' : ''
                       )}
                     >
