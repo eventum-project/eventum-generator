@@ -3,6 +3,7 @@ import { LightIndicatorProps } from '@/components/common/LightIndicator';
 export enum GeneratorStatus {
   Starting = 'starting',
   Running = 'running',
+  Stopping = 'stopping',
   NotRunning = 'not running',
   Exited0 = 'exited 0',
   Exited1 = 'exited 1',
@@ -21,6 +22,10 @@ export const GENERATOR_STATUSES: Record<GeneratorStatus, GeneratorStatusInfo> = 
   [GeneratorStatus.Running]: {
     label: 'Running',
     indicatorProps: { color: 'green' },
+  },
+  [GeneratorStatus.Stopping]: {
+    label: 'Stopping',
+    indicatorProps: { color: 'orange' },
   },
   [GeneratorStatus.NotRunning]: {
     label: 'Not running',
