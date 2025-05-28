@@ -13,6 +13,7 @@ export const generatorInfoSchema = z.object({
   status: z.nativeEnum(GeneratorStatus),
   lastStarted: z.string().datetime({ offset: true }),
   created: z.string().datetime({ offset: true }),
+  startupEnabled: z.boolean(),
 });
 
 export type GeneratorInfo = z.infer<typeof generatorInfoSchema>;
