@@ -11,7 +11,7 @@ export const generatorInfoSchema = z.object({
   id: z.string(),
   tags: z.array(tagSchema),
   status: z.nativeEnum(GeneratorStatus),
-  lastStarted: z.string().datetime({ offset: true }),
+  lastStarted: z.string().datetime({ offset: true }).optional(),
   created: z.string().datetime({ offset: true }),
   startupEnabled: z.boolean(),
 });

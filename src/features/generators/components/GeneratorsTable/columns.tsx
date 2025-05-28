@@ -81,7 +81,13 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
     accessorKey: 'lastStarted',
     header: ({ column }) => <ColumnHeader column={column} title="Last started" />,
     cell: ({ row }) => {
-      return RelativeDate({ date: new Date(row.getValue('lastStarted')) });
+      const value: string | undefined = row.getValue('lastStarted');
+      console.log(value);
+      if (value !== undefined) {
+        return RelativeDate({ date: new Date(value) });
+      } else {
+        return <span>-</span>;
+      }
     },
   },
   {
