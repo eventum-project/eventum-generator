@@ -3,8 +3,11 @@
 import { LightIndicator } from '@/components/common/LightIndicator';
 import { RelativeDate } from '@/components/common/RelativeDate';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ColumnDef } from '@tanstack/react-table';
+import { Loader2, Play, Repeat, Square } from 'lucide-react';
 
 import { ColumnHeader } from './ColumnHeader';
 import { RowActions } from './RowActions';
@@ -21,7 +24,7 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
-        className="translate-y-[2px]"
+        className="translate-y-[2px] cursor-pointer"
       />
     ),
     cell: ({ row }) => (
@@ -29,11 +32,14 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
-        className="translate-y-[2px]"
+        className="translate-y-[2px] cursor-pointer"
       />
     ),
     enableSorting: false,
     enableHiding: false,
+    meta: {
+      className: 'pl-8',
+    },
   },
   {
     accessorKey: 'id',
@@ -87,6 +93,75 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <RowActions row={row} />,
+    header: ({ column }) => (
+      <div className="flex justify-center">
+        <ColumnHeader column={column} title="Actions" />
+      </div>
+    ),
+    cell: ({ row }) => {
+      let action: JSX.Element;
+      if (row.original.status === 'running') {
+        action = (
+          <Button variant="ghost" size="icon" aria-label="Stop" className="cursor-pointer">
+            <Square />
+          </Button>
+        );
+      } else if (row.original.status === 'starting') {
+        action = (
+          <Button disabled variant="ghost" size="icon" aria-label="Loading">
+            <Loader2 className="animate-spin" />
+          </Button>
+        );
+      } else {
+        action = (
+          <Button variant="ghost" size="icon" aria-label="Start" className="cursor-pointer">
+            <Play />
+          </Button>
+        );
+      }
+
+      return (
+        <div className="flex justify-end items-center gap-4">
+          {action}
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                {row.original.startupEnabled ? (
+                  <>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      aria-label="Start"
+                      className="cursor-pointer"
+                    >
+                      <Repeat />
+                    </Button>
+                    <TooltipContent>Remove from startup</TooltipContent>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Start"
+                      className="cursor-pointer"
+                    >
+                      <Repeat className="text-muted-foreground" />
+                    </Button>
+                    <TooltipContent>Add to startup</TooltipContent>
+                  </>
+                )}
+              </TooltipTrigger>
+            </Tooltip>
+          </TooltipProvider>
+
+          <RowActions row={row} />
+        </div>
+      );
+    },
+    meta: {
+      className: 'pr-8',
+    },
   },
 ];
