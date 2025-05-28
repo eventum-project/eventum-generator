@@ -100,13 +100,16 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
     ),
     cell: ({ row }) => {
       let action: JSX.Element;
-      if (row.original.status === 'running') {
+      if (row.original.status === GeneratorStatus.Running) {
         action = (
           <Button variant="ghost" size="icon" aria-label="Stop" className="cursor-pointer">
             <Square />
           </Button>
         );
-      } else if (row.original.status === 'starting') {
+      } else if (
+        row.original.status === GeneratorStatus.Starting ||
+        row.original.status === GeneratorStatus.Stopping
+      ) {
         action = (
           <Button disabled variant="ghost" size="icon" aria-label="Loading">
             <Loader2 className="animate-spin" />
