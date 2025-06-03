@@ -1,14 +1,38 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ],
-  "compilerOptions": {
+  "compilerOptions": {    
+    /* Type Checking */
     "strict": true,
-    "baseUrl": ".",
+    "exactOptionalPropertyTypes":true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    
+    /* Modules */
+    "allowImportingTsExtensions": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noUncheckedSideEffectImports": true,
     "paths": {
       "@/*": ["./src/*"]
-    }
-  }
+    },
+    "noEmit": true,
+
+    /* Interop Constraints */
+    "isolatedModules": true,
+
+    /* Language and Environment */
+    "jsx": "react-jsx",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "moduleDetection": "force",
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+
+    /* Completeness */
+    "skipLibCheck": true,
+  },
+  "include": ["src"]
 }
