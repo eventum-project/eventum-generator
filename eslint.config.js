@@ -29,6 +29,7 @@ export default tseslint.config({
   ],
   rules: {
     'unicorn/filename-case': 'off',
+    'unicorn/prevent-abbreviations': 'off',
   },
   languageOptions: {
     ecmaVersion: 2020,
