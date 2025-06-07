@@ -27,6 +27,9 @@ export default tseslint.config({
     eslintPluginUnicorn.configs.recommended,
     sonarjs.configs.recommended,
   ],
+  rules: {
+    'unicorn/filename-case': 'off',
+  },
   languageOptions: {
     ecmaVersion: 2020,
     globals: globals.browser,
