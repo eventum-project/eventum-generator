@@ -30,6 +30,7 @@ export default tseslint.config({
   rules: {
     'unicorn/filename-case': 'off',
     'unicorn/prevent-abbreviations': 'off',
+    'unicorn/no-null': 'off',
   },
   languageOptions: {
     ecmaVersion: 2020,
@@ -46,7 +47,9 @@ export default tseslint.config({
   settings: {
     'import/resolver': {
       typescript: true,
-      node: true,
+      node: {
+        extensions: ['.ts', '.tsx'],
+      },
     },
     react: {
       version: 'detect',
