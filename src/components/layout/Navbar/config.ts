@@ -1,9 +1,9 @@
 import { ROUTE_PATHS } from '@/routes/routePaths';
 
-type NavbarItem = {
+interface NavbarItem {
   name: string;
   link: string;
-};
+}
 
 export const NAVBAR_ITEMS: NavbarItem[] = [
   {

@@ -1,3 +1,7 @@
+import clsx from 'clsx';
+import { useLocation } from 'react-router-dom';
+
+import { NAVBAR_ITEMS } from './config';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import {
   NavigationMenu,
@@ -6,10 +10,6 @@ import {
   NavigationMenuList,
 } from '@/components/ui/navigation-menu';
 import { ROUTE_PATHS } from '@/routes/routePaths';
-import clsx from 'clsx';
-import { useLocation } from 'react-router-dom';
-
-import { NAVBAR_ITEMS } from './config';
 
 export function AppNavbar() {
   const location = useLocation();
@@ -25,7 +25,9 @@ export function AppNavbar() {
               alt="Logo"
               className="h-7 w-7 transition drop-shadow-[0_0_3px_rgba(106,144,252,0.9)]"
             />
-            <span className="text-base font-normal tracking-wide">Eventum Studio</span>
+            <span className="text-base font-normal tracking-wide">
+              Eventum Studio
+            </span>
           </a>
 
           <NavigationMenu>

@@ -1,8 +1,8 @@
-import AppLayout from '@/components/layout/AppLayout';
 import { lazy } from 'react';
 import { RouteObject } from 'react-router-dom';
 
 import { ROUTE_PATHS } from './routePaths';
+import AppLayout from '@/Layout';
 
 const OverviewPage = lazy(() => import('@/pages/Overview'));
 const GeneratorsPage = lazy(() => import('@/pages/Generators'));

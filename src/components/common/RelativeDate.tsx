@@ -1,11 +1,17 @@
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatDistanceToNow } from 'date-fns';
 
-export function RelativeDate({ date }: { date: Date }) {
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
+export function RelativeDate({ date }: Readonly<{ date: Date }>) {
   const relativeDatetimeString = formatDistanceToNow(date, { addSuffix: true });
 
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={700}>
       <Tooltip>
         <TooltipTrigger>
           <span>{relativeDatetimeString}</span>
