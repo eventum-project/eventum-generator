@@ -2,7 +2,6 @@
   "compilerOptions": {    
     /* Type Checking */
     "strict": true,
-    "exactOptionalPropertyTypes":true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
