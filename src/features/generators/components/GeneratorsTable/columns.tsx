@@ -1,11 +1,5 @@
 'use client';
 
-import { LightIndicator } from '@/components/common/LightIndicator';
-import { RelativeDate } from '@/components/common/RelativeDate';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ColumnDef } from '@tanstack/react-table';
 import { Loader2, Play, Repeat, Square } from 'lucide-react';
 
@@ -13,6 +7,17 @@ import { ColumnHeader } from './ColumnHeader';
 import { RowActions } from './RowActions';
 import { GeneratorInfo } from './schema';
 import { GENERATOR_STATUSES, GeneratorStatus } from './statuses';
+import { LightIndicator } from '@/components/common/LightIndicator';
+import { RelativeDate } from '@/components/common/RelativeDate';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
   {
@@ -20,11 +25,12 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
     header: ({ table }) => (
       <Checkbox
         checked={
-          table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && 'indeterminate')
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
-        className="translate-y-[2px] cursor-pointer"
+        className="translate-y-[2px]"
       />
     ),
     cell: ({ row }) => (
@@ -32,7 +38,7 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
-        className="translate-y-[2px] cursor-pointer"
+        className="translate-y-[2px]"
       />
     ),
     enableSorting: false,
@@ -47,7 +53,9 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
     cell: ({ row }) => {
       return (
         <div className="flex flex-col space-y-1">
-          <span className="max-w-[500px] truncate font-medium">{row.getValue('id')}</span>
+          <span className="max-w-[500px] truncate font-medium">
+            {row.getValue('id')}
+          </span>
           <div className="flex flex-wrap gap-1">
             {row.original.tags.map((tag) => (
               <Badge key={tag.name} color={tag.color} asChild>
@@ -67,27 +75,29 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
       const status = GENERATOR_STATUSES[status_value];
 
       return (
-        <div className="flex w-[100px] items-center space-x-3">
+        <div className="flex items-center gap-2">
           <LightIndicator {...status.indicatorProps} />
-          <span className="">{status.label}</span>
+          <span>{status.label}</span>
         </div>
       );
     },
-    filterFn: (row, id, value) => {
+    filterFn: (row, id, value: string[]) => {
       return value.includes(row.getValue(id));
     },
   },
   {
     accessorKey: 'lastStarted',
-    header: ({ column }) => <ColumnHeader column={column} title="Last started" />,
+    header: ({ column }) => (
+      <ColumnHeader column={column} title="Last started" />
+    ),
     cell: ({ row }) => {
       const value: string | undefined = row.getValue('lastStarted');
       console.log(value);
-      if (value !== undefined) {
-        return RelativeDate({ date: new Date(value) });
-      } else {
-        return <span>-</span>;
-      }
+      return value === undefined ? (
+        <span>-</span>
+      ) : (
+        RelativeDate({ date: new Date(value) })
+      );
     },
   },
   {
@@ -108,7 +118,7 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
       let action: JSX.Element;
       if (row.original.status === GeneratorStatus.Running) {
         action = (
-          <Button variant="ghost" size="icon" aria-label="Stop" className="cursor-pointer">
+          <Button variant="ghost" size="icon" aria-label="Stop">
             <Square />
           </Button>
         );
@@ -123,7 +133,7 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
         );
       } else {
         action = (
-          <Button variant="ghost" size="icon" aria-label="Start" className="cursor-pointer">
+          <Button variant="ghost" size="icon" aria-label="Start">
             <Play />
           </Button>
         );
@@ -138,25 +148,15 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
               <TooltipTrigger>
                 {row.original.startupEnabled ? (
                   <>
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      aria-label="Start"
-                      className="cursor-pointer"
-                    >
+                    <Button variant="secondary" size="icon" aria-label="Start">
                       <Repeat />
                     </Button>
                     <TooltipContent>Remove from startup</TooltipContent>
                   </>
                 ) : (
                   <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Start"
-                      className="cursor-pointer"
-                    >
-                      <Repeat className="text-muted-foreground" />
+                    <Button variant="ghost" size="icon" aria-label="Start">
+                      <Repeat />
                     </Button>
                     <TooltipContent>Add to startup</TooltipContent>
                   </>
