@@ -1,7 +1,8 @@
-import { cn } from '@/lib/utils';
 import { Slot } from '@radix-ui/react-slot';
 import * as React from 'react';
 import tinycolor from 'tinycolor2';
+
+import { cn } from '@/lib/utils';
 
 function getContrastTextColor(bgColor: string) {
   const black = '#000';
@@ -15,7 +16,7 @@ function getContrastTextColor(bgColor: string) {
   const perceptualThreshold = 0.5;
 
   // If both contrast ratios are decent
-  if (blackContrast >= 4.5 && whiteContrast >= 3.0) {
+  if (blackContrast >= 4.5 && whiteContrast >= 3) {
     return luminance < perceptualThreshold ? white : black;
   }
 
