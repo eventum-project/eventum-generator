@@ -9,9 +9,9 @@ import { GeneratorInfo } from './schema';
 import { GENERATOR_STATUSES, GeneratorStatus } from './statuses';
 import { LightIndicator } from '@/components/common/LightIndicator';
 import { RelativeDate } from '@/components/common/RelativeDate';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ColoredBadge } from '@/components/ui/colored-badge';
 import {
   Tooltip,
   TooltipContent,
@@ -58,9 +58,9 @@ export const COLUMNS: ColumnDef<GeneratorInfo>[] = [
           </span>
           <div className="flex flex-wrap gap-1">
             {row.original.tags.map((tag) => (
-              <Badge key={tag.name} color={tag.color} asChild>
+              <ColoredBadge key={tag.name} color={tag.color} asChild>
                 <a href="#">{tag.name}</a>
-              </Badge>
+              </ColoredBadge>
             ))}
           </div>
         </div>
