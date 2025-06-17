@@ -1,51 +1,46 @@
 import { Slot } from '@radix-ui/react-slot';
+import { type VariantProps, cva } from 'class-variance-authority';
 import * as React from 'react';
-import tinycolor from 'tinycolor2';
 
 import { cn } from '@/lib/utils';
 
-function getContrastTextColor(bgColor: string) {
-  const black = '#000';
-  const white = '#fff';
-  const bg = tinycolor(bgColor);
-
-  const blackContrast = tinycolor.readability(bg, black);
-  const whiteContrast = tinycolor.readability(bg, white);
-
-  const luminance = bg.getLuminance();
-  const perceptualThreshold = 0.5;
-
-  // If both contrast ratios are decent
-  if (blackContrast >= 4.5 && whiteContrast >= 3) {
-    return luminance < perceptualThreshold ? white : black;
+const badgeVariants = cva(
+  'inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden',
+  {
+    variants: {
+      variant: {
+        default:
+          'border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90',
+        secondary:
+          'border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90',
+        destructive:
+          'border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
+        outline:
+          'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
   }
-
-  // Fallback: pick higher contrast
-  return blackContrast > whiteContrast ? black : white;
-}
+);
 
 function Badge({
   className,
-  color,
+  variant,
   asChild = false,
   ...props
-}: React.ComponentProps<'span'> & { asChild?: boolean; color: string }) {
+}: React.ComponentProps<'span'> &
+  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
   const Comp = asChild ? Slot : 'span';
-
-  const textColor = getContrastTextColor(color);
 
   return (
     <Comp
       data-slot="badge"
-      className={cn(
-        'inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden',
-        'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
-        className
-      )}
+      className={cn(badgeVariants({ variant }), className)}
       {...props}
-      style={{ backgroundColor: color, color: textColor }}
     />
   );
 }
 
-export { Badge };
+export { Badge, badgeVariants };
