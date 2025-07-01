@@ -31,7 +31,6 @@ export default tseslint.config({
     'unicorn/filename-case': 'off',
     'unicorn/prevent-abbreviations': 'off',
     'unicorn/no-null': 'off',
-    'react-refresh/only-export-components': 'off',
   },
   languageOptions: {
     ecmaVersion: 2020,
