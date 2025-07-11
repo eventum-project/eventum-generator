@@ -3,6 +3,7 @@ import { RouteObject } from 'react-router-dom';
 
 import { ROUTE_PATHS } from './routePaths';
 import AppLayout from '@/components/layout/AppLayout';
+import BlankLayout from '@/components/layout/BlankLayout';
 
 const OverviewPage = lazy(() => import('@/pages/Overview'));
 const GeneratorsPage = lazy(() => import('@/pages/Generators'));
@@ -36,6 +37,10 @@ export const routes: RouteObject[] = [
   },
   {
     path: '*',
-    element: <NotFoundPage />,
+    element: (
+      <BlankLayout>
+        <NotFoundPage />
+      </BlankLayout>
+    ),
   },
 ];
