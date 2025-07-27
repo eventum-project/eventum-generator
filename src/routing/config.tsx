@@ -6,13 +6,15 @@ import AppLayout from '@/components/layout/AppLayout';
 import BlankLayout from '@/components/layout/BlankLayout';
 
 const ConnectPage = lazy(
-  () => import('@/pages/Connect') as Promise<{ default: React.ComponentType }>
+  () =>
+    import('@/pages/ConnectPage') as Promise<{ default: React.ComponentType }>
 );
 const MainPage = lazy(
-  () => import('@/pages/Main') as Promise<{ default: React.ComponentType }>
+  () => import('@/pages/MainPage') as Promise<{ default: React.ComponentType }>
 );
 const NotFoundPage = lazy(
-  () => import('@/pages/NotFound') as Promise<{ default: React.ComponentType }>
+  () =>
+    import('@/pages/NotFoundPage') as Promise<{ default: React.ComponentType }>
 );
 
 export const routes: RouteObject[] = [
