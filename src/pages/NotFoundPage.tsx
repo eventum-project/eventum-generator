@@ -1,7 +1,8 @@
-import { Box, Button, Center, Container, Title } from '@mantine/core';
+import { Button, Center, Container, Title } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 
 import NotFoundSvg from '@/assets/notFound.svg?react';
+import PageIllustration from '@/components/PageIllustration';
 
 export default function NotFound() {
   const navigate = useNavigate();
@@ -14,10 +15,11 @@ export default function NotFound() {
     <Center
       h="100vh"
       w="100vw"
+      flex="column"
       style={{ flexDirection: 'column', textAlign: 'center' }}
     >
       <Container>
-        <Box width="30vw" mb="xl" component={NotFoundSvg} />
+        <PageIllustration SvgComponent={NotFoundSvg} />
         <Title order={2} mb="md">
           Page Not Found
         </Title>

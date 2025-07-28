@@ -1,6 +1,7 @@
-import { Box, Button, Center, Container, Text, Title } from '@mantine/core';
+import { Button, Center, Container, Text, Title } from '@mantine/core';
 
 import ErrorSVG from '@/assets/error.svg?react';
+import PageIllustration from '@/components/PageIllustration';
 
 export default function ErrorPage({
   error,
@@ -16,7 +17,7 @@ export default function ErrorPage({
       style={{ flexDirection: 'column', textAlign: 'center' }}
     >
       <Container>
-        <Box component={ErrorSVG} w="22vw" />
+        <PageIllustration SvgComponent={ErrorSVG} />
 
         <Title order={2} mb="sm">
           Sorry, something went wrong
