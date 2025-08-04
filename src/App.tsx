@@ -1,11 +1,9 @@
 import {
   MantineColorsTuple,
   MantineProvider,
-  colorsTuple,
   createTheme,
 } from '@mantine/core';
 import '@mantine/core/styles.css';
-import { MantineEmotionProvider } from '@mantine/emotion';
 import { BrowserRouter } from 'react-router-dom';
 
 import AppRouter from '@/routing';
@@ -43,12 +41,10 @@ const theme = createTheme({
 
 export default function App() {
   return (
-    <MantineEmotionProvider>
-      <MantineProvider theme={theme} defaultColorScheme="dark">
-        <BrowserRouter>
-          <AppRouter />
-        </BrowserRouter>
-      </MantineProvider>
-    </MantineEmotionProvider>
+    <MantineProvider theme={theme} defaultColorScheme="dark">
+      <BrowserRouter>
+        <AppRouter />
+      </BrowserRouter>
+    </MantineProvider>
   );
 }
