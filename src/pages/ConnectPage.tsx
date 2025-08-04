@@ -29,7 +29,7 @@ export default function ConnectPage() {
         validator.isIP(value) ||
         validator.isFQDN(value, { require_tld: false, allow_underscores: true })
           ? null
-          : 'Invalid host or IP address',
+          : 'Invalid hostname or IP address',
       port: isNotEmpty('Port is required'),
       username: isNotEmpty('Username is required'),
       password: isNotEmpty('Password is required'),
