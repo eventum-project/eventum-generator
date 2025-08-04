@@ -31,6 +31,7 @@ export default tseslint.config({
     'unicorn/filename-case': 'off',
     'unicorn/prevent-abbreviations': 'off',
     'unicorn/no-null': 'off',
+    'sonarjs/void-use': 'off',
   },
   languageOptions: {
     ecmaVersion: 2020,
