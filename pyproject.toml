@@ -92,6 +92,10 @@ dev = [
 eventum = "eventum.cli.commands.eventum:cli"
 eventum-keyring = "eventum.cli.commands.eventum_keyring:cli"
 
+[tool.mypy]
+exclude = [
+    "^test_.*\\.py$",
+]
 
 [tool.pytest.ini_options]
 console_output_style = "count"
@@ -100,9 +104,6 @@ addopts = [
     "--cov=eventum",
     "--cov-report=html"
 ]
-
-[tool.pytest.plugins]
-pytest-html = { report_name = "pytest_report" }
 
 [tool.ruff]
 line-length = 79
