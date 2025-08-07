@@ -216,6 +216,8 @@ def init_plugins(
         If any error occurs during initializing.
 
     """
+    plugins_base_path = params.path.parent
+
     logger.debug('Initializing input plugins')
     input_plugins: list[InputPlugin] = []
     for i, conf in enumerate(input, start=1):
@@ -234,6 +236,7 @@ def init_plugins(
                 params={
                     'id': plugin_id,
                     'timezone': timezone(params.timezone),
+                    'base_path': plugins_base_path,
                 },
             ),
         )
@@ -250,7 +253,7 @@ def init_plugins(
         name=plugin_name,
         type='event',
         config=plugin_conf,
-        params={'id': plugin_id},
+        params={'id': plugin_id, 'base_path': plugins_base_path},
     )
 
     logger.debug('Initializing output plugins')
@@ -268,7 +271,7 @@ def init_plugins(
                 name=plugin_name,
                 type='output',
                 config=plugin_conf,
-                params={'id': plugin_id},
+                params={'id': plugin_id, 'base_path': plugins_base_path},
             ),
         )
 
