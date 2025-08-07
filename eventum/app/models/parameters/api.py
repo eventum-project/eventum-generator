@@ -55,9 +55,18 @@ class SSLParameters(BaseModel, extra='forbid', frozen=True):
 
         if self.cert is None or self.cert_key is None:
             msg = 'Server certificate and key must be provided together'
-            raise ValueError(
-                msg,
+            raise ValueError(msg)
+
+        return self
+
+    @model_validator(mode='after')
+    def validate_certificate_and_key(self) -> Self:  # noqa: D102
+        if self.enabled and (self.cert is None or self.cert_key is None):
+            msg = (
+                'Server certificate and key must be provided '
+                'when SSL is enabled'
             )
+            raise ValueError(msg)
 
         return self
 
