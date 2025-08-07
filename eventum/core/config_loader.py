@@ -349,6 +349,6 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
             msg,
             context={
                 'reason': prettify_validation_errors(e.errors()),
-                'file_path': path,
+                'file_path': str(path),
             },
         ) from None
