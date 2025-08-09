@@ -43,7 +43,7 @@ dependencies = [
     "croniter>=6.0.0",
     "dateparser>=1.2.1",
     "faker>=37.0.0",
-    "fastapi>=0.115.11",
+    "fastapi[standard]>=0.115.11",
     "flatten-dict>=0.4.2",
     "griffe>=1.6.0",
     "httpx>=0.28.1",
@@ -117,12 +117,18 @@ ignore = [
     "ANN401",   # any-type
     "D105",     # undocumented-magic-method
     "D205",     # missing-blank-line-after-summary
+    "FIX002",   # line-contains-todo
     "S311",     # suspicious-non-cryptographic-random-usage
     "S701",     # jinja2-autoescape-false
     "TRY400",   # error-instead-of-exception
 ]
 flake8-quotes = {inline-quotes = "single", multiline-quotes = "double"}
 exclude = ["**/tests/**"]
+
+[tool.ruff.per-file-ignores]
+"eventum/api/routes/*" = [
+    "D103"      # undocumented-public-function
+]
 
 [tool.ruff.format]
 quote-style = "single"
