@@ -55,7 +55,7 @@ class GeneratorStatus(BaseModel, frozen=True, extra='forbid'):
         404: {'description': 'Generator with provided id is not found'},
     },
 )
-def generator_status(
+def get_generator_status(
     id: str,
     generator_manager: GeneratorManagerDep,
 ) -> GeneratorStatus:
