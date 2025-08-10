@@ -1,1 +1,1 @@
-"""Output plugin definitions package."""
+"""Output plugins definition package."""

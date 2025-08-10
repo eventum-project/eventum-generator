@@ -1,4 +1,4 @@
-"""Field definitions used in input plugin configs."""
+"""Fields definition used in input plugin configs."""
 
 from datetime import datetime, time
 from enum import StrEnum
