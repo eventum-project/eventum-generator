@@ -1,18 +1,36 @@
 """API application definition."""
 
+import structlog
 from fastapi import FastAPI
+from sqlalchemy.exc import SQLAlchemyError
 
+from eventum.api.database import get_engine
+from eventum.api.database import init as init_db
 from eventum.api.routes.generators import router as generators_router
 from eventum.app.manager import GeneratorManager
+from eventum.app.models.settings import Settings
+from eventum.exceptions import ContextualError
+
+logger = structlog.stdlib.get_logger()
 
 
-def build_api_app(generator_manager: GeneratorManager) -> FastAPI:
+class APIBuildingError(ContextualError):
+    """Error during building API app."""
+
+
+def build_api_app(
+    generator_manager: GeneratorManager,
+    settings: Settings,
+) -> FastAPI:
     """Build FastAPI application.
 
     Parameters
     ----------
     generator_manager : GeneratorManager
         Manager of generators.
+
+    settings : Settings
+        Application settings.
 
     Returns
     -------
@@ -39,8 +57,23 @@ def build_api_app(generator_manager: GeneratorManager) -> FastAPI:
         },
     )
 
-    app.state.generator_manager = generator_manager
+    logger.info('Initializing database')
+    try:
+        db_engine = get_engine(settings)
+        init_db(db_engine)
+    except SQLAlchemyError as e:
+        msg = 'Failed to initialize database'
+        raise APIBuildingError(
+            msg,
+            context={'reason': str(e)},
+        ) from e
 
+    logger.debug('Injecting API runtime dependencies')
+    app.state.generator_manager = generator_manager
+    app.state.settings = settings
+    app.state.db_engine = db_engine
+
+    logger.debug('Connecting routers')
     app.include_router(generators_router)
 
     return app
