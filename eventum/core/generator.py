@@ -189,6 +189,12 @@ class Generator:
             self._logger.debug('Joining executing thread')
             self._thread.join()  # type: ignore[union-attr]
 
+            # Let GC release resources of generator runtime
+            self._plugins = None
+            self._executor = None
+            self._config = None
+            self._thread = None
+
     def join(self) -> None:
         """Wait until generator terminates."""
         if self._thread is not None:
@@ -237,6 +243,11 @@ class Generator:
             raise RuntimeError(msg)
 
         return self._config
+
+    @property
+    def params(self) -> GeneratorParameters:
+        """Generator parameters."""
+        return self._params
 
     @property
     def is_initializing(self) -> bool:
