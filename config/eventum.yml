@@ -104,6 +104,10 @@ path.logs: /app/logs/eventum/
 # Required, there is no default value
 path.generators: /app/eventum/config/generators.yml
 
+# Absolute path to directory with generators configuration files
+# Required, there is no default value
+path.generators_dir: /app/eventum/config/conf.d/
+
 # Absolute path to database
 # Required, there is no default value
 path.db: /app/eventum/config/db.sqlite

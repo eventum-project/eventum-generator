@@ -16,6 +16,9 @@ class PathParameters(BaseModel, extra='forbid', frozen=True):
     generators : Path
         Absolute path to file with generators definition.
 
+    generators_dir : Path
+        Absolute path to directory with generators configuration files.
+
     db : Path
         Absolute path to database.
 
@@ -23,9 +26,10 @@ class PathParameters(BaseModel, extra='forbid', frozen=True):
 
     logs: Path
     generators: Path
+    generators_dir: Path
     db: Path
 
-    @field_validator('logs', 'generators', 'db')
+    @field_validator('logs', 'generators', 'generators_dir', 'db')
     @classmethod
     def validate_paths(cls, v: Path) -> Path:  # noqa: D102
         if v.is_absolute():
