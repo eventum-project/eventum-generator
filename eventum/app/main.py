@@ -11,6 +11,7 @@ from eventum.app.manager import GeneratorManager, ManagingError
 from eventum.app.models.settings import Settings
 from eventum.core.parameters import GeneratorParameters
 from eventum.exceptions import ContextualError
+from eventum.security.manage import SECURITY_SETTINGS
 from eventum.utils.validation_prettier import prettify_validation_errors
 
 logger = structlog.stdlib.get_logger()
@@ -37,6 +38,15 @@ class App:
             parameters=settings.model_dump(),
         )
         self._settings = settings
+
+        logger.debug(
+            'Setting up security parameters',
+            parameters=settings.model_dump(),
+        )
+        SECURITY_SETTINGS['cryptfile_location'] = (
+            settings.path.keyring_cryptfile
+        )
+
         self._manager = GeneratorManager()
 
     def start(self) -> None:
@@ -107,9 +117,21 @@ class App:
             generator_params = base_params | generator_params
             generator_params = unflatten(generator_params, splitter='dot')
 
-            generators_parameters.append(
-                GeneratorParameters.model_validate(generator_params),
+            validated_generator_params = GeneratorParameters.model_validate(
+                generator_params,
             )
+            generators_parameters.append(validated_generator_params)
+
+            if not validated_generator_params.path.is_relative_to(
+                self._settings.path.generators_dir,
+            ):
+                logger.warning(
+                    'Generator is outside the configured generators '
+                    'directory. Consider moving it into specified directory '
+                    ' so it can be observed by the API.',
+                    generator_id=validated_generator_params.id,
+                    path=str(self._settings.path.generators_dir),
+                )
 
         return generators_parameters
 
@@ -229,8 +251,6 @@ class App:
 
     def _start_api(self) -> None:
         """Start application API."""
-        # TODO: implement
 
     def _stop_api(self) -> None:
         """Stop application API."""
-        # TODO: implement

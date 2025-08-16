@@ -19,9 +19,6 @@ class PathParameters(BaseModel, extra='forbid', frozen=True):
     generators_dir : Path
         Absolute path to directory with generators configuration files.
 
-    db : Path
-        Absolute path to database.
-
     keyring_cryptfile : Path
         Absolute path to keyring encrypted file with stored secrets
 
@@ -30,14 +27,12 @@ class PathParameters(BaseModel, extra='forbid', frozen=True):
     logs: Path
     generators: Path
     generators_dir: Path
-    db: Path
     keyring_cryptfile: Path
 
     @field_validator(
         'logs',
         'generators',
         'generators_dir',
-        'db',
         'keyring_cryptfile',
     )
     @classmethod

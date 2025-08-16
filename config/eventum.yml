@@ -108,10 +108,6 @@ path.generators: /app/eventum/config/generators.yml
 # Required, there is no default value
 path.generators_dir: /app/eventum/config/conf.d/
 
-# Absolute path to database
-# Required, there is no default value
-path.db: /app/eventum/config/db.sqlite
-
 # Absolute path to keyring encrypted file with stored secrets
 # Required, there is no default value
 path.keyring_cryptfile: /app/eventum/config/cryptfile.cfg
