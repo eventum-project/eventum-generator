@@ -1,12 +1,15 @@
 """Main application definition."""
 
 from collections.abc import Iterable
+from threading import Thread
 
 import structlog
+import uvicorn
 import yaml
 from flatten_dict import flatten, unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError, validate_call
 
+from eventum.api.main import build_api_app
 from eventum.app.manager import GeneratorManager, ManagingError
 from eventum.app.models.settings import Settings
 from eventum.core.parameters import GeneratorParameters
@@ -49,6 +52,9 @@ class App:
 
         self._manager = GeneratorManager()
 
+        self._server: uvicorn.Server | None = None
+        self._server_thread = Thread(target=self._run_api_server, name='api')
+
     def start(self) -> None:
         """Start the app.
 
@@ -65,7 +71,11 @@ class App:
         self._start_generators(generators_params=gen_list)
 
         if self._settings.api.enabled:
-            logger.info('Starting API')
+            logger.info(
+                'Starting API',
+                port=self._settings.api.port,
+                host=self._settings.api.host,
+            )
             self._start_api()
 
     def stop(self) -> None:
@@ -128,7 +138,7 @@ class App:
                 logger.warning(
                     'Generator is outside the configured generators '
                     'directory. Consider moving it into specified directory '
-                    ' so it can be observed by the API.',
+                    'so it can be observed by the API.',
                     generator_id=validated_generator_params.id,
                     path=str(self._settings.path.generators_dir),
                 )
@@ -249,8 +259,51 @@ class App:
         )
         self._manager.bulk_stop(generator_ids)
 
+    def _run_api_server(self) -> None:
+        """Run API server with handling possible errors."""
+        if self._server is None:
+            return
+
+        try:
+            self._server.run()
+        except Exception as e:
+            logger.exception(
+                'Unexpected error occurred during API server execution',
+                reason=str(e),
+            )
+
     def _start_api(self) -> None:
         """Start application API."""
+        api_app = build_api_app(
+            generator_manager=self._manager,
+            settings=self._settings,
+        )
+
+        # TODO(rnv812): fix type of ssl_ca_certs param: https://github.com/encode/uvicorn/pull/2676
+        self._server = uvicorn.Server(
+            uvicorn.Config(
+                api_app,
+                host=self._settings.api.host,
+                port=self._settings.api.port,
+                access_log=True,
+                log_config=None,
+                ssl_ca_certs=(
+                    None
+                    if self._settings.api.ssl.ca_cert is None
+                    else str(self._settings.api.ssl.ca_cert)
+                ),
+                ssl_certfile=self._settings.api.ssl.cert,
+                ssl_keyfile=self._settings.api.ssl.cert_key,
+            ),
+        )
+        self._server_thread.start()
 
     def _stop_api(self) -> None:
         """Stop application API."""
+        if self._server is None:
+            return
+
+        self._server.should_exit = True
+
+        if self._server_thread.is_alive():
+            self._server_thread.join()
