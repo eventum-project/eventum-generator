@@ -163,6 +163,7 @@ class Generator:
             self._logger.debug('Creating and starting thread')
             self._thread = Thread(
                 target=propagate_logger_context()(self._start),
+                name=f'generator:{self._params.id}',
             )
             self._thread.start()
 

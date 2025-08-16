@@ -75,7 +75,9 @@ class GeneratorManager:
             ID of generators to remove.
 
         """
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(
+            thread_name_prefix='generators-stopping:',
+        ) as executor:
             for id in generator_ids:
                 try:
                     generator = self._generators[id]
@@ -143,7 +145,9 @@ class GeneratorManager:
             else:
                 non_running_generators.append(id)
 
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(
+            thread_name_prefix='generators-starting:',
+        ) as executor:
             for id in generator_ids:
                 try:
                     generator = self._generators[id]
@@ -186,7 +190,9 @@ class GeneratorManager:
             ID of generators to stop.
 
         """
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(
+            thread_name_prefix='generators-stopping:',
+        ) as executor:
             for id in generator_ids:
                 if id in self._generators:
                     generator = self._generators[id]
@@ -203,7 +209,9 @@ class GeneratorManager:
             ID of generators to join.
 
         """
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(
+            thread_name_prefix='generators-joining:',
+        ) as executor:
             for id in generator_ids:
                 if id in self._generators:
                     generator = self._generators[id]

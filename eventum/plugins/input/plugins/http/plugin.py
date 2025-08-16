@@ -171,7 +171,10 @@ class HttpInputPlugin(
             port=self._config.port,
         )
 
-        with ThreadPoolExecutor(max_workers=1) as executor:
+        with ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix=f'http-input-plugin-{self.id}-server:',
+        ) as executor:
             future = executor.submit(
                 propagate_logger_context()(self._server.run),
             )
