@@ -1,6 +1,7 @@
 """Commands for managing keyring."""
 
 import sys
+from pathlib import Path
 from typing import Any
 
 import click
@@ -19,10 +20,20 @@ def cli() -> Any:
 
 @cli.command()
 @click.argument('name')
-def get(name: str) -> None:
+@click.option(
+    '--cryptfile',
+    default=None,
+    type=click.Path(exists=True, resolve_path=True),
+    help='Path to keyring cryptfile',
+)
+def get(name: str, cryptfile: str | None) -> None:
     """Get secret from keyring."""
     try:
-        secret = get_secret(name=name)
+        if cryptfile is None:
+            secret = get_secret(name=name)
+        else:
+            secret = get_secret(name=name, path=Path(cryptfile))
+
         click.echo(secret)
     except (OSError, ValueError) as e:
         click.echo(f'Error: {e}', err=True)
@@ -32,13 +43,22 @@ def get(name: str) -> None:
 @cli.command()
 @click.argument('name')
 @click.argument('value', default=None, required=False)
-def set(name: str, value: str | None) -> None:
+@click.option(
+    '--cryptfile',
+    default=None,
+    type=click.Path(resolve_path=True),
+    help='Path to keyring cryptfile',
+)
+def set(name: str, value: str | None, cryptfile: str | None) -> None:
     """Set secret to keyring."""
     if value is None:
         value = pwinput(f'Enter password of `{name}`: ')
 
     try:
-        set_secret(name=name, value=value)
+        if cryptfile is None:
+            set_secret(name=name, value=value)
+        else:
+            set_secret(name=name, value=value, path=Path(cryptfile))
     except ValueError as e:
         click.echo(f'Error: {e}', err=True)
         sys.exit(1)
@@ -51,10 +71,19 @@ def set(name: str, value: str | None) -> None:
 
 @cli.command()
 @click.argument('name')
-def remove(name: str) -> None:
+@click.option(
+    '--cryptfile',
+    default=None,
+    type=click.Path(exists=True, resolve_path=True),
+    help='Path to keyring cryptfile',
+)
+def remove(name: str, cryptfile: str | None) -> None:
     """Remove secret from keyring."""
     try:
-        remove_secret(name=name)
+        if cryptfile is None:
+            remove_secret(name=name)
+        else:
+            remove_secret(name=name, path=Path(cryptfile))
     except ValueError as e:
         click.echo(f'Error: {e}', err=True)
         sys.exit(1)

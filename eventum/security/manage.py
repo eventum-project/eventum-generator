@@ -3,6 +3,7 @@
 import os
 from functools import lru_cache
 from pathlib import Path
+from typing import TypedDict
 
 import keyrings.cryptfile.cryptfile as crypt  # type: ignore[import-untyped]
 import structlog
@@ -40,6 +41,22 @@ def get_keyring_password() -> str:
     return password
 
 
+class SecuritySettings(TypedDict):
+    """Security settings.
+
+    Attributes
+    ----------
+    cryptfile_location : Path | None
+        Absolute path to keyring cryptfile.
+
+    """
+
+    cryptfile_location: Path | None
+
+
+SECURITY_SETTINGS = SecuritySettings(cryptfile_location=None)
+
+
 def get_secret(name: str, path: Path | None = None) -> str:
     """Get secret from keyring.
 
@@ -50,7 +67,7 @@ def get_secret(name: str, path: Path | None = None) -> str:
 
     path : Path | None, default=None
         Path to keyring file, default location is used if none is
-        provided.
+        provided and security setting cryptfile_location is none.
 
     Returns
     -------
@@ -73,6 +90,7 @@ def get_secret(name: str, path: Path | None = None) -> str:
 
     keyring = crypt.CryptFileKeyring()
 
+    path = path or SECURITY_SETTINGS['cryptfile_location']
     if path is not None:
         keyring.file_path = path  # type: ignore[assignment]
 
@@ -106,7 +124,7 @@ def set_secret(name: str, value: str, path: Path | None = None) -> None:
 
     path : Path | None, default=None
         Path to keyring file, default location is used if none is
-        provided.
+        provided and security setting cryptfile_location is none.
 
     Raises
     ------
@@ -125,6 +143,7 @@ def set_secret(name: str, value: str, path: Path | None = None) -> None:
 
     keyring = crypt.CryptFileKeyring()
 
+    path = path or SECURITY_SETTINGS['cryptfile_location']
     if path is not None:
         keyring.file_path = path  # type: ignore[assignment]
 
@@ -150,7 +169,7 @@ def remove_secret(name: str, path: Path | None = None) -> None:
 
     path : Path | None, default=None
         Path to keyring file, default location is used if none is
-        provided.
+        provided and security setting cryptfile_location is none.
 
     Raises
     ------
@@ -169,6 +188,7 @@ def remove_secret(name: str, path: Path | None = None) -> None:
 
     keyring = crypt.CryptFileKeyring()
 
+    path = path or SECURITY_SETTINGS['cryptfile_location']
     if path is not None:
         keyring.file_path = path  # type: ignore[assignment]
 

@@ -22,14 +22,24 @@ class PathParameters(BaseModel, extra='forbid', frozen=True):
     db : Path
         Absolute path to database.
 
+    keyring_cryptfile : Path
+        Absolute path to keyring encrypted file with stored secrets
+
     """
 
     logs: Path
     generators: Path
     generators_dir: Path
     db: Path
+    keyring_cryptfile: Path
 
-    @field_validator('logs', 'generators', 'generators_dir', 'db')
+    @field_validator(
+        'logs',
+        'generators',
+        'generators_dir',
+        'db',
+        'keyring_cryptfile',
+    )
     @classmethod
     def validate_paths(cls, v: Path) -> Path:  # noqa: D102
         if v.is_absolute():
