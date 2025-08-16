@@ -36,6 +36,10 @@ def use_stderr(level: LogLevel) -> None:
         Log level.
 
     """
+    uvicorn_logger = logging.getLogger('uvicorn')
+    uvicorn_logger.handlers.clear()
+    uvicorn_logger.propagate = False
+
     logging.config.dictConfig(
         {
             'version': 1,
@@ -43,6 +47,11 @@ def use_stderr(level: LogLevel) -> None:
                 'stderr-formatter': {
                     '()': structlog.stdlib.ProcessorFormatter,
                     'processor': structlog.dev.ConsoleRenderer(colors=True),
+                },
+                'stderr-access-formatter': {
+                    'format': (
+                        '%(asctime)s [%(levelname)s] %(message)s [%(name)s]'
+                    ),
                 },
             },
             'handlers': {
@@ -52,10 +61,21 @@ def use_stderr(level: LogLevel) -> None:
                     'class': 'logging.StreamHandler',
                     'stream': 'ext://sys.stderr',
                 },
+                'stderr-access': {
+                    'level': level,
+                    'formatter': 'stderr-access-formatter',
+                    'class': 'logging.StreamHandler',
+                    'stream': 'ext://sys.stderr',
+                },
             },
             'loggers': {
                 '': {
                     'handlers': ['stderr'],
+                    'level': 'DEBUG',
+                    'propagate': True,
+                },
+                'uvicorn.access': {
+                    'handlers': ['stderr-access'],
                     'level': 'DEBUG',
                     'propagate': True,
                 },
@@ -182,3 +202,61 @@ def use_console_and_file(
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
+
+    _configure_uvicorn_logger(
+        level=level,
+        logs_dir=logs_dir,
+        max_bytes=max_bytes,
+        backup_count=backup_count,
+    )
+
+
+def _configure_uvicorn_logger(
+    level: LogLevel,
+    logs_dir: Path,
+    max_bytes: int,
+    backup_count: int,
+) -> None:
+    """Configure uvicorn loggers for writing to console and file.
+
+    Parameters
+    ----------
+    level : LogLevel
+        Log level.
+
+    logs_dir : Path
+        Directory for log files.
+
+    max_bytes : int
+        Max bytes for log file before triggering rollover.
+
+    backup_count : int
+        Number of rolled over log files to keep.
+
+    """
+    stderr_handler = logging.StreamHandler()
+    stderr_handler.setLevel(logging.DEBUG)
+    stderr_handler.setFormatter(
+        logging.Formatter(
+            '%(asctime)s [%(levelname)s] %(message)s [%(name)s]',
+        ),
+    )
+
+    for log_type in ('error', 'access'):
+        file_handler = logging.handlers.RotatingFileHandler(
+            filename=logs_dir / f'api_{log_type}.log',
+            maxBytes=max_bytes,
+            backupCount=backup_count,
+        )
+        file_handler.setFormatter(
+            logging.Formatter(
+                '%(asctime)s [%(levelname)s] %(message)s',
+            ),
+        )
+
+        uvicorn_logger = logging.getLogger(f'uvicorn.{log_type}')
+        uvicorn_logger.handlers.clear()
+        uvicorn_logger.propagate = False
+        uvicorn_logger.addHandler(stderr_handler)
+        uvicorn_logger.addHandler(file_handler)
+        uvicorn_logger.setLevel(level)
