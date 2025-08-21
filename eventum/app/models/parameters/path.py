@@ -13,8 +13,8 @@ class PathParameters(BaseModel, extra='forbid', frozen=True):
     logs : Path
         Absolute path to logs directory.
 
-    generators : Path
-        Absolute path to file with generators definition.
+    startup : Path
+        Absolute path to file with list of generators to run at startup.
 
     generators_dir : Path
         Absolute path to directory with generators configuration files.
@@ -25,13 +25,13 @@ class PathParameters(BaseModel, extra='forbid', frozen=True):
     """
 
     logs: Path
-    generators: Path
+    startup: Path
     generators_dir: Path
     keyring_cryptfile: Path
 
     @field_validator(
         'logs',
-        'generators',
+        'startup',
         'generators_dir',
         'keyring_cryptfile',
     )

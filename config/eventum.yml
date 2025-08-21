@@ -100,9 +100,9 @@ log.format: "plain"
 # Required, there is no default value
 path.logs: /app/logs/eventum/
 
-# Absolute path to file with generators definition
+# Absolute path to file with list of generators to run at startup
 # Required, there is no default value
-path.generators: /app/eventum/config/generators.yml
+path.startup: /app/eventum/config/startup.yml
 
 # Absolute path to directory with generators configuration files
 # Required, there is no default value

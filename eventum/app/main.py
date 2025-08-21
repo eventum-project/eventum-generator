@@ -160,18 +160,18 @@ class App:
 
         """
         logger.debug(
-            'Reading generators list file',
-            file_path=str(self._settings.path.generators),
+            'Reading generators list from startup file',
+            file_path=str(self._settings.path.startup),
         )
         try:
-            with self._settings.path.generators.open() as f:
+            with self._settings.path.startup.open() as f:
                 content = f.read()
         except OSError as e:
-            msg = 'Failed to read generators list'
+            msg = 'Failed to read generators list from startup file'
             raise AppError(
                 msg,
                 context={
-                    'file_path': self._settings.path.generators,
+                    'file_path': self._settings.path.startup,
                     'reason': str(e),
                 },
             ) from None
@@ -184,7 +184,7 @@ class App:
             raise AppError(
                 msg,
                 context={
-                    'file_path': self._settings.path.generators,
+                    'file_path': self._settings.path.startup,
                     'reason': str(e),
                 },
             ) from None
