@@ -15,11 +15,33 @@ router = APIRouter(
 
 @router.get(
     '/',
-    description='List all ids of registered generators',
+    description='List ids of all generators',
     response_description='Generators ids',
 )
 def list_generators(generator_manager: GeneratorManagerDep) -> list[str]:
     return generator_manager.generator_ids
+
+
+@router.get(
+    '/{id}/',
+    description='Get generator parameters',
+    responses={
+        404: {'description': 'Generator with provided id is not found'},
+    },
+)
+def get_generator(
+    id: str,
+    generator_manager: GeneratorManagerDep,
+) -> GeneratorParameters:
+    try:
+        generator = generator_manager.get_generator(id)
+    except ManagingError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        ) from None
+
+    return generator.params
 
 
 class GeneratorStatus(BaseModel, frozen=True, extra='forbid'):
