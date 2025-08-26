@@ -5,9 +5,11 @@ from pathlib import Path
 
 import yaml
 from fastapi import APIRouter, HTTPException, status
+from pydantic import ValidationError
 
 from eventum.api.dependencies import SettingsDep
 from eventum.core.config import GeneratorConfig
+from eventum.utils.validation_prettier import prettify_validation_errors
 
 GENERATOR_CONFIG_FILENAME = 'generator.yml'
 
@@ -41,8 +43,80 @@ def list_generator_configs(settings: SettingsDep) -> list[str]:
     ]
 
 
+@router.get(
+    '/{path:path}',
+    description=(
+        'Get generator configuration in the specified directory path, that '
+        'should be relative to `path.generators_dir`.'
+    ),
+    response_description='Generator configuration',
+    responses={
+        403: {
+            'description': (
+                'Getting configuration that is outside generators directory '
+                'is not allowed'
+            ),
+        },
+        404: {
+            'description': 'Configuration does not exist on this path',
+        },
+        422: {
+            'description': (
+                'Configuration exists, but cannot be processed due '
+                'to parsing or validation errors'
+            ),
+        },
+        500: {
+            'description': 'Getting configuration failed due to OS error',
+        },
+    },
+)
+def get_generator_config(path: Path, settings: SettingsDep) -> GeneratorConfig:
+    path = settings.path.generators_dir / path / GENERATOR_CONFIG_FILENAME
+    path = path.resolve()
+
+    if not path.is_relative_to(settings.path.generators_dir):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                'Getting configuration that is outside '
+                f'"{settings.path.generators_dir}" directory is not allowed'
+            ),
+        )
+
+    if not path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Configuration does not exist',
+        )
+
+    try:
+        with path.open() as f:
+            config_data = yaml.load(f, yaml.SafeLoader)
+
+        return GeneratorConfig.model_validate(config_data)
+    except OSError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(f'Failed to read configuration: {e}'),
+        ) from None
+    except yaml.error.YAMLError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(f'Failed to parse configuration YAML content: {e}'),
+        ) from None
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                'Failed to validate configuration: '
+                f'{prettify_validation_errors(e.errors())}'
+            ),
+        ) from None
+
+
 @router.post(
-    '/',
+    '/{path:path}',
     description=(
         'Create directory with generator configuration in the specified path, '
         'that should be relative to `path.generators_dir` setting.'
@@ -63,8 +137,8 @@ def list_generator_configs(settings: SettingsDep) -> list[str]:
     },
 )
 def create_generator_config(
-    config: GeneratorConfig,
     path: Path,
+    config: GeneratorConfig,
     settings: SettingsDep,
 ) -> None:
     generator_config_dir = (settings.path.generators_dir / path).resolve()
@@ -96,7 +170,7 @@ def create_generator_config(
 
 
 @router.put(
-    '/',
+    '/{path:path}',
     description=(
         'Update generator configuration in the specified directory path, that '
         'should be relative to `path.generators_dir`.'
@@ -117,8 +191,8 @@ def create_generator_config(
     },
 )
 def update_generator_config(
-    config: GeneratorConfig,
     path: Path,
+    config: GeneratorConfig,
     settings: SettingsDep,
 ) -> None:
     generator_config_dir = (settings.path.generators_dir / path).resolve()
@@ -150,7 +224,7 @@ def update_generator_config(
 
 
 @router.delete(
-    '/',
+    '/{path:path}',
     description=(
         'Delete generator configuration in the specified directory path, '
         'that should be relative to `path.generators_dir` setting.'
