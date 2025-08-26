@@ -46,7 +46,7 @@ def build_api_app(
         version='1.0.0',
         root_path='/api/v1',
         docs_url='/swagger',
-        redoc_url=None,
+        redoc_url='/doc',
         contact={
             'name': 'Eventum Project',
             'url': 'https://eventum-project.github.io/website/',
