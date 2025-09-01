@@ -129,7 +129,8 @@ class App:
 
             validated_generator_params = GeneratorParameters.model_validate(
                 generator_params,
-            )
+            ).as_absolute(base_dir=self._settings.path.generators_dir)
+
             generators_parameters.append(validated_generator_params)
 
             if not validated_generator_params.path.is_relative_to(

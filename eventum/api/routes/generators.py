@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
-from eventum.api.dependencies import GeneratorManagerDep
+from eventum.api.dependencies import GeneratorManagerDep, SettingsDep
 from eventum.app.manager import ManagingError
 from eventum.core.parameters import GeneratorParameters
 
@@ -32,6 +32,7 @@ def list_generators(generator_manager: GeneratorManagerDep) -> list[str]:
 def get_generator(
     id: str,
     generator_manager: GeneratorManagerDep,
+    settings: SettingsDep,
 ) -> GeneratorParameters:
     try:
         generator = generator_manager.get_generator(id)
@@ -41,7 +42,12 @@ def get_generator(
             detail=str(e),
         ) from None
 
-    return generator.params
+    try:
+        return generator.params.as_relative(
+            base_dir=settings.path.generators_dir,
+        )
+    except ValueError:
+        return generator.params
 
 
 class GeneratorStatus(BaseModel, frozen=True, extra='forbid'):
@@ -105,14 +111,28 @@ def get_generator_status(
     ),
     responses={
         409: {'description': 'Generator with provided id already exists'},
+        422: {'description': 'No configuration exists in specified path'},
     },
 )
 def add_generator(
     id: str,
     params: GeneratorParameters,
     generator_manager: GeneratorManagerDep,
+    settings: SettingsDep,
 ) -> None:
-    params = GeneratorParameters(id=id, **params.model_dump())
+    kwargs = params.model_dump()
+    kwargs.update(id=id)
+
+    params = GeneratorParameters(**kwargs).as_absolute(
+        base_dir=settings.path.generators_dir,
+    )
+
+    if not params.path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f'No configuration exists in specified path: {params.path}',
+        ) from None
+
     try:
         generator_manager.add(params)
     except ManagingError as e:
@@ -130,6 +150,7 @@ def add_generator(
     ),
     responses={
         404: {'description': 'Generator with provided id is not found'},
+        422: {'description': 'No configuration exists in specified path'},
         423: {'description': 'Generator must be stopped before updating'},
     },
 )
@@ -137,6 +158,7 @@ def update_generator(
     id: str,
     params: GeneratorParameters,
     generator_manager: GeneratorManagerDep,
+    settings: SettingsDep,
 ) -> None:
     try:
         generator = generator_manager.get_generator(id)
@@ -154,7 +176,18 @@ def update_generator(
 
     generator_manager.remove(generator_id=id)
 
-    params = GeneratorParameters(id=id, **params.model_dump())
+    kwargs = params.model_dump()
+    kwargs.update(id=id)
+    params = GeneratorParameters(**kwargs).as_absolute(
+        base_dir=settings.path.generators_dir,
+    )
+
+    if not params.path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f'No configuration exists in specified path: {params.path}',
+        ) from None
+
     generator_manager.add(params=params)
 
 

@@ -107,7 +107,7 @@ class GeneratorParameters(GenerationParameters, frozen=True):
         Generator unique identified.
 
     path : Path
-        Absolute path to configuration.
+        Path to configuration.
 
     live_mode : bool, default=True
         Whether to use live mode and generate events at moments defined
@@ -129,11 +129,53 @@ class GeneratorParameters(GenerationParameters, frozen=True):
     skip_past: bool = Field(default=True)
     params: dict[str, Any] = Field(default_factory=dict)
 
-    @field_validator('path')
-    @classmethod
-    def validate_path(cls, v: Path) -> Path:  # noqa: D102
-        if v.is_absolute():
-            return v
+    def as_absolute(self, base_dir: Path) -> 'GeneratorParameters':
+        """Get instance with absolute path to generator.
 
-        msg = 'Path must be absolute'
-        raise ValueError(msg)
+        Parameters
+        ----------
+        base_dir : Path
+            Base directory.
+
+        Returns
+        -------
+        GeneratorParameters
+            Same instance if path is already absolute or new instance
+            with absolute path.
+
+        """
+        if self.path.is_absolute():
+            return self
+
+        kwargs = {attr: getattr(self, attr) for attr in self.model_fields_set}
+        kwargs.update(path=base_dir / self.path)
+
+        return GeneratorParameters(**kwargs)
+
+    def as_relative(self, base_dir: Path) -> 'GeneratorParameters':
+        """Get instance with relative path to generator.
+
+        Parameters
+        ----------
+        base_dir : Path
+            Base directory.
+
+        Returns
+        -------
+        GeneratorParameters
+            Same instance if path is already relative or new instance
+            with relative path.
+
+        Raises
+        ------
+        ValueError
+            If base_dir is not a parent of the path.
+
+        """
+        if not self.path.is_absolute():
+            return self
+
+        kwargs = {attr: getattr(self, attr) for attr in self.model_fields_set}
+        kwargs.update(path=self.path.relative_to(base_dir))
+
+        return GeneratorParameters(**kwargs)
