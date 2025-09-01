@@ -122,6 +122,42 @@ def add_generator(
         ) from None
 
 
+@router.put(
+    '/{id}/',
+    description=(
+        'Update generator with provided parameters. Note that `id` path '
+        'parameter takes precedence over `id` field in the body.'
+    ),
+    responses={
+        404: {'description': 'Generator with provided id is not found'},
+        423: {'description': 'Generator must be stopped before updating'},
+    },
+)
+def update_generator(
+    id: str,
+    params: GeneratorParameters,
+    generator_manager: GeneratorManagerDep,
+) -> None:
+    try:
+        generator = generator_manager.get_generator(id)
+    except ManagingError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        ) from None
+
+    if generator.is_initializing or generator.is_running:
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail='Generator must be stopped before updating',
+        ) from None
+
+    generator_manager.remove(generator_id=id)
+
+    params = GeneratorParameters(id=id, **params.model_dump())
+    generator_manager.add(params=params)
+
+
 @router.post(
     '/{id}/start/',
     description='Start generator by its id',
