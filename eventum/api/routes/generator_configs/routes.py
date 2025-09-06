@@ -1,11 +1,20 @@
 """Generator configs routes."""
 
+import asyncio
 import shutil
 from pathlib import Path
 from typing import Annotated
 
+import aiofiles
 import yaml
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    UploadFile,
+    responses,
+    status,
+)
 from pydantic import ValidationError
 
 from eventum.api.dependencies import SettingsDep
@@ -14,6 +23,11 @@ from eventum.api.routes.generator_configs.dependencies import (
     check_configuration_exists,
     check_configuration_not_exists,
     check_directory_is_allowed,
+    check_filepath_is_directly_relative,
+)
+from eventum.api.routes.generator_configs.file_tree import (
+    FileNode,
+    build_file_tree,
 )
 from eventum.core.config import GeneratorConfig
 from eventum.utils.validation_prettier import prettify_validation_errors
@@ -27,22 +41,28 @@ router = APIRouter(
 @router.get(
     '/',
     description=(
-        'List all directory names inside `path.generators_dir` '
+        'List all generator directory names inside `path.generators_dir` '
         'with generator configs.'
     ),
     response_description=('Directory names with generator configs'),
 )
-def list_generator_dirs(
+async def list_generator_dirs(
     config_file_name: GeneratorConfigurationFileNameDep,
     settings: SettingsDep,
 ) -> list[str]:
     if not settings.path.generators_dir.exists():
         return []
 
-    return [
-        path.parent.name
-        for path in settings.path.generators_dir.glob(f'*/{config_file_name}')
-    ]
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        executor=None,
+        func=lambda: [
+            path.parent.name
+            for path in settings.path.generators_dir.glob(
+                f'*/{config_file_name}',
+            )
+        ],
+    )
 
 
 @router.get(
@@ -65,7 +85,7 @@ def list_generator_dirs(
         },
     },
 )
-def get_generator_config(
+async def get_generator_config(
     name: Annotated[
         str,
         Depends(check_directory_is_allowed),
@@ -77,8 +97,14 @@ def get_generator_config(
     path = (settings.path.generators_dir / name / config_file_name).resolve()
 
     try:
-        with path.open() as f:
-            config_data = yaml.load(f, yaml.SafeLoader)
+        async with aiofiles.open(path) as f:
+            raw_yaml = await f.read()
+
+        loop = asyncio.get_running_loop()
+        config_data = await loop.run_in_executor(
+            executor=None,
+            func=lambda: yaml.load(stream=raw_yaml, Loader=yaml.SafeLoader),
+        )
 
         return GeneratorConfig.model_validate(config_data)
     except OSError as e:
@@ -98,6 +124,122 @@ def get_generator_config(
                 'Configuration cannot be read due to validation error: '
                 f'{prettify_validation_errors(e.errors())}'
             ),
+        ) from None
+
+
+@router.post(
+    '/{name}',
+    description=(
+        'Create generator configuration in the directory with specified name.'
+    ),
+    responses={
+        **check_directory_is_allowed.responses,
+        **check_configuration_not_exists.responses,
+        500: {
+            'description': 'Configuration cannot be created due to OS error',
+        },
+    },
+)
+async def create_generator_config(
+    name: Annotated[
+        str,
+        Depends(check_directory_is_allowed),
+        Depends(check_configuration_not_exists),
+    ],
+    config: GeneratorConfig,
+    config_file_name: GeneratorConfigurationFileNameDep,
+    settings: SettingsDep,
+) -> None:
+    generator_config_dir = (settings.path.generators_dir / name).resolve()
+
+    generator_config_path = generator_config_dir / config_file_name
+
+    try:
+        generator_config_dir.mkdir(parents=True, exist_ok=False)
+
+        async with aiofiles.open(generator_config_path, 'w') as f:
+            await f.write(
+                yaml.dump(data=config.model_dump(), sort_keys=False),
+            )
+    except OSError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(f'Configuration cannot be created due to OS error: {e}'),
+        ) from None
+
+
+@router.put(
+    '/{name}',
+    description=(
+        'Update generator configuration in the directory with specified name.'
+    ),
+    responses={
+        **check_directory_is_allowed.responses,
+        **check_configuration_exists.responses,
+        500: {
+            'description': 'Configuration cannot be updated due to OS error',
+        },
+    },
+)
+async def update_generator_config(
+    name: Annotated[
+        str,
+        Depends(check_directory_is_allowed),
+        Depends(check_configuration_exists),
+    ],
+    config: GeneratorConfig,
+    config_file_name: GeneratorConfigurationFileNameDep,
+    settings: SettingsDep,
+) -> None:
+    generator_config_path = (
+        settings.path.generators_dir / name / config_file_name
+    ).resolve()
+
+    try:
+        async with aiofiles.open(generator_config_path, 'w') as f:
+            await f.write(
+                yaml.dump(data=config.model_dump(), sort_keys=False),
+            )
+    except OSError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(f'Configuration cannot be updated due to OS error: {e}'),
+        ) from None
+
+
+@router.delete(
+    '/{name}',
+    description=(
+        'Delete whole generator configuration directory with specified name.'
+    ),
+    responses={
+        **check_directory_is_allowed.responses,
+        **check_configuration_exists.responses,
+        500: {
+            'description': 'Configuration cannot be deleted due to OS error',
+        },
+    },
+)
+async def delete_generator_config(
+    name: Annotated[
+        str,
+        Depends(check_directory_is_allowed),
+        Depends(check_configuration_exists),
+    ],
+    settings: SettingsDep,
+) -> None:
+    generator_config_dir = (settings.path.generators_dir / name).resolve()
+
+    loop = asyncio.get_running_loop()
+    try:
+        await loop.run_in_executor(
+            executor=None,
+            func=lambda: shutil.rmtree(generator_config_dir),
+        )
+    except OSError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(f'Configuration cannot be deleted due to OS error: {e}'),
         ) from None
 
 
@@ -128,108 +270,300 @@ def get_generator_config_path(
     return path.relative_to(settings.path.generators_dir)
 
 
-@router.post(
-    '/{name}',
+@router.get(
+    '/{name}/file_tree',
     description=(
-        'Create generator configuration in the directory with specified name.'
+        'Get file tree of the generator directory with specified name.'
     ),
+    response_description=('File tree nodes.'),
     responses={
         **check_directory_is_allowed.responses,
-        **check_configuration_not_exists.responses,
+        **check_configuration_exists.responses,
         500: {
-            'description': 'Configuration cannot be created due to OS error',
+            'description': 'File tree cannot be built due to OS error',
         },
     },
 )
-def create_generator_config(
+async def get_generator_file_tree(
     name: Annotated[
         str,
         Depends(check_directory_is_allowed),
-        Depends(check_configuration_not_exists),
+        Depends(check_configuration_exists),
     ],
-    config: GeneratorConfig,
-    config_file_name: GeneratorConfigurationFileNameDep,
     settings: SettingsDep,
-) -> None:
-    generator_config_dir = (settings.path.generators_dir / name).resolve()
+) -> list[FileNode]:
+    path = (settings.path.generators_dir / name).resolve()
 
-    generator_config_path = generator_config_dir / config_file_name
-
+    loop = asyncio.get_running_loop()
     try:
-        generator_config_dir.mkdir(parents=True, exist_ok=False)
-        with generator_config_path.open('w') as f:
-            yaml.dump(data=config.model_dump(), stream=f, sort_keys=False)
+        return await loop.run_in_executor(
+            executor=None,
+            func=lambda: build_file_tree(path).children or [],
+        )
     except OSError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=(f'Failed to create configuration: {e}'),
+            detail=(f'File tree cannot be built due to OS error: {e}'),
+        ) from None
+
+
+@router.get(
+    '/{name}/file/{filepath:path}',
+    description=(
+        'Read file from specified path inside generator directory '
+        'with specified name.'
+    ),
+    response_description=('File content.'),
+    responses={
+        **check_directory_is_allowed.responses,
+        **check_configuration_exists.responses,
+        **check_filepath_is_directly_relative.responses,
+        404: {
+            'description': 'File does not exist',
+        },
+        500: {
+            'description': 'File cannot be read due to OS error',
+        },
+    },
+)
+async def get_generator_file(
+    name: Annotated[
+        str,
+        Depends(check_directory_is_allowed),
+        Depends(check_configuration_exists),
+    ],
+    filepath: Annotated[Path, Depends(check_filepath_is_directly_relative)],
+    settings: SettingsDep,
+) -> responses.FileResponse:
+    path = (settings.path.generators_dir / name / filepath).resolve()
+
+    if not path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='File does not exist',
+        )
+
+    try:
+        return responses.FileResponse(path=path)
+    except OSError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f'File cannot be read due to OS error: {e}',
+        ) from None
+
+
+@router.post(
+    '/{name}/file/{filepath:path}',
+    description=(
+        'Upload file to specified path inside generator directory '
+        'with specified name.'
+    ),
+    responses={
+        **check_directory_is_allowed.responses,
+        **check_configuration_exists.responses,
+        **check_filepath_is_directly_relative.responses,
+        409: {
+            'description': 'File already exists',
+        },
+        500: {
+            'description': 'File cannot be uploaded due to OS error',
+        },
+    },
+)
+async def upload_generator_file(
+    name: Annotated[
+        str,
+        Depends(check_directory_is_allowed),
+        Depends(check_configuration_exists),
+    ],
+    filepath: Annotated[Path, Depends(check_filepath_is_directly_relative)],
+    content: UploadFile,
+    settings: SettingsDep,
+) -> None:
+    path = (settings.path.generators_dir / name / filepath).resolve()
+
+    if path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail='File already exists',
+        )
+
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        async with aiofiles.open(path, 'wb') as f:
+            while chunk := await content.read(1024 * 1024):  # 1MB chunks
+                await f.write(chunk)
+    except OSError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f'File cannot be uploaded due to OS error: {e}',
         ) from None
 
 
 @router.put(
-    '/{name}',
+    '/{name}/file/{filepath:path}',
     description=(
-        'Update generator configuration in the directory with specified name.'
+        'Put file to specified path inside generator directory '
+        'with specified name.'
     ),
     responses={
         **check_directory_is_allowed.responses,
         **check_configuration_exists.responses,
+        **check_filepath_is_directly_relative.responses,
+        404: {
+            'description': 'File does not exist',
+        },
         500: {
-            'description': 'Configuration cannot be updated due to OS error',
+            'description': 'File cannot be uploaded due to OS error',
         },
     },
 )
-def update_generator_config(
+async def put_generator_file(
     name: Annotated[
         str,
         Depends(check_directory_is_allowed),
         Depends(check_configuration_exists),
     ],
-    config: GeneratorConfig,
-    config_file_name: GeneratorConfigurationFileNameDep,
+    filepath: Annotated[Path, Depends(check_filepath_is_directly_relative)],
+    content: UploadFile,
     settings: SettingsDep,
 ) -> None:
-    generator_config_path = (
-        settings.path.generators_dir / name / config_file_name
-    ).resolve()
+    path = (settings.path.generators_dir / name / filepath).resolve()
+
+    if not path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='File does not exist',
+        )
 
     try:
-        with generator_config_path.open('w') as f:
-            yaml.dump(data=config.model_dump(), stream=f, sort_keys=False)
+        async with aiofiles.open(path, 'wb') as f:
+            while chunk := await content.read(1024 * 1024):  # 1MB chunks
+                await f.write(chunk)
     except OSError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=(f'Configuration cannot be updated due to OS error: {e}'),
+            detail=f'File cannot be uploaded due to OS error: {e}',
         ) from None
 
 
 @router.delete(
-    '/{name}',
+    '/{name}/file/{filepath:path}',
     description=(
-        'Delete whole generator configuration directory with specified name.'
+        'Delete file in specified path inside generator directory '
+        'with specified name.'
     ),
     responses={
         **check_directory_is_allowed.responses,
         **check_configuration_exists.responses,
+        **check_filepath_is_directly_relative.responses,
+        404: {
+            'description': 'File does not exist',
+        },
         500: {
-            'description': 'Configuration cannot be deleted due to OS error',
+            'description': 'File cannot be deleted due to OS error',
         },
     },
 )
-def delete_generator_configs(
+async def delete_generator_file(
     name: Annotated[
         str,
         Depends(check_directory_is_allowed),
         Depends(check_configuration_exists),
     ],
+    filepath: Annotated[Path, Depends(check_filepath_is_directly_relative)],
     settings: SettingsDep,
 ) -> None:
-    generator_config_dir = (settings.path.generators_dir / name).resolve()
+    path = (settings.path.generators_dir / name / filepath).resolve()
 
+    if not path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='File does not exist',
+        )
+
+    loop = asyncio.get_running_loop()
     try:
-        shutil.rmtree(generator_config_dir)
+        if path.is_file():
+            await loop.run_in_executor(
+                executor=None,
+                func=lambda: path.unlink(),
+            )
+        else:
+            await loop.run_in_executor(
+                executor=None,
+                func=lambda: shutil.rmtree(path),
+            )
+
     except OSError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=(f'Configuration cannot be deleted due to OS error: {e}'),
+            detail=f'File cannot be deleted due to OS error: {e}',
+        ) from None
+
+
+@router.post(
+    '/{name}/file_move/',
+    description=(
+        'Move file from source to destination location inside '
+        'generator directory with specified name.'
+    ),
+    responses={
+        **check_directory_is_allowed.responses,
+        **check_configuration_exists.responses,
+        **check_filepath_is_directly_relative.responses,
+        404: {
+            'description': 'Source file does not exist',
+        },
+        409: {
+            'description': 'Destination file already exists',
+        },
+        500: {
+            'description': 'File cannot be moved due to OS error',
+        },
+    },
+)
+async def move_generator_file(
+    name: Annotated[
+        str,
+        Depends(check_directory_is_allowed),
+        Depends(check_configuration_exists),
+    ],
+    source: Path,
+    destination: Path,
+    settings: SettingsDep,
+) -> None:
+    # Checks performed here to avoid mixing `Query` and `Depends` in signature
+    source = check_filepath_is_directly_relative(source)
+    destination = check_filepath_is_directly_relative(destination)
+
+    source = (settings.path.generators_dir / name / source).resolve()
+    destination = (settings.path.generators_dir / name / destination).resolve()
+
+    if not source.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Source file does not exist',
+        )
+
+    if destination.exists():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail='Destination file already exists',
+        )
+
+    if source == destination:
+        return
+
+    loop = asyncio.get_running_loop()
+    try:
+        await loop.run_in_executor(
+            executor=None,
+            func=lambda: shutil.move(src=source, dst=destination),
+        )
+    except OSError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f'File cannot be moved due to OS error: {e}',
         ) from None

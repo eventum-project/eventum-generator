@@ -1,7 +1,8 @@
 """Dependencies of generator configs router."""
 
 from collections.abc import Callable
-from typing import Annotated, Any, Protocol, cast
+from pathlib import Path
+from typing import Annotated, Any, ParamSpec, Protocol, TypeVar, cast
 
 from fastapi import Depends, HTTPException, status
 
@@ -9,17 +10,21 @@ from eventum.api.dependencies import SettingsDep
 
 type ResponsesInfo = dict[int | str, dict[str, Any]]
 
+_P = ParamSpec('_P')
+_R_co = TypeVar('_R_co', covariant=True)
 
-class _CallableWithResponses(Protocol):
+
+class _CallableWithResponses(Protocol[_P, _R_co]):
     responses: ResponsesInfo
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
+    def __call__(self, *args: _P.args, **kwargs: _P.kwargs) -> _R_co: ...
 
 
 def _set_responses(
     responses: ResponsesInfo,
-) -> Callable[[Callable], _CallableWithResponses]:
-    """Set `responses` attribute to a function.
+) -> Callable[[Callable[_P, _R_co]], _CallableWithResponses[_P, _R_co]]:
+    """Set `responses` attribute to a function for FastAPI route
+    metadata.
 
     This is primarily used with FastAPI route functions to provide
     the `responses` parameter metadata, which describes possible
@@ -33,17 +38,14 @@ def _set_responses(
 
     Returns
     -------
-    Callable[[Callable], _CallableWithResponses]
-        A decorator function that, when applied to a callable, casts it
-        to `_CallableWithResponses` and sets its `.responses` attribute
-        to the given `responses` dictionary.
+    Callable[[Callable[_P, _R_co]], _CallableWithResponses[_P, _R_co]]
+        Decorator that attaches `.responses` to the input function.
 
     """
 
-    def wrapper(f: Callable) -> _CallableWithResponses:
-        f = cast('_CallableWithResponses', f)
+    def wrapper(f: Callable[_P, _R_co]) -> _CallableWithResponses[_P, _R_co]:
+        f = cast('_CallableWithResponses[_P, _R_co]', f)
         f.responses = responses
-
         return f
 
     return wrapper
@@ -71,7 +73,8 @@ GeneratorConfigurationFileNameDep = Annotated[
     responses={
         403: {
             'description': (
-                'Accessing files outside `path.generators_dir` is not allowed'
+                'Accessing directories outside `path.generators_dir` '
+                'is not allowed'
             ),
         },
     },
@@ -108,7 +111,8 @@ def check_directory_is_allowed(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=(
-                'Accessing files outside `path.generators_dir` is not allowed'
+                'Accessing directories outside `path.generators_dir` '
+                'is not allowed'
             ),
         )
 
@@ -207,3 +211,54 @@ def check_configuration_not_exists(
         )
 
     return name
+
+
+@_set_responses(
+    responses={
+        400: {
+            'description': (
+                "- Parent directories traversal (i.e. using '..') "
+                'is not allowed\n'
+                '- Path cannot be absolute'
+            ),
+        },
+    },
+)
+def check_filepath_is_directly_relative(
+    filepath: Path,
+) -> Path:
+    """Check that filepath directly relative (i.e. not using '..').
+
+    Parameters
+    ----------
+    filepath : Path
+        Path to check.
+
+    Returns
+    -------
+    Path
+        Original path.
+
+    Raises
+    ------
+    HTTPException
+        - Parent directories traversal (i.e. using '..') is not allowed
+        - Path cannot be absolute
+
+    """
+    if filepath.is_absolute():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Path cannot be absolute',
+        )
+
+    if any(part == '..' for part in filepath.parts):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Parent directories traversal (i.e. using '..') "
+                'is not allowed.'
+            ),
+        )
+
+    return filepath
