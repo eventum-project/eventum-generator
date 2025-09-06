@@ -567,3 +567,75 @@ async def move_generator_file(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f'File cannot be moved due to OS error: {e}',
         ) from None
+
+
+@router.post(
+    '/{name}/file_copy/',
+    description=(
+        'Copy file from source to destination location inside '
+        'generator directory with specified name.'
+    ),
+    responses={
+        **check_directory_is_allowed.responses,
+        **check_configuration_exists.responses,
+        **check_filepath_is_directly_relative.responses,
+        404: {
+            'description': 'Source file does not exist',
+        },
+        409: {
+            'description': 'Destination file already exists',
+        },
+        500: {
+            'description': 'File cannot be copied due to OS error',
+        },
+    },
+)
+async def copy_generator_file(
+    name: Annotated[
+        str,
+        Depends(check_directory_is_allowed),
+        Depends(check_configuration_exists),
+    ],
+    source: Path,
+    destination: Path,
+    settings: SettingsDep,
+) -> None:
+    # Checks performed here to avoid mixing `Query` and `Depends` in signature
+    source = check_filepath_is_directly_relative(source)
+    destination = check_filepath_is_directly_relative(destination)
+
+    source = (settings.path.generators_dir / name / source).resolve()
+    destination = (settings.path.generators_dir / name / destination).resolve()
+
+    if not source.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Source file does not exist',
+        )
+
+    if destination.exists():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail='Destination file already exists',
+        )
+
+    if source == destination:
+        return
+
+    loop = asyncio.get_running_loop()
+    try:
+        if source.is_file():
+            await loop.run_in_executor(
+                executor=None,
+                func=lambda: shutil.copyfile(src=source, dst=destination),
+            )
+        else:
+            await loop.run_in_executor(
+                executor=None,
+                func=lambda: shutil.copytree(src=source, dst=destination),
+            )
+    except OSError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f'File cannot be copied due to OS error: {e}',
+        ) from None
