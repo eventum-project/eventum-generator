@@ -4,7 +4,7 @@ import structlog
 from fastapi import FastAPI
 
 from eventum.api.routes.generator_configs import (
-    router as generator_configs_router,
+    router as generator_files_router,
 )
 from eventum.api.routes.generators import router as generators_router
 from eventum.app.manager import GeneratorManager
@@ -63,6 +63,6 @@ def build_api_app(
 
     logger.debug('Connecting routers')
     app.include_router(generators_router)
-    app.include_router(generator_configs_router)
+    app.include_router(generator_files_router)
 
     return app
