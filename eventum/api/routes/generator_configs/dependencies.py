@@ -1,54 +1,12 @@
 """Dependencies of generator configs router."""
 
-from collections.abc import Callable
 from pathlib import Path
-from typing import Annotated, Any, ParamSpec, Protocol, TypeVar, cast
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 
 from eventum.api.dependencies import SettingsDep
-
-type ResponsesInfo = dict[int | str, dict[str, Any]]
-
-_P = ParamSpec('_P')
-_R_co = TypeVar('_R_co', covariant=True)
-
-
-class _CallableWithResponses(Protocol[_P, _R_co]):
-    responses: ResponsesInfo
-
-    def __call__(self, *args: _P.args, **kwargs: _P.kwargs) -> _R_co: ...
-
-
-def _set_responses(
-    responses: ResponsesInfo,
-) -> Callable[[Callable[_P, _R_co]], _CallableWithResponses[_P, _R_co]]:
-    """Set `responses` attribute to a function for FastAPI route
-    metadata.
-
-    This is primarily used with FastAPI route functions to provide
-    the `responses` parameter metadata, which describes possible
-    HTTP responses for the route.
-
-    Parameters
-    ----------
-    responses : ResponsesInfo
-        A mapping of HTTP status codes (or strings) to metadata
-        dictionaries.
-
-    Returns
-    -------
-    Callable[[Callable[_P, _R_co]], _CallableWithResponses[_P, _R_co]]
-        Decorator that attaches `.responses` to the input function.
-
-    """
-
-    def wrapper(f: Callable[_P, _R_co]) -> _CallableWithResponses[_P, _R_co]:
-        f = cast('_CallableWithResponses[_P, _R_co]', f)
-        f.responses = responses
-        return f
-
-    return wrapper
+from eventum.api.utils.response_description import set_responses
 
 
 def _get_generator_configuration_file_name() -> str:
@@ -69,7 +27,7 @@ GeneratorConfigurationFileNameDep = Annotated[
 ]
 
 
-@_set_responses(
+@set_responses(
     responses={
         403: {
             'description': (
@@ -119,7 +77,7 @@ def check_directory_is_allowed(
     return name
 
 
-@_set_responses(
+@set_responses(
     responses={
         404: {
             'description': 'Generator configuration does not exist',
@@ -166,7 +124,7 @@ def check_configuration_exists(
     return name
 
 
-@_set_responses(
+@set_responses(
     responses={
         409: {
             'description': 'Configuration already exists',
@@ -213,7 +171,7 @@ def check_configuration_not_exists(
     return name
 
 
-@_set_responses(
+@set_responses(
     responses={
         400: {
             'description': (
