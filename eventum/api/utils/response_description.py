@@ -80,16 +80,11 @@ def merge_responses(*responses: ResponsesInfo) -> ResponsesInfo:
             info = merged_responses.get(code, None)
 
             if info is None:
-                new_info = dict(item_info)
-
-                if 'description' in new_info:
-                    new_info['description'] = f'- {new_info["description"]}\n'
-
-                merged_responses[code] = new_info
+                merged_responses[code] = dict(item_info)
             elif 'description' in item_info:
                 if 'description' in info:
-                    info['description'] += f'- {item_info["description"]}\n'
+                    info['description'] += f'\n\n{item_info["description"]}'
                 else:
-                    info['description'] = f'- {item_info["description"]}\n'
+                    info['description'] = item_info['description']
 
     return merged_responses

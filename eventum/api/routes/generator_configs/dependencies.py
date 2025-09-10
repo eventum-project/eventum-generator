@@ -193,9 +193,8 @@ CheckConfigurationNotExistsDep = Annotated[
     responses={
         400: {
             'description': (
-                "- Parent directories traversal (i.e. using '..') "
-                'is not allowed\n'
-                '- Path cannot be absolute'
+                "Parent directories traversal (i.e. using '..') "
+                'is not allowed and path cannot be absolute'
             ),
         },
     },
