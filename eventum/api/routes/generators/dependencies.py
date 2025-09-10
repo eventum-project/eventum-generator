@@ -1,0 +1,145 @@
+"""Router dependencies."""
+
+from typing import Annotated
+
+from fastapi import HTTPException, status
+from fastapi.params import Depends
+
+from eventum.api.dependencies.app import GeneratorManagerDep, SettingsDep
+from eventum.api.utils.response_description import set_responses
+from eventum.app.manager import ManagingError
+from eventum.core.generator import Generator
+from eventum.core.parameters import GeneratorParameters
+
+
+@set_responses(
+    responses={
+        404: {
+            'description': 'Generator with provided id is not found',
+        },
+    },
+)
+def get_generator(
+    id: str,
+    generator_manager: GeneratorManagerDep,
+) -> Generator:
+    """Get generator with provided id from manager.
+
+    Parameters
+    ----------
+    id : str
+        ID of the generator to get.
+
+    generator_manager : GeneratorManagerDep
+        Generator manager dependency.
+
+    Returns
+    -------
+    Generator
+        Generator gotten from manager.
+
+    Raises
+    ------
+    HTTPException
+        If generator with provided id is not found in manager.
+
+    """
+    try:
+        return generator_manager.get_generator(id)
+    except ManagingError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        ) from None
+
+
+GeneratorDep = Annotated[Generator, Depends(get_generator)]
+
+
+def get_prepared_generator_params_from_request(
+    id: str,
+    params: GeneratorParameters,
+    settings: SettingsDep,
+) -> GeneratorParameters:
+    """Get generator parameters from request body with prepared
+    parameters.
+
+    Particularly id is substituted to id from query parameters, and
+    path to configuration is resolved to absolute, which is preferred
+    before adding it to a generator manager.
+
+    This dependency should be use when a new generator is added to
+    manager in methods like PUT and POST.
+
+    Parameters
+    ----------
+    id : str
+        ID of the generator to use this parameters for.
+
+    params : GeneratorParameters
+        Generator parameters.
+
+    settings : SettingsDep
+        Settings dependency.
+
+    Returns
+    -------
+    GeneratorParameters
+        Prepared generator parameters.
+
+    """
+    kwargs = params.model_dump()
+    kwargs.update(id=id)
+
+    return GeneratorParameters(**kwargs).as_absolute(
+        base_dir=settings.path.generators_dir,
+    )
+
+
+PreparedGeneratorParamsDep = Annotated[
+    GeneratorParameters,
+    Depends(get_prepared_generator_params_from_request),
+]
+
+
+@set_responses(
+    responses={
+        422: {
+            'description': 'No configuration exists in specified path',
+        },
+    },
+)
+def check_path_exists(
+    params: PreparedGeneratorParamsDep,
+) -> PreparedGeneratorParamsDep:
+    """Check if the path in generator parameters exists.
+
+    Parameters
+    ----------
+    params : PreparedGeneratorParamsDep
+        Prepared generator parameters dependency.
+
+    Returns
+    -------
+    PreparedGeneratorParamsDep
+        Original prepared generator parameters.
+
+    Raises
+    ------
+    HTTPException
+        If no configuration exists in specified path.
+
+    """
+    if not params.path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f'No configuration exists in specified path: {params.path}',
+        ) from None
+
+    return params
+
+
+CheckPathExistsDep = Annotated[
+    PreparedGeneratorParamsDep,
+    Depends(check_path_exists),
+]

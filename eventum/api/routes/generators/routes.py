@@ -1,10 +1,24 @@
-"""Generator routes."""
+"""Router routes."""
 
-from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel
+import asyncio
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from eventum.api.dependencies.app import GeneratorManagerDep, SettingsDep
+from eventum.api.routes.generators.dependencies import (
+    CheckPathExistsDep,
+    GeneratorDep,
+    PreparedGeneratorParamsDep,
+    check_path_exists,
+)
+from eventum.api.routes.generators.dependencies import (
+    get_generator as _get_generator,
+)
+from eventum.api.routes.generators.models import GeneratorStatus
+from eventum.api.utils.response_description import merge_responses
 from eventum.app.manager import ManagingError
+from eventum.core.generator import Generator
 from eventum.core.parameters import GeneratorParameters
 
 router = APIRouter(
@@ -18,30 +32,19 @@ router = APIRouter(
     description='List ids of all generators',
     response_description='Generators ids',
 )
-def list_generators(generator_manager: GeneratorManagerDep) -> list[str]:
+async def list_generators(generator_manager: GeneratorManagerDep) -> list[str]:
     return generator_manager.generator_ids
 
 
 @router.get(
     '/{id}/',
     description='Get generator parameters',
-    responses={
-        404: {'description': 'Generator with provided id is not found'},
-    },
+    responses={**_get_generator.responses},
 )
-def get_generator(
-    id: str,
-    generator_manager: GeneratorManagerDep,
+async def get_generator(
+    generator: Annotated[Generator, Depends(_get_generator)],
     settings: SettingsDep,
 ) -> GeneratorParameters:
-    try:
-        generator = generator_manager.get_generator(id)
-    except ManagingError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        ) from None
-
     try:
         return generator.params.as_relative(
             base_dir=settings.path.generators_dir,
@@ -50,51 +53,14 @@ def get_generator(
         return generator.params
 
 
-class GeneratorStatus(BaseModel, frozen=True, extra='forbid'):
-    """Status of generator.
-
-    Attributes
-    ----------
-    is_initializing : bool
-        Whether the generator is initializing.
-
-    is_running : bool
-        Whether the generator is running.
-
-    is_ended_up : bool
-        Whether the generator has ended execution with or without
-        errors.
-
-    is_ended_up_successfully : bool
-        Whether the generator has ended execution successfully.
-
-    """
-
-    is_initializing: bool
-    is_running: bool
-    is_ended_up: bool
-    is_ended_up_successfully: bool
-
-
 @router.get(
     '/{id}/status/',
     description='Get generator status',
-    responses={
-        404: {'description': 'Generator with provided id is not found'},
-    },
+    responses={**_get_generator.responses},
 )
-def get_generator_status(
-    id: str,
-    generator_manager: GeneratorManagerDep,
+async def get_generator_status(
+    generator: Annotated[Generator, Depends(_get_generator)],
 ) -> GeneratorStatus:
-    try:
-        generator = generator_manager.get_generator(id)
-    except ManagingError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        ) from None
-
     return GeneratorStatus(
         is_initializing=generator.is_initializing,
         is_running=generator.is_running,
@@ -104,35 +70,23 @@ def get_generator_status(
 
 
 @router.post(
-    '/{id}/',
+    '/{id}/',  # noqa: FAST003
     description=(
         'Add generator. Note that `id` path parameter takes precedence '
         'over `id` field in the body.'
     ),
-    responses={
-        409: {'description': 'Generator with provided id already exists'},
-        422: {'description': 'No configuration exists in specified path'},
-    },
+    responses=merge_responses(
+        check_path_exists.responses,
+        {
+            409: {'description': 'Generator with provided id already exists'},
+            422: {'description': 'No configuration exists in specified path'},
+        },
+    ),
 )
-def add_generator(
-    id: str,
-    params: GeneratorParameters,
+async def add_generator(
+    params: Annotated[PreparedGeneratorParamsDep, CheckPathExistsDep],
     generator_manager: GeneratorManagerDep,
-    settings: SettingsDep,
 ) -> None:
-    kwargs = params.model_dump()
-    kwargs.update(id=id)
-
-    params = GeneratorParameters(**kwargs).as_absolute(
-        base_dir=settings.path.generators_dir,
-    )
-
-    if not params.path.exists():
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f'No configuration exists in specified path: {params.path}',
-        ) from None
-
     try:
         generator_manager.add(params)
     except ManagingError as e:
@@ -148,45 +102,32 @@ def add_generator(
         'Update generator with provided parameters. Note that `id` path '
         'parameter takes precedence over `id` field in the body.'
     ),
-    responses={
-        404: {'description': 'Generator with provided id is not found'},
-        422: {'description': 'No configuration exists in specified path'},
-        423: {'description': 'Generator must be stopped before updating'},
-    },
+    responses=merge_responses(
+        _get_generator.responses,
+        check_path_exists.responses,
+        {
+            422: {'description': 'No configuration exists in specified path'},
+            423: {'description': 'Generator must be stopped before updating'},
+        },
+    ),
 )
-def update_generator(
+async def update_generator(
     id: str,
-    params: GeneratorParameters,
+    params: Annotated[PreparedGeneratorParamsDep, CheckPathExistsDep],
     generator_manager: GeneratorManagerDep,
-    settings: SettingsDep,
+    generator: GeneratorDep,
 ) -> None:
-    try:
-        generator = generator_manager.get_generator(id)
-    except ManagingError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        ) from None
-
     if generator.is_initializing or generator.is_running:
         raise HTTPException(
             status_code=status.HTTP_423_LOCKED,
             detail='Generator must be stopped before updating',
         ) from None
 
-    generator_manager.remove(generator_id=id)
-
-    kwargs = params.model_dump()
-    kwargs.update(id=id)
-    params = GeneratorParameters(**kwargs).as_absolute(
-        base_dir=settings.path.generators_dir,
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(
+        executor=None,
+        func=lambda: generator_manager.remove(generator_id=id),
     )
-
-    if not params.path.exists():
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f'No configuration exists in specified path: {params.path}',
-        ) from None
 
     generator_manager.add(params=params)
 
@@ -199,9 +140,16 @@ def update_generator(
         404: {'description': 'Generator with provided id is not found'},
     },
 )
-def start_generator(id: str, generator_manager: GeneratorManagerDep) -> bool:
+async def start_generator(
+    id: str,
+    generator_manager: GeneratorManagerDep,
+) -> bool:
+    loop = asyncio.get_running_loop()
     try:
-        return generator_manager.start(id)
+        return await loop.run_in_executor(
+            executor=None,
+            func=lambda: generator_manager.start(id),
+        )
     except ManagingError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -216,9 +164,16 @@ def start_generator(id: str, generator_manager: GeneratorManagerDep) -> bool:
         404: {'description': 'Generator with provided id is not found'},
     },
 )
-def stop_generator(id: str, generator_manager: GeneratorManagerDep) -> None:
+async def stop_generator(
+    id: str,
+    generator_manager: GeneratorManagerDep,
+) -> None:
+    loop = asyncio.get_running_loop()
     try:
-        generator_manager.stop(id)
+        await loop.run_in_executor(
+            executor=None,
+            func=lambda: generator_manager.stop(id),
+        )
     except ManagingError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -233,9 +188,16 @@ def stop_generator(id: str, generator_manager: GeneratorManagerDep) -> None:
         404: {'description': 'Generator with provided id is not found'},
     },
 )
-def delete_generator(id: str, generator_manager: GeneratorManagerDep) -> None:
+async def delete_generator(
+    id: str,
+    generator_manager: GeneratorManagerDep,
+) -> None:
+    loop = asyncio.get_running_loop()
     try:
-        generator_manager.remove(id)
+        await loop.run_in_executor(
+            executor=None,
+            func=lambda: generator_manager.remove(id),
+        )
     except ManagingError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
