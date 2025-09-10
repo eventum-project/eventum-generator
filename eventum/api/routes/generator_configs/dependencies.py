@@ -77,6 +77,12 @@ def check_directory_is_allowed(
     return name
 
 
+CheckDirectoryIsAllowedDep = Annotated[
+    str,
+    Depends(check_directory_is_allowed),
+]
+
+
 @set_responses(
     responses={
         404: {
@@ -124,6 +130,12 @@ def check_configuration_exists(
     return name
 
 
+CheckConfigurationExistsDep = Annotated[
+    str,
+    Depends(check_configuration_exists),
+]
+
+
 @set_responses(
     responses={
         409: {
@@ -169,6 +181,12 @@ def check_configuration_not_exists(
         )
 
     return name
+
+
+CheckConfigurationNotExistsDep = Annotated[
+    str,
+    Depends(check_configuration_not_exists),
+]
 
 
 @set_responses(
@@ -220,3 +238,9 @@ def check_filepath_is_directly_relative(
         )
 
     return filepath
+
+
+CheckFilepathIsDirectlyRelativeDep = Annotated[
+    Path,
+    Depends(check_filepath_is_directly_relative),
+]

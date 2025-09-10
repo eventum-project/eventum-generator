@@ -7,18 +7,15 @@ from typing import Annotated
 
 import aiofiles
 import yaml
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    UploadFile,
-    responses,
-    status,
-)
+from fastapi import APIRouter, HTTPException, UploadFile, responses, status
 from pydantic import ValidationError
 
 from eventum.api.dependencies.app import SettingsDep
-from eventum.api.dependencies.generator_files import (
+from eventum.api.routes.generator_configs.dependencies import (
+    CheckConfigurationExistsDep,
+    CheckConfigurationNotExistsDep,
+    CheckDirectoryIsAllowedDep,
+    CheckFilepathIsDirectlyRelativeDep,
     GeneratorConfigurationFileNameDep,
     check_configuration_exists,
     check_configuration_not_exists,
@@ -29,6 +26,7 @@ from eventum.api.routes.generator_configs.file_tree import (
     FileNode,
     build_file_tree,
 )
+from eventum.api.utils.response_description import merge_responses
 from eventum.core.config import GeneratorConfig
 from eventum.utils.validation_prettier import prettify_validation_errors
 
@@ -71,25 +69,27 @@ async def list_generator_dirs(
         'Get generator configuration in the directory with specified name.'
     ),
     response_description='Generator configuration',
-    responses={
-        **check_directory_is_allowed.responses,
-        **check_configuration_exists.responses,
-        422: {
-            'description': (
-                'Configuration cannot be processed due to parsing '
-                'or validation errors'
-            ),
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        {
+            422: {
+                'description': (
+                    'Configuration cannot be processed due to parsing '
+                    'or validation errors'
+                ),
+            },
+            500: {
+                'description': 'Configuration cannot be read due to OS error',
+            },
         },
-        500: {
-            'description': 'Configuration cannot be read due to OS error',
-        },
-    },
+    ),
 )
 async def get_generator_config(
     name: Annotated[
         str,
-        Depends(check_directory_is_allowed),
-        Depends(check_configuration_exists),
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
     ],
     config_file_name: GeneratorConfigurationFileNameDep,
     settings: SettingsDep,
@@ -132,19 +132,23 @@ async def get_generator_config(
     description=(
         'Create generator configuration in the directory with specified name.'
     ),
-    responses={
-        **check_directory_is_allowed.responses,
-        **check_configuration_not_exists.responses,
-        500: {
-            'description': 'Configuration cannot be created due to OS error',
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_not_exists.responses,
+        {
+            500: {
+                'description': (
+                    'Configuration cannot be created due to OS error'
+                ),
+            },
         },
-    },
+    ),
 )
 async def create_generator_config(
     name: Annotated[
         str,
-        Depends(check_directory_is_allowed),
-        Depends(check_configuration_not_exists),
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationNotExistsDep,
     ],
     config: GeneratorConfig,
     config_file_name: GeneratorConfigurationFileNameDep,
@@ -173,19 +177,23 @@ async def create_generator_config(
     description=(
         'Update generator configuration in the directory with specified name.'
     ),
-    responses={
-        **check_directory_is_allowed.responses,
-        **check_configuration_exists.responses,
-        500: {
-            'description': 'Configuration cannot be updated due to OS error',
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        {
+            500: {
+                'description': (
+                    'Configuration cannot be updated due to OS error'
+                ),
+            },
         },
-    },
+    ),
 )
 async def update_generator_config(
     name: Annotated[
         str,
-        Depends(check_directory_is_allowed),
-        Depends(check_configuration_exists),
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
     ],
     config: GeneratorConfig,
     config_file_name: GeneratorConfigurationFileNameDep,
@@ -212,19 +220,23 @@ async def update_generator_config(
     description=(
         'Delete whole generator configuration directory with specified name.'
     ),
-    responses={
-        **check_directory_is_allowed.responses,
-        **check_configuration_exists.responses,
-        500: {
-            'description': 'Configuration cannot be deleted due to OS error',
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        {
+            500: {
+                'description': (
+                    'Configuration cannot be deleted due to OS error'
+                ),
+            },
         },
-    },
+    ),
 )
 async def delete_generator_config(
     name: Annotated[
         str,
-        Depends(check_directory_is_allowed),
-        Depends(check_configuration_exists),
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
     ],
     settings: SettingsDep,
 ) -> None:
@@ -252,16 +264,16 @@ async def delete_generator_config(
     response_description=(
         'Generator configuration path relative to `path.generators_dir`'
     ),
-    responses={
-        **check_directory_is_allowed.responses,
-        **check_configuration_exists.responses,
-    },
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+    ),
 )
 def get_generator_config_path(
     name: Annotated[
         str,
-        Depends(check_directory_is_allowed),
-        Depends(check_configuration_exists),
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
     ],
     config_file_name: GeneratorConfigurationFileNameDep,
     settings: SettingsDep,
@@ -276,19 +288,21 @@ def get_generator_config_path(
         'Get file tree of the generator directory with specified name.'
     ),
     response_description=('File tree nodes.'),
-    responses={
-        **check_directory_is_allowed.responses,
-        **check_configuration_exists.responses,
-        500: {
-            'description': 'File tree cannot be built due to OS error',
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        {
+            500: {
+                'description': 'File tree cannot be built due to OS error',
+            },
         },
-    },
+    ),
 )
 async def get_generator_file_tree(
     name: Annotated[
         str,
-        Depends(check_directory_is_allowed),
-        Depends(check_configuration_exists),
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
     ],
     settings: SettingsDep,
 ) -> list[FileNode]:
@@ -314,25 +328,23 @@ async def get_generator_file_tree(
         'with specified name.'
     ),
     response_description=('File content.'),
-    responses={
-        **check_directory_is_allowed.responses,
-        **check_configuration_exists.responses,
-        **check_filepath_is_directly_relative.responses,
-        404: {
-            'description': 'File does not exist',
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        check_filepath_is_directly_relative.responses,
+        {
+            404: {'description': 'File does not exist'},
+            500: {'description': 'File cannot be read due to OS error'},
         },
-        500: {
-            'description': 'File cannot be read due to OS error',
-        },
-    },
+    ),
 )
 async def get_generator_file(
     name: Annotated[
         str,
-        Depends(check_directory_is_allowed),
-        Depends(check_configuration_exists),
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
     ],
-    filepath: Annotated[Path, Depends(check_filepath_is_directly_relative)],
+    filepath: Annotated[Path, CheckFilepathIsDirectlyRelativeDep],
     settings: SettingsDep,
 ) -> responses.FileResponse:
     path = (settings.path.generators_dir / name / filepath).resolve()
@@ -358,25 +370,23 @@ async def get_generator_file(
         'Upload file to specified path inside generator directory '
         'with specified name.'
     ),
-    responses={
-        **check_directory_is_allowed.responses,
-        **check_configuration_exists.responses,
-        **check_filepath_is_directly_relative.responses,
-        409: {
-            'description': 'File already exists',
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        check_filepath_is_directly_relative.responses,
+        {
+            409: {'description': 'File already exists'},
+            500: {'description': 'File cannot be uploaded due to OS error'},
         },
-        500: {
-            'description': 'File cannot be uploaded due to OS error',
-        },
-    },
+    ),
 )
 async def upload_generator_file(
     name: Annotated[
         str,
-        Depends(check_directory_is_allowed),
-        Depends(check_configuration_exists),
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
     ],
-    filepath: Annotated[Path, Depends(check_filepath_is_directly_relative)],
+    filepath: Annotated[Path, CheckFilepathIsDirectlyRelativeDep],
     content: UploadFile,
     settings: SettingsDep,
 ) -> None:
@@ -407,25 +417,23 @@ async def upload_generator_file(
         'Put file to specified path inside generator directory '
         'with specified name.'
     ),
-    responses={
-        **check_directory_is_allowed.responses,
-        **check_configuration_exists.responses,
-        **check_filepath_is_directly_relative.responses,
-        404: {
-            'description': 'File does not exist',
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        check_filepath_is_directly_relative.responses,
+        {
+            404: {'description': 'File does not exist'},
+            500: {'description': 'File cannot be uploaded due to OS error'},
         },
-        500: {
-            'description': 'File cannot be uploaded due to OS error',
-        },
-    },
+    ),
 )
 async def put_generator_file(
     name: Annotated[
         str,
-        Depends(check_directory_is_allowed),
-        Depends(check_configuration_exists),
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
     ],
-    filepath: Annotated[Path, Depends(check_filepath_is_directly_relative)],
+    filepath: Annotated[Path, CheckFilepathIsDirectlyRelativeDep],
     content: UploadFile,
     settings: SettingsDep,
 ) -> None:
@@ -454,25 +462,23 @@ async def put_generator_file(
         'Delete file in specified path inside generator directory '
         'with specified name.'
     ),
-    responses={
-        **check_directory_is_allowed.responses,
-        **check_configuration_exists.responses,
-        **check_filepath_is_directly_relative.responses,
-        404: {
-            'description': 'File does not exist',
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        check_filepath_is_directly_relative.responses,
+        {
+            404: {'description': 'File does not exist'},
+            500: {'description': 'File cannot be deleted due to OS error'},
         },
-        500: {
-            'description': 'File cannot be deleted due to OS error',
-        },
-    },
+    ),
 )
 async def delete_generator_file(
     name: Annotated[
         str,
-        Depends(check_directory_is_allowed),
-        Depends(check_configuration_exists),
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
     ],
-    filepath: Annotated[Path, Depends(check_filepath_is_directly_relative)],
+    filepath: Annotated[Path, CheckFilepathIsDirectlyRelativeDep],
     settings: SettingsDep,
 ) -> None:
     path = (settings.path.generators_dir / name / filepath).resolve()
@@ -509,26 +515,22 @@ async def delete_generator_file(
         'Move file from source to destination location inside '
         'generator directory with specified name.'
     ),
-    responses={
-        **check_directory_is_allowed.responses,
-        **check_configuration_exists.responses,
-        **check_filepath_is_directly_relative.responses,
-        404: {
-            'description': 'Source file does not exist',
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        check_filepath_is_directly_relative.responses,
+        {
+            404: {'description': 'Source file does not exist'},
+            409: {'description': 'Destination file already exists'},
+            500: {'description': 'File cannot be moved due to OS error'},
         },
-        409: {
-            'description': 'Destination file already exists',
-        },
-        500: {
-            'description': 'File cannot be moved due to OS error',
-        },
-    },
+    ),
 )
 async def move_generator_file(
     name: Annotated[
         str,
-        Depends(check_directory_is_allowed),
-        Depends(check_configuration_exists),
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
     ],
     source: Path,
     destination: Path,
@@ -575,26 +577,22 @@ async def move_generator_file(
         'Copy file from source to destination location inside '
         'generator directory with specified name.'
     ),
-    responses={
-        **check_directory_is_allowed.responses,
-        **check_configuration_exists.responses,
-        **check_filepath_is_directly_relative.responses,
-        404: {
-            'description': 'Source file does not exist',
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        check_filepath_is_directly_relative.responses,
+        {
+            404: {'description': 'Source file does not exist'},
+            409: {'description': 'Destination file already exists'},
+            500: {'description': 'File cannot be copied due to OS error'},
         },
-        409: {
-            'description': 'Destination file already exists',
-        },
-        500: {
-            'description': 'File cannot be copied due to OS error',
-        },
-    },
+    ),
 )
 async def copy_generator_file(
     name: Annotated[
         str,
-        Depends(check_directory_is_allowed),
-        Depends(check_configuration_exists),
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
     ],
     source: Path,
     destination: Path,
