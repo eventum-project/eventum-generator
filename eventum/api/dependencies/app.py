@@ -1,10 +1,34 @@
-"""Dependencies of generators router."""
+"""General app dependencies."""
 
 from typing import Annotated
 
 from fastapi import Depends, Request
 
 from eventum.app.manager import GeneratorManager
+from eventum.app.models.settings import Settings
+
+
+def get_settings(request: Request) -> Settings:
+    """Get application settings.
+
+    Parameters
+    ----------
+    request : Request
+        Current request.
+
+    Returns
+    -------
+    Settings
+        Obtained application settings.
+
+    """
+    return request.app.state.settings
+
+
+SettingsDep = Annotated[
+    Settings,
+    Depends(get_settings),
+]
 
 
 def get_generator_manager(request: Request) -> GeneratorManager:

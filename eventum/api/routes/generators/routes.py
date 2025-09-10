@@ -3,8 +3,7 @@
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
-from eventum.api.dependencies import SettingsDep
-from eventum.api.routes.generators.dependencies import GeneratorManagerDep
+from eventum.api.dependencies.app import GeneratorManagerDep, SettingsDep
 from eventum.app.manager import ManagingError
 from eventum.core.parameters import GeneratorParameters
 

@@ -17,8 +17,8 @@ from fastapi import (
 )
 from pydantic import ValidationError
 
-from eventum.api.dependencies import SettingsDep
-from eventum.api.routes.generator_configs.dependencies import (
+from eventum.api.dependencies.app import SettingsDep
+from eventum.api.dependencies.generator_files import (
     GeneratorConfigurationFileNameDep,
     check_configuration_exists,
     check_configuration_not_exists,

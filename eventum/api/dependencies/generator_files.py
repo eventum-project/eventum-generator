@@ -1,11 +1,11 @@
-"""Dependencies of generator configs router."""
+"""Dependencies related to generator files placement."""
 
 from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 
-from eventum.api.dependencies import SettingsDep
+from eventum.api.dependencies.app import SettingsDep
 from eventum.api.utils.response_description import set_responses
 
 
