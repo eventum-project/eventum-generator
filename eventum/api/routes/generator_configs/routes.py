@@ -16,7 +16,6 @@ from eventum.api.routes.generator_configs.dependencies import (
     CheckConfigurationNotExistsDep,
     CheckDirectoryIsAllowedDep,
     CheckFilepathIsDirectlyRelativeDep,
-    GeneratorConfigurationFileNameDep,
     check_configuration_exists,
     check_configuration_not_exists,
     check_directory_is_allowed,
@@ -44,10 +43,7 @@ router = APIRouter(
     ),
     response_description=('Directory names with generator configs'),
 )
-async def list_generator_dirs(
-    config_file_name: GeneratorConfigurationFileNameDep,
-    settings: SettingsDep,
-) -> list[str]:
+async def list_generator_dirs(settings: SettingsDep) -> list[str]:
     if not settings.path.generators_dir.exists():
         return []
 
@@ -57,7 +53,7 @@ async def list_generator_dirs(
         func=lambda: [
             path.parent.name
             for path in settings.path.generators_dir.glob(
-                f'*/{config_file_name}',
+                f'*/{settings.path.generator_config_filename}',
             )
         ],
     )
@@ -91,10 +87,13 @@ async def get_generator_config(
         CheckDirectoryIsAllowedDep,
         CheckConfigurationExistsDep,
     ],
-    config_file_name: GeneratorConfigurationFileNameDep,
     settings: SettingsDep,
 ) -> GeneratorConfig:
-    path = (settings.path.generators_dir / name / config_file_name).resolve()
+    path = (
+        settings.path.generators_dir
+        / name
+        / settings.path.generator_config_filename
+    ).resolve()
 
     try:
         async with aiofiles.open(path) as f:
@@ -151,12 +150,13 @@ async def create_generator_config(
         CheckConfigurationNotExistsDep,
     ],
     config: GeneratorConfig,
-    config_file_name: GeneratorConfigurationFileNameDep,
     settings: SettingsDep,
 ) -> None:
     generator_config_dir = (settings.path.generators_dir / name).resolve()
 
-    generator_config_path = generator_config_dir / config_file_name
+    generator_config_path = (
+        generator_config_dir / settings.path.generator_config_filename
+    )
 
     try:
         generator_config_dir.mkdir(parents=True, exist_ok=False)
@@ -196,11 +196,12 @@ async def update_generator_config(
         CheckConfigurationExistsDep,
     ],
     config: GeneratorConfig,
-    config_file_name: GeneratorConfigurationFileNameDep,
     settings: SettingsDep,
 ) -> None:
     generator_config_path = (
-        settings.path.generators_dir / name / config_file_name
+        settings.path.generators_dir
+        / name
+        / settings.path.generator_config_filename
     ).resolve()
 
     try:
@@ -275,10 +276,13 @@ def get_generator_config_path(
         CheckDirectoryIsAllowedDep,
         CheckConfigurationExistsDep,
     ],
-    config_file_name: GeneratorConfigurationFileNameDep,
     settings: SettingsDep,
 ) -> Path:
-    path = (settings.path.generators_dir / name / config_file_name).resolve()
+    path = (
+        settings.path.generators_dir
+        / name
+        / settings.path.generator_config_filename
+    ).resolve()
     return path.relative_to(settings.path.generators_dir)
 
 

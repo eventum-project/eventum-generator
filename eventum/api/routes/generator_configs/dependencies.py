@@ -9,24 +9,6 @@ from eventum.api.dependencies.app import SettingsDep
 from eventum.api.utils.response_description import set_responses
 
 
-def _get_generator_configuration_file_name() -> str:
-    """Get generator configuration file name.
-
-    Returns
-    -------
-    str
-        File name.
-
-    """
-    return 'generator.yml'
-
-
-GeneratorConfigurationFileNameDep = Annotated[
-    str,
-    Depends(_get_generator_configuration_file_name),
-]
-
-
 @set_responses(
     responses={
         403: {
@@ -93,7 +75,6 @@ CheckDirectoryIsAllowedDep = Annotated[
 def check_configuration_exists(
     name: str,
     settings: SettingsDep,
-    config_file_name: GeneratorConfigurationFileNameDep,
 ) -> str:
     """Check that generator configuration exist.
 
@@ -104,9 +85,6 @@ def check_configuration_exists(
 
     settings : SettingsDep
         Application settings dependency.
-
-    config_file_name : GeneratorConfigurationFileNameDep
-        Generator configuration file name dependency.
 
     Returns
     -------
@@ -119,7 +97,11 @@ def check_configuration_exists(
         Generator configuration do not exist.
 
     """
-    path = (settings.path.generators_dir / name / config_file_name).resolve()
+    path = (
+        settings.path.generators_dir
+        / name
+        / settings.path.generator_config_filename
+    ).resolve()
 
     if not path.exists():
         raise HTTPException(
@@ -146,7 +128,6 @@ CheckConfigurationExistsDep = Annotated[
 def check_configuration_not_exists(
     name: str,
     settings: SettingsDep,
-    config_file_name: GeneratorConfigurationFileNameDep,
 ) -> str:
     """Check that generator configuration does not exist.
 
@@ -157,9 +138,6 @@ def check_configuration_not_exists(
 
     settings : SettingsDep
         Application settings dependency.
-
-    config_file_name : GeneratorConfigurationFileNameDep
-        Generator configuration file name dependency.
 
     Returns
     -------
@@ -172,7 +150,11 @@ def check_configuration_not_exists(
         Configuration already exists.
 
     """
-    path = (settings.path.generators_dir / name / config_file_name).resolve()
+    path = (
+        settings.path.generators_dir
+        / name
+        / settings.path.generator_config_filename
+    ).resolve()
 
     if path.exists():
         raise HTTPException(

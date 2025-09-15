@@ -24,7 +24,7 @@ api.ssl.enabled: true
 # Verification mode of SSL connections
 # Available value are "none", "optional", "required"
 # Optional, default is "optional"
-api.ssl.verify_mode: "optional"
+api.ssl.verify_mode: optional
 
 # Absolute path to CA certificate
 # Optional, default is null
@@ -43,7 +43,7 @@ api.ssl.cert_key: null
 # Time zone for generating timestamps
 # Available values are canonical timezone identifiers
 # Optional, default is "UTC"
-generation.timezone: "UTC"
+generation.timezone: UTC
 
 
 # Batch parameters
@@ -87,12 +87,12 @@ generation.write_timeout : 10
 # Log level
 # Available value are "debug", "info", "warning", "error", "critical"
 # Optional, default is "info"
-log.level: "info"
+log.level: info
 
 # Format format
 # Available options are "plain" and "json"
 # Optional, default is "plain"
-log.format: "plain"
+log.format: plain
 
 # ============================== Path Parameters ==============================
 
@@ -111,3 +111,12 @@ path.generators_dir: /app/eventum/config/conf.d/
 # Absolute path to keyring encrypted file with stored secrets
 # Required, there is no default value
 path.keyring_cryptfile: /app/eventum/config/cryptfile.cfg
+
+# Filename for generator configurations. This parameter is used
+# by the API for detection directories with generator
+# configurations. Directory with generator configuration named
+# other than this parameter value will not be operable using API
+# endpoints.
+# Optional, default is "generator.yml"
+generator_config_filename: generator.yml
+        
