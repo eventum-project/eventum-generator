@@ -1,4 +1,4 @@
-"""Router dependencies."""
+"""Generator router dependencies."""
 
 from typing import Annotated
 

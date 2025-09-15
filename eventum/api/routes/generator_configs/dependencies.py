@@ -1,4 +1,4 @@
-"""Dependencies related to generator files placement."""
+"""Generator configs router dependencies."""
 
 from pathlib import Path
 from typing import Annotated
