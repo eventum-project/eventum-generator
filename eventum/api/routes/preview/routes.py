@@ -25,7 +25,7 @@ router = APIRouter(
 
 
 @router.post(
-    '/{name}/input/',
+    '/{name}/input/',  # noqa: FAST003
     description='Generate timestamps of the input plugins',
     response_description='Generated timestamps',
     responses=merge_responses(
