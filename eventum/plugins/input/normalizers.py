@@ -7,7 +7,7 @@ import dateparser
 from pytz import BaseTzInfo
 
 from eventum.plugins.input.fields import TimeKeyword, VersatileDatetime
-from eventum.utils.relative_time import parse_relative_time
+from eventum.plugins.input.utils.relative_time import parse_relative_time
 
 type NonePoint = Literal['now', 'min', 'max']
 

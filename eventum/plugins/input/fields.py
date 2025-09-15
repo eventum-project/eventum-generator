@@ -7,7 +7,7 @@ from typing import Annotated, TypeAlias
 import dateparser
 from pydantic import AfterValidator
 
-from eventum.utils.relative_time import parse_relative_time
+from eventum.plugins.input.utils.relative_time import parse_relative_time
 
 
 def _try_parse_human_datetime(v: str) -> str:
