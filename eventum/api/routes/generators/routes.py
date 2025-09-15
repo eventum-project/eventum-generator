@@ -1,4 +1,4 @@
-"""Router routes."""
+"""Routes."""
 
 import asyncio
 from typing import Annotated

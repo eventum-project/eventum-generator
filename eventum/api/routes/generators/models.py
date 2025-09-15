@@ -1,4 +1,4 @@
-"""Router models."""
+"""Models."""
 
 from pydantic import BaseModel
 

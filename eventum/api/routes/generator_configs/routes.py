@@ -1,4 +1,4 @@
-"""Generator configs routes."""
+"""Routes."""
 
 import asyncio
 import shutil
