@@ -7,6 +7,7 @@ from eventum.api.routes.generator_configs import (
     router as generator_files_router,
 )
 from eventum.api.routes.generators import router as generators_router
+from eventum.api.routes.preview import router as preview_router
 from eventum.app.manager import GeneratorManager
 from eventum.app.models.settings import Settings
 from eventum.exceptions import ContextualError
@@ -64,5 +65,6 @@ def build_api_app(
     logger.debug('Connecting routers')
     app.include_router(generators_router)
     app.include_router(generator_files_router)
+    app.include_router(preview_router)
 
     return app
