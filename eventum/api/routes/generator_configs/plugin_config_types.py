@@ -50,6 +50,7 @@ def _generate_plugin_config_models(
         model = create_model(  # type: ignore[call-overload]
             name,
             **{name: (plugin.config_cls, ...)},  # type: ignore[arg-type]
+            __config__={'extra': 'forbid', 'frozen': True},
         )
         config_dicts.append(model)
 
@@ -59,3 +60,28 @@ def _generate_plugin_config_models(
 type InputPluginConfigDicts = Union[*_generate_plugin_config_models('input')]  # type: ignore  # noqa: PGH003
 type EventPluginConfigDicts = Union[*_generate_plugin_config_models('event')]  # type: ignore  # noqa: PGH003
 type OutputPluginConfigDicts = Union[*_generate_plugin_config_models('output')]  # type: ignore  # noqa: PGH003
+
+
+class GeneratorConfig(BaseModel, extra='forbid', frozen=True):
+    """Type-resolved version of generator configuration.
+
+    Attributes
+    ----------
+    input : list[InputPluginConfigDicts]
+        List of input plugin configurations.
+
+    event : EventPluginConfigDicts
+        Event plugin configuration.
+
+    output : list[OutputPluginConfigDicts]
+        List of output plugin configurations.
+
+    Notes
+    -----
+    See `GeneratorConfig` from `eventum.core.config`.
+
+    """
+
+    input: list[InputPluginConfigDicts]
+    event: EventPluginConfigDicts
+    output: list[OutputPluginConfigDicts]

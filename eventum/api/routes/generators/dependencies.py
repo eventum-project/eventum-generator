@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import HTTPException, status
+from fastapi import Body, HTTPException, Path, status
 from fastapi.params import Depends
 
 from eventum.api.dependencies.app import GeneratorManagerDep, SettingsDep
@@ -20,7 +20,7 @@ from eventum.core.parameters import GeneratorParameters
     },
 )
 def get_generator(
-    id: str,
+    id: Annotated[str, Path(description='Generator id', min_length=1)],
     generator_manager: GeneratorManagerDep,
 ) -> Generator:
     """Get generator with provided id from manager.
@@ -57,8 +57,11 @@ GeneratorDep = Annotated[Generator, Depends(get_generator)]
 
 
 def get_prepared_generator_params_from_request(
-    id: str,
-    params: GeneratorParameters,
+    id: Annotated[str, Path(description='Generator id', min_length=1)],
+    params: Annotated[
+        GeneratorParameters,
+        Body(description='Generator parameters'),
+    ],
     settings: SettingsDep,
 ) -> GeneratorParameters:
     """Get generator parameters from request body with prepared

@@ -7,7 +7,15 @@ from typing import Annotated
 
 import aiofiles
 import yaml
-from fastapi import APIRouter, HTTPException, UploadFile, responses, status
+from fastapi import (
+    APIRouter,
+    Body,
+    HTTPException,
+    Query,
+    UploadFile,
+    responses,
+    status,
+)
 from pydantic import ValidationError
 
 from eventum.api.dependencies.app import SettingsDep
@@ -25,8 +33,10 @@ from eventum.api.routes.generator_configs.file_tree import (
     FileNode,
     build_file_tree,
 )
+from eventum.api.routes.generator_configs.plugin_config_types import (
+    GeneratorConfig,
+)
 from eventum.api.utils.response_description import merge_responses
-from eventum.core.config import GeneratorConfig
 from eventum.utils.validation_prettier import prettify_validation_errors
 
 router = APIRouter(
@@ -149,7 +159,10 @@ async def create_generator_config(
         CheckDirectoryIsAllowedDep,
         CheckConfigurationNotExistsDep,
     ],
-    config: GeneratorConfig,
+    config: Annotated[
+        GeneratorConfig,
+        Body(description='Generator configuration'),
+    ],
     settings: SettingsDep,
 ) -> None:
     generator_config_dir = (settings.path.generators_dir / name).resolve()
@@ -195,7 +208,10 @@ async def update_generator_config(
         CheckDirectoryIsAllowedDep,
         CheckConfigurationExistsDep,
     ],
-    config: GeneratorConfig,
+    config: Annotated[
+        GeneratorConfig,
+        Body(description='Generator configuration'),
+    ],
     settings: SettingsDep,
 ) -> None:
     generator_config_path = (
@@ -536,8 +552,20 @@ async def move_generator_file(
         CheckDirectoryIsAllowedDep,
         CheckConfigurationExistsDep,
     ],
-    source: Path,
-    destination: Path,
+    source: Annotated[
+        Path,
+        Query(
+            description='Relative filepath to source file or directory',
+            example='description.txt',
+        ),
+    ],
+    destination: Annotated[
+        Path,
+        Query(
+            description='Relative filepath to destination file or directory',
+            example='README.md',
+        ),
+    ],
     settings: SettingsDep,
 ) -> None:
     # Checks performed here to avoid mixing `Query` and `Depends` in signature
@@ -598,8 +626,20 @@ async def copy_generator_file(
         CheckDirectoryIsAllowedDep,
         CheckConfigurationExistsDep,
     ],
-    source: Path,
-    destination: Path,
+    source: Annotated[
+        Path,
+        Query(
+            description='Relative filepath to source file or directory',
+            example='samples/users.csv',
+        ),
+    ],
+    destination: Annotated[
+        Path,
+        Query(
+            description='Relative filepath to destination file or directory',
+            example='samples/users_copy.csv',
+        ),
+    ],
     settings: SettingsDep,
 ) -> None:
     # Checks performed here to avoid mixing `Query` and `Depends` in signature

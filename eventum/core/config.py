@@ -26,6 +26,11 @@ class GeneratorConfig(BaseModel, frozen=True, extra='forbid'):
     output : list[PluginConfig]
         List of output plugin configurations.
 
+    Notes
+    -----
+    If you need type-resolved version, see `GeneratorConfig` from
+    `eventum.api.routes.generator_configs.plugin_config_types`.
+
     """
 
     input: list[PluginConfig] = Field(min_length=1)

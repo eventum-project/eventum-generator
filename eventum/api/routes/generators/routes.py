@@ -3,7 +3,7 @@
 import asyncio
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, Path, status
 
 from eventum.api.dependencies.app import GeneratorManagerDep, SettingsDep
 from eventum.api.routes.generators.dependencies import (
@@ -18,7 +18,6 @@ from eventum.api.routes.generators.dependencies import (
 from eventum.api.routes.generators.models import GeneratorStatus
 from eventum.api.utils.response_description import merge_responses
 from eventum.app.manager import ManagingError
-from eventum.core.generator import Generator
 from eventum.core.parameters import GeneratorParameters
 
 router = APIRouter(
@@ -37,12 +36,12 @@ async def list_generators(generator_manager: GeneratorManagerDep) -> list[str]:
 
 
 @router.get(
-    '/{id}/',
+    '/{id}/',  # noqa: FAST003
     description='Get generator parameters',
-    responses={**_get_generator.responses},
+    responses=_get_generator.responses,
 )
 async def get_generator(
-    generator: Annotated[Generator, Depends(_get_generator)],
+    generator: GeneratorDep,
     settings: SettingsDep,
 ) -> GeneratorParameters:
     try:
@@ -54,12 +53,12 @@ async def get_generator(
 
 
 @router.get(
-    '/{id}/status/',
+    '/{id}/status/',  # noqa: FAST003
     description='Get generator status',
-    responses={**_get_generator.responses},
+    responses=_get_generator.responses,
 )
 async def get_generator_status(
-    generator: Annotated[Generator, Depends(_get_generator)],
+    generator: GeneratorDep,
 ) -> GeneratorStatus:
     return GeneratorStatus(
         is_initializing=generator.is_initializing,
@@ -112,7 +111,7 @@ async def add_generator(
     ),
 )
 async def update_generator(
-    id: str,
+    id: Annotated[str, Path(description='Generator id', min_length=1)],
     params: Annotated[PreparedGeneratorParamsDep, CheckPathExistsDep],
     generator_manager: GeneratorManagerDep,
     generator: GeneratorDep,
@@ -141,7 +140,7 @@ async def update_generator(
     },
 )
 async def start_generator(
-    id: str,
+    id: Annotated[str, Path(description='Generator id', min_length=1)],
     generator_manager: GeneratorManagerDep,
 ) -> bool:
     loop = asyncio.get_running_loop()
@@ -165,7 +164,7 @@ async def start_generator(
     },
 )
 async def stop_generator(
-    id: str,
+    id: Annotated[str, Path(description='Generator id', min_length=1)],
     generator_manager: GeneratorManagerDep,
 ) -> None:
     loop = asyncio.get_running_loop()
@@ -189,7 +188,7 @@ async def stop_generator(
     },
 )
 async def delete_generator(
-    id: str,
+    id: Annotated[str, Path(description='Generator id', min_length=1)],
     generator_manager: GeneratorManagerDep,
 ) -> None:
     loop = asyncio.get_running_loop()

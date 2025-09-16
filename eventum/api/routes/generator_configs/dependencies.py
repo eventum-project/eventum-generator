@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Query, status
 
 from eventum.api.dependencies.app import SettingsDep
 from eventum.api.utils.response_description import set_responses
@@ -20,7 +20,7 @@ from eventum.api.utils.response_description import set_responses
     },
 )
 def check_directory_is_allowed(
-    name: str,
+    name: Annotated[str, Query(description='Name of the generator directory')],
     settings: SettingsDep,
 ) -> str:
     """Check that a generator directory is located within the
@@ -73,7 +73,7 @@ CheckDirectoryIsAllowedDep = Annotated[
     },
 )
 def check_configuration_exists(
-    name: str,
+    name: Annotated[str, Query(description='Name of the generator directory')],
     settings: SettingsDep,
 ) -> str:
     """Check that generator configuration exist.
@@ -126,7 +126,7 @@ CheckConfigurationExistsDep = Annotated[
     },
 )
 def check_configuration_not_exists(
-    name: str,
+    name: Annotated[str, Query(description='Name of the generator directory')],
     settings: SettingsDep,
 ) -> str:
     """Check that generator configuration does not exist.
@@ -182,7 +182,7 @@ CheckConfigurationNotExistsDep = Annotated[
     },
 )
 def check_filepath_is_directly_relative(
-    filepath: Path,
+    filepath: Annotated[Path, Query(description='Relative path to the file')],
 ) -> Path:
     """Check that filepath directly relative (i.e. not using '..').
 
