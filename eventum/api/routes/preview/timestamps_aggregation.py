@@ -34,6 +34,51 @@ _AUTO_SPANS_US = np.array(
 _OPTIMAL_SPANS_COUNT = 60
 
 
+def calculate_auto_span(
+    earliest_ts: np.datetime64,
+    latest_ts: np.datetime64,
+    timestamps_count: int,
+    optimal_spans_count: int,
+) -> np.timedelta64:
+    """Calculate optimal span for time distribution with provided
+    parameters.
+
+    Parameters
+    ----------
+    earliest_ts : np.datetime64
+        Earliest timestamp in the distribution.
+
+    latest_ts : np.datetime64
+        Latest timestamp in the distribution.
+
+    timestamps_count : int
+        Count of timestamps in the distribution.
+
+    optimal_spans_count : int
+        Optimal count of span for aggregated distribution.
+
+    Returns
+    -------
+    np.timedelta64
+        Calculated span.
+
+    Notes
+    -----
+    Resulting span won't necessarily be equal to value calculated from
+    `optimal_spans_count`, because it is also aligned to one of nice
+    spans that satisfies condition of the nearest smaller.
+
+    """
+    optimal_span = np.timedelta64(
+        (latest_ts - earliest_ts) / min(optimal_spans_count, timestamps_count),
+        'us',
+    )
+
+    indexes = np.where(optimal_span >= _AUTO_SPANS_US)[0]
+    index = indexes[-1] if indexes.size > 0 else 0
+    return _AUTO_SPANS_US[index]
+
+
 def aggregate_timestamps(
     timestamps: NDArray[np.datetime64],
     span: timedelta | None,
@@ -42,8 +87,8 @@ def aggregate_timestamps(
 
     Parameters
     ----------
-    timestamps : NDArray[np.datetime64]
-        Array of datetime64 timestamps.
+    timestamps : NDArray[np.datetime64[us]]
+        Array of timestamps.
 
     span : timedelta | None
         Span duration. In case `None` is provided auto span is used.
@@ -58,15 +103,12 @@ def aggregate_timestamps(
         return AggregatedTimestamps(span_edges=[], span_counts=[])
 
     if span is None:
-        optimal_span = np.timedelta64(
-            (timestamps.max() - timestamps.min())
-            / min(_OPTIMAL_SPANS_COUNT, timestamps.size),
-            'us',
+        span_td64 = calculate_auto_span(
+            earliest_ts=timestamps.min(),
+            latest_ts=timestamps.max(),
+            timestamps_count=timestamps.size,
+            optimal_spans_count=_OPTIMAL_SPANS_COUNT,
         )
-
-        indexes = np.where(optimal_span >= _AUTO_SPANS_US)[0]
-        index = indexes[-1] if indexes.size > 0 else 0
-        span_td64 = _AUTO_SPANS_US[index]
     else:
         span_td64 = np.timedelta64(span, 'us')
 

@@ -15,11 +15,13 @@ from eventum.api.routes.generator_configs.dependencies import (
     check_configuration_exists,
     check_directory_is_allowed,
 )
+from eventum.api.routes.generator_configs.plugin_config_types import (
+    InputPluginConfigDicts,
+)
 from eventum.api.utils.response_description import (
     merge_responses,
     set_responses,
 )
-from eventum.core.config import PluginConfig
 from eventum.core.plugins_initializer import InitializationError, init_plugin
 from eventum.plugins.input.base.plugin import InputPlugin
 from eventum.plugins.input.utils.relative_time import parse_relative_time
@@ -32,7 +34,15 @@ from eventum.plugins.input.utils.relative_time import parse_relative_time
         },
     },
 )
-def get_timezone(timezone: Annotated[str, Query()] = 'UTC') -> BaseTzInfo:
+def get_timezone(
+    timezone: Annotated[
+        str,
+        Query(
+            description='Timezone that is used for generated timestamps',
+            example='Europe/Moscow',
+        ),
+    ] = 'UTC',
+) -> BaseTzInfo:
     """Get timezone.
 
     Parameters
@@ -70,7 +80,19 @@ TimezoneDep = Annotated[BaseTzInfo, Depends(get_timezone)]
         },
     },
 )
-def get_span(span: Annotated[str | None, Query()] = None) -> timedelta | None:
+def get_span(
+    span: Annotated[
+        str | None,
+        Query(
+            description=(
+                'Span expression for timestamps aggregation, '
+                'can be omitted to use auto span'
+            ),
+            example='5m',
+            examples=['1s', '5m', '30m', '1h', '7d'],
+        ),
+    ] = None,
+) -> timedelta | None:
     """Get timedelta span by parsing span expression.
 
     Parameters
@@ -104,8 +126,6 @@ def get_span(span: Annotated[str | None, Query()] = None) -> timedelta | None:
 
 SpanDep = Annotated[timedelta | None, Depends(get_span)]
 
-UTC = to_timezone('UTC')
-
 
 @set_responses(
     responses=merge_responses(
@@ -114,7 +134,9 @@ UTC = to_timezone('UTC')
         get_timezone.responses,
         {
             500: {
-                'description': 'Some of input plugins cannot be initialized',
+                'description': (
+                    'Some of the input plugins cannot be initialized'
+                ),
             },
         },
     ),
@@ -125,7 +147,10 @@ async def load_input_plugins(
         CheckDirectoryIsAllowedDep,
         CheckConfigurationExistsDep,
     ],
-    plugin_configs: Annotated[list[PluginConfig], Body()],
+    plugin_configs: Annotated[
+        list[InputPluginConfigDicts],
+        Body(description='List of input plugin configs'),
+    ],
     settings: SettingsDep,
     timezone: TimezoneDep,
 ) -> list[InputPlugin]:

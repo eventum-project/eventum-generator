@@ -1,8 +1,9 @@
 """Routes."""
 
 import asyncio
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 from eventum.api.routes.preview.dependencies import (
     InputPluginsDep,
@@ -37,8 +38,14 @@ router = APIRouter(
 async def generate_timestamps(
     plugins: InputPluginsDep,
     span: SpanDep,
-    size: int = 1_000,
-    skip_past: bool = True,  # noqa: FBT001, FBT002
+    size: Annotated[
+        int,
+        Query(ge=1, description='Number of timestamps to generate'),
+    ] = 1_000,
+    skip_past: Annotated[  # noqa: FBT002
+        bool,
+        Query(description='Whether to skip past timestamps in generation'),
+    ] = True,
 ) -> AggregatedTimestamps:
     non_interactive_plugins = list(
         filter(lambda plugin: not plugin.is_interactive, plugins),
