@@ -9,7 +9,6 @@ import yaml
 from flatten_dict import flatten, unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError, validate_call
 
-from eventum.api.main import build_api_app
 from eventum.app.manager import GeneratorManager, ManagingError
 from eventum.app.models.settings import Settings
 from eventum.core.parameters import GeneratorParameters
@@ -275,6 +274,8 @@ class App:
 
     def _start_api(self) -> None:
         """Start application API."""
+        from eventum.api.main import build_api_app
+
         api_app = build_api_app(
             generator_manager=self._manager,
             settings=self._settings,
