@@ -33,9 +33,7 @@ from eventum.api.routes.generator_configs.file_tree import (
     FileNode,
     build_file_tree,
 )
-from eventum.api.routes.generator_configs.plugin_config_types import (
-    GeneratorConfig,
-)
+from eventum.api.routes.generator_configs.runtime_types import GeneratorConfig
 from eventum.api.utils.response_description import merge_responses
 from eventum.utils.validation_prettier import prettify_validation_errors
 

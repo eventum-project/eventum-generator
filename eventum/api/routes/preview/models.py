@@ -14,10 +14,10 @@ class AggregatedTimestamps(BaseModel, frozen=True, extra='forbid'):
     span_edges : list[datetime]
         Timestamps representing edges of spans in aggregation histogram.
 
-    span_counts : list[int]
-        Count of timestamps within spans.
+    span_counts : dict[int, list[int]]
+        Count of timestamps within spans for each plugin id.
 
     """
 
     span_edges: list[datetime]
-    span_counts: list[int]
+    span_counts: dict[int, list[int]]

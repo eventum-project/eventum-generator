@@ -52,13 +52,13 @@ async def generate_timestamps(
     )
 
     if not non_interactive_plugins:
-        return AggregatedTimestamps(span_edges=[], span_counts=[])
+        return AggregatedTimestamps(span_edges=[], span_counts={})
 
     merged_plugins = InputPluginsMerger(plugins=non_interactive_plugins)
     iterator = merged_plugins.iterate(size=size, skip_past=skip_past)
 
     try:
-        timestamps_batch = next(iterator)
+        timestamps = next(iterator)
     except PluginGenerationError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -67,8 +67,6 @@ async def generate_timestamps(
                 'context': e.context,
             },
         ) from None
-
-    timestamps = timestamps_batch['timestamp']
 
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(

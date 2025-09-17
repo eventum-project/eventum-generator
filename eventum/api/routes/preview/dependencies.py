@@ -2,7 +2,7 @@
 
 import asyncio
 from datetime import timedelta
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import Body, Depends, HTTPException, Query, status
 from pytz import BaseTzInfo, UnknownTimeZoneError
@@ -15,8 +15,9 @@ from eventum.api.routes.generator_configs.dependencies import (
     check_configuration_exists,
     check_directory_is_allowed,
 )
-from eventum.api.routes.generator_configs.plugin_config_types import (
-    InputPluginConfigDicts,
+from eventum.api.routes.generator_configs.runtime_types import (
+    InputPluginNamedConfig,
+    PluginNamedConfig,
 )
 from eventum.api.utils.response_description import (
     merge_responses,
@@ -148,7 +149,7 @@ async def load_input_plugins(
         CheckConfigurationExistsDep,
     ],
     plugin_configs: Annotated[
-        list[InputPluginConfigDicts],
+        list[InputPluginNamedConfig],
         Body(description='List of input plugin configs'),
     ],
     settings: SettingsDep,
@@ -161,7 +162,7 @@ async def load_input_plugins(
     name : str
         Name of the generator directory.
 
-    plugin_configs : list[PluginConfig]
+    plugin_configs : list[InputPluginNamedConfig]
         Plugin configurations.
 
     settings : SettingsDep
@@ -186,19 +187,18 @@ async def load_input_plugins(
 
     plugins: list[InputPlugin] = []
     loop = asyncio.get_running_loop()
-    for i, plugin_config in enumerate(plugin_configs):
-        plugin_name, plugin_conf = next(iter(plugin_config.items()))
+    for i, plugin_config in enumerate(plugin_configs, start=1):
+        plugin_config = cast('PluginNamedConfig', plugin_config)
 
         try:
             plugin = await loop.run_in_executor(
                 executor=None,
                 func=lambda i=i,  # type: ignore[misc]
-                plugin_name=plugin_name,
-                plugin_conf=plugin_conf: (
+                plugin_config=plugin_config: (
                     init_plugin(
-                        name=plugin_name,
+                        name=plugin_config.get_name(),
                         type='input',
-                        config=plugin_conf,
+                        config=plugin_config.get_config().model_dump(),
                         params={
                             'id': i,
                             'timezone': timezone,
