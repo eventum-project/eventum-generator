@@ -16,14 +16,17 @@ from eventum.api.routes.generator_configs.dependencies import (
     check_directory_is_allowed,
 )
 from eventum.api.routes.generator_configs.runtime_types import (
+    EventPluginNamedConfig,
     InputPluginNamedConfig,
     PluginNamedConfig,
 )
+from eventum.api.routes.preview.plugins_storage import EVENT_PLUGINS
 from eventum.api.utils.response_description import (
     merge_responses,
     set_responses,
 )
 from eventum.core.plugins_initializer import InitializationError, init_plugin
+from eventum.plugins.event.base.plugin import EventPlugin
 from eventum.plugins.input.base.plugin import InputPlugin
 from eventum.plugins.input.utils.relative_time import parse_relative_time
 
@@ -222,3 +225,101 @@ async def load_input_plugins(
 
 
 InputPluginsDep = Annotated[list[InputPlugin], Depends(load_input_plugins)]
+
+
+@set_responses(
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        get_timezone.responses,
+        {
+            500: {
+                'description': ('Event plugin cannot be initialized'),
+            },
+        },
+    ),
+)
+async def load_event_plugin(
+    name: Annotated[
+        str,
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
+    ],
+    plugin_config: Annotated[
+        EventPluginNamedConfig,
+        Body(description='Event plugin config'),
+    ],
+    settings: SettingsDep,
+) -> EventPlugin:
+    """Load event plugin using provided event plugin configuration.
+
+    Parameters
+    ----------
+    name : str
+        Name of the generator directory.
+
+    plugin_config : EventPluginNamedConfig
+        Plugin configuration.
+
+    settings : SettingsDep
+        Application settings dependency.
+
+    Returns
+    -------
+    EventPlugin
+        Loaded event plugin.
+
+    Raises
+    ------
+    HTTPException
+        If plugin cannot be initialized or some of the dependency fails
+        to load.
+
+
+    Notes
+    -----
+    Before initializing new instance of event plugin, it is checked in
+    plugins storage and tried to obtain from there, otherwise new
+    instance will be created and added to plugins storage. Presence
+    check is performed using generator directory path and plugin name
+    from provided configuration.
+
+    """
+    path = (settings.path.generators_dir / name).resolve()
+
+    loop = asyncio.get_running_loop()
+    plugin_named_config = cast('PluginNamedConfig', plugin_config)
+
+    if EVENT_PLUGINS.contains(path=path, name=name):
+        return EVENT_PLUGINS.get(path=path, name=name)
+
+    try:
+        plugin = await loop.run_in_executor(
+            executor=None,
+            func=lambda: (
+                init_plugin(
+                    name=plugin_named_config.get_name(),
+                    type='event',
+                    config=plugin_named_config.get_config().model_dump(),
+                    params={
+                        'id': 1,
+                        'base_path': path,
+                    },
+                )
+            ),
+        )
+    except InitializationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                'message': str(e),
+                'context': e.context,
+            },
+        ) from None
+
+    EVENT_PLUGINS.add(path=path, name=name, plugin=plugin)
+
+    return plugin
+
+
+EventPluginDep = Annotated[EventPlugin, Depends(load_event_plugin)]
