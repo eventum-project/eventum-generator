@@ -166,3 +166,31 @@ async def produce_events(
         ],
         exhausted=exhausted,
     )
+
+
+@router.post(
+    '/{name}/event/release',
+    description='Release event plugin with freeing acquired resource',
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        {400: {'description': 'Event plugin was not previously initialized'}},
+    ),
+)
+async def release_event_plugin(
+    name: Annotated[
+        str,
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
+    ],
+    settings: SettingsDep,
+) -> None:
+    path = (settings.path.generators_dir / name).resolve()
+
+    if not EVENT_PLUGINS.is_set(path=path):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Event plugin was not previously initialized',
+        )
+
+    EVENT_PLUGINS.remove(path)
