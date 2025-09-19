@@ -50,6 +50,11 @@
         <td>Name of the module</td>
         <td>str</td>
     </tr>
+    <tr>
+        <td>traceback</td>
+        <td>Formatted traceback</td>
+        <td>str</td>
+    </tr>
 </table>
 
 ## Asynchrony

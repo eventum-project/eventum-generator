@@ -44,6 +44,7 @@ from eventum.plugins.event.plugins.jinja.template_pickers import (
     get_picker_class,
 )
 from eventum.plugins.exceptions import PluginConfigurationError
+from eventum.utils.traceback_utils import shorten_traceback
 
 
 class JinjaEventPluginParams(EventPluginParams):
@@ -350,6 +351,11 @@ class JinjaEventPlugin(
                     msg,
                     context={
                         'reason': str(e),
+                        'traceback': shorten_traceback(
+                            e,
+                            key_phrase='rewrite_traceback_stack(source=source)',
+                            start_position='after',
+                        ),
                         'template_alias': alias,
                     },
                 ) from e
