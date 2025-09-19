@@ -20,7 +20,6 @@ from eventum.api.routes.generator_configs.runtime_types import (
     InputPluginNamedConfig,
     PluginNamedConfig,
 )
-from eventum.api.routes.preview.plugins_storage import EVENT_PLUGINS
 from eventum.api.utils.response_description import (
     merge_responses,
     set_responses,
@@ -270,25 +269,14 @@ async def load_event_plugin(
         If plugin cannot be initialized or some of the dependency fails
         to load.
 
-    Notes
-    -----
-    Before initializing new instance of event plugin, it is checked in
-    plugins storage and tried to obtain from there, otherwise new
-    instance will be created and added to plugins storage. Presence
-    check is performed using generator directory path and plugin name
-    from provided configuration.
-
     """
     path = (settings.path.generators_dir / name).resolve()
 
     loop = asyncio.get_running_loop()
     plugin_named_config = cast('PluginNamedConfig', plugin_config)
 
-    if EVENT_PLUGINS.contains(path=path, name=name):
-        return EVENT_PLUGINS.get(path=path, name=name)
-
     try:
-        plugin = await loop.run_in_executor(
+        return await loop.run_in_executor(
             executor=None,
             func=lambda: (
                 init_plugin(
@@ -310,10 +298,6 @@ async def load_event_plugin(
                 'context': e.context,
             },
         ) from None
-
-    EVENT_PLUGINS.add(path=path, name=name, plugin=plugin)
-
-    return plugin
 
 
 EventPluginDep = Annotated[EventPlugin, Depends(load_event_plugin)]

@@ -14,18 +14,16 @@ class _EventPluginsStorage:
 
     def __init__(self) -> None:
         """Initialize empty event plugins storage."""
-        self._state: dict[Path, dict[str, EventPlugin]] = {}
+        self._state: dict[Path, EventPlugin] = {}
 
-    def get(self, path: Path, name: str) -> EventPlugin:
-        """Get event plugin instance from the storage by path and name.
+    def get(self, path: Path) -> EventPlugin:
+        """Get event plugin instance from the storage for specified
+        path.
 
         Parameters
         ----------
         path : Path
             Event plugin working directory (generator directory).
-
-        name : str
-            Name of the event plugin.
 
         Returns
         -------
@@ -38,58 +36,53 @@ class _EventPluginsStorage:
             If the plugin instance is not in the storage.
 
         """
-        return self._state[path][name]
+        return self._state[path]
 
-    def add(self, path: Path, name: str, plugin: EventPlugin) -> None:
-        """Add event plugin instance to the storage.
+    def set(self, path: Path, plugin: EventPlugin) -> None:
+        """Set event plugin instance to the storage for the specified
+        path.
 
         Parameters
         ----------
         path : Path
             Event plugin working directory (generator directory).
-
-        name : str
-            Name of the event plugin.
 
         plugin : EventPlugin
-            Event plugin instance to add to the storage.
+            Event plugin instance to set to the storage.
+
+        Notes
+        -----
+        If plugin is already set in the storage, then it will be just
+        overwritten.
 
         """
-        if path not in self._state:
-            self._state[path] = {}
+        self._state[path] = plugin
 
-        self._state[path][name] = plugin
-
-    def remove(self, path: Path, name: str) -> None:
-        """Remove event plugin instance from the storage.
+    def remove(self, path: Path) -> None:
+        """Remove event plugin instance from the storage for the
+        specified path.
 
         Parameters
         ----------
         path : Path
             Event plugin working directory (generator directory).
-
-        name : str
-            Name of the event plugin.
 
         Raises
         ------
         KeyError
-           If the plugin instance is not in the storage.
+           If the plugin instance is not set in the storage.
 
         """
-        del self._state[path][name]
+        del self._state[path]
 
-    def contains(self, path: Path, name: str) -> bool:
-        """Check whether an event plugin instance is added to the
-        storage.
+    def is_set(self, path: Path) -> bool:
+        """Check whether an event plugin instance is set to the
+        storage for the specified path.
 
         Parameters
         ----------
         path : Path
             Event plugin working directory (generator directory).
-
-        name : str
-            Name of the event plugin.
 
         Returns
         -------
@@ -98,7 +91,7 @@ class _EventPluginsStorage:
             otherwise.
 
         """
-        return path in self._state and name in self._state[path]
+        return path in self._state
 
 
 EVENT_PLUGINS = _EventPluginsStorage()

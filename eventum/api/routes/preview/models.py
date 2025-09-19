@@ -1,8 +1,9 @@
 """Models."""
 
 from datetime import datetime
+from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AggregatedTimestamps(BaseModel, frozen=True, extra='forbid'):
@@ -21,3 +22,47 @@ class AggregatedTimestamps(BaseModel, frozen=True, extra='forbid'):
 
     span_edges: list[datetime]
     span_counts: dict[int, list[int]]
+
+
+class ProduceEventErrorInfo(BaseModel, frozen=True, extra='forbid'):
+    """Information about errors related to events producing.
+
+    Attributes
+    ----------
+    index : int
+        Index of params object from params list used to produce events
+        for which producing is failed.
+
+    message : str
+        Error message.
+
+    context : dict[str, Any]
+        Error context.
+
+    """
+
+    index: int = Field(ge=0)
+    message: str
+    context: dict[str, Any]
+
+
+class ProducedEventsInfo(BaseModel, frozen=True, extra='forbid'):
+    """Response model containing info about event produced by event
+    plugin.
+
+    Attributes
+    ----------
+    events : list[str]
+        Successfully produced events.
+
+    errors : list[ProduceEventErrorInfo]
+        List of errors related to events producing.
+
+    exhausted : bool
+        Whether the event plugin was exhausted during events producing.
+
+    """
+
+    events: list[str]
+    errors: list[ProduceEventErrorInfo]
+    exhausted: bool
