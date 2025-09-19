@@ -35,7 +35,7 @@ class ReplayEventPluginConfig(EventPluginConfig, frozen=True):
     repeat : bool, default=False
         Whether to repeat replaying after the end of file is reached.
 
-    chunk_size : int
+    chunk_size : int, default = 1_048_576
         Number of bytes to read from the file at a time. This parameter
         controls how often to access file and how many data will be
         stored in in memory. If 0 is provided then the entire file is
