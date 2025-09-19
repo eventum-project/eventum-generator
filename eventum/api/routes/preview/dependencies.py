@@ -4,7 +4,7 @@ import asyncio
 from datetime import timedelta
 from typing import Annotated, cast
 
-from fastapi import Body, Depends, HTTPException, Query, status
+from fastapi import Body, Depends, HTTPException, Path, Query, status
 from pytz import BaseTzInfo, UnknownTimeZoneError
 from pytz import timezone as to_timezone
 
@@ -20,12 +20,18 @@ from eventum.api.routes.generator_configs.runtime_types import (
     InputPluginNamedConfig,
     PluginNamedConfig,
 )
+from eventum.api.routes.preview.plugins_storage import EVENT_PLUGINS
 from eventum.api.utils.response_description import (
     merge_responses,
     set_responses,
 )
 from eventum.core.plugins_initializer import InitializationError, init_plugin
 from eventum.plugins.event.base.plugin import EventPlugin
+from eventum.plugins.event.plugins.jinja.plugin import JinjaEventPlugin
+from eventum.plugins.event.plugins.jinja.state import (
+    MultiThreadState,
+    SingleThreadState,
+)
 from eventum.plugins.input.base.plugin import InputPlugin
 from eventum.plugins.input.utils.relative_time import parse_relative_time
 
@@ -301,3 +307,233 @@ async def load_event_plugin(
 
 
 EventPluginDep = Annotated[EventPlugin, Depends(load_event_plugin)]
+
+
+@set_responses(
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        {400: {'description': 'Event plugin was not previously initialized'}},
+    ),
+)
+async def get_event_plugin_from_storage(
+    name: Annotated[
+        str,
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
+    ],
+    settings: SettingsDep,
+) -> EventPlugin:
+    """Get previously initialized event plugin from storage.
+
+    Parameters
+    ----------
+    name : str
+        Name of the generator directory.
+
+    settings : SettingsDep
+        Application settings dependency.
+
+    Returns
+    -------
+    EventPlugin
+        Event plugin.
+
+    Raises
+    ------
+    HTTPException
+        If event plugin was not previously initialized or some of the
+        dependency fails to load.
+
+    """
+    path = (settings.path.generators_dir / name).resolve()
+
+    if not EVENT_PLUGINS.is_set(path=path):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Event plugin was not previously initialized',
+        )
+
+    return EVENT_PLUGINS.get(path)
+
+
+EventPluginFromStorageDep = Annotated[
+    EventPlugin,
+    Depends(get_event_plugin_from_storage),
+]
+
+
+@set_responses(
+    responses={
+        400: {
+            'description': (
+                'Currently used plugin is inappropriate for this operation'
+            ),
+        },
+    },
+)
+def check_event_plugin_is_jinja(plugin: EventPlugin) -> EventPlugin:
+    """Check that provided event plugin is `jinja` event plugin.
+
+    Parameters
+    ----------
+    plugin : EventPlugin
+        Event plugin to check.
+
+    Returns
+    -------
+    JinjaEventPlugin
+        Original event plugin.
+
+    Raises
+    ------
+    HTTPException
+        If currently used plugin is inappropriate for this operation.
+
+    """
+    if not isinstance(plugin, JinjaEventPlugin):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Currently used plugin is inappropriate for this operation',
+        )
+
+    return plugin
+
+
+CheckEventPluginIsJinjaDep = Annotated[
+    JinjaEventPlugin,
+    Depends(check_event_plugin_is_jinja),
+]
+
+
+@set_responses(
+    responses=merge_responses(
+        get_event_plugin_from_storage.responses,
+        check_event_plugin_is_jinja.responses,
+        {
+            404: {
+                'description': (
+                    'State with provided template alias is not found'
+                ),
+            },
+        },
+    ),
+)
+def get_jinja_event_plugin_local_state(
+    plugin: Annotated[EventPluginFromStorageDep, CheckEventPluginIsJinjaDep],
+    alias: Annotated[
+        str,
+        Path(description='Alias of template to get state of'),
+    ],
+) -> SingleThreadState:
+    """Get local state of provided template by its alias of jinja event plugin.
+
+    Parameters
+    ----------
+    plugin : EventPluginFromStorageDep
+        Jinja event plugin from storage dependency.
+
+    alias : str
+        Alias of template to get state of.
+
+    Returns
+    -------
+    SingleThreadState
+        Local state of template.
+
+    Raises
+    ------
+    HTTPException
+        If state with provided template alias is not found or some of
+        the dependency fails to load.
+
+    """
+    plugin = cast('JinjaEventPlugin', plugin)
+
+    try:
+        return plugin.local_states[alias]
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='State with provided template alias is not found',
+        ) from None
+
+
+JinjaEventPluginLocalStateDep = Annotated[
+    SingleThreadState,
+    Depends(get_jinja_event_plugin_local_state),
+]
+
+
+@set_responses(
+    responses=merge_responses(
+        get_event_plugin_from_storage.responses,
+        check_event_plugin_is_jinja.responses,
+    ),
+)
+def get_jinja_event_plugin_shared_state(
+    plugin: Annotated[EventPluginFromStorageDep, CheckEventPluginIsJinjaDep],
+) -> SingleThreadState:
+    """Get shared state of jinja event plugin.
+
+    Parameters
+    ----------
+    plugin : EventPluginFromStorageDep
+        Jinja event plugin from storage dependency.
+
+    Returns
+    -------
+    SingleThreadState
+        Shared state.
+
+    Raises
+    ------
+    HTTPException
+        If some of the dependency fails to load.
+
+    """
+    plugin = cast('JinjaEventPlugin', plugin)
+    return plugin.shared_state
+
+
+JinjaEventPluginSharedStateDep = Annotated[
+    SingleThreadState,
+    Depends(get_jinja_event_plugin_shared_state),
+]
+
+
+@set_responses(
+    responses=merge_responses(
+        get_event_plugin_from_storage.responses,
+        check_event_plugin_is_jinja.responses,
+    ),
+)
+def get_jinja_event_plugin_global_state(
+    plugin: Annotated[EventPluginFromStorageDep, CheckEventPluginIsJinjaDep],
+) -> MultiThreadState:
+    """Get global state of jinja event plugin.
+
+    Parameters
+    ----------
+    plugin : EventPluginFromStorageDep
+        Jinja event plugin from storage dependency.
+
+    Returns
+    -------
+    MultiThreadState
+        Global state.
+
+    Raises
+    ------
+    HTTPException
+        If some of the dependency fails to load.
+
+    """
+    plugin = cast('JinjaEventPlugin', plugin)
+    return plugin.global_state
+
+
+JinjaEventPluginGlobalStateDep = Annotated[
+    SingleThreadState,
+    Depends(get_jinja_event_plugin_global_state),
+]

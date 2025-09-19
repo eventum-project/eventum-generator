@@ -1,21 +1,30 @@
 """Routes."""
 
-import asyncio
-from typing import Annotated
+import asyncio  # noqa: I001
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, HTTPException, Query, status
 
-from eventum.api.dependencies.app import SettingsDep
-from eventum.api.routes.generator_configs.dependencies import (
-    CheckConfigurationExistsDep,
-    CheckDirectoryIsAllowedDep,
-    check_configuration_exists,
-    check_directory_is_allowed,
-)
 from eventum.api.routes.preview.dependencies import (
     EventPluginDep,
+    EventPluginFromStorageDep,
     InputPluginsDep,
+    JinjaEventPluginGlobalStateDep,
+    JinjaEventPluginLocalStateDep,
+    JinjaEventPluginSharedStateDep,
     SpanDep,
+    get_event_plugin_from_storage,
+)
+from eventum.api.routes.preview.dependencies import (
+    get_jinja_event_plugin_global_state as get_jinja_global_state,
+)
+from eventum.api.routes.preview.dependencies import (
+    get_jinja_event_plugin_local_state as get_jinja_local_state,
+)
+from eventum.api.routes.preview.dependencies import (
+    get_jinja_event_plugin_shared_state as get_jinja_shared_state,
+)
+from eventum.api.routes.preview.dependencies import (
     get_span,
     load_event_plugin,
     load_input_plugins,
@@ -37,6 +46,7 @@ from eventum.plugins.event.exceptions import (
 )
 from eventum.plugins.input.exceptions import PluginGenerationError
 from eventum.plugins.input.merger import InputPluginsMerger
+from eventum.utils.json_utils import normalize_types
 
 router = APIRouter(
     prefix='/preview',
@@ -95,7 +105,7 @@ async def generate_timestamps(
 
 
 @router.post(
-    '/{name}/event_plugin/initialize',  # noqa: FAST003
+    '/{name}/event_plugin',  # noqa: FAST003
     description='Initialize event plugin',
     responses=merge_responses(load_event_plugin.responses),
 )
@@ -106,21 +116,12 @@ async def initialize_event_plugin(
 
 
 @router.post(
-    '/{name}/event_plugin/produce',
+    '/{name}/event_plugin/produce',  # noqa: FAST003
     description='Produce events using initialized event plugin',
-    responses=merge_responses(
-        check_directory_is_allowed.responses,
-        check_configuration_exists.responses,
-        {400: {'description': 'Event plugin was not previously initialized'}},
-    ),
+    responses=merge_responses(get_event_plugin_from_storage.responses),
 )
 async def produce_events(
-    name: Annotated[
-        str,
-        CheckDirectoryIsAllowedDep,
-        CheckConfigurationExistsDep,
-    ],
-    settings: SettingsDep,
+    plugin: EventPluginFromStorageDep,
     params_list: Annotated[
         list[ProduceParams],
         Body(
@@ -131,16 +132,6 @@ async def produce_events(
         ),
     ],
 ) -> ProducedEventsInfo:
-    path = (settings.path.generators_dir / name).resolve()
-
-    if not EVENT_PLUGINS.is_set(path=path):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Event plugin was not previously initialized',
-        )
-
-    plugin = EVENT_PLUGINS.get(path)
-
     events: list[str] = []
     errors: list[tuple[int, PluginProduceError]] = []
     exhausted = False
@@ -168,29 +159,157 @@ async def produce_events(
     )
 
 
-@router.post(
-    '/{name}/event_plugin/release',
+@router.delete(
+    '/{name}/event_plugin',  # noqa: FAST003
     description='Release event plugin with freeing acquired resource',
+    responses=merge_responses(get_event_plugin_from_storage.responses),
+)
+async def release_event_plugin(plugin: EventPluginFromStorageDep) -> None:
+    EVENT_PLUGINS.remove(plugin.base_path)
+
+
+@router.get(
+    '/{name}/event_plugin/jinja/state/local/{alias}',  # noqa: FAST003
+    description=(
+        'Get local state of jinja event plugin for the specified template '
+        'by its alias'
+    ),
     responses=merge_responses(
-        check_directory_is_allowed.responses,
-        check_configuration_exists.responses,
-        {400: {'description': 'Event plugin was not previously initialized'}},
+        get_jinja_local_state.responses,
+        {500: {'description': 'Failed to serialize plugin state'}},
     ),
 )
-async def release_event_plugin(
-    name: Annotated[
-        str,
-        CheckDirectoryIsAllowedDep,
-        CheckConfigurationExistsDep,
-    ],
-    settings: SettingsDep,
-) -> None:
-    path = (settings.path.generators_dir / name).resolve()
-
-    if not EVENT_PLUGINS.is_set(path=path):
+async def get_jinja_event_plugin_local_state(
+    state: JinjaEventPluginLocalStateDep,
+) -> dict[str, Any]:
+    try:
+        return normalize_types(state.as_dict())
+    except RuntimeError as e:  # catch recursion errors etc.
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Event plugin was not previously initialized',
-        )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f'Failed to serialize plugin state: {e}',
+        ) from None
 
-    EVENT_PLUGINS.remove(path)
+
+@router.patch(
+    '/{name}/event_plugin/jinja/state/local/{alias}',  # noqa: FAST003
+    description=(
+        'Patch local state of jinja event plugin for the specified template '
+        'by its alias'
+    ),
+    responses=get_jinja_local_state.responses,
+)
+async def update_jinja_event_plugin_local_state(
+    state: JinjaEventPluginLocalStateDep,
+    content: Annotated[
+        dict[str, Any],
+        Body(description='Content to patch in state'),
+    ],
+) -> None:
+    state.update(content)
+
+
+@router.delete(
+    '/{name}/event_plugin/jinja/state/local/{alias}',  # noqa: FAST003
+    description=(
+        'Clear local state of jinja event plugin for the specified template '
+        'by its alias'
+    ),
+    responses=get_jinja_local_state.responses,
+)
+async def clear_jinja_event_plugin_local_state(
+    state: JinjaEventPluginLocalStateDep,
+) -> None:
+    state.clear()
+
+
+@router.get(
+    '/{name}/event_plugin/jinja/state/shared',  # noqa: FAST003
+    description='Get shared state of jinja event plugin',
+    responses=merge_responses(
+        get_jinja_shared_state.responses,
+        {500: {'description': 'Failed to serialize plugin state'}},
+    ),
+)
+async def get_jinja_event_plugin_shared_state(
+    state: JinjaEventPluginSharedStateDep,
+) -> dict[str, Any]:
+    try:
+        return normalize_types(state.as_dict())
+    except RuntimeError as e:  # catch recursion errors etc.
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f'Failed to serialize plugin state: {e}',
+        ) from None
+
+
+@router.patch(
+    '/{name}/event_plugin/jinja/state/shared',  # noqa: FAST003
+    description='Patch shared state of jinja event plugin',
+    responses=get_jinja_shared_state.responses,
+)
+async def update_jinja_event_plugin_shared_state(
+    state: JinjaEventPluginSharedStateDep,
+    content: Annotated[
+        dict[str, Any],
+        Body(description='Content to patch in state'),
+    ],
+) -> None:
+    state.update(content)
+
+
+@router.delete(
+    '/{name}/event_plugin/jinja/state/shared',  # noqa: FAST003
+    description='Clear shared state of jinja event plugin',
+    responses=get_jinja_shared_state.responses,
+)
+async def clear_jinja_event_plugin_shared_state(
+    state: JinjaEventPluginSharedStateDep,
+) -> None:
+    state.clear()
+
+
+@router.get(
+    '/{name}/event_plugin/jinja/state/global',  # noqa: FAST003
+    description='Get global state of jinja event plugin',
+    responses=merge_responses(
+        get_jinja_global_state.responses,
+        {500: {'description': 'Failed to serialize plugin state'}},
+    ),
+)
+async def get_jinja_event_plugin_global_state(
+    state: JinjaEventPluginGlobalStateDep,
+) -> dict[str, Any]:
+    try:
+        return normalize_types(state.as_dict())
+    except RuntimeError as e:  # catch recursion errors etc.
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f'Failed to serialize plugin state: {e}',
+        ) from None
+
+
+@router.patch(
+    '/{name}/event_plugin/jinja/state/global',  # noqa: FAST003
+    description='Patch global state of jinja event plugin',
+    responses=get_jinja_global_state.responses,
+)
+async def update_jinja_event_plugin_global_state(
+    state: JinjaEventPluginGlobalStateDep,
+    content: Annotated[
+        dict[str, Any],
+        Body(description='Content to patch in state'),
+    ],
+) -> None:
+    state.update(content)
+
+
+@router.delete(
+    '/{name}/event_plugin/jinja/state/global',  # noqa: FAST003
+    description='Clear global state of jinja event plugin',
+    responses=get_jinja_global_state.responses,
+)
+async def clear_jinja_event_plugin_global_state(
+    state: JinjaEventPluginGlobalStateDep,
+) -> None:
+    state.clear()
