@@ -111,7 +111,7 @@ async def initialize_event_plugin(
     responses=merge_responses(
         check_directory_is_allowed.responses,
         check_configuration_exists.responses,
-        {400: {'description': 'Event plugin is not previously initialized'}},
+        {400: {'description': 'Event plugin was not previously initialized'}},
     ),
 )
 async def produce_events(
@@ -136,7 +136,7 @@ async def produce_events(
     if not EVENT_PLUGINS.is_set(path=path):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Event plugin is not previously initialized',
+            detail='Event plugin was not previously initialized',
         )
 
     plugin = EVENT_PLUGINS.get(path)
