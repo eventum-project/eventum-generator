@@ -3,7 +3,7 @@ template renders, different templates and generators.
 """
 
 from abc import ABC, abstractmethod
-from copy import deepcopy
+from copy import copy
 from threading import RLock
 from typing import Any, override
 
@@ -105,7 +105,7 @@ class SingleThreadState(State):
 
     @override
     def as_dict(self) -> dict[str, Any]:
-        return deepcopy(self._state)
+        return copy(self._state)
 
     @override
     def __getitem__(self, key: Any) -> Any:
@@ -159,7 +159,7 @@ class MultiThreadState(State):
     @override
     def as_dict(self) -> dict[str, Any]:
         with self._lock:
-            return deepcopy(self._state)
+            return copy(self._state)
 
     def acquire(self) -> None:
         """Acquire state lock."""
