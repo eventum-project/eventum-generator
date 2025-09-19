@@ -45,7 +45,7 @@ router = APIRouter(
 
 
 @router.post(
-    '/{name}/input',  # noqa: FAST003
+    '/{name}/input_plugins/generate',  # noqa: FAST003
     description='Generate timestamps using input plugins',
     response_description='Generated timestamps',
     responses=merge_responses(
@@ -95,7 +95,7 @@ async def generate_timestamps(
 
 
 @router.post(
-    '/{name}/event/initialize',  # noqa: FAST003
+    '/{name}/event_plugin/initialize',  # noqa: FAST003
     description='Initialize event plugin',
     responses=merge_responses(load_event_plugin.responses),
 )
@@ -106,7 +106,7 @@ async def initialize_event_plugin(
 
 
 @router.post(
-    '/{name}/event/produce',
+    '/{name}/event_plugin/produce',
     description='Produce events using initialized event plugin',
     responses=merge_responses(
         check_directory_is_allowed.responses,
@@ -169,7 +169,7 @@ async def produce_events(
 
 
 @router.post(
-    '/{name}/event/release',
+    '/{name}/event_plugin/release',
     description='Release event plugin with freeing acquired resource',
     responses=merge_responses(
         check_directory_is_allowed.responses,
