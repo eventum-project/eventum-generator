@@ -212,7 +212,7 @@ async def load_input_plugins(
             )
         except InitializationError as e:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail={
                     'message': str(e),
                     'context': e.context,
@@ -231,12 +231,7 @@ InputPluginsDep = Annotated[list[InputPlugin], Depends(load_input_plugins)]
     responses=merge_responses(
         check_directory_is_allowed.responses,
         check_configuration_exists.responses,
-        get_timezone.responses,
-        {
-            500: {
-                'description': ('Event plugin cannot be initialized'),
-            },
-        },
+        {500: {'description': 'Event plugin cannot be initialized'}},
     ),
 )
 async def load_event_plugin(
@@ -275,7 +270,6 @@ async def load_event_plugin(
         If plugin cannot be initialized or some of the dependency fails
         to load.
 
-
     Notes
     -----
     Before initializing new instance of event plugin, it is checked in
@@ -310,7 +304,7 @@ async def load_event_plugin(
         )
     except InitializationError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
                 'message': str(e),
                 'context': e.context,
