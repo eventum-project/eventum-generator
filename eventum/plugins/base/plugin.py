@@ -318,3 +318,9 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
     def logger(self) -> structlog.stdlib.BoundLogger:
         """Plugin logger."""
         return self._logger  # type: ignore[attr-defined]
+
+    @property
+    def base_path(self) -> Path:
+        """Base path of plugin."""
+        # TODO(rnv812): https://github.com/python/mypy/issues/18804
+        return self._base_path  # type: ignore[return-value]
