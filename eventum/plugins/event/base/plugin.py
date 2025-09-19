@@ -66,7 +66,7 @@ class EventPlugin(Plugin[ConfigT, ParamsT], register=False):
         PluginProduceError
             If any error occurs during producing events.
 
-        EventsExhausted
+        PluginExhaustedError
             If no more events can be produced by event plugin.
 
         """
