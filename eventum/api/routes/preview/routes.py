@@ -5,6 +5,13 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, HTTPException, Query, status
 
+from eventum.api.dependencies.app import SettingsDep
+from eventum.api.routes.generator_configs.dependencies import (
+    CheckConfigurationExistsDep,
+    CheckDirectoryIsAllowedDep,
+    check_configuration_exists,
+    check_directory_is_allowed,
+)
 from eventum.api.routes.preview.dependencies import (
     EventPluginDep,
     EventPluginFromStorageDep,
@@ -31,6 +38,9 @@ from eventum.api.routes.preview.dependencies import (
 )
 from eventum.api.routes.preview.models import (
     AggregatedTimestamps,
+    FormatErrorInfo,
+    FormatEventsBody,
+    FormattingResult,
     ProducedEventsInfo,
     ProduceEventErrorInfo,
 )
@@ -46,6 +56,7 @@ from eventum.plugins.event.exceptions import (
 )
 from eventum.plugins.input.exceptions import PluginGenerationError
 from eventum.plugins.input.merger import InputPluginsMerger
+from eventum.plugins.output.formatters import get_formatter_class
 from eventum.utils.json_utils import normalize_types
 
 router = APIRouter(
@@ -313,3 +324,47 @@ async def clear_jinja_event_plugin_global_state(
     state: JinjaEventPluginGlobalStateDep,
 ) -> None:
     state.clear()
+
+
+@router.post(
+    '/{name}/formatter/format',
+    description='Format events using specified formatter',
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+    ),
+)
+async def format_events(
+    name: Annotated[
+        str,
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
+    ],
+    body: FormatEventsBody,
+    settings: SettingsDep,
+) -> FormattingResult:
+    path = (settings.path.generators_dir / name).resolve()
+    Formatter = get_formatter_class(body.formatter_config.format)  # noqa: N806
+
+    formatter = Formatter(
+        config=body.formatter_config,
+        params={'base_path': path},
+    )
+
+    loop = asyncio.get_running_loop()
+    result = await loop.run_in_executor(
+        executor=None,
+        func=lambda: formatter.format_events(events=body.events),
+    )
+
+    return FormattingResult(
+        events=result.events,
+        formatted_count=result.formatted_count,
+        errors=[
+            FormatErrorInfo(
+                message=str(error),
+                original_event=error.original_event,
+            )
+            for error in result.errors
+        ],
+    )

@@ -5,6 +5,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from eventum.plugins.output.fields import FormatterConfigT
+
 
 class AggregatedTimestamps(BaseModel, frozen=True, extra='forbid'):
     """Response model containing info about aggregated timestamps
@@ -66,3 +68,66 @@ class ProducedEventsInfo(BaseModel, frozen=True, extra='forbid'):
     events: list[str]
     errors: list[ProduceEventErrorInfo]
     exhausted: bool
+
+
+class FormatEventsBody(BaseModel, frozen=True, extra='forbid'):
+    """Request body model containing info about formatter config
+    and events to format.
+
+    Attributes
+    ----------
+    formatter_config : FormatterConfigT
+        Formatter config.
+
+    events : list[str]
+        Events to format.
+
+    """
+
+    formatter_config: FormatterConfigT
+    events: list[str] = Field(min_length=1)
+
+
+class FormatErrorInfo(BaseModel, frozen=True, extra='forbid'):
+    """Info about formatting errors.
+
+    Attributes
+    ----------
+    message : str
+        Error message.
+
+    original_event : str | None
+        Original event.
+
+    """
+
+    message: str
+    original_event: str | None
+
+
+class FormattingResult(BaseModel, frozen=True, extra='forbid'):
+    """Response model containing info about events formatting.
+
+    Attributes
+    ----------
+    events : list[str]
+        List of formatted events, number of events can be the same as
+        original or not due to formatting errors of specific events
+        from the entire provided list or reduction behavior of specific
+        formatters which take multiple events and produce for example
+        one aggregated event.
+
+    formatted_count : int
+        Number of successfully formatted events, this field is helpful
+        for tracking number of successfully formatted events with taking
+        into account possible events aggregation.
+
+    errors : list[FormatErrorInfo]
+        List with formatting errors of specific events or entire
+        sequence of events (for specific aggregating formatters).
+
+    """
+
+    events: list[str]
+    formatted_count: int
+    errors: list[FormatErrorInfo]
