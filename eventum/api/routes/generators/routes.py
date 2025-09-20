@@ -15,7 +15,13 @@ from eventum.api.routes.generators.dependencies import (
 from eventum.api.routes.generators.dependencies import (
     get_generator as _get_generator,
 )
-from eventum.api.routes.generators.models import GeneratorStatus
+from eventum.api.routes.generators.models import (
+    EventPluginStats,
+    GeneratorStats,
+    GeneratorStatus,
+    InputPluginStats,
+    OutputPluginStats,
+)
 from eventum.api.utils.response_description import merge_responses
 from eventum.app.manager import ManagingError
 from eventum.core.parameters import GeneratorParameters
@@ -57,9 +63,7 @@ async def get_generator(
     description='Get generator status',
     responses=_get_generator.responses,
 )
-async def get_generator_status(
-    generator: GeneratorDep,
-) -> GeneratorStatus:
+async def get_generator_status(generator: GeneratorDep) -> GeneratorStatus:
     return GeneratorStatus(
         is_initializing=generator.is_initializing,
         is_running=generator.is_running,
@@ -202,3 +206,46 @@ async def delete_generator(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         ) from None
+
+
+@router.get(
+    '/{id}/stats/',  # noqa: FAST003
+    description='Get generator stats',
+    responses=_get_generator.responses,
+)
+async def get_generator_stats(generator: GeneratorDep) -> GeneratorStats:
+    if generator.is_initialized:
+        plugins = generator.get_plugins_info()
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Generator is not initialized',
+        )
+
+    return GeneratorStats(
+        start_time=generator.start_time,
+        input=[
+            InputPluginStats(
+                plugin_name=plugin.name,
+                plugin_id=plugin.id,
+                generated=plugin.generated,
+            )
+            for plugin in plugins.input
+        ],
+        event=EventPluginStats(
+            plugin_name=plugins.event.name,
+            plugin_id=plugins.event.id,
+            produced=plugins.event.produced,
+            produce_failed=plugins.event.produce_failed,
+        ),
+        output=[
+            OutputPluginStats(
+                plugin_name=plugin.name,
+                plugin_id=plugin.id,
+                written=plugin.written,
+                write_failed=plugin.write_failed,
+                format_failed=plugin.format_failed,
+            )
+            for plugin in plugins.output
+        ],
+    )
