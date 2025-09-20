@@ -2,9 +2,11 @@
 
 import os
 import time
+from datetime import datetime
 from threading import Event, Lock, Thread, get_native_id
 
 import structlog
+from pytz import timezone
 
 from eventum.core.config import GeneratorConfig
 from eventum.core.config_loader import ConfigurationLoadError, load
@@ -49,6 +51,8 @@ class Generator:
         )
 
         self._lock = Lock()
+
+        self._start_time: datetime | None = None
 
     def _start(self) -> None:  # noqa: PLR0911
         """Start generation."""
@@ -122,6 +126,7 @@ class Generator:
             'Starting execution',
             parameters=self._params.model_dump_json(),
         )
+        self._start_time = datetime.now().astimezone(tz=timezone('UTC'))
         self._initialized_event.set()
         try:
             self._executor.execute()
@@ -190,12 +195,6 @@ class Generator:
             self._logger.debug('Joining executing thread')
             self._thread.join()  # type: ignore[union-attr]
 
-            # Let GC release resources of generator runtime
-            self._plugins = None
-            self._executor = None
-            self._config = None
-            self._thread = None
-
     def join(self) -> None:
         """Wait until generator terminates."""
         if self._thread is not None:
@@ -260,6 +259,14 @@ class Generator:
         )
 
     @property
+    def is_initialized(self) -> bool:
+        """Whether the generator is already initialized not depending
+        on its running status. This status reflects that all resources
+        are ready for access.
+        """
+        return self._initialized_event.is_set()
+
+    @property
     def is_running(self) -> bool:
         """Whether the generator is running."""
         return (
@@ -284,3 +291,19 @@ class Generator:
     def is_ended_up_with_error(self) -> bool:
         """Whether the generator has ended execution with error."""
         return self.is_ended_up and not self._successfully_done_event.is_set()
+
+    @property
+    def start_time(self) -> datetime:
+        """Start time of the generator.
+
+        Notes
+        -----
+        Note that accessing this property before initialization of
+        generator raises `RuntimeError`
+
+        """
+        if self._start_time is None:
+            msg = 'Generator is not yet started'
+            raise RuntimeError(msg)
+
+        return self._start_time
