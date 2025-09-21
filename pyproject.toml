@@ -96,6 +96,7 @@ eventum-keyring = "eventum.cli.commands.eventum_keyring:cli"
 exclude = [
     "^test_.*\\.py$",
 ]
+plugins = "pydantic.mypy"
 
 [tool.pytest.ini_options]
 console_output_style = "count"
@@ -103,6 +104,14 @@ addopts = [
     "-v",
     "--cov=eventum",
     "--cov-report=html"
+]
+
+[tool.coverage.report]
+omit = [
+    "*/models/*",
+    "*/logging/config.py",
+    "*/cli/splash_screen.py",
+    "*/tests/*"
 ]
 
 [tool.ruff]
@@ -126,7 +135,7 @@ flake8-quotes = {inline-quotes = "single", multiline-quotes = "double"}
 exclude = ["**/tests/**"]
 
 [tool.ruff.per-file-ignores]
-"eventum/api/routes/*" = [
+"eventum/api/routers/**/routes.py" = [
     "D103"      # undocumented-public-function
 ]
 
