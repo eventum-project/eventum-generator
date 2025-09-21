@@ -210,16 +210,16 @@ async def delete_generator(
 
 @router.get(
     '/{id}/stats/',  # noqa: FAST003
-    description='Get generator stats',
+    description='Get stats of running generator',
     responses=_get_generator.responses,
 )
 async def get_generator_stats(generator: GeneratorDep) -> GeneratorStats:
-    if generator.is_initialized:
+    if generator.is_running:
         plugins = generator.get_plugins_info()
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Generator is not initialized',
+            detail='Generator is not running',
         )
 
     return GeneratorStats(
