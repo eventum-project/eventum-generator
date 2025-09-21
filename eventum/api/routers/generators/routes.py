@@ -26,10 +26,7 @@ from eventum.api.utils.response_description import merge_responses
 from eventum.app.manager import ManagingError
 from eventum.core.parameters import GeneratorParameters
 
-router = APIRouter(
-    prefix='/generators',
-    tags=['Generators'],
-)
+router = APIRouter()
 
 
 @router.get(

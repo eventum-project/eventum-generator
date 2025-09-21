@@ -59,10 +59,7 @@ from eventum.plugins.input.merger import InputPluginsMerger
 from eventum.plugins.output.formatters import get_formatter_class
 from eventum.utils.json_utils import normalize_types
 
-router = APIRouter(
-    prefix='/preview',
-    tags=['Preview'],
-)
+router = APIRouter()
 
 
 @router.post(

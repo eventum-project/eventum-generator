@@ -1,1 +1,1 @@
-"""API routes definition package."""
+"""API routers definition package."""

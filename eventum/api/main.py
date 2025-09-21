@@ -3,8 +3,9 @@
 import structlog
 from fastapi import FastAPI
 
+import eventum
 from eventum.api.routers.generator_configs import (
-    router as generator_files_router,
+    router as generator_configs_router,
 )
 from eventum.api.routers.generators import router as generators_router
 from eventum.api.routers.preview import router as preview_router
@@ -41,11 +42,10 @@ def build_api_app(
     app = FastAPI(
         title='Eventum API',
         description=(
-            'API for generators management, interaction with plugins '
-            'and app settings configuration.'
+            'API for managing generators, plugins and its dependencies'
         ),
-        version='1.0.0',
-        root_path='/api/v1',
+        version=eventum.__version__,
+        root_path='/api',
         docs_url='/swagger',
         redoc_url='/doc',
         contact={
@@ -63,8 +63,16 @@ def build_api_app(
     app.state.settings = settings
 
     logger.debug('Connecting routers')
-    app.include_router(generators_router)
-    app.include_router(generator_files_router)
-    app.include_router(preview_router)
+    app.include_router(
+        generators_router,
+        prefix='/generators',
+        tags=['Generators'],
+    )
+    app.include_router(
+        generator_configs_router,
+        prefix='/generator_configs',
+        tags=['Generator configs'],
+    )
+    app.include_router(preview_router, prefix='/preview', tags=['Preview'])
 
     return app

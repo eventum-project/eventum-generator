@@ -37,10 +37,7 @@ from eventum.api.routers.generator_configs.runtime_types import GeneratorConfig
 from eventum.api.utils.response_description import merge_responses
 from eventum.utils.validation_prettier import prettify_validation_errors
 
-router = APIRouter(
-    prefix='/generator_configs',
-    tags=['Generator configs'],
-)
+router = APIRouter()
 
 
 @router.get(
