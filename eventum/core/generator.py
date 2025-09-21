@@ -54,7 +54,7 @@ class Generator:
 
         self._start_time: datetime | None = None
 
-    def _start(self) -> None:  # noqa: PLR0911, PLR0912, PLR0915
+    def _start(self) -> None:  # noqa: PLR0911, PLR0915
         """Start generation."""
         structlog.contextvars.bind_contextvars(generator_id=self._params.id)
 
@@ -74,6 +74,7 @@ class Generator:
             self._config = load(self._params.path, self._params.params)
         except ConfigurationLoadError as e:
             self._logger.error(str(e), **e.context)
+            self._release()
             return
         except Exception as e:
             self._logger.exception(
@@ -81,9 +82,8 @@ class Generator:
                 reason=str(e),
                 file_path=str(self._params.path),
             )
-            return
-        finally:
             self._release()
+            return
 
         self._logger.info('Initializing plugins')
         try:
@@ -95,15 +95,15 @@ class Generator:
             )
         except InitializationError as e:
             self._logger.error(str(e), **e.context)
+            self._release()
             return
         except Exception as e:
             self._logger.exception(
                 'Unexpected error occurred during initializing plugins',
                 reason=str(e),
             )
-            return
-        finally:
             self._release()
+            return
 
         self._logger.info('Initializing plugins executor')
         try:
@@ -115,15 +115,15 @@ class Generator:
             )
         except ImproperlyConfiguredError as e:
             self._logger.error(str(e), **e.context)
+            self._release()
             return
         except Exception as e:
             self._logger.exception(
                 'Unexpected error occurred during initializing',
                 reason=str(e),
             )
-            return
-        finally:
             self._release()
+            return
 
         init_time = round(time.monotonic() - init_start_time, 3)
         self._logger.info('Initialization completed', seconds=init_time)
