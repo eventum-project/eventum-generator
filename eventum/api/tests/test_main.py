@@ -22,6 +22,3 @@ def test_api_app_state():
 
     assert app.state.generator_manager is mock_manager
     assert app.state.settings is mock_settings
-    assert app.state.settings is mock_settings
-    assert app.state.settings is mock_settings
-    assert app.state.settings is mock_settings
