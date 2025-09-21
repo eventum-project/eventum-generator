@@ -6,13 +6,13 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Body, HTTPException, Query, status
 
 from eventum.api.dependencies.app import SettingsDep
-from eventum.api.routes.generator_configs.dependencies import (
+from eventum.api.routers.generator_configs.dependencies import (
     CheckConfigurationExistsDep,
     CheckDirectoryIsAllowedDep,
     check_configuration_exists,
     check_directory_is_allowed,
 )
-from eventum.api.routes.preview.dependencies import (
+from eventum.api.routers.preview.dependencies import (
     EventPluginDep,
     EventPluginFromStorageDep,
     InputPluginsDep,
@@ -22,21 +22,21 @@ from eventum.api.routes.preview.dependencies import (
     SpanDep,
     get_event_plugin_from_storage,
 )
-from eventum.api.routes.preview.dependencies import (
+from eventum.api.routers.preview.dependencies import (
     get_jinja_event_plugin_global_state as get_jinja_global_state,
 )
-from eventum.api.routes.preview.dependencies import (
+from eventum.api.routers.preview.dependencies import (
     get_jinja_event_plugin_local_state as get_jinja_local_state,
 )
-from eventum.api.routes.preview.dependencies import (
+from eventum.api.routers.preview.dependencies import (
     get_jinja_event_plugin_shared_state as get_jinja_shared_state,
 )
-from eventum.api.routes.preview.dependencies import (
+from eventum.api.routers.preview.dependencies import (
     get_span,
     load_event_plugin,
     load_input_plugins,
 )
-from eventum.api.routes.preview.models import (
+from eventum.api.routers.preview.models import (
     AggregatedTimestamps,
     FormatErrorInfo,
     FormatEventsBody,
@@ -44,8 +44,8 @@ from eventum.api.routes.preview.models import (
     ProducedEventsInfo,
     ProduceEventErrorInfo,
 )
-from eventum.api.routes.preview.plugins_storage import EVENT_PLUGINS
-from eventum.api.routes.preview.timestamps_aggregation import (
+from eventum.api.routers.preview.plugins_storage import EVENT_PLUGINS
+from eventum.api.routers.preview.timestamps_aggregation import (
     aggregate_timestamps,
 )
 from eventum.api.utils.response_description import merge_responses
@@ -66,7 +66,7 @@ router = APIRouter(
 
 
 @router.post(
-    '/{name}/input_plugins/generate',  # noqa: FAST003
+    '/{name}/input_plugins/generate',
     description='Generate timestamps using input plugins',
     response_description='Generated timestamps',
     responses=merge_responses(
@@ -116,7 +116,7 @@ async def generate_timestamps(
 
 
 @router.post(
-    '/{name}/event_plugin',  # noqa: FAST003
+    '/{name}/event_plugin',
     description='Initialize event plugin',
     responses=merge_responses(load_event_plugin.responses),
 )
@@ -127,7 +127,7 @@ async def initialize_event_plugin(
 
 
 @router.post(
-    '/{name}/event_plugin/produce',  # noqa: FAST003
+    '/{name}/event_plugin/produce',
     description='Produce events using initialized event plugin',
     responses=merge_responses(get_event_plugin_from_storage.responses),
 )
@@ -171,7 +171,7 @@ async def produce_events(
 
 
 @router.delete(
-    '/{name}/event_plugin',  # noqa: FAST003
+    '/{name}/event_plugin',
     description='Release event plugin with freeing acquired resource',
     responses=merge_responses(get_event_plugin_from_storage.responses),
 )
@@ -180,7 +180,7 @@ async def release_event_plugin(plugin: EventPluginFromStorageDep) -> None:
 
 
 @router.get(
-    '/{name}/event_plugin/jinja/state/local/{alias}',  # noqa: FAST003
+    '/{name}/event_plugin/jinja/state/local/{alias}',
     description=(
         'Get local state of jinja event plugin for the specified template '
         'by its alias'
@@ -203,7 +203,7 @@ async def get_jinja_event_plugin_local_state(
 
 
 @router.patch(
-    '/{name}/event_plugin/jinja/state/local/{alias}',  # noqa: FAST003
+    '/{name}/event_plugin/jinja/state/local/{alias}',
     description=(
         'Patch local state of jinja event plugin for the specified template '
         'by its alias'
@@ -221,7 +221,7 @@ async def update_jinja_event_plugin_local_state(
 
 
 @router.delete(
-    '/{name}/event_plugin/jinja/state/local/{alias}',  # noqa: FAST003
+    '/{name}/event_plugin/jinja/state/local/{alias}',
     description=(
         'Clear local state of jinja event plugin for the specified template '
         'by its alias'
@@ -235,7 +235,7 @@ async def clear_jinja_event_plugin_local_state(
 
 
 @router.get(
-    '/{name}/event_plugin/jinja/state/shared',  # noqa: FAST003
+    '/{name}/event_plugin/jinja/state/shared',
     description='Get shared state of jinja event plugin',
     responses=merge_responses(
         get_jinja_shared_state.responses,
@@ -255,7 +255,7 @@ async def get_jinja_event_plugin_shared_state(
 
 
 @router.patch(
-    '/{name}/event_plugin/jinja/state/shared',  # noqa: FAST003
+    '/{name}/event_plugin/jinja/state/shared',
     description='Patch shared state of jinja event plugin',
     responses=get_jinja_shared_state.responses,
 )
@@ -270,7 +270,7 @@ async def update_jinja_event_plugin_shared_state(
 
 
 @router.delete(
-    '/{name}/event_plugin/jinja/state/shared',  # noqa: FAST003
+    '/{name}/event_plugin/jinja/state/shared',
     description='Clear shared state of jinja event plugin',
     responses=get_jinja_shared_state.responses,
 )
@@ -281,7 +281,7 @@ async def clear_jinja_event_plugin_shared_state(
 
 
 @router.get(
-    '/{name}/event_plugin/jinja/state/global',  # noqa: FAST003
+    '/{name}/event_plugin/jinja/state/global',
     description='Get global state of jinja event plugin',
     responses=merge_responses(
         get_jinja_global_state.responses,
@@ -301,7 +301,7 @@ async def get_jinja_event_plugin_global_state(
 
 
 @router.patch(
-    '/{name}/event_plugin/jinja/state/global',  # noqa: FAST003
+    '/{name}/event_plugin/jinja/state/global',
     description='Patch global state of jinja event plugin',
     responses=get_jinja_global_state.responses,
 )
@@ -316,7 +316,7 @@ async def update_jinja_event_plugin_global_state(
 
 
 @router.delete(
-    '/{name}/event_plugin/jinja/state/global',  # noqa: FAST003
+    '/{name}/event_plugin/jinja/state/global',
     description='Clear global state of jinja event plugin',
     responses=get_jinja_global_state.responses,
 )

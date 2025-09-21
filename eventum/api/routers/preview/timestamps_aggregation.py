@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from eventum.api.routes.preview.models import AggregatedTimestamps
+from eventum.api.routers.preview.models import AggregatedTimestamps
 from eventum.plugins.input.protocols import IdentifiedTimestamps
 
 if TYPE_CHECKING:

@@ -9,18 +9,18 @@ from pytz import BaseTzInfo, UnknownTimeZoneError
 from pytz import timezone as to_timezone
 
 from eventum.api.dependencies.app import SettingsDep
-from eventum.api.routes.generator_configs.dependencies import (
+from eventum.api.routers.generator_configs.dependencies import (
     CheckConfigurationExistsDep,
     CheckDirectoryIsAllowedDep,
     check_configuration_exists,
     check_directory_is_allowed,
 )
-from eventum.api.routes.generator_configs.runtime_types import (
+from eventum.api.routers.generator_configs.runtime_types import (
     EventPluginNamedConfig,
     InputPluginNamedConfig,
     PluginNamedConfig,
 )
-from eventum.api.routes.preview.plugins_storage import EVENT_PLUGINS
+from eventum.api.routers.preview.plugins_storage import EVENT_PLUGINS
 from eventum.api.utils.response_description import (
     merge_responses,
     set_responses,

@@ -3,11 +3,11 @@
 import structlog
 from fastapi import FastAPI
 
-from eventum.api.routes.generator_configs import (
+from eventum.api.routers.generator_configs import (
     router as generator_files_router,
 )
-from eventum.api.routes.generators import router as generators_router
-from eventum.api.routes.preview import router as preview_router
+from eventum.api.routers.generators import router as generators_router
+from eventum.api.routers.preview import router as preview_router
 from eventum.app.manager import GeneratorManager
 from eventum.app.models.settings import Settings
 from eventum.exceptions import ContextualError

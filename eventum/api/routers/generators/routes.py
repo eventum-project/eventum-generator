@@ -6,16 +6,16 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Path, status
 
 from eventum.api.dependencies.app import GeneratorManagerDep, SettingsDep
-from eventum.api.routes.generators.dependencies import (
+from eventum.api.routers.generators.dependencies import (
     CheckPathExistsDep,
     GeneratorDep,
     PreparedGeneratorParamsDep,
     check_path_exists,
 )
-from eventum.api.routes.generators.dependencies import (
+from eventum.api.routers.generators.dependencies import (
     get_generator as _get_generator,
 )
-from eventum.api.routes.generators.models import (
+from eventum.api.routers.generators.models import (
     EventPluginStats,
     GeneratorStats,
     GeneratorStatus,
@@ -42,7 +42,7 @@ async def list_generators(generator_manager: GeneratorManagerDep) -> list[str]:
 
 
 @router.get(
-    '/{id}/',  # noqa: FAST003
+    '/{id}/',
     description='Get generator parameters',
     responses=_get_generator.responses,
 )
@@ -59,7 +59,7 @@ async def get_generator(
 
 
 @router.get(
-    '/{id}/status/',  # noqa: FAST003
+    '/{id}/status/',
     description='Get generator status',
     responses=_get_generator.responses,
 )
@@ -73,7 +73,7 @@ async def get_generator_status(generator: GeneratorDep) -> GeneratorStatus:
 
 
 @router.post(
-    '/{id}/',  # noqa: FAST003
+    '/{id}/',
     description=(
         'Add generator. Note that `id` path parameter takes precedence '
         'over `id` field in the body.'
@@ -209,7 +209,7 @@ async def delete_generator(
 
 
 @router.get(
-    '/{id}/stats/',  # noqa: FAST003
+    '/{id}/stats/',
     description='Get stats of running generator',
     responses=_get_generator.responses,
 )

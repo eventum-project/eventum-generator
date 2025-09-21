@@ -19,7 +19,7 @@ from fastapi import (
 from pydantic import ValidationError
 
 from eventum.api.dependencies.app import SettingsDep
-from eventum.api.routes.generator_configs.dependencies import (
+from eventum.api.routers.generator_configs.dependencies import (
     CheckConfigurationExistsDep,
     CheckConfigurationNotExistsDep,
     CheckDirectoryIsAllowedDep,
@@ -29,11 +29,11 @@ from eventum.api.routes.generator_configs.dependencies import (
     check_directory_is_allowed,
     check_filepath_is_directly_relative,
 )
-from eventum.api.routes.generator_configs.file_tree import (
+from eventum.api.routers.generator_configs.file_tree import (
     FileNode,
     build_file_tree,
 )
-from eventum.api.routes.generator_configs.runtime_types import GeneratorConfig
+from eventum.api.routers.generator_configs.runtime_types import GeneratorConfig
 from eventum.api.utils.response_description import merge_responses
 from eventum.utils.validation_prettier import prettify_validation_errors
 
