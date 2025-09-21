@@ -54,7 +54,7 @@ class Generator:
 
         self._start_time: datetime | None = None
 
-    def _start(self) -> None:  # noqa: PLR0911
+    def _start(self) -> None:  # noqa: PLR0911, PLR0912, PLR0915
         """Start generation."""
         structlog.contextvars.bind_contextvars(generator_id=self._params.id)
 
@@ -82,6 +82,8 @@ class Generator:
                 file_path=str(self._params.path),
             )
             return
+        finally:
+            self._release()
 
         self._logger.info('Initializing plugins')
         try:
@@ -100,6 +102,8 @@ class Generator:
                 reason=str(e),
             )
             return
+        finally:
+            self._release()
 
         self._logger.info('Initializing plugins executor')
         try:
@@ -118,6 +122,8 @@ class Generator:
                 reason=str(e),
             )
             return
+        finally:
+            self._release()
 
         init_time = round(time.monotonic() - init_start_time, 3)
         self._logger.info('Initialization completed', seconds=init_time)
@@ -142,6 +148,8 @@ class Generator:
         else:
             self._logger.info('Ending execution')
             self._successfully_done_event.set()
+        finally:
+            self._release()
 
     def start(self) -> bool:
         """Start generator in separate thread waiting for its
@@ -194,6 +202,15 @@ class Generator:
 
             self._logger.debug('Joining executing thread')
             self._thread.join()  # type: ignore[union-attr]
+
+    def _release(self) -> None:
+        """Release resources of generator runtime after stopping or
+        ending execution.
+        """
+        self._plugins = None
+        self._executor = None
+        self._config = None
+        self._thread = None
 
     def join(self) -> None:
         """Wait until generator terminates."""
@@ -257,14 +274,6 @@ class Generator:
             and self._thread.is_alive()
             and not self._initialized_event.is_set()
         )
-
-    @property
-    def is_initialized(self) -> bool:
-        """Whether the generator is already initialized not depending
-        on its running status. This status reflects that all resources
-        are ready for access.
-        """
-        return self._initialized_event.is_set()
 
     @property
     def is_running(self) -> bool:
