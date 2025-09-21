@@ -210,7 +210,6 @@ class Generator:
         self._plugins = None
         self._executor = None
         self._config = None
-        self._thread = None
 
     def join(self) -> None:
         """Wait until generator terminates."""
