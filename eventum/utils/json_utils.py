@@ -23,7 +23,7 @@ def normalize_types(obj: Any) -> Any:
         return {k: normalize_types(v) for k, v in obj.items()}
     if isinstance(obj, list):
         return [normalize_types(v) for v in obj]
-    if isinstance(obj, int | float | bool) or obj is None:
+    if isinstance(obj, str | int | float | bool) or obj is None:
         return obj
 
     return repr(obj)
