@@ -10,7 +10,6 @@ in registry. This is so called "plugin invocation".
 """
 
 import importlib
-import pkgutil
 from functools import cache
 from types import ModuleType
 
@@ -21,38 +20,9 @@ import eventum.plugins.input.plugins as input_plugins
 import eventum.plugins.output.plugins as output_plugins
 from eventum.plugins.exceptions import PluginLoadError, PluginNotFoundError
 from eventum.plugins.registry import PluginInfo, PluginsRegistry
+from eventum.utils.package_utils import get_subpackage_names
 
 logger = structlog.stdlib.get_logger()
-
-
-def _get_subpackage_names(package: ModuleType) -> list[str]:
-    """Get subpackage names of specified package.
-
-    Parameters
-    ----------
-    package : ModuleType
-        Package to inspect.
-
-    Returns
-    -------
-    list[str]
-        List of subpackage names.
-
-    Raises
-    ------
-    ValueError
-        If specified package is not a package.
-
-    """
-    if not hasattr(package, '__path__'):
-        msg = f'"{package.__name__}" is not a package'
-        raise ValueError(msg) from None
-
-    return [
-        module.name
-        for module in pkgutil.iter_modules(package.__path__)
-        if module.ispkg
-    ]
 
 
 def _construct_plugin_module_name(package: ModuleType, name: str) -> str:
@@ -276,7 +246,7 @@ def get_input_plugin_names() -> list[str]:
         Names of existing input plugins.
 
     """
-    return _get_subpackage_names(input_plugins)
+    return get_subpackage_names(input_plugins)
 
 
 def get_event_plugin_names() -> list[str]:
@@ -288,7 +258,7 @@ def get_event_plugin_names() -> list[str]:
         Names of existing event plugins.
 
     """
-    return _get_subpackage_names(event_plugins)
+    return get_subpackage_names(event_plugins)
 
 
 def get_output_plugin_names() -> list[str]:
@@ -300,7 +270,7 @@ def get_output_plugin_names() -> list[str]:
         Names of existing output plugins.
 
     """
-    return _get_subpackage_names(output_plugins)
+    return get_subpackage_names(output_plugins)
 
 
 def clear_cache() -> None:
