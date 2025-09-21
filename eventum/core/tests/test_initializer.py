@@ -1,5 +1,3 @@
-import os
-import tempfile
 from pathlib import Path
 
 from eventum.core.parameters import GeneratorParameters
@@ -10,9 +8,9 @@ from eventum.plugins.input.plugins.static.plugin import StaticInputPlugin
 from eventum.plugins.output.plugins.file.plugin import FileOutputPlugin
 from eventum.plugins.output.plugins.stdout.plugin import StdoutOutputPlugin
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TEMPLATE_PATH = os.path.join(BASE_DIR, 'static', 'template.jinja')
-TEMPLATE_REL_PATH = os.path.relpath(TEMPLATE_PATH, start=os.getcwd())
+BASE_DIR = Path(__file__).resolve().parent
+TEMPLATE_PATH = BASE_DIR / 'static' / 'template.jinja'
+TEMPLATE_REL_PATH = TEMPLATE_PATH.relative_to(BASE_DIR)
 
 
 def test_initializer():
@@ -40,7 +38,7 @@ def test_initializer():
         params=GeneratorParameters(
             id='test',
             live_mode=False,
-            path=Path(tempfile.gettempdir()) / 'ephemeral.yml',
+            path=BASE_DIR / 'ephemeral.yml',
         ),
     )
 
