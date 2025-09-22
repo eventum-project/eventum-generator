@@ -134,7 +134,7 @@ ignore = [
 flake8-quotes = {inline-quotes = "single", multiline-quotes = "double"}
 exclude = ["**/tests/**"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "eventum/api/routers/**/routes.py" = [
     "D103",     # undocumented-public-function
     "FAST003"   # fast-api-unused-path-parameter
