@@ -8,6 +8,11 @@ from typing import TYPE_CHECKING, Literal, assert_never
 
 import structlog
 
+from eventum.logging.file_paths import (
+    construct_api_logfile_path,
+    construct_generator_logfile_path,
+    construct_main_logfile_path,
+)
 from eventum.logging.handlers import RoutingHandler
 from eventum.logging.processors import derive_extras, remove_keys_processor
 
@@ -128,10 +133,8 @@ def use_console_and_file(
     """
     match format:
         case 'json':
-            extension = 'json'
             renderer: Processor = structlog.processors.JSONRenderer()
         case 'plain':
-            extension = 'log'
             renderer = structlog.dev.ConsoleRenderer(
                 colors=False,
             )
@@ -159,7 +162,7 @@ def use_console_and_file(
 
     # Default routing handler
     default_routing_handler = logging.handlers.RotatingFileHandler(
-        filename=logs_dir / f'main.{extension}',
+        filename=construct_main_logfile_path(format=format, logs_dir=logs_dir),
         maxBytes=max_bytes,
         backupCount=backup_count,
     )
@@ -170,7 +173,11 @@ def use_console_and_file(
     routing_handler = RoutingHandler(
         attribute='generator_id',
         handler_factory=lambda attr: logging.handlers.RotatingFileHandler(
-            filename=logs_dir / f'generator_{attr}.{extension}',
+            filename=construct_generator_logfile_path(
+                format=format,
+                logs_dir=logs_dir,
+                generator_id=str(attr),
+            ),
             maxBytes=max_bytes,
             backupCount=backup_count,
         ),
@@ -244,7 +251,10 @@ def _configure_uvicorn_logger(
 
     for log_type in ('error', 'access'):
         file_handler = logging.handlers.RotatingFileHandler(
-            filename=logs_dir / f'api_{log_type}.log',
+            filename=construct_api_logfile_path(
+                logs_dir=logs_dir,
+                log_type=log_type,
+            ),
             maxBytes=max_bytes,
             backupCount=backup_count,
         )
