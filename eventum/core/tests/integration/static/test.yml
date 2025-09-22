@@ -16,11 +16,11 @@ event:
 
 output:
   - file:
-      path: "/tmp/eventum_tests/file1.log"
+      path: "${params.file1}"
       flush_interval: 0
       write_mode: overwrite
   
   - file:
-      path: "/tmp/eventum_tests/file2.log"
+      path: "${params.file2}"
       flush_interval: 0
       write_mode: overwrite

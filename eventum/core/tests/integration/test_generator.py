@@ -1,4 +1,4 @@
-import os
+import tempfile
 from pathlib import Path
 from shutil import rmtree
 
@@ -14,23 +14,35 @@ CONFIG_PATH = GENERATOR_DIR / 'test.yml'
 
 
 @pytest.fixture
-def results_dir():
-    path = Path('/tmp/eventum_tests/')
-    path.mkdir(parents=True, exist_ok=True)
-    yield path
-    rmtree(path)
+def temp_dir():
+    return tempfile.TemporaryDirectory()
 
 
 @pytest.fixture
-def generator():
+def file1(temp_dir):
+    yield Path(temp_dir.name) / 'file1.log'
+    temp_dir.cleanup()
+
+
+@pytest.fixture
+def file2(temp_dir):
+    yield Path(temp_dir.name) / 'file2.log'
+    temp_dir.cleanup()
+
+
+@pytest.fixture
+def generator(file1, file2):
     return Generator(
         params=GeneratorParameters(
-            id='test', path=CONFIG_PATH, live_mode=False
+            id='test',
+            path=CONFIG_PATH,
+            live_mode=False,
+            params={'file1': str(file1), 'file2': str(file2)},
         ),
     )
 
 
-def test_generator(results_dir, generator):
+def test_generator(generator):
     generator.start()
 
     generator.join()
@@ -38,10 +50,13 @@ def test_generator(results_dir, generator):
     assert generator.is_ended_up
     assert generator.is_ended_up_successfully
 
-    with (results_dir / 'file1.log').open() as f:
+    file1 = generator.params.params['file1']
+    file2 = generator.params.params['file2']
+
+    with Path(file1).open() as f:
         lines_1 = f.readlines()
 
-    with (results_dir / 'file2.log').open() as f:
+    with Path(file2).open() as f:
         lines_2 = f.readlines()
 
     assert len(lines_1) == len(lines_2) == 200
