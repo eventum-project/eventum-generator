@@ -1,9 +1,19 @@
 """Routes."""
 
 import asyncio
+import os
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Path, status
+import aiofiles
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    Path,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 
 from eventum.api.dependencies.app import GeneratorManagerDep, SettingsDep
 from eventum.api.routers.generators.dependencies import (
@@ -25,6 +35,7 @@ from eventum.api.routers.generators.models import (
 from eventum.api.utils.response_description import merge_responses
 from eventum.app.manager import ManagingError
 from eventum.core.parameters import GeneratorParameters
+from eventum.logging.file_paths import construct_generator_logfile_path
 
 router = APIRouter()
 
@@ -246,3 +257,64 @@ async def get_generator_stats(generator: GeneratorDep) -> GeneratorStats:
             for plugin in plugins.output
         ],
     )
+
+
+@router.websocket('/{id}/logs')
+async def stream_generator_logs(
+    id: str,
+    settings: SettingsDep,
+    generator_manager: GeneratorManagerDep,
+    websocket: WebSocket,
+    end_offset: Annotated[
+        int,
+        Query(
+            ge=0,
+            description='Offset from end of file to start reading from',
+        ),
+    ] = 8192,
+) -> None:
+    await websocket.accept()
+
+    if id not in generator_manager.generator_ids:
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason='Generator with specified id does not exist',
+        )
+        return
+
+    path = construct_generator_logfile_path(
+        format=settings.log.format,
+        logs_dir=settings.path.logs,
+        generator_id=id,
+    )
+
+    if not path.exists():
+        await websocket.close(
+            code=status.WS_1013_TRY_AGAIN_LATER,
+            reason='Log file does not exist',
+        )
+        return
+
+    try:
+        async with aiofiles.open(path) as f:
+            await f.seek(0, os.SEEK_END)
+            size = await f.tell()
+            start_pos = max(0, size - end_offset)
+            await f.seek(start_pos, os.SEEK_SET)
+
+            while True:
+                content = await f.read(8192)
+                if content:
+                    try:
+                        await websocket.send_text(content)
+                    except WebSocketDisconnect:
+                        break
+                else:
+                    await asyncio.sleep(0.5)
+
+    except OSError as e:
+        if websocket.client_state.name == 'CONNECTED':
+            await websocket.close(
+                code=status.WS_1011_INTERNAL_ERROR,
+                reason=f'Failed to read log file due to OS error: {e}',
+            )

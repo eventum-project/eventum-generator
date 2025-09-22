@@ -64,6 +64,7 @@ dependencies = [
     "tablib>=3.8.0",
     "uvicorn[standard]>=0.34.0",
     "uvloop>=0.21.0",
+    "websockets>=15.0.1",
 ]
 dynamic = ["version"]
 
