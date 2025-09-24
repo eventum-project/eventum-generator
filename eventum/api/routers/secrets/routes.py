@@ -56,7 +56,7 @@ async def set_secret_value(
 @router.delete(
     '/{name}',
     description='Delete secret with specified name to keyring',
-    responses={500: {'description': 'Failed to set secret'}},
+    responses={500: {'description': 'Failed to remove secret'}},
 )
 async def delete_secret_value(
     name: Annotated[str, Path(description='Secret name', min_length=1)],
