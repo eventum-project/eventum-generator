@@ -70,6 +70,11 @@ def generate_asyncapi_schema(  # noqa: C901, PLR0912, PLR0915
     operations: dict[str, Any] = asyncapi['operations']
     components: dict[str, Any] = asyncapi['components']
     components['messages'] = {}
+    components['securitySchemes'] = {}
+    components['securitySchemes']['basicAuth'] = {
+        'type': 'userPassword',
+        'description': 'Basic authentication with username and password',
+    }
 
     for route in app.routes:
         if not isinstance(route, WebSocketRoute):
@@ -139,6 +144,9 @@ def generate_asyncapi_schema(  # noqa: C901, PLR0912, PLR0915
                             },
                         ],
                         **operation,
+                        'security': [
+                            {'$ref': '#/components/securitySchemes/basicAuth'},
+                        ],
                     }
                 if isinstance(meta, ws_info.Rejects):
                     message_id = f'{channel_id}_Error_{meta.status_code}'

@@ -51,7 +51,8 @@ operations:
     - $ref: '#/channels/stream_generator_logs/messages/stream_generator_logs_LogChunk'
     summary: ''
     description: ''
-    security: []
+    security:
+    - $ref: '#/components/securitySchemes/basicAuth'
     tags: []
     traits: []
 components:
@@ -119,3 +120,7 @@ components:
           reason:
             type: string
             description: Reason of error
+  securitySchemes:
+    basicAuth:
+      type: userPassword
+      description: Basic authentication with username and password
