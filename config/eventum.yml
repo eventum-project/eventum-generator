@@ -38,6 +38,14 @@ api.ssl.cert: null
 # Optional, default is null
 api.ssl.cert_key: null
 
+# User for basic auth
+# Optional, default is "eventum"
+api.auth.user: eventum
+
+# Password for basic auth
+# Optional, default is "eventum"
+api.auth.password: eventum
+
 # =========================== Generation Parameters ===========================
 
 # Time zone for generating timestamps

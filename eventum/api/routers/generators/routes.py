@@ -12,6 +12,7 @@ from fastapi import (
     Query,
     WebSocket,
     WebSocketDisconnect,
+    WebSocketException,
     status,
 )
 
@@ -43,6 +44,7 @@ from eventum.core.parameters import GeneratorParameters
 from eventum.logging.file_paths import construct_generator_logfile_path
 
 router = APIRouter()
+ws_router = APIRouter()
 
 
 @router.get(
@@ -264,7 +266,7 @@ async def get_generator_stats(generator: GeneratorDep) -> GeneratorStats:
     )
 
 
-@router.websocket('/{id}/logs')
+@ws_router.websocket('/{id}/logs')
 async def stream_generator_logs(
     id: Annotated[
         str,
@@ -306,11 +308,10 @@ async def stream_generator_logs(
     await websocket.accept()
 
     if id not in generator_manager.generator_ids:
-        await websocket.close(
+        raise WebSocketException(
             code=status.WS_1008_POLICY_VIOLATION,
             reason='Generator with specified id does not exist',
         )
-        return
 
     path = construct_generator_logfile_path(
         format=settings.log.format,
@@ -319,11 +320,10 @@ async def stream_generator_logs(
     )
 
     if not path.exists():
-        await websocket.close(
+        raise WebSocketException(
             code=status.WS_1013_TRY_AGAIN_LATER,
             reason='Log file does not exist',
         )
-        return
 
     try:
         async with aiofiles.open(path) as f:
@@ -344,7 +344,7 @@ async def stream_generator_logs(
 
     except OSError as e:
         if websocket.client_state.name == 'CONNECTED':
-            await websocket.close(
+            raise WebSocketException(
                 code=status.WS_1011_INTERNAL_ERROR,
                 reason=f'Failed to read log file due to OS error: {e}',
-            )
+            ) from None

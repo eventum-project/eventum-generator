@@ -71,6 +71,23 @@ class SSLParameters(BaseModel, extra='forbid', frozen=True):
         return self
 
 
+class AuthParameters(BaseModel, extra='forbid', frozen=True):
+    """Authentication parameters.
+
+    Attributes
+    ----------
+    user : str, default='eventum'
+        User for basic auth.
+
+    password : str, default='eventum'
+        Password for basic auth.
+
+    """
+
+    user: str = Field(default='eventum', min_length=1)
+    password: str = Field(default='eventum', min_length=1)
+
+
 class APIParameters(BaseModel, extra='forbid', frozen=True):
     """API parameters.
 
@@ -88,9 +105,13 @@ class APIParameters(BaseModel, extra='forbid', frozen=True):
     ssl : SSLParameters, default=SSLParameters(...)
         SSL parameters.
 
+    auth : AuthParameters
+        Auth parameters.
+
     """
 
     enabled: bool = Field(default=True)
     host: str = Field(default='0.0.0.0', min_length=1)  # noqa: S104
     port: int = Field(default=9474, ge=1)
     ssl: SSLParameters = Field(default_factory=lambda: SSLParameters())
+    auth: AuthParameters = Field(default_factory=lambda: AuthParameters())

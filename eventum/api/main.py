@@ -4,6 +4,10 @@ import structlog
 from fastapi import FastAPI
 
 import eventum
+from eventum.api.dependencies.authentication import (
+    HttpAuthDepends,
+    WebsocketAuthDepends,
+)
 from eventum.api.routers.docs import router as docs_router
 from eventum.api.routers.docs.ws_schema_generator import (
     generate_asyncapi_schema,
@@ -13,6 +17,7 @@ from eventum.api.routers.generator_configs import (
     router as generator_configs_router,
 )
 from eventum.api.routers.generators import router as generators_router
+from eventum.api.routers.generators import ws_router as ws_generators_router
 from eventum.api.routers.preview import router as preview_router
 from eventum.api.routers.secrets import router as secrets_router
 from eventum.app.manager import GeneratorManager
@@ -82,15 +87,34 @@ def build_api_app(
         generators_router,
         prefix='/generators',
         tags=['Generators'],
+        dependencies=[HttpAuthDepends],
+    )
+    app.include_router(
+        ws_generators_router,
+        prefix='/generators',
+        tags=['Generators', 'Websocket'],
+        dependencies=[WebsocketAuthDepends],
     )
     app.include_router(
         generator_configs_router,
         prefix='/generator_configs',
         tags=['Generator configs'],
+        dependencies=[HttpAuthDepends],
     )
-    app.include_router(preview_router, prefix='/preview', tags=['Preview'])
+    app.include_router(
+        preview_router,
+        prefix='/preview',
+        tags=['Preview'],
+        dependencies=[HttpAuthDepends],
+    )
     app.include_router(docs_router, tags=['Docs'])
-    app.include_router(secrets_router, prefix='/secrets', tags=['Secrets'])
+    app.include_router(
+        secrets_router,
+        prefix='/secrets',
+        tags=['Secrets'],
+        dependencies=[HttpAuthDepends],
+    )
+
     asyncapi_schema = generate_asyncapi_schema(
         app=app,
         host=settings.api.host,
