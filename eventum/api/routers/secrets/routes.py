@@ -1,5 +1,6 @@
 """Routes."""
 
+import asyncio
 from typing import Annotated
 
 from fastapi import APIRouter, Body, HTTPException, Path
@@ -21,8 +22,12 @@ router = APIRouter()
 async def get_secret_value(
     name: Annotated[str, Path(description='Secret name', min_length=1)],
 ) -> str:
+    loop = asyncio.get_running_loop()
     try:
-        return get_secret(name=name)
+        return await loop.run_in_executor(
+            executor=None,
+            func=lambda: get_secret(name=name),
+        )
     except ValueError as e:
         raise HTTPException(
             status_code=404,
@@ -44,8 +49,13 @@ async def set_secret_value(
     name: Annotated[str, Path(description='Secret name', min_length=1)],
     value: Annotated[str, Body(description='Secret value', min_length=1)],
 ) -> None:
+    loop = asyncio.get_running_loop()
     try:
-        set_secret(name=name, value=value)
+        await loop.run_in_executor(
+            executor=None,
+            func=lambda: set_secret(name=name, value=value),
+        )
+
     except OSError as e:
         raise HTTPException(
             status_code=500,
@@ -61,8 +71,12 @@ async def set_secret_value(
 async def delete_secret_value(
     name: Annotated[str, Path(description='Secret name', min_length=1)],
 ) -> None:
+    loop = asyncio.get_running_loop()
     try:
-        remove_secret(name=name)
+        await loop.run_in_executor(
+            executor=None,
+            func=lambda: remove_secret(name=name),
+        )
     except OSError as e:
         raise HTTPException(
             status_code=500,
