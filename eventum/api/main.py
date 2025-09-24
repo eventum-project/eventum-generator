@@ -14,6 +14,7 @@ from eventum.api.routers.generator_configs import (
 )
 from eventum.api.routers.generators import router as generators_router
 from eventum.api.routers.preview import router as preview_router
+from eventum.api.routers.secrets import router as secrets_router
 from eventum.app.manager import GeneratorManager
 from eventum.app.models.settings import Settings
 from eventum.exceptions import ContextualError
@@ -89,7 +90,7 @@ def build_api_app(
     )
     app.include_router(preview_router, prefix='/preview', tags=['Preview'])
     app.include_router(docs_router, tags=['Docs'])
-
+    app.include_router(secrets_router, prefix='/secrets', tags=['Secrets'])
     asyncapi_schema = generate_asyncapi_schema(
         app=app,
         host=settings.api.host,
