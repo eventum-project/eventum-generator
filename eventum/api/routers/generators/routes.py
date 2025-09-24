@@ -33,6 +33,11 @@ from eventum.api.routers.generators.models import (
     OutputPluginStats,
 )
 from eventum.api.utils.response_description import merge_responses
+from eventum.api.utils.websocket_annotations import (
+    AsyncAPIMessage,
+    Receives,
+    Rejects,
+)
 from eventum.app.manager import ManagingError
 from eventum.core.parameters import GeneratorParameters
 from eventum.logging.file_paths import construct_generator_logfile_path
@@ -261,10 +266,35 @@ async def get_generator_stats(generator: GeneratorDep) -> GeneratorStats:
 
 @router.websocket('/{id}/logs')
 async def stream_generator_logs(
-    id: str,
+    id: Annotated[
+        str,
+        Path(description='ID of the generator whose logs to stream'),
+    ],
     settings: SettingsDep,
     generator_manager: GeneratorManagerDep,
-    websocket: WebSocket,
+    websocket: Annotated[
+        WebSocket,
+        Receives(
+            message=AsyncAPIMessage(
+                contentType='text/plain',
+                name='LogChunk',
+                title='Log chunk',
+                payload={'type': 'string'},
+            ),
+        ),
+        Rejects(
+            status_code=status.WS_1008_POLICY_VIOLATION,
+            details='Generator with specified id does not exist',
+        ),
+        Rejects(
+            status_code=status.WS_1011_INTERNAL_ERROR,
+            details='Failed to read log file due to OS error',
+        ),
+        Rejects(
+            status_code=status.WS_1013_TRY_AGAIN_LATER,
+            details='Log file does not exist',
+        ),
+    ],
     end_offset: Annotated[
         int,
         Query(

@@ -1,0 +1,121 @@
+asyncapi: 3.0.0
+info:
+  title: Eventum API
+  version: 2.0.0
+  description: API for managing generators, plugins and its dependencies
+  contact:
+    name: Eventum Project
+    url: https://github.com/eventum-project
+  license:
+    name: Apache 2.0
+    url: https://github.com/eventum-project/eventum-generator/blob/master/LICENSE
+  tags: []
+  externalDocs:
+    description: Eventum Documentation
+    url: https://eventum-project.github.io/website/
+servers:
+  local:
+    host: 0.0.0.0:9474
+    protocol: ws
+channels:
+  stream_generator_logs:
+    address: /generators/{id}/logs
+    messages:
+      stream_generator_logs_LogChunk:
+        $ref: '#/components/messages/stream_generator_logs_LogChunk'
+      stream_generator_logs_Error_1008:
+        $ref: '#/components/messages/stream_generator_logs_Error_1008'
+      stream_generator_logs_Error_1011:
+        $ref: '#/components/messages/stream_generator_logs_Error_1011'
+      stream_generator_logs_Error_1013:
+        $ref: '#/components/messages/stream_generator_logs_Error_1013'
+    title: ''
+    summary: ''
+    description: ''
+    servers:
+    - $ref: '#/servers/local'
+    parameters:
+      end_offset:
+        description: Offset from end of file to start reading from
+        default: '8192'
+      id:
+        description: ID of the generator whose logs to stream
+    bindings: {}
+operations:
+  stream_generator_logs_LogChunk_receive:
+    action: receive
+    channel:
+      $ref: '#/channels/stream_generator_logs'
+    title: Receive Log chunk
+    messages:
+    - $ref: '#/channels/stream_generator_logs/messages/stream_generator_logs_LogChunk'
+    summary: ''
+    description: ''
+    security: []
+    tags: []
+    traits: []
+components:
+  messages:
+    stream_generator_logs_LogChunk:
+      name: LogChunk
+      title: Log chunk
+      summary: ''
+      description: ''
+      contentType: text/plain
+      payload:
+        type: string
+      tags: []
+      bindings: {}
+      examples: []
+      traits: []
+    stream_generator_logs_Error_1008:
+      name: Error_1008
+      title: Websocket error 1008
+      description: Generator with specified id does not exist
+      contentType: application/json
+      payload:
+        type: object
+        required:
+        - code
+        - reason
+        properties:
+          code:
+            type: integer
+            description: Websocket error code
+          reason:
+            type: string
+            description: Reason of error
+    stream_generator_logs_Error_1011:
+      name: Error_1011
+      title: Websocket error 1011
+      description: Failed to read log file due to OS error
+      contentType: application/json
+      payload:
+        type: object
+        required:
+        - code
+        - reason
+        properties:
+          code:
+            type: integer
+            description: Websocket error code
+          reason:
+            type: string
+            description: Reason of error
+    stream_generator_logs_Error_1013:
+      name: Error_1013
+      title: Websocket error 1013
+      description: Log file does not exist
+      contentType: application/json
+      payload:
+        type: object
+        required:
+        - code
+        - reason
+        properties:
+          code:
+            type: integer
+            description: Websocket error code
+          reason:
+            type: string
+            description: Reason of error

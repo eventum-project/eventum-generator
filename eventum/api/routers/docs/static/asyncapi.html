@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Eventum API - AsyncAPI UI</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://unpkg.com/@asyncapi/react-component@latest/styles/default.min.css">
+  </head>
+  <body>
+    <div id="asyncapi"></div>
+
+    <script src="https://unpkg.com/@asyncapi/react-component@latest/browser/standalone/index.js"></script>
+    <script>
+      AsyncApiStandalone.render({
+        schema: {
+          url: '/asyncapi.yml',
+          options: { method: "GET", mode: "cors" },
+        },
+        config: {
+          show: {
+            sidebar: true
+          }
+        },
+      }, document.getElementById('asyncapi'));
+    </script>
+
+  </body>
+</html>

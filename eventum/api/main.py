@@ -4,6 +4,11 @@ import structlog
 from fastapi import FastAPI
 
 import eventum
+from eventum.api.routers.docs import router as docs_router
+from eventum.api.routers.docs.ws_schema_generator import (
+    generate_asyncapi_schema,
+    register_asyncapi_schema,
+)
 from eventum.api.routers.generator_configs import (
     router as generator_configs_router,
 )
@@ -38,6 +43,11 @@ def build_api_app(
     -------
     Built FastAPI application.
 
+    Raises
+    ------
+    RuntimeError
+        If API app build fails due to some error.
+
     """
     app = FastAPI(
         title='Eventum API',
@@ -47,14 +57,18 @@ def build_api_app(
         version=eventum.__version__,
         root_path='/api',
         docs_url='/swagger',
-        redoc_url='/doc',
+        redoc_url='/redoc',
         contact={
             'name': 'Eventum Project',
-            'url': 'https://eventum-project.github.io/website/',
+            'url': 'https://github.com/eventum-project',
         },
         license_info={
             'name': 'Apache 2.0',
             'url': 'https://github.com/eventum-project/eventum-generator/blob/master/LICENSE',
+        },
+        openapi_external_docs={
+            'description': 'Eventum Documentation',
+            'url': 'https://eventum-project.github.io/website/',
         },
     )
 
@@ -74,5 +88,13 @@ def build_api_app(
         tags=['Generator configs'],
     )
     app.include_router(preview_router, prefix='/preview', tags=['Preview'])
+    app.include_router(docs_router, tags=['Docs'])
+
+    asyncapi_schema = generate_asyncapi_schema(
+        app=app,
+        host=settings.api.host,
+        port=settings.api.port,
+    )
+    register_asyncapi_schema(schema=asyncapi_schema)
 
     return app
