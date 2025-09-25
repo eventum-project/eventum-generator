@@ -19,6 +19,7 @@ from eventum.logging.processors import derive_extras, remove_keys_processor
 if TYPE_CHECKING:
     from structlog.typing import Processor
 
+
 type LogLevel = Literal['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 
 
@@ -30,6 +31,26 @@ def disable() -> None:
         wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
+
+
+def clear() -> None:
+    """Clear logging configuration."""
+    loggers = [
+        logging.getLogger(name) for name in logging.root.manager.loggerDict
+    ]
+    loggers.append(logging.getLogger())
+
+    for logger in loggers:
+        handlers = logger.handlers[:]
+
+        for handler in handlers:
+            logger.removeHandler(handler)
+            handler.close()
+
+        logger.setLevel(logging.NOTSET)
+        logger.propagate = True
+
+    structlog.reset_defaults()
 
 
 def use_stderr(level: LogLevel) -> None:
