@@ -205,7 +205,7 @@ def register_asyncapi_schema(schema: dict[str, Any]) -> None:
     Raises
     ------
     RuntimeError
-        Of schema cannot be registered.
+        If schema cannot be registered.
 
     """
     try:
