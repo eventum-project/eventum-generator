@@ -338,7 +338,7 @@ class LenLe(
         )
 
 
-class Contains(
+class Contains(  # type: ignore[misc]
     BaseModel,
     Checkable[EventStateContext],
     frozen=True,
@@ -362,7 +362,7 @@ class Contains(
         )
 
 
-class In(BaseModel, Checkable[EventStateContext], frozen=True, extra='forbid'):
+class In(BaseModel, Checkable[EventStateContext], frozen=True, extra='forbid'):  # type: ignore[misc]
     """Check if value is in sequence."""
 
     in_: dict[StateFieldName, Any] = Field(
@@ -536,7 +536,7 @@ type ConditionLogic = Union[  # type: ignore[no-redef] # noqa: UP007
 type Condition = ConditionLogic | ConditionCheck  # type: ignore[no-redef]
 
 
-class Or(BaseModel, Checkable[EventContext], frozen=True, extra='forbid'):
+class Or(BaseModel, Checkable[EventContext], frozen=True, extra='forbid'):  # type: ignore[misc]
     """Logic operator 'or' for combining checks or other logic
     operators.
     """
@@ -550,7 +550,7 @@ class Or(BaseModel, Checkable[EventContext], frozen=True, extra='forbid'):
         return any(clause.check(context) for clause in self.or_)
 
 
-class And(BaseModel, Checkable[EventContext], frozen=True, extra='forbid'):
+class And(BaseModel, Checkable[EventContext], frozen=True, extra='forbid'):  # type: ignore[misc]
     """Logic operator 'and' for combining checks or other logic
     operators.
     """
@@ -564,7 +564,7 @@ class And(BaseModel, Checkable[EventContext], frozen=True, extra='forbid'):
         return all(clause.check(context) for clause in self.and_)
 
 
-class Not(BaseModel, Checkable[EventContext], frozen=True, extra='forbid'):
+class Not(BaseModel, Checkable[EventContext], frozen=True, extra='forbid'):  # type: ignore[misc]
     """Logic operator 'not' for negate checks or other logic
     operators.
     """
