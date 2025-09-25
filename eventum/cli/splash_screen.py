@@ -1,18 +1,13 @@
 """Splash screen for printing it on app startup."""
 
 import platform
-import sys
 
 import click
 
 import eventum
 
 APP_VERSION = eventum.__version__
-PYTHON_VERSION = (
-    f'{sys.version_info.major}'
-    f'.{sys.version_info.minor}'
-    f'.{sys.version_info.micro}'
-)
+PYTHON_VERSION = platform.python_version()
 
 APP_BANNER = click.style(
     text=r"""

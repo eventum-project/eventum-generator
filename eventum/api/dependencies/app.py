@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request, WebSocket
 
+from eventum.api.hooks import InstanceHooks
 from eventum.app.manager import GeneratorManager
 from eventum.app.models.settings import Settings
 
@@ -95,4 +96,27 @@ def get_generator_manager(app: AppDep) -> GeneratorManager:
 GeneratorManagerDep = Annotated[
     GeneratorManager,
     Depends(get_generator_manager),
+]
+
+
+def get_instance_hooks(request: Request) -> InstanceHooks:
+    """Get instance hooks.
+
+    Parameters
+    ----------
+    request : Request
+        Current request.
+
+    Returns
+    -------
+    InstanceHooks
+        Obtained instance hooks.
+
+    """
+    return request.app.state.instance_hooks
+
+
+InstanceHooksDep = Annotated[
+    InstanceHooks,
+    Depends(get_instance_hooks),
 ]

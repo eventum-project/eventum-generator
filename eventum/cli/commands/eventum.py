@@ -3,7 +3,6 @@
 import os
 import signal
 import sys
-from io import TextIOWrapper
 from pathlib import Path
 from typing import Literal, NoReturn
 
@@ -16,7 +15,7 @@ from setproctitle import setproctitle
 
 import eventum
 import eventum.logging.config as logconf
-from eventum.app.main import App, AppError
+from eventum.app.main import App, AppError, InstanceHooks
 from eventum.app.models.settings import Settings
 from eventum.cli.pydantic_converter import from_model
 from eventum.cli.splash_screen import SPLASH_SCREEN
@@ -45,15 +44,24 @@ def cli():  # noqa: ANN201
     '--config',
     required=True,
     help='Path to main configuration file',
-    type=click.File(),
+    type=click.Path(exists=True, resolve_path=True),
 )
-def run(config: TextIOWrapper) -> None:
+def run(config: str) -> None:
     """Run application with all defined generators."""
+    config_path = Path(config)
     try:
-        data = yaml.load(config, Loader=yaml.SafeLoader)
-    except yaml.error.YAMLError as e:
+        with config_path.open() as f:
+            try:
+                data = yaml.load(f, Loader=yaml.SafeLoader)
+            except yaml.error.YAMLError as e:
+                click.echo(
+                    f'Error: Failed to parse configuration YAML content: {e}',
+                    err=True,
+                )
+                sys.exit(1)
+    except OSError as e:
         click.echo(
-            f'Error: Failed to parse configuration YAML content: {e}',
+            f'Error: Failed to open config file: {e}',
             err=True,
         )
         sys.exit(1)
@@ -83,7 +91,14 @@ def run(config: TextIOWrapper) -> None:
 
     click.echo(SPLASH_SCREEN)
 
-    app = App(settings)
+    app = App(
+        settings=settings,
+        instance_hooks=InstanceHooks(
+            get_settings_file_path=lambda: config_path,
+            terminate=lambda: os.kill(os.getpid(), signal.SIGTERM),
+            restart=lambda: None,
+        ),
+    )
 
     logger.info('Starting application')
     try:

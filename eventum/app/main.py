@@ -9,6 +9,7 @@ import yaml
 from flatten_dict import flatten, unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError, validate_call
 
+from eventum.api.hooks import InstanceHooks
 from eventum.app.manager import GeneratorManager, ManagingError
 from eventum.app.models.settings import Settings
 from eventum.core.parameters import GeneratorParameters
@@ -26,7 +27,11 @@ class AppError(ContextualError):
 class App:
     """Main application."""
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        instance_hooks: InstanceHooks,
+    ) -> None:
         """Initialize App.
 
         Parameters
@@ -34,12 +39,16 @@ class App:
         settings : Settings
             Settings of the applications.
 
+        instance_hooks : InstanceHooks
+            Instance hooks.
+
         """
         logger.debug(
             'Initializing app with provided settings',
             parameters=settings.model_dump(),
         )
         self._settings = settings
+        self._instance_hooks = instance_hooks
 
         logger.debug(
             'Setting up security parameters',
@@ -279,6 +288,7 @@ class App:
         api_app = build_api_app(
             generator_manager=self._manager,
             settings=self._settings,
+            instance_hooks=self._instance_hooks,
         )
 
         # TODO(rnv812): fix type of ssl_ca_certs param: https://github.com/encode/uvicorn/pull/2676

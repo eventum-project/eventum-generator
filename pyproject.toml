@@ -54,6 +54,7 @@ dependencies = [
     "mimesis>=18.0.0",
     "msgspec>=0.19.0",
     "numpy>=2.2.3",
+    "psutil>=7.1.0",
     "pwinput>=1.0.3",
     "pydantic>=2.10.6",
     "pytz>=2025.1",
@@ -85,6 +86,7 @@ dev = [
     "types-aiofiles>=24.1.0.20241221",
     "types-croniter>=5.0.1.20241205",
     "types-dateparser>=1.2.0.20250208",
+    "types-psutil>=7.0.0.20250822",
     "types-pytz>=2025.1.0.20250204",
     "types-pyyaml>=6.0.12.20241230",
 ]
