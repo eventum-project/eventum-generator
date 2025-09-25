@@ -128,14 +128,15 @@ def build_api_app(
     )
     app.include_router(docs_router, tags=['Docs'])
 
+    asyncapi_schema = generate_asyncapi_schema(
+        app=app,
+        host=settings.api.host,
+        port=settings.api.port,
+    )
+
     try:
-        asyncapi_schema = generate_asyncapi_schema(
-            app=app,
-            host=settings.api.host,
-            port=settings.api.port,
-        )
         register_asyncapi_schema(schema=asyncapi_schema)
-    except Exception as e:
+    except RuntimeError as e:
         msg = 'Failed to generate asyncapi schema for websocket endpoints'
         raise APIBuildingError(msg, context={'reason': str(e)}) from e
 
