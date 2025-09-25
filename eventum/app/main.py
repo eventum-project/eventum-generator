@@ -9,8 +9,8 @@ import yaml
 from flatten_dict import flatten, unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError, validate_call
 
-from eventum.api.hooks import InstanceHooks
 from eventum.api.main import APIBuildingError
+from eventum.app.hooks import InstanceHooks
 from eventum.app.manager import GeneratorManager, ManagingError
 from eventum.app.models.settings import Settings
 from eventum.core.parameters import GeneratorParameters

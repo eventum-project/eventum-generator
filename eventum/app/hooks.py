@@ -1,4 +1,6 @@
-"""Hooks for managing instance using API."""
+"""Hooks for managing top-level execution flow (instance)
+from the app layer.
+"""
 
 from collections.abc import Callable
 from pathlib import Path

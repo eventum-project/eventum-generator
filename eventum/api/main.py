@@ -8,7 +8,6 @@ from eventum.api.dependencies.authentication import (
     HttpAuthDepends,
     WebsocketAuthDepends,
 )
-from eventum.api.hooks import InstanceHooks
 from eventum.api.routers.docs import router as docs_router
 from eventum.api.routers.docs.ws_schema_generator import (
     generate_asyncapi_schema,
@@ -22,6 +21,7 @@ from eventum.api.routers.generators import ws_router as ws_generators_router
 from eventum.api.routers.instance import router as instance_router
 from eventum.api.routers.preview import router as preview_router
 from eventum.api.routers.secrets import router as secrets_router
+from eventum.app.hooks import InstanceHooks
 from eventum.app.manager import GeneratorManager
 from eventum.app.models.settings import Settings
 from eventum.exceptions import ContextualError
