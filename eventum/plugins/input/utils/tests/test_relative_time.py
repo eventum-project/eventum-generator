@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import pytest
 
-from eventum.plugins.input.relative_time import parse_relative_time
+from eventum.plugins.input.utils.relative_time import parse_relative_time
 
 
 def test_parse_relative_time_single_unit():

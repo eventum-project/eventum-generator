@@ -10,7 +10,8 @@ class LogParameters(BaseModel, extra='forbid', frozen=True):
 
     Attributes
     ----------
-    level : Literal['info', 'warning', 'error', 'critical'], default='info'
+    level : Literal['debug', 'info', 'warning', 'error', 'critical'],\
+        default='info'
         Log level.
 
     format : Literal['plain', 'json'], default='plain'
@@ -24,7 +25,7 @@ class LogParameters(BaseModel, extra='forbid', frozen=True):
 
     """
 
-    level: Literal['info', 'warning', 'error', 'critical'] = 'info'
+    level: Literal['debug', 'info', 'warning', 'error', 'critical'] = 'info'
     format: Literal['plain', 'json'] = 'plain'
     max_bytes: int = Field(default=10 * 1024 * 1024, ge=1024)  # 10MiB
     backups: int = Field(default=5, ge=1)

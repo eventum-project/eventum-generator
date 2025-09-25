@@ -55,11 +55,37 @@ class SSLParameters(BaseModel, extra='forbid', frozen=True):
 
         if self.cert is None or self.cert_key is None:
             msg = 'Server certificate and key must be provided together'
-            raise ValueError(
-                msg,
-            )
+            raise ValueError(msg)
 
         return self
+
+    @model_validator(mode='after')
+    def validate_certificate_and_key(self) -> Self:  # noqa: D102
+        if self.enabled and (self.cert is None or self.cert_key is None):
+            msg = (
+                'Server certificate and key must be provided '
+                'when SSL is enabled'
+            )
+            raise ValueError(msg)
+
+        return self
+
+
+class AuthParameters(BaseModel, extra='forbid', frozen=True):
+    """Authentication parameters.
+
+    Attributes
+    ----------
+    user : str, default='eventum'
+        User for basic auth.
+
+    password : str, default='eventum'
+        Password for basic auth.
+
+    """
+
+    user: str = Field(default='eventum', min_length=1)
+    password: str = Field(default='eventum', min_length=1)
 
 
 class APIParameters(BaseModel, extra='forbid', frozen=True):
@@ -79,9 +105,13 @@ class APIParameters(BaseModel, extra='forbid', frozen=True):
     ssl : SSLParameters, default=SSLParameters(...)
         SSL parameters.
 
+    auth : AuthParameters
+        Auth parameters.
+
     """
 
     enabled: bool = Field(default=True)
     host: str = Field(default='0.0.0.0', min_length=1)  # noqa: S104
     port: int = Field(default=9474, ge=1)
     ssl: SSLParameters = Field(default_factory=lambda: SSLParameters())
+    auth: AuthParameters = Field(default_factory=lambda: AuthParameters())

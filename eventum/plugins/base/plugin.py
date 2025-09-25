@@ -221,7 +221,6 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
         super().__init_subclass__(**kwargs)
 
         context = {'plugin_class': cls.__name__}
-
         log = logger.bind(**context)
 
         try:
@@ -241,6 +240,7 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
             cls._plugin_type = '[unregistered]'  # type: ignore[attr-defined]
             return
 
+        log.debug('Preparing info for plugin registration')
         plugin_name = registration_info.name
         plugin_type = registration_info.type
         cls._plugin_name = plugin_name  # type: ignore[attr-defined]
@@ -272,6 +272,7 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
             )
             raise PluginRegistrationError(msg, context=context)
 
+        log.debug('Passing information about plugin to registry')
         PluginsRegistry.register_plugin(
             PluginInfo(
                 name=registration_info.name,
@@ -281,8 +282,8 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
             ),
         )
 
-        log.info(
-            'Plugin is registered',
+        log.debug(
+            'Plugin initialization completed',
             plugin_type=registration_info.type,
             plugin_name=registration_info.name,
             plugin_config_class=config_cls.__name__,
@@ -317,3 +318,9 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
     def logger(self) -> structlog.stdlib.BoundLogger:
         """Plugin logger."""
         return self._logger  # type: ignore[attr-defined]
+
+    @property
+    def base_path(self) -> Path:
+        """Base path of plugin."""
+        # TODO(rnv812): https://github.com/python/mypy/issues/18804
+        return self._base_path  # type: ignore[return-value]

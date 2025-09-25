@@ -2,9 +2,11 @@
 
 import os
 import time
+from datetime import datetime
 from threading import Event, Lock, Thread, get_native_id
 
 import structlog
+from pytz import timezone
 
 from eventum.core.config import GeneratorConfig
 from eventum.core.config_loader import ConfigurationLoadError, load
@@ -50,7 +52,9 @@ class Generator:
 
         self._lock = Lock()
 
-    def _start(self) -> None:  # noqa: PLR0911
+        self._start_time: datetime | None = None
+
+    def _start(self) -> None:  # noqa: PLR0911, PLR0915
         """Start generation."""
         structlog.contextvars.bind_contextvars(generator_id=self._params.id)
 
@@ -70,6 +74,7 @@ class Generator:
             self._config = load(self._params.path, self._params.params)
         except ConfigurationLoadError as e:
             self._logger.error(str(e), **e.context)
+            self._release()
             return
         except Exception as e:
             self._logger.exception(
@@ -77,6 +82,7 @@ class Generator:
                 reason=str(e),
                 file_path=str(self._params.path),
             )
+            self._release()
             return
 
         self._logger.info('Initializing plugins')
@@ -89,12 +95,14 @@ class Generator:
             )
         except InitializationError as e:
             self._logger.error(str(e), **e.context)
+            self._release()
             return
         except Exception as e:
             self._logger.exception(
                 'Unexpected error occurred during initializing plugins',
                 reason=str(e),
             )
+            self._release()
             return
 
         self._logger.info('Initializing plugins executor')
@@ -107,12 +115,14 @@ class Generator:
             )
         except ImproperlyConfiguredError as e:
             self._logger.error(str(e), **e.context)
+            self._release()
             return
         except Exception as e:
             self._logger.exception(
                 'Unexpected error occurred during initializing',
                 reason=str(e),
             )
+            self._release()
             return
 
         init_time = round(time.monotonic() - init_start_time, 3)
@@ -122,7 +132,7 @@ class Generator:
             'Starting execution',
             parameters=self._params.model_dump_json(),
         )
-
+        self._start_time = datetime.now().astimezone(tz=timezone('UTC'))
         self._initialized_event.set()
         try:
             self._executor.execute()
@@ -138,6 +148,8 @@ class Generator:
         else:
             self._logger.info('Ending execution')
             self._successfully_done_event.set()
+        finally:
+            self._release()
 
     def start(self) -> bool:
         """Start generator in separate thread waiting for its
@@ -150,18 +162,25 @@ class Generator:
             running, `False` otherwise.
 
         """
+        self._logger.info('Starting generator')
+        self._logger.debug('Acquiring lock')
         with self._lock:
             if self.is_running:
+                self._logger.debug('Generator is already running')
                 return True
 
+            self._logger.debug('Clearing status')
             self._initialized_event.clear()
             self._successfully_done_event.clear()
 
+            self._logger.debug('Creating and starting thread')
             self._thread = Thread(
                 target=propagate_logger_context()(self._start),
+                name=f'generator:{self._params.id}',
             )
             self._thread.start()
 
+            self._logger.debug('Waiting for initialization')
             while self.is_initializing:
                 time.sleep(0.1)
 
@@ -171,17 +190,33 @@ class Generator:
         """Stop generator with joining underlying thread. Ignore call
         if generator is not running.
         """
+        self._logger.info('Stopping generator')
+        self._logger.debug('Acquiring lock')
         with self._lock:
             if not self.is_running:
+                self._logger.debug('Generator is not running')
                 return
 
+            self._logger.debug('Requesting executor to stop')
             self._executor.request_stop()  # type: ignore[union-attr]
+
+            self._logger.debug('Joining executing thread')
             self._thread.join()  # type: ignore[union-attr]
+
+    def _release(self) -> None:
+        """Release resources of generator runtime after stopping or
+        ending execution.
+        """
+        self._plugins = None
+        self._executor = None
+        self._config = None
 
     def join(self) -> None:
         """Wait until generator terminates."""
         if self._thread is not None:
             self._thread.join()
+        else:
+            self._logger.debug('There is no executing thread')
 
     def get_plugins_info(self) -> InitializedPlugins:
         """Get plugins information.
@@ -226,6 +261,11 @@ class Generator:
         return self._config
 
     @property
+    def params(self) -> GeneratorParameters:
+        """Generator parameters."""
+        return self._params
+
+    @property
     def is_initializing(self) -> bool:
         """Whether the generator is initializing."""
         return (
@@ -244,6 +284,34 @@ class Generator:
         )
 
     @property
-    def status(self) -> bool:
+    def is_ended_up(self) -> bool:
+        """Whether the generator has ended execution with or without
+        errors.
+        """
+        return self._thread is not None and not self._thread.is_alive()
+
+    @property
+    def is_ended_up_successfully(self) -> bool:
         """Whether the generator has ended execution successfully."""
-        return self._successfully_done_event.is_set()
+        return self.is_ended_up and self._successfully_done_event.is_set()
+
+    @property
+    def is_ended_up_with_error(self) -> bool:
+        """Whether the generator has ended execution with error."""
+        return self.is_ended_up and not self._successfully_done_event.is_set()
+
+    @property
+    def start_time(self) -> datetime:
+        """Start time of the generator.
+
+        Notes
+        -----
+        Note that accessing this property before initialization of
+        generator raises `RuntimeError`
+
+        """
+        if self._start_time is None:
+            msg = 'Generator is not yet started'
+            raise RuntimeError(msg)
+
+        return self._start_time

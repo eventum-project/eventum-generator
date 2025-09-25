@@ -1,4 +1,4 @@
-"""Field definitions used in plugin configs."""
+"""Fields definition used in plugin configs."""
 
 from typing import Literal
 

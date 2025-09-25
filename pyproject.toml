@@ -43,7 +43,7 @@ dependencies = [
     "croniter>=6.0.0",
     "dateparser>=1.2.1",
     "faker>=37.0.0",
-    "fastapi>=0.115.11",
+    "fastapi[standard]>=0.115.11",
     "flatten-dict>=0.4.2",
     "griffe>=1.6.0",
     "httpx>=0.28.1",
@@ -64,6 +64,7 @@ dependencies = [
     "tablib>=3.8.0",
     "uvicorn[standard]>=0.34.0",
     "uvloop>=0.21.0",
+    "websockets>=15.0.1",
 ]
 dynamic = ["version"]
 
@@ -92,6 +93,11 @@ dev = [
 eventum = "eventum.cli.commands.eventum:cli"
 eventum-keyring = "eventum.cli.commands.eventum_keyring:cli"
 
+[tool.mypy]
+exclude = [
+    "^test_.*\\.py$",
+]
+plugins = "pydantic.mypy"
 
 [tool.pytest.ini_options]
 console_output_style = "count"
@@ -101,8 +107,13 @@ addopts = [
     "--cov-report=html"
 ]
 
-[tool.pytest.plugins]
-pytest-html = { report_name = "pytest_report" }
+[tool.coverage.report]
+omit = [
+    "*/models/*",
+    "*/logging/config.py",
+    "*/cli/splash_screen.py",
+    "*/tests/*"
+]
 
 [tool.ruff]
 line-length = 79
@@ -116,12 +127,19 @@ ignore = [
     "ANN401",   # any-type
     "D105",     # undocumented-magic-method
     "D205",     # missing-blank-line-after-summary
+    "FIX002",   # line-contains-todo
     "S311",     # suspicious-non-cryptographic-random-usage
     "S701",     # jinja2-autoescape-false
     "TRY400",   # error-instead-of-exception
 ]
 flake8-quotes = {inline-quotes = "single", multiline-quotes = "double"}
 exclude = ["**/tests/**"]
+
+[tool.ruff.lint.per-file-ignores]
+"eventum/api/routers/**/routes.py" = [
+    "D103",     # undocumented-public-function
+    "FAST003"   # fast-api-unused-path-parameter
+]
 
 [tool.ruff.format]
 quote-style = "single"

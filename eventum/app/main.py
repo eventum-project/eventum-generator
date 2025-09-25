@@ -1,8 +1,10 @@
 """Main application definition."""
 
 from collections.abc import Iterable
+from threading import Thread
 
 import structlog
+import uvicorn
 import yaml
 from flatten_dict import flatten, unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError, validate_call
@@ -11,6 +13,7 @@ from eventum.app.manager import GeneratorManager, ManagingError
 from eventum.app.models.settings import Settings
 from eventum.core.parameters import GeneratorParameters
 from eventum.exceptions import ContextualError
+from eventum.security.manage import SECURITY_SETTINGS
 from eventum.utils.validation_prettier import prettify_validation_errors
 
 logger = structlog.stdlib.get_logger()
@@ -32,8 +35,24 @@ class App:
             Settings of the applications.
 
         """
+        logger.debug(
+            'Initializing app with provided settings',
+            parameters=settings.model_dump(),
+        )
         self._settings = settings
+
+        logger.debug(
+            'Setting up security parameters',
+            parameters=settings.model_dump(),
+        )
+        SECURITY_SETTINGS['cryptfile_location'] = (
+            settings.path.keyring_cryptfile
+        )
+
         self._manager = GeneratorManager()
+
+        self._server: uvicorn.Server | None = None
+        self._server_thread = Thread(target=self._run_api_server, name='api')
 
     def start(self) -> None:
         """Start the app.
@@ -44,10 +63,18 @@ class App:
             If error occurs during initialization.
 
         """
+        logger.info('Loading generators list')
         gen_list = self._load_generators_list()
+
+        logger.info('Starting generators')
         self._start_generators(generators_params=gen_list)
 
         if self._settings.api.enabled:
+            logger.info(
+                'Starting API',
+                port=self._settings.api.port,
+                host=self._settings.api.host,
+            )
             self._start_api()
 
     def stop(self) -> None:
@@ -75,7 +102,7 @@ class App:
         -------
         list[GeneratorParameters]
             Validated list of generators parameters applied above
-            generation parameters from setting.
+            generation parameters from settings.
 
         Raises
         ------
@@ -86,26 +113,45 @@ class App:
         generators_parameters: list[GeneratorParameters] = []
 
         base_params = self._settings.generation.model_dump()
+        base_params = flatten(base_params, reducer='dot')
+
+        logger.debug(
+            'Next base generation parameters will be used for generators',
+            parameters=base_params,
+        )
+
         for params in object:
-            base_params = flatten(base_params, reducer='dot')
             generator_params = flatten(params, reducer='dot')
 
             generator_params = base_params | generator_params
             generator_params = unflatten(generator_params, splitter='dot')
 
-            generators_parameters.append(
-                GeneratorParameters.model_validate(generator_params),
-            )
+            validated_generator_params = GeneratorParameters.model_validate(
+                generator_params,
+            ).as_absolute(base_dir=self._settings.path.generators_dir)
+
+            generators_parameters.append(validated_generator_params)
+
+            if not validated_generator_params.path.is_relative_to(
+                self._settings.path.generators_dir,
+            ):
+                logger.warning(
+                    'Generator is outside the configured generators '
+                    'directory. Consider moving it into specified directory '
+                    'so it can be observed by the API.',
+                    generator_id=validated_generator_params.id,
+                    path=str(self._settings.path.generators_dir),
+                )
 
         return generators_parameters
 
     def _load_generators_list(self) -> list[GeneratorParameters]:
-        """Load generators list from specified file.
+        """Load generators list from file specified in config.
 
         Returns
         -------
         list[GeneratorParameters]
-            List of defined generators parameters.
+            List of defined generators.
 
         Raises
         ------
@@ -113,23 +159,24 @@ class App:
             If error occurs during loading generators list.
 
         """
-        logger.info(
-            'Loading generators list',
-            file_path=str(self._settings.path.generators),
+        logger.debug(
+            'Reading generators list from startup file',
+            file_path=str(self._settings.path.startup),
         )
         try:
-            with self._settings.path.generators.open() as f:
+            with self._settings.path.startup.open() as f:
                 content = f.read()
         except OSError as e:
-            msg = 'Failed to read generators list'
+            msg = 'Failed to read generators list from startup file'
             raise AppError(
                 msg,
                 context={
-                    'file_path': self._settings.path.generators,
+                    'file_path': self._settings.path.startup,
                     'reason': str(e),
                 },
             ) from None
 
+        logger.debug('Parsing yaml content of generators list')
         try:
             obj = yaml.load(content, Loader=yaml.SafeLoader)
         except yaml.error.YAMLError as e:
@@ -137,11 +184,12 @@ class App:
             raise AppError(
                 msg,
                 context={
-                    'file_path': self._settings.path.generators,
+                    'file_path': self._settings.path.startup,
                     'reason': str(e),
                 },
             ) from None
 
+        logger.debug('Validating generators list')
         try:
             return self._validate_generators_list(obj)
         except ValidationError as e:
@@ -167,43 +215,97 @@ class App:
         not_added_generators: list[str] = []
 
         for params in generators_params:
-            logger.info('Starting generator', generator_id=params.id)
             try:
                 self._manager.add(params)
                 added_generators.append(params.id)
             except ManagingError as e:
                 not_added_generators.append(params.id)
                 logger.error(
-                    'Failed to start generator',
+                    'Failed to add generator to execution manager',
                     generator_id=params.id,
                     reason=str(e),
                 )
 
+        logger.debug(
+            'Bulk starting generators',
+            generator_ids=added_generators,
+        )
         running_generators, non_running_generators = self._manager.bulk_start(
             generator_ids=added_generators,
         )
         non_running_generators.extend(not_added_generators)
 
         if len(running_generators) > 0:
-            message = 'Generators are running'
+            logger.info(
+                'Generators are running',
+                count=len(running_generators),
+                running_generators=running_generators,
+                non_running_generators=non_running_generators,
+            )
         else:
-            message = 'No generators are running'
-
-        logger.info(
-            message,
-            count=len(running_generators),
-            running_generators=running_generators,
-            non_running_generators=non_running_generators,
-        )
+            logger.warning(
+                'No generators are running',
+                count=len(running_generators),
+                running_generators=running_generators,
+                non_running_generators=non_running_generators,
+            )
 
     def _stop_generators(self) -> None:
         """Stop generators."""
-        self._manager.bulk_stop(self._manager.generator_ids)
+        generator_ids = self._manager.generator_ids
+        logger.debug(
+            'Bulk stopping generators',
+            generator_ids=generator_ids,
+        )
+        self._manager.bulk_stop(generator_ids)
+
+    def _run_api_server(self) -> None:
+        """Run API server with handling possible errors."""
+        if self._server is None:
+            return
+
+        try:
+            self._server.run()
+        except Exception as e:
+            logger.exception(
+                'Unexpected error occurred during API server execution',
+                reason=str(e),
+            )
 
     def _start_api(self) -> None:
         """Start application API."""
-        # TODO: implement
+        from eventum.api.main import build_api_app
+
+        api_app = build_api_app(
+            generator_manager=self._manager,
+            settings=self._settings,
+        )
+
+        # TODO(rnv812): fix type of ssl_ca_certs param: https://github.com/encode/uvicorn/pull/2676
+        self._server = uvicorn.Server(
+            uvicorn.Config(
+                api_app,
+                host=self._settings.api.host,
+                port=self._settings.api.port,
+                access_log=True,
+                log_config=None,
+                ssl_ca_certs=(
+                    None
+                    if self._settings.api.ssl.ca_cert is None
+                    else str(self._settings.api.ssl.ca_cert)
+                ),
+                ssl_certfile=self._settings.api.ssl.cert,
+                ssl_keyfile=self._settings.api.ssl.cert_key,
+            ),
+        )
+        self._server_thread.start()
 
     def _stop_api(self) -> None:
         """Stop application API."""
-        # TODO: implement
+        if self._server is None:
+            return
+
+        self._server.should_exit = True
+
+        if self._server_thread.is_alive():
+            self._server_thread.join()

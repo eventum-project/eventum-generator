@@ -3,6 +3,10 @@
 import importlib
 from types import ModuleType
 
+import structlog
+
+logger = structlog.stdlib.get_logger()
+
 
 class ModuleProvider:
     """Provider of modules used in jinja templates.
@@ -27,9 +31,26 @@ class ModuleProvider:
         if key in self._imported_modules:
             return self._imported_modules[key]
 
+        logger.debug(
+            'Module is not found in cache and will be imported',
+            module_name=key,
+        )
+
+        module_fqn = f'{self._package_name}.{key}'
+        logger.debug(
+            'Trying to import as local module first',
+            module_name=module_fqn,
+        )
         try:
-            module = importlib.import_module(f'{self._package_name}.{key}')
+            module = importlib.import_module(module_fqn)
         except ModuleNotFoundError:
+            logger.debug(
+                (
+                    'Local module with that name is missing, '
+                    'trying to import module from environment'
+                ),
+                module_name=key,
+            )
             try:
                 module = importlib.import_module(key)
             except ModuleNotFoundError:

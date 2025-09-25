@@ -1,4 +1,4 @@
-"""Field definitions used in output plugin configs."""
+"""Fields definition used in output plugin configs."""
 
 from abc import ABC
 from enum import StrEnum

@@ -1,1 +1,1 @@
-"""Event plugin definitions package."""
+"""Event plugins definition package."""

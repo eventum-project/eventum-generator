@@ -1,0 +1,98 @@
+"""General app dependencies."""
+
+from typing import Annotated
+
+from fastapi import Depends, FastAPI, Request, WebSocket
+
+from eventum.app.manager import GeneratorManager
+from eventum.app.models.settings import Settings
+
+
+def get_app(
+    request: Request = None,  # type: ignore[assignment]
+    websocket: WebSocket = None,  # type: ignore[assignment]
+) -> FastAPI:
+    """Get application.
+
+    Parameters
+    ----------
+    request : Request, default=None
+        Current request.
+
+    websocket : WebSocket, default=None
+        Websocket connection.
+
+    Returns
+    -------
+    FastAPI
+        Obtained application.
+
+    Raises
+    ------
+    RuntimeError
+        If app instance cannot be obtained
+
+    """
+    source = request or websocket
+    if source is None:
+        msg = 'Cannot obtain app instance'
+        raise RuntimeError(msg)
+
+    return source.app
+
+
+AppDep = Annotated[
+    FastAPI,
+    Depends(get_app),
+]
+
+
+def get_settings(app: AppDep) -> Settings:
+    """Get application settings.
+
+    Parameters
+    ----------
+    app : AppDep
+        App dependency.
+
+    Returns
+    -------
+    Settings
+        Obtained application settings.
+
+    Raises
+    ------
+    RuntimeError
+        If app instance cannot be obtained
+
+    """
+    return app.state.settings
+
+
+SettingsDep = Annotated[
+    Settings,
+    Depends(get_settings),
+]
+
+
+def get_generator_manager(app: AppDep) -> GeneratorManager:
+    """Get generator manager.
+
+    Parameters
+    ----------
+    app : AppDep
+        App dependency.
+
+    Returns
+    -------
+    GeneratorManager
+        Obtained generator manager.
+
+    """
+    return app.state.generator_manager
+
+
+GeneratorManagerDep = Annotated[
+    GeneratorManager,
+    Depends(get_generator_manager),
+]

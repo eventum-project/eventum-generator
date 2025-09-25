@@ -75,14 +75,18 @@ class GeneratorManager:
             ID of generators to remove.
 
         """
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(
+            thread_name_prefix='generators-stopping:',
+        ) as executor:
             for id in generator_ids:
-                if id in self._generators:
+                try:
                     generator = self._generators[id]
                     executor.submit(
                         propagate_logger_context()(generator.stop),
                     )
                     del self._generators[id]
+                except KeyError:
+                    continue
 
     def start(self, generator_id: str) -> bool:
         """Start generator. Ignore call if generator is already
@@ -141,9 +145,11 @@ class GeneratorManager:
             else:
                 non_running_generators.append(id)
 
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(
+            thread_name_prefix='generators-starting:',
+        ) as executor:
             for id in generator_ids:
-                if id in self._generators:
+                try:
                     generator = self._generators[id]
                     future = executor.submit(
                         propagate_logger_context()(generator.start),
@@ -151,6 +157,8 @@ class GeneratorManager:
                     future.add_done_callback(
                         lambda future, id=id: callback(future, id),  # type: ignore[misc]
                     )
+                except KeyError:
+                    continue
 
         return running_generators, non_running_generators
 
@@ -182,7 +190,9 @@ class GeneratorManager:
             ID of generators to stop.
 
         """
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(
+            thread_name_prefix='generators-stopping:',
+        ) as executor:
             for id in generator_ids:
                 if id in self._generators:
                     generator = self._generators[id]
@@ -199,7 +209,9 @@ class GeneratorManager:
             ID of generators to join.
 
         """
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(
+            thread_name_prefix='generators-joining:',
+        ) as executor:
             for id in generator_ids:
                 if id in self._generators:
                     generator = self._generators[id]

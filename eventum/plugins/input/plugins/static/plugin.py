@@ -35,7 +35,7 @@ class StaticInputPlugin(
         skip_past: bool = True,
     ) -> Iterator[NDArray[datetime64]]:
         now = datetime.now().astimezone(self._timezone)
-        self._logger.info(
+        self._logger.debug(
             'Generating in range',
             start_timestamp=now.isoformat(),
             end_timestamp=now.isoformat(),

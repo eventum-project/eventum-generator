@@ -1,7 +1,7 @@
 """Generator parameters."""
 
 from pathlib import Path
-from typing import Any, Literal, Self
+from typing import Any, Self
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pytz import all_timezones_set
@@ -41,12 +41,16 @@ class QueueParameters(BaseModel, extra='forbid', frozen=True):
 
     Attributes
     ----------
-    max_batches : int, default=10
-        Maximum number of batches in queue.
+    max_timestamp_batches : int, default=10
+        Maximum number of batches in timestamps queue.
+
+    max_event_batches : int, default=10
+        Maximum number of batches in events queue.
 
     """
 
-    max_batches: int = Field(default=10, ge=1)
+    max_timestamp_batches: int = Field(default=10, ge=1)
+    max_event_batches: int = Field(default=10, ge=1)
 
 
 class GenerationParameters(BaseModel, extra='forbid', frozen=True):
@@ -72,6 +76,9 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
         Maximum number of concurrent write operations performed by
         output plugins.
 
+    write_timeout : int, default=10
+        Timeout (in seconds) before canceling single write task.
+
     """
 
     timezone: str = Field(default='UTC', min_length=3)
@@ -79,6 +86,7 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
     queue: QueueParameters = Field(default_factory=QueueParameters)
     keep_order: bool = Field(default=False)
     max_concurrency: int = Field(default=100)
+    write_timeout: int = Field(default=10, ge=1)
 
     @field_validator('timezone')
     @classmethod
@@ -99,9 +107,9 @@ class GeneratorParameters(GenerationParameters, frozen=True):
         Generator unique identified.
 
     path : Path
-        Absolute path to configuration.
+        Path to configuration.
 
-    time_mode : Literal['live', 'sample'], default='live'
+    live_mode : bool, default=True
         Whether to use live mode and generate events at moments defined
         by timestamp values or sample mode to generate all events at a
         time.
@@ -117,15 +125,57 @@ class GeneratorParameters(GenerationParameters, frozen=True):
 
     id: str = Field(min_length=1)
     path: Path
-    time_mode: Literal['live', 'sample'] = 'live'
+    live_mode: bool = True
     skip_past: bool = Field(default=True)
     params: dict[str, Any] = Field(default_factory=dict)
 
-    @field_validator('path')
-    @classmethod
-    def validate_path(cls, v: Path) -> Path:  # noqa: D102
-        if v.is_absolute():
-            return v
+    def as_absolute(self, base_dir: Path) -> 'GeneratorParameters':
+        """Get instance with absolute path to generator.
 
-        msg = 'Path must be absolute'
-        raise ValueError(msg)
+        Parameters
+        ----------
+        base_dir : Path
+            Base directory.
+
+        Returns
+        -------
+        GeneratorParameters
+            Same instance if path is already absolute or new instance
+            with absolute path.
+
+        """
+        if self.path.is_absolute():
+            return self
+
+        kwargs = {attr: getattr(self, attr) for attr in self.model_fields_set}
+        kwargs.update(path=base_dir / self.path)
+
+        return GeneratorParameters(**kwargs)
+
+    def as_relative(self, base_dir: Path) -> 'GeneratorParameters':
+        """Get instance with relative path to generator.
+
+        Parameters
+        ----------
+        base_dir : Path
+            Base directory.
+
+        Returns
+        -------
+        GeneratorParameters
+            Same instance if path is already relative or new instance
+            with relative path.
+
+        Raises
+        ------
+        ValueError
+            If base_dir is not a parent of the path.
+
+        """
+        if not self.path.is_absolute():
+            return self
+
+        kwargs = {attr: getattr(self, attr) for attr in self.model_fields_set}
+        kwargs.update(path=self.path.relative_to(base_dir))
+
+        return GeneratorParameters(**kwargs)

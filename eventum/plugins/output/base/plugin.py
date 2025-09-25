@@ -83,7 +83,6 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         config = self._formatter_config
         try:
             FormatterCls = get_formatter_class(config.format)  # noqa: N806
-            # https://github.com/python/mypy/issues/18804
             return FormatterCls(
                 config,
                 params=FormatterParams(base_path=self._base_path),  # type: ignore[typeddict-item]
@@ -113,7 +112,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
             self._format_failed = 0
             self._write_failed = 0
 
-        await self._logger.ainfo('Plugin is opened for writing')
+        await self._logger.adebug('Plugin is opened for writing')
 
     async def close(self) -> None:
         """Close plugin for writing with releasing resources and
@@ -123,7 +122,7 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
             await self._close()
             self._is_opened = False
 
-        await self._logger.ainfo('Plugin is closed')
+        await self._logger.adebug('Plugin is closed')
 
     async def _format_events(self, events: Sequence[str]) -> FormattingResult:
         """Format events.

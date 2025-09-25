@@ -10,45 +10,19 @@ in registry. This is so called "plugin invocation".
 """
 
 import importlib
-import pkgutil
 from functools import cache
 from types import ModuleType
+
+import structlog
 
 import eventum.plugins.event.plugins as event_plugins
 import eventum.plugins.input.plugins as input_plugins
 import eventum.plugins.output.plugins as output_plugins
 from eventum.plugins.exceptions import PluginLoadError, PluginNotFoundError
 from eventum.plugins.registry import PluginInfo, PluginsRegistry
+from eventum.utils.package_utils import get_subpackage_names
 
-
-def _get_subpackage_names(package: ModuleType) -> list[str]:
-    """Get subpackage names of specified package.
-
-    Parameters
-    ----------
-    package : ModuleType
-        Package to inspect.
-
-    Returns
-    -------
-    list[str]
-        List of subpackage names.
-
-    Raises
-    ------
-    ValueError
-        If specified package is not a package.
-
-    """
-    if not hasattr(package, '__path__'):
-        msg = f'"{package.__name__}" is not a package'
-        raise ValueError(msg) from None
-
-    return [
-        module.name
-        for module in pkgutil.iter_modules(package.__path__)
-        if module.ispkg
-    ]
+logger = structlog.stdlib.get_logger()
 
 
 def _construct_plugin_module_name(package: ModuleType, name: str) -> str:
@@ -110,8 +84,17 @@ def _invoke_plugin(package: ModuleType, name: str) -> None:
         If specified plugin is found but cannot be imported.
 
     """
+    log = logger.bind(
+        package_name=package.__name__,
+        plugin_name=name,
+    )
+
+    log.debug('Constructing plugin module name')
+    module_name = _construct_plugin_module_name(package, name)
+
+    log.debug('Importing module', module_name=module_name)
     try:
-        importlib.import_module(_construct_plugin_module_name(package, name))
+        importlib.import_module(module_name)
     except ModuleNotFoundError:
         msg = 'Plugin not found'
         raise PluginNotFoundError(
@@ -153,11 +136,20 @@ def _load_plugin(package: ModuleType, name: str) -> PluginInfo:
         If specified plugin is found but cannot be loaded.
 
     """
+    log = logger.bind(plugin_name=name)
+
+    log.debug('Defining plugin type')
     type = _extract_plugins_type_name(package)
+
+    log = log.bind(plugin_type=type)
+
+    log.debug('Checking if plugin is registered')
     if not PluginsRegistry.is_registered(type, name):
+        logger.debug('Invoking plugin for registration')
         _invoke_plugin(package, name)
 
     try:
+        log.debug('Getting plugin info from registry')
         return PluginsRegistry.get_plugin_info(type, name)
     except ValueError:
         msg = 'Plugin was imported but was not found in registry'
@@ -254,7 +246,7 @@ def get_input_plugin_names() -> list[str]:
         Names of existing input plugins.
 
     """
-    return _get_subpackage_names(input_plugins)
+    return get_subpackage_names(input_plugins)
 
 
 def get_event_plugin_names() -> list[str]:
@@ -266,7 +258,7 @@ def get_event_plugin_names() -> list[str]:
         Names of existing event plugins.
 
     """
-    return _get_subpackage_names(event_plugins)
+    return get_subpackage_names(event_plugins)
 
 
 def get_output_plugin_names() -> list[str]:
@@ -278,7 +270,7 @@ def get_output_plugin_names() -> list[str]:
         Names of existing output plugins.
 
     """
-    return _get_subpackage_names(output_plugins)
+    return get_subpackage_names(output_plugins)
 
 
 def clear_cache() -> None:

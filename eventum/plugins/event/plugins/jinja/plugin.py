@@ -44,6 +44,7 @@ from eventum.plugins.event.plugins.jinja.template_pickers import (
     get_picker_class,
 )
 from eventum.plugins.exceptions import PluginConfigurationError
+from eventum.utils.traceback_utils import shorten_traceback
 
 
 class JinjaEventPluginParams(EventPluginParams):
@@ -77,32 +78,61 @@ class JinjaEventPlugin(
     ) -> None:
         super().__init__(config, params)
 
-        self._sample_reader = self._load_samples()
-
-        if self._config.root.samples:
-            self._logger.info('Samples are loaded')
-
-        self._module_provider = ModuleProvider(modules.__name__)
-        self._subprocess_runner = SubprocessRunner()
-        self._shared_state = SingleThreadState()
-        self._global_state = JinjaEventPlugin._GLOBAL_STATE
-
-        self._env = self._initialize_environment(
-            loader=(
-                params.get('templates_loader', None)
-                or FileSystemLoader(str(self._base_path))
-            ),
+        self._logger.debug(
+            'Using specified jinja extension',
+            value=list(JinjaEventPlugin._JINJA_EXTENSIONS),
         )
 
+        self._logger.debug('Loading samples')
+        self._sample_reader = self._load_samples()
+
+        self._logger.debug(
+            'Initializing module provider with modules from package',
+            package_name=modules.__name__,
+        )
+        self._module_provider = ModuleProvider(modules.__name__)
+
+        self._logger.debug('Initializing subprocess runner')
+        self._subprocess_runner = SubprocessRunner()
+
+        self._logger.debug('Initializing shared state')
+        self._shared_state = SingleThreadState()
+
+        self._logger.debug('Connecting to global state')
+        self._global_state = JinjaEventPlugin._GLOBAL_STATE
+
+        loader = params.get('templates_loader', None)
+        if loader is None:
+            searchpath = str(self._base_path)
+            self._logger.debug(
+                (
+                    'Templates loader is not provided in params, '
+                    'default loader will be used with specified search path'
+                ),
+                path=searchpath,
+            )
+            loader = FileSystemLoader(searchpath)
+
+        self._logger.debug('Initializing jinja environment')
+        self._env = self._initialize_environment(
+            loader=loader,
+        )
+
+        self._logger.debug('Preparing template configs')
         self._template_configs = self._get_template_configs_as_dict()
+
+        self._logger.debug('Initializing local states of templates')
         self._template_states = {
             alias: SingleThreadState() for alias in self._template_configs
         }
-        self._templates = self._load_templates()
-        self._logger.info('Templates are loaded')
 
+        self._logger.debug('Loading templates')
+        self._templates = self._load_templates()
+
+        self._logger.debug('Initializing template picker')
         self._template_picker = self._initialize_template_picker()
 
+        self._logger.debug('Initializing initial event context')
         # Context is created here for performance reasons (to not
         # recreate it in each call of _produce method).
         # Omitted values are filled at event producing.
@@ -150,11 +180,15 @@ class JinjaEventPlugin(
             Initialized environment.
 
         """
+        self._logger.debug(
+            'Creating environment with provided loader and extensions',
+        )
         env = Environment(
             loader=loader,
             extensions=JinjaEventPlugin._JINJA_EXTENSIONS,
         )
 
+        self._logger.debug('Settings environment globals')
         env.globals['params'] = self._config.root.params
         env.globals['samples'] = self._sample_reader
         env.globals['module'] = self._module_provider
@@ -317,6 +351,11 @@ class JinjaEventPlugin(
                     msg,
                     context={
                         'reason': str(e),
+                        'traceback': shorten_traceback(
+                            e,
+                            key_phrase='rewrite_traceback_stack(source=source)',
+                            start_position='after',
+                        ),
                         'template_alias': alias,
                     },
                 ) from e

@@ -1,4 +1,4 @@
-"""Field definitions used in input plugin configs."""
+"""Fields definition used in input plugin configs."""
 
 from datetime import datetime, time
 from enum import StrEnum
@@ -7,7 +7,7 @@ from typing import Annotated, TypeAlias
 import dateparser
 from pydantic import AfterValidator
 
-from eventum.plugins.input.relative_time import parse_relative_time
+from eventum.plugins.input.utils.relative_time import parse_relative_time
 
 
 def _try_parse_human_datetime(v: str) -> str:

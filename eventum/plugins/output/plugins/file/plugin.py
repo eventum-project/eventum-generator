@@ -83,7 +83,7 @@ class FileOutputPlugin(
 
             self._cleaned_up = True
 
-        await self._logger.ainfo(
+        await self._logger.adebug(
             'File is closed',
             file_path=str(self._config.path),
         )
@@ -127,7 +127,7 @@ class FileOutputPlugin(
             encoding=self._config.encoding,
             opener=self._create_descriptor,
         )
-        await self._logger.ainfo(
+        await self._logger.adebug(
             'File is opened',
             file_path=str(self._config.path),
         )
@@ -148,7 +148,7 @@ class FileOutputPlugin(
             encoding=self._config.encoding,
             opener=self._create_descriptor,
         )
-        await self._logger.ainfo(
+        await self._logger.adebug(
             'File is reopened',
             file_path=str(self._config.path),
         )
@@ -209,11 +209,6 @@ class FileOutputPlugin(
             if not self._cleaned_up:
                 self._cleanup_task.cancel()
 
-            self._cleaned_up = False
-            self._cleanup_task = self._loop.create_task(
-                self._schedule_cleanup(),
-            )
-
             try:
                 await self._file.writelines(
                     e + self._config.separator for e in events
@@ -227,6 +222,11 @@ class FileOutputPlugin(
                         'file_path': self._config.path,
                     },
                 ) from e
+            finally:
+                self._cleaned_up = False
+                self._cleanup_task = self._loop.create_task(
+                    self._schedule_cleanup(),
+                )
 
             if self._config.flush_interval == 0:
                 await self._file.flush()

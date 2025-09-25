@@ -207,12 +207,12 @@ class crypto:  # noqa: N801
     @staticmethod
     def md5() -> str:
         """Return random MD5 hash."""
-        return f'{random.getrandbits(128):32x}'
+        return f'{random.getrandbits(128):032x}'
 
     @staticmethod
     def sha256() -> str:
         """Return random SHA-256 hash."""
-        return f'{random.getrandbits(256):64x}'
+        return f'{random.getrandbits(256):064x}'
 
 
 class datetime:  # noqa: N801

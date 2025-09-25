@@ -12,10 +12,10 @@
   # Required, there is no default value
   # path: "/app/eventum/config/conf.d/test/config.yml"
   
-  # Wether to use live mode and generate events at moments defined by timestamp
+  # Whether to use live mode and generate events at moments defined by timestamp
   # values or sample mode to generate all events at a time
-  # Optional, default is "live"
-  # time_mode: "live"
+  # Optional, default is true
+  # live_mode: true
 
   # Whether to skip past timestamps when starting generation in live mode
   # Optional, default is true
@@ -37,7 +37,7 @@
 # generator level. In this case it is applied only to specific generator and
 # does not reflect to other generators.
 #
-# See full list of generation in eventum.yml
+# See full list of generation parameters in eventum.yml
 
 # - id: "test2"
 #   path: "/app/eventum/config/conf.d/test2/config.yml"

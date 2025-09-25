@@ -1,1 +1,1 @@
-"""Input plugin definitions package."""
+"""Input plugins definition package."""

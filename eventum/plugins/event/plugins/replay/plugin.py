@@ -104,6 +104,7 @@ class ReplayEventPlugin(
             If error occurs during reading the file.
 
         """
+        self._logger.debug('Reading next lines')
         try:
             with self._config.path.open('rb') as f:
                 f.seek(self._last_read_position, os.SEEK_SET)
@@ -132,7 +133,7 @@ class ReplayEventPlugin(
         for i, line in enumerate(byte_lines):
             lines[i] = line.decode(self._config.encoding).rstrip('\n\r')
 
-        self._logger.info(
+        self._logger.debug(
             'Next lines from file have been read',
             file_name=self._config.path,
             count=len(lines),

@@ -4,6 +4,7 @@ import os
 import signal
 import sys
 from io import TextIOWrapper
+from pathlib import Path
 from typing import Literal, NoReturn
 
 import click
@@ -21,6 +22,7 @@ from eventum.cli.pydantic_converter import from_model
 from eventum.cli.splash_screen import SPLASH_SCREEN
 from eventum.core.generator import Generator
 from eventum.core.parameters import GeneratorParameters
+from eventum.security.manage import SECURITY_SETTINGS
 from eventum.utils.validation_prettier import prettify_validation_errors
 
 setproctitle('eventum')
@@ -79,11 +81,11 @@ def run(config: TextIOWrapper) -> None:
         max_bytes=settings.log.max_bytes,
     )
 
-    click.echo('Starting application...')
     click.echo(SPLASH_SCREEN)
 
     app = App(settings)
 
+    logger.info('Starting application')
     try:
         app.start()
     except AppError as e:
@@ -137,9 +139,16 @@ VERBOSITY_TO_LOG_LEVEL: dict[VerbosityLevel, logconf.LogLevel] = {
         '-vvv: warnings, -vvvv: info, -vvvvv: debug)'
     ),
 )
+@click.option(
+    '--cryptfile',
+    default=None,
+    type=click.Path(exists=True, resolve_path=True),
+    help='Path to keyring cryptfile',
+)
 def generate(
     generator_parameters: GeneratorParameters,
     verbose: NonVerbose | VerbosityLevel,
+    cryptfile: str | None,
 ) -> None:
     """Generate events using single generator."""
     if verbose == 0:
@@ -147,6 +156,10 @@ def generate(
     else:
         logconf.use_stderr(level=VERBOSITY_TO_LOG_LEVEL[verbose])
 
+    if cryptfile is not None:
+        SECURITY_SETTINGS['cryptfile_location'] = Path(cryptfile)
+
+    logger.info('Starting generator')
     generator = Generator(generator_parameters)
     status = generator.start()
 
