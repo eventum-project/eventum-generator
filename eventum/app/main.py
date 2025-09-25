@@ -9,7 +9,6 @@ import yaml
 from flatten_dict import flatten, unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError, validate_call
 
-from eventum.api.main import APIBuildingError
 from eventum.app.hooks import InstanceHooks
 from eventum.app.manager import GeneratorManager, ManagingError
 from eventum.app.models.settings import Settings
@@ -80,6 +79,8 @@ class App:
         self._start_generators(generators_params=gen_list)
 
         if self._settings.api.enabled:
+            from eventum.api.main import APIBuildingError
+
             logger.info(
                 'Starting API',
                 port=self._settings.api.port,

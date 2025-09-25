@@ -15,7 +15,8 @@ from setproctitle import setproctitle
 
 import eventum
 import eventum.logging.config as logconf
-from eventum.app.main import App, AppError, InstanceHooks
+from eventum.app.hooks import InstanceHooks
+from eventum.app.main import App, AppError
 from eventum.app.models.settings import Settings
 from eventum.cli.pydantic_converter import from_model
 from eventum.cli.splash_screen import SPLASH_SCREEN
