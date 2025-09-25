@@ -1,7 +1,5 @@
 """API application definition."""
 
-import traceback
-
 import structlog
 from fastapi import FastAPI
 
@@ -139,9 +137,6 @@ def build_api_app(
         register_asyncapi_schema(schema=asyncapi_schema)
     except Exception as e:
         msg = 'Failed to generate asyncapi schema for websocket endpoints'
-        raise APIBuildingError(
-            msg,
-            context={'reason': str(e), 'traceback': traceback.format_exc()},
-        ) from e
+        raise APIBuildingError(msg, context={'reason': str(e)}) from e
 
     return app

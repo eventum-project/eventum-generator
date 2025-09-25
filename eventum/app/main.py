@@ -10,6 +10,7 @@ from flatten_dict import flatten, unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError, validate_call
 
 from eventum.api.hooks import InstanceHooks
+from eventum.api.main import APIBuildingError
 from eventum.app.manager import GeneratorManager, ManagingError
 from eventum.app.models.settings import Settings
 from eventum.core.parameters import GeneratorParameters
@@ -84,7 +85,10 @@ class App:
                 port=self._settings.api.port,
                 host=self._settings.api.host,
             )
-            self._start_api()
+            try:
+                self._start_api()
+            except APIBuildingError as e:
+                raise AppError(str(e), context=e.context) from e
 
     def stop(self) -> None:
         """Stop the app."""
@@ -282,7 +286,14 @@ class App:
             )
 
     def _start_api(self) -> None:
-        """Start application API."""
+        """Start application API.
+
+        Raises
+        ------
+        APIBuildingError
+            If API building fails.
+
+        """
         from eventum.api.main import build_api_app
 
         api_app = build_api_app(
