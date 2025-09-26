@@ -1,10 +1,8 @@
 """Routes."""
 
 import asyncio
-import os
 from typing import Annotated
 
-import aiofiles
 from fastapi import (
     APIRouter,
     HTTPException,
@@ -33,6 +31,7 @@ from eventum.api.routers.generators.models import (
     InputPluginStats,
     OutputPluginStats,
 )
+from eventum.api.utils.file_streaming import stream_file
 from eventum.api.utils.response_description import merge_responses
 from eventum.api.utils.websocket_annotations import (
     AsyncAPIMessage,
@@ -312,22 +311,11 @@ async def stream_generator_logs(
         )
 
     try:
-        async with aiofiles.open(path) as f:
-            await f.seek(0, os.SEEK_END)
-            size = await f.tell()
-            start_pos = max(0, size - end_offset)
-            await f.seek(start_pos, os.SEEK_SET)
-
-            while True:
-                content = await f.read(8192)
-                if content:
-                    try:
-                        await websocket.send_text(content)
-                    except WebSocketDisconnect:
-                        break
-                else:
-                    await asyncio.sleep(0.5)
-
+        async for content in stream_file(path=path, end_offset=end_offset):
+            try:
+                await websocket.send_text(content)
+            except WebSocketDisconnect:
+                break
     except OSError as e:
         if websocket.client_state.name == 'CONNECTED':
             raise WebSocketException(
