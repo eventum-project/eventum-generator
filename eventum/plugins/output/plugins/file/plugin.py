@@ -53,10 +53,7 @@ class FileOutputPlugin(
 
         fileno = self._file.fileno()
 
-        stat = await self._loop.run_in_executor(
-            executor=None,
-            func=lambda: os.stat(fileno),  # noqa: PTH116
-        )
+        stat = os.stat(fileno)  # noqa: PTH116
 
         return stat.st_nlink > 0
 
