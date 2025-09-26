@@ -5,13 +5,30 @@ from typing import Annotated
 
 import aiofiles
 import yaml
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import (
+    APIRouter,
+    Body,
+    HTTPException,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+    WebSocketException,
+    status,
+)
 
 from eventum.api.dependencies.app import InstanceHooksDep, SettingsDep
 from eventum.api.routers.instance.models import InstanceInfo
+from eventum.api.utils.file_streaming import stream_file
+from eventum.api.utils.websocket_annotations import (
+    AsyncAPIMessage,
+    Receives,
+    Rejects,
+)
 from eventum.app.models.settings import Settings
+from eventum.logging.file_paths import construct_main_logfile_path
 
 router = APIRouter()
+ws_router = APIRouter()
 
 
 @router.get('/info', description='Information about app and host')
@@ -85,3 +102,60 @@ async def restart(hooks: InstanceHooksDep) -> None:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f'Error occurred during restart: {e}',
         ) from None
+
+
+@ws_router.websocket('/logs/main')
+async def stream_main_logs(
+    settings: SettingsDep,
+    websocket: Annotated[
+        WebSocket,
+        Receives(
+            message=AsyncAPIMessage(
+                contentType='text/plain',
+                name='LogChunk',
+                title='Log chunk',
+                payload={'type': 'string'},
+            ),
+        ),
+        Rejects(
+            status_code=status.WS_1011_INTERNAL_ERROR,
+            details='Failed to read log file due to OS error',
+        ),
+        Rejects(
+            status_code=status.WS_1013_TRY_AGAIN_LATER,
+            details='Log file does not exist',
+        ),
+    ],
+    end_offset: Annotated[
+        int,
+        Query(
+            ge=0,
+            description='Offset from end of file to start reading from',
+        ),
+    ] = 8192,
+) -> None:
+    await websocket.accept()
+
+    path = construct_main_logfile_path(
+        format=settings.log.format,
+        logs_dir=settings.path.logs,
+    )
+
+    if not path.exists():
+        raise WebSocketException(
+            code=status.WS_1013_TRY_AGAIN_LATER,
+            reason='Log file does not exist',
+        )
+
+    try:
+        async for content in stream_file(path=path, end_offset=end_offset):
+            try:
+                await websocket.send_text(content)
+            except WebSocketDisconnect:
+                break
+    except OSError as e:
+        if websocket.client_state.name == 'CONNECTED':
+            raise WebSocketException(
+                code=status.WS_1011_INTERNAL_ERROR,
+                reason=f'Failed to read log file due to OS error: {e}',
+            ) from None
