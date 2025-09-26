@@ -141,10 +141,8 @@ async def update_generator(
             detail='Generator must be stopped before updating',
         ) from None
 
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(
-        executor=None,
-        func=lambda: generator_manager.remove(generator_id=id),
+    await asyncio.to_thread(
+        lambda: generator_manager.remove(generator_id=id),
     )
 
     generator_manager.add(params=params)
@@ -162,12 +160,8 @@ async def start_generator(
     id: Annotated[str, Path(description='Generator id', min_length=1)],
     generator_manager: GeneratorManagerDep,
 ) -> bool:
-    loop = asyncio.get_running_loop()
     try:
-        return await loop.run_in_executor(
-            executor=None,
-            func=lambda: generator_manager.start(id),
-        )
+        return await asyncio.to_thread(lambda: generator_manager.start(id))
     except ManagingError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -186,12 +180,8 @@ async def stop_generator(
     id: Annotated[str, Path(description='Generator id', min_length=1)],
     generator_manager: GeneratorManagerDep,
 ) -> None:
-    loop = asyncio.get_running_loop()
     try:
-        await loop.run_in_executor(
-            executor=None,
-            func=lambda: generator_manager.stop(id),
-        )
+        await asyncio.to_thread(lambda: generator_manager.stop(id))
     except ManagingError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -210,12 +200,8 @@ async def delete_generator(
     id: Annotated[str, Path(description='Generator id', min_length=1)],
     generator_manager: GeneratorManagerDep,
 ) -> None:
-    loop = asyncio.get_running_loop()
     try:
-        await loop.run_in_executor(
-            executor=None,
-            func=lambda: generator_manager.remove(id),
-        )
+        await asyncio.to_thread(lambda: generator_manager.remove(id))
     except ManagingError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

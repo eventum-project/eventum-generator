@@ -19,7 +19,7 @@ from eventum.api.utils.response_description import set_responses
         },
     },
 )
-def check_directory_is_allowed(
+async def check_directory_is_allowed(
     name: Annotated[str, Query(description='Name of the generator directory')],
     settings: SettingsDep,
 ) -> str:
@@ -72,7 +72,7 @@ CheckDirectoryIsAllowedDep = Annotated[
         },
     },
 )
-def check_configuration_exists(
+async def check_configuration_exists(
     name: Annotated[str, Query(description='Name of the generator directory')],
     settings: SettingsDep,
 ) -> str:
@@ -125,7 +125,7 @@ CheckConfigurationExistsDep = Annotated[
         },
     },
 )
-def check_configuration_not_exists(
+async def check_configuration_not_exists(
     name: Annotated[str, Query(description='Name of the generator directory')],
     settings: SettingsDep,
 ) -> str:
@@ -181,7 +181,7 @@ CheckConfigurationNotExistsDep = Annotated[
         },
     },
 )
-def check_filepath_is_directly_relative(
+async def check_filepath_is_directly_relative(
     filepath: Annotated[Path, Query(description='Relative path to the file')],
 ) -> Path:
     """Check that filepath directly relative (i.e. not using '..').

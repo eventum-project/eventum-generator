@@ -95,7 +95,7 @@ async def generate_timestamps(
     iterator = merged_plugins.iterate(size=size, skip_past=skip_past)
 
     try:
-        timestamps = next(iterator)
+        timestamps = await asyncio.to_thread(lambda: next(iterator))
     except PluginGenerationError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -105,10 +105,8 @@ async def generate_timestamps(
             },
         ) from None
 
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(
-        executor=None,
-        func=lambda: aggregate_timestamps(timestamps=timestamps, span=span),
+    return await asyncio.to_thread(
+        lambda: aggregate_timestamps(timestamps=timestamps, span=span),
     )
 
 
@@ -146,7 +144,10 @@ async def produce_events(
 
     for i, params in enumerate(params_list):
         try:
-            events.extend(plugin.produce(params=params))
+            produced = await asyncio.to_thread(
+                lambda params=params: plugin.produce(params=params),  # type: ignore[misc]
+            )
+            events.extend(produced)
         except PluginProduceError as e:
             errors.append((i, e))
         except PluginExhaustedError:
@@ -191,7 +192,9 @@ async def get_jinja_event_plugin_local_state(
     state: JinjaEventPluginLocalStateDep,
 ) -> dict[str, Any]:
     try:
-        return normalize_types(state.as_dict())
+        return await asyncio.to_thread(
+            lambda: normalize_types(state.as_dict()),
+        )
     except RuntimeError as e:  # catch recursion errors etc.
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -243,7 +246,9 @@ async def get_jinja_event_plugin_shared_state(
     state: JinjaEventPluginSharedStateDep,
 ) -> dict[str, Any]:
     try:
-        return normalize_types(state.as_dict())
+        return await asyncio.to_thread(
+            lambda: normalize_types(state.as_dict()),
+        )
     except RuntimeError as e:  # catch recursion errors etc.
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -289,7 +294,9 @@ async def get_jinja_event_plugin_global_state(
     state: JinjaEventPluginGlobalStateDep,
 ) -> dict[str, Any]:
     try:
-        return normalize_types(state.as_dict())
+        return await asyncio.to_thread(
+            lambda: normalize_types(state.as_dict()),
+        )
     except RuntimeError as e:  # catch recursion errors etc.
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -348,10 +355,8 @@ async def format_events(
         params={'base_path': path},
     )
 
-    loop = asyncio.get_running_loop()
-    result = await loop.run_in_executor(
-        executor=None,
-        func=lambda: formatter.format_events(events=body.events),
+    result = await asyncio.to_thread(
+        lambda: formatter.format_events(events=body.events),
     )
 
     return FormattingResult(
