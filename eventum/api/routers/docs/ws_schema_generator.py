@@ -13,9 +13,6 @@ from starlette.routing import WebSocketRoute
 
 import eventum.api.utils.websocket_annotations as ws_info
 
-BASE_DIR = Path(__file__).parent
-ASYNCAPI_SCHEMA_PATH = BASE_DIR / 'static' / 'asyncapi.yml'
-
 
 def generate_asyncapi_schema(  # noqa: C901, PLR0912, PLR0915
     app: FastAPI,
@@ -193,7 +190,10 @@ def generate_asyncapi_schema(  # noqa: C901, PLR0912, PLR0915
     return asyncapi
 
 
-def register_asyncapi_schema(schema: dict[str, Any]) -> None:
+def register_asyncapi_schema(
+    schema: dict[str, Any],
+    target_path: Path,
+) -> None:
     """Register asyncapi schema by updating yaml schema file used by
     docs router.
 
@@ -202,6 +202,9 @@ def register_asyncapi_schema(schema: dict[str, Any]) -> None:
     schema : dict[str, Any]
         AsyncAPI schema dict.
 
+    target_path : Path
+        Path to the file used by docs router.
+
     Raises
     ------
     RuntimeError
@@ -209,7 +212,7 @@ def register_asyncapi_schema(schema: dict[str, Any]) -> None:
 
     """
     try:
-        with ASYNCAPI_SCHEMA_PATH.open('w') as f:
+        with target_path.open('w') as f:
             yaml.dump(schema, stream=f, sort_keys=False)
     except OSError as e:
         msg = f'Cannot update schema file due to OS error: {e}'

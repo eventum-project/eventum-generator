@@ -9,6 +9,7 @@ from eventum.api.dependencies.authentication import (
     WebsocketAuthDepends,
 )
 from eventum.api.routers.docs import router as docs_router
+from eventum.api.routers.docs.routes import ASYNCAPI_SCHEMA_PATH
 from eventum.api.routers.docs.ws_schema_generator import (
     generate_asyncapi_schema,
     register_asyncapi_schema,
@@ -135,7 +136,10 @@ def build_api_app(
     )
 
     try:
-        register_asyncapi_schema(schema=asyncapi_schema)
+        register_asyncapi_schema(
+            schema=asyncapi_schema,
+            target_path=ASYNCAPI_SCHEMA_PATH,
+        )
     except RuntimeError as e:
         msg = 'Failed to generate asyncapi schema for websocket endpoints'
         raise APIBuildingError(msg, context={'reason': str(e)}) from e
