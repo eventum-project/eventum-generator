@@ -49,9 +49,16 @@ async def get_settings(settings: SettingsDep) -> Settings:
 @router.put(
     '/settings',
     description=(
-        'Update settings. Note that this only updates file.'
-        ' For changes to take effect u have to restart instance.'
+        'Update settings. Note that this only updates file. '
+        'For changes to take effect u have to restart instance.'
     ),
+    responses={
+        500: {
+            'description': (
+                'Error occurred during settings file path resolution'
+            ),
+        },
+    },
 )
 async def update_settings(
     settings: Annotated[Settings, Body(description='New settings')],
@@ -82,7 +89,11 @@ async def update_settings(
         ) from None
 
 
-@router.post('/stop', description='Stop instance')
+@router.post(
+    '/stop',
+    description='Stop instance',
+    responses={500: {'description': 'Error occurred during termination'}},
+)
 async def stop(hooks: InstanceHooksDep) -> None:
     try:
         await asyncio.to_thread(hooks['terminate'])
@@ -93,7 +104,11 @@ async def stop(hooks: InstanceHooksDep) -> None:
         ) from None
 
 
-@router.post('/restart', description='Restart instance')
+@router.post(
+    '/restart',
+    description='Restart instance',
+    responses={500: {'description': 'Error occurred during restart'}},
+)
 async def restart(hooks: InstanceHooksDep) -> None:
     try:
         await asyncio.to_thread(hooks['restart'])

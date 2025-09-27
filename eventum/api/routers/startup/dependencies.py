@@ -22,7 +22,7 @@ type GeneratorsParametersRawObject = list[dict]
 
 @set_responses(
     merge_responses(
-        {500: {'description': 'Cannot read startup files due to OS error'}},
+        {500: {'description': 'Cannot read startup file due to OS error'}},
         {500: {'description': 'Startup file structure is invalid'}},
     ),
 )
