@@ -107,7 +107,7 @@ def build_api_app(
     )
     app.include_router(
         generator_configs_router,
-        prefix='/generator_configs',
+        prefix='/generator-configs',
         tags=['Generator configs'],
         dependencies=[HttpAuthDepends],
     )

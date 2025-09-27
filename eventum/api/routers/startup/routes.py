@@ -96,6 +96,7 @@ async def get_generator_from_startup(
             },
         },
     ),
+    status_code=status.HTTP_201_CREATED,
 )
 async def add_generator_to_startup(
     id: CheckIdInBodyMatchPathDep,

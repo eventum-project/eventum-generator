@@ -143,6 +143,7 @@ async def get_generator_config(
             },
         },
     ),
+    status_code=status.HTTP_201_CREATED,
 )
 async def create_generator_config(
     name: Annotated[
@@ -292,7 +293,7 @@ def get_generator_config_path(
 
 
 @router.get(
-    '/{name}/file_tree',
+    '/{name}/file-tree',
     description=(
         'Get file tree of the generator directory with specified name.'
     ),
@@ -386,6 +387,7 @@ async def get_generator_file(
             500: {'description': 'File cannot be uploaded due to OS error'},
         },
     ),
+    status_code=status.HTTP_201_CREATED,
 )
 async def upload_generator_file(
     name: Annotated[
@@ -510,7 +512,7 @@ async def delete_generator_file(
 
 
 @router.post(
-    '/{name}/file_move/',
+    '/{name}/file-move/',
     description=(
         'Move file from source to destination location inside '
         'generator directory with specified name.'
@@ -582,7 +584,7 @@ async def move_generator_file(
 
 
 @router.post(
-    '/{name}/file_copy/',
+    '/{name}/file-copy/',
     description=(
         'Copy file from source to destination location inside '
         'generator directory with specified name.'

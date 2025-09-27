@@ -63,7 +63,7 @@ router = APIRouter()
 
 
 @router.post(
-    '/{name}/input_plugins/generate',
+    '/{name}/input-plugins/generate',
     description='Generate timestamps using input plugins',
     response_description='Generated timestamps',
     responses=merge_responses(
@@ -111,9 +111,10 @@ async def generate_timestamps(
 
 
 @router.post(
-    '/{name}/event_plugin',
+    '/{name}/event-plugin',
     description='Initialize event plugin',
     responses=merge_responses(load_event_plugin.responses),
+    status_code=status.HTTP_201_CREATED,
 )
 async def initialize_event_plugin(
     plugin: EventPluginDep,
@@ -122,7 +123,7 @@ async def initialize_event_plugin(
 
 
 @router.post(
-    '/{name}/event_plugin/produce',
+    '/{name}/event-plugin/produce',
     description='Produce events using initialized event plugin',
     responses=merge_responses(get_event_plugin_from_storage.responses),
 )
@@ -169,7 +170,7 @@ async def produce_events(
 
 
 @router.delete(
-    '/{name}/event_plugin',
+    '/{name}/event-plugin',
     description='Release event plugin with freeing acquired resource',
     responses=merge_responses(get_event_plugin_from_storage.responses),
 )
@@ -178,7 +179,7 @@ async def release_event_plugin(plugin: EventPluginFromStorageDep) -> None:
 
 
 @router.get(
-    '/{name}/event_plugin/jinja/state/local/{alias}',
+    '/{name}/event-plugin/jinja/state/local/{alias}',
     description=(
         'Get local state of jinja event plugin for the specified template '
         'by its alias'
@@ -203,7 +204,7 @@ async def get_jinja_event_plugin_local_state(
 
 
 @router.patch(
-    '/{name}/event_plugin/jinja/state/local/{alias}',
+    '/{name}/event-plugin/jinja/state/local/{alias}',
     description=(
         'Patch local state of jinja event plugin for the specified template '
         'by its alias'
@@ -221,7 +222,7 @@ async def update_jinja_event_plugin_local_state(
 
 
 @router.delete(
-    '/{name}/event_plugin/jinja/state/local/{alias}',
+    '/{name}/event-plugin/jinja/state/local/{alias}',
     description=(
         'Clear local state of jinja event plugin for the specified template '
         'by its alias'
@@ -235,7 +236,7 @@ async def clear_jinja_event_plugin_local_state(
 
 
 @router.get(
-    '/{name}/event_plugin/jinja/state/shared',
+    '/{name}/event-plugin/jinja/state/shared',
     description='Get shared state of jinja event plugin',
     responses=merge_responses(
         get_jinja_shared_state.responses,
@@ -257,7 +258,7 @@ async def get_jinja_event_plugin_shared_state(
 
 
 @router.patch(
-    '/{name}/event_plugin/jinja/state/shared',
+    '/{name}/event-plugin/jinja/state/shared',
     description='Patch shared state of jinja event plugin',
     responses=get_jinja_shared_state.responses,
 )
@@ -272,7 +273,7 @@ async def update_jinja_event_plugin_shared_state(
 
 
 @router.delete(
-    '/{name}/event_plugin/jinja/state/shared',
+    '/{name}/event-plugin/jinja/state/shared',
     description='Clear shared state of jinja event plugin',
     responses=get_jinja_shared_state.responses,
 )
@@ -283,7 +284,7 @@ async def clear_jinja_event_plugin_shared_state(
 
 
 @router.get(
-    '/{name}/event_plugin/jinja/state/global',
+    '/{name}/event-plugin/jinja/state/global',
     description='Get global state of jinja event plugin',
     responses=merge_responses(
         get_jinja_global_state.responses,
@@ -305,7 +306,7 @@ async def get_jinja_event_plugin_global_state(
 
 
 @router.patch(
-    '/{name}/event_plugin/jinja/state/global',
+    '/{name}/event-plugin/jinja/state/global',
     description='Patch global state of jinja event plugin',
     responses=get_jinja_global_state.responses,
 )
@@ -320,7 +321,7 @@ async def update_jinja_event_plugin_global_state(
 
 
 @router.delete(
-    '/{name}/event_plugin/jinja/state/global',
+    '/{name}/event-plugin/jinja/state/global',
     description='Clear global state of jinja event plugin',
     responses=get_jinja_global_state.responses,
 )

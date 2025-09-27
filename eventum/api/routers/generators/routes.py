@@ -101,6 +101,7 @@ async def get_generator_status(generator: GeneratorDep) -> GeneratorStatus:
             422: {'description': 'No configuration exists in specified path'},
         },
     ),
+    status_code=status.HTTP_201_CREATED,
 )
 async def add_generator(
     params: Annotated[PreparedGeneratorParamsDep, CheckPathExistsDep],
