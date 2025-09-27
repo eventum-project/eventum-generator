@@ -132,7 +132,7 @@ class GeneratorManager:
 
         Notes
         -----
-        Only existing generators are presented in lists of running and
+        IDs of not existing generators are also presented in list of
         non running generators.
 
         """
@@ -158,7 +158,7 @@ class GeneratorManager:
                         lambda future, id=id: callback(future, id),  # type: ignore[misc]
                     )
                 except KeyError:
-                    continue
+                    non_running_generators.append(id)
 
         return running_generators, non_running_generators
 
