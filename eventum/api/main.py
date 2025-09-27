@@ -23,6 +23,7 @@ from eventum.api.routers.instance import router as instance_router
 from eventum.api.routers.instance import ws_router as ws_instance_router
 from eventum.api.routers.preview import router as preview_router
 from eventum.api.routers.secrets import router as secrets_router
+from eventum.api.routers.startup import router as startup_router
 from eventum.app.hooks import InstanceHooks
 from eventum.app.manager import GeneratorManager
 from eventum.app.models.settings import Settings
@@ -127,6 +128,12 @@ def build_api_app(
         prefix='/generators',
         tags=['Generators', 'Websocket'],
         dependencies=[WebsocketAuthDepends],
+    )
+    app.include_router(
+        startup_router,
+        prefix='/startup',
+        tags=['Startup'],
+        dependencies=[HttpAuthDepends],
     )
     app.include_router(
         secrets_router,
