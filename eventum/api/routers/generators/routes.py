@@ -5,6 +5,7 @@ from typing import Annotated
 
 from fastapi import (
     APIRouter,
+    Body,
     HTTPException,
     Path,
     Query,
@@ -25,6 +26,7 @@ from eventum.api.routers.generators.dependencies import (
     get_generator as _get_generator,
 )
 from eventum.api.routers.generators.models import (
+    BulkStartResponse,
     EventPluginStats,
     GeneratorStats,
     GeneratorStatus,
@@ -249,6 +251,45 @@ async def get_generator_stats(generator: GeneratorDep) -> GeneratorStats:
             for plugin in plugins.output
         ],
     )
+
+
+@router.post(
+    '/group-actions/bulk-start/',
+    description='Bulk start several generators',
+    response_description=(
+        'Ids of running and non running generators after start. '
+        'IDs of not existing generators are just ignored and added to list '
+        'of non running generators in the response.'
+    ),
+)
+async def bulk_start_generators(
+    ids: Annotated[
+        list[str],
+        Body(description='Generator IDs to start', min_length=1),
+    ],
+    generator_manager: GeneratorManagerDep,
+) -> BulkStartResponse:
+    running_ids, non_running_ids = await asyncio.to_thread(
+        lambda: generator_manager.bulk_start(ids),
+    )
+    return BulkStartResponse(
+        running_generator_ids=running_ids,
+        non_running_generator_ids=non_running_ids,
+    )
+
+
+@router.post(
+    '/group-actions/bulk-stop/',
+    description='Bulk stop several generators',
+)
+async def bulk_stop_generators(
+    ids: Annotated[
+        list[str],
+        Body(description='Generator IDs to stop', min_length=1),
+    ],
+    generator_manager: GeneratorManagerDep,
+) -> None:
+    await asyncio.to_thread(lambda: generator_manager.bulk_stop(ids))
 
 
 @ws_router.websocket('/{id}/logs')
