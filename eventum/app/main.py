@@ -1,21 +1,23 @@
 """Main application definition."""
 
-from collections.abc import Iterable
 from threading import Thread
+from typing import TYPE_CHECKING
 
 import structlog
 import uvicorn
 import yaml
-from flatten_dict import flatten, unflatten  # type: ignore[import-untyped]
 from pydantic import ValidationError, validate_call
 
 from eventum.app.hooks import InstanceHooks
 from eventum.app.manager import GeneratorManager, ManagingError
+from eventum.app.models.generators import GeneratorsParameters
 from eventum.app.models.settings import Settings
-from eventum.core.parameters import GeneratorParameters
 from eventum.exceptions import ContextualError
 from eventum.security.manage import SECURITY_SETTINGS
 from eventum.utils.validation_prettier import prettify_validation_errors
+
+if TYPE_CHECKING:
+    from eventum.core.parameters import GeneratorParameters
 
 logger = structlog.stdlib.get_logger()
 
@@ -73,10 +75,10 @@ class App:
 
         """
         logger.info('Loading generators list')
-        gen_list = self._load_generators_list()
+        generators_params = self._load_startup_generators_params()
 
         logger.info('Starting generators')
-        self._start_generators(generators_params=gen_list)
+        self._start_generators(generators_params=generators_params)
 
         if self._settings.api.enabled:
             from eventum.api.main import APIBuildingError
@@ -101,20 +103,20 @@ class App:
         self._stop_generators()
 
     @validate_call
-    def _validate_generators_list(
+    def _validate_generators_params(
         self,
         object: list[dict],
-    ) -> list[GeneratorParameters]:
+    ) -> GeneratorsParameters:
         """Validate list of generators.
 
         Parameters
         ----------
         object : list[dict]
-            Object loaded from content of file with list of generators.
+            List with parameters of generators.
 
         Returns
         -------
-        list[GeneratorParameters]
+        GeneratorsParameters
             Validated list of generators parameters applied above
             generation parameters from settings.
 
@@ -124,48 +126,46 @@ class App:
             If validation of provided object fails.
 
         """
-        generators_parameters: list[GeneratorParameters] = []
-
-        base_params = self._settings.generation.model_dump()
-        base_params = flatten(base_params, reducer='dot')
+        generators_parameters = (
+            GeneratorsParameters.build_over_generation_parameters(
+                object=object,
+                generation_parameters=self._settings.generation,
+            )
+        )
 
         logger.debug(
             'Next base generation parameters will be used for generators',
-            parameters=base_params,
+            parameters=self._settings.generation.model_dump(),
         )
 
-        for params in object:
-            generator_params = flatten(params, reducer='dot')
+        normalized_params_list: list[GeneratorParameters] = []
+        for params in generators_parameters.root:
+            normalized_params = params.as_absolute(
+                base_dir=self._settings.path.generators_dir,
+            )
+            normalized_params_list.append(normalized_params)
 
-            generator_params = base_params | generator_params
-            generator_params = unflatten(generator_params, splitter='dot')
-
-            validated_generator_params = GeneratorParameters.model_validate(
-                generator_params,
-            ).as_absolute(base_dir=self._settings.path.generators_dir)
-
-            generators_parameters.append(validated_generator_params)
-
-            if not validated_generator_params.path.is_relative_to(
+            if not normalized_params.path.is_relative_to(
                 self._settings.path.generators_dir,
             ):
                 logger.warning(
                     'Generator is outside the configured generators '
                     'directory. Consider moving it into specified directory '
                     'so it can be observed by the API.',
-                    generator_id=validated_generator_params.id,
+                    generator_id=normalized_params.id,
                     path=str(self._settings.path.generators_dir),
                 )
 
-        return generators_parameters
+        return GeneratorsParameters(root=tuple(normalized_params_list))
 
-    def _load_generators_list(self) -> list[GeneratorParameters]:
-        """Load generators list from file specified in config.
+    def _load_startup_generators_params(self) -> GeneratorsParameters:
+        """Load params of generators from the startup file specified in
+        config.
 
         Returns
         -------
-        list[GeneratorParameters]
-            List of defined generators.
+        GeneratorsParameters
+            List of generators params.
 
         Raises
         ------
@@ -205,7 +205,7 @@ class App:
 
         logger.debug('Validating generators list')
         try:
-            return self._validate_generators_list(obj)
+            return self._validate_generators_params(obj)
         except ValidationError as e:
             msg = 'Invalid structure of generators list'
             raise AppError(
@@ -215,20 +215,20 @@ class App:
 
     def _start_generators(
         self,
-        generators_params: Iterable[GeneratorParameters],
+        generators_params: GeneratorsParameters,
     ) -> None:
         """Start generators.
 
         Parameters
         ----------
-        generators_params : Iterable[GeneratorParameters]
-            List of generator parameters.
+        generators_params : GeneratorsParameters
+            List of generators parameters.
 
         """
         added_generators: list[str] = []
         not_added_generators: list[str] = []
 
-        for params in generators_params:
+        for params in generators_params.root:
             try:
                 self._manager.add(params)
                 added_generators.append(params.id)
