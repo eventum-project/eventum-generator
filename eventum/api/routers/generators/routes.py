@@ -292,6 +292,20 @@ async def bulk_stop_generators(
     await asyncio.to_thread(lambda: generator_manager.bulk_stop(ids))
 
 
+@router.post(
+    '/group-actions/bulk-remove/',
+    description='Bulk remove several generators',
+)
+async def bulk_remove_generators(
+    ids: Annotated[
+        list[str],
+        Body(description='Generator IDs to remove', min_length=1),
+    ],
+    generator_manager: GeneratorManagerDep,
+) -> None:
+    await asyncio.to_thread(lambda: generator_manager.bulk_remove(ids))
+
+
 @ws_router.websocket('/{id}/logs')
 async def stream_generator_logs(
     id: Annotated[
