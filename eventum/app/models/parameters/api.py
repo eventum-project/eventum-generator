@@ -1,7 +1,7 @@
 """API parameters."""
 
 from pathlib import Path
-from typing import Literal, Self
+from typing import Self
 
 from pydantic import (
     BaseModel,
@@ -20,9 +20,6 @@ class SSLParameters(BaseModel, extra='forbid', frozen=True):
     enabled : bool, default=True
         Whether to enable SSL.
 
-    verify_mode : Literal['none', 'optional', 'required'], default='optional'
-        Verification mode of SSL connections.
-
     ca_cert: Path | None, default=None
         Absolute path to CA certificate.
 
@@ -35,9 +32,6 @@ class SSLParameters(BaseModel, extra='forbid', frozen=True):
     """
 
     enabled: bool = Field(default=True, description='Whether to enable SSL')
-    verify_mode: Literal['none', 'optional', 'required'] = Field(
-        default='optional',
-    )
     ca_cert: Path | None = Field(default=None)
     cert: Path | None = Field(default=None)
     cert_key: Path | None = Field(default=None)

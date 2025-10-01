@@ -303,7 +303,15 @@ class App:
             instance_hooks=self._instance_hooks,
         )
 
-        # TODO(rnv812): fix type of ssl_ca_certs param: https://github.com/encode/uvicorn/pull/2676
+        if self._settings.api.ssl.enabled:
+            ssl_settings = {
+                'ssl_ca_certs': self._settings.api.ssl.ca_cert,
+                'ssl_certfile': self._settings.api.ssl.cert,
+                'ssl_keyfile': self._settings.api.ssl.cert_key,
+            }
+        else:
+            ssl_settings = {}
+
         self._server = uvicorn.Server(
             uvicorn.Config(
                 api_app,
@@ -311,13 +319,7 @@ class App:
                 port=self._settings.api.port,
                 access_log=True,
                 log_config=None,
-                ssl_ca_certs=(
-                    None
-                    if self._settings.api.ssl.ca_cert is None
-                    else str(self._settings.api.ssl.ca_cert)
-                ),
-                ssl_certfile=self._settings.api.ssl.cert,
-                ssl_keyfile=self._settings.api.ssl.cert_key,
+                **ssl_settings,  # type: ignore[arg-type]
             ),
         )
         self._server_thread.start()
