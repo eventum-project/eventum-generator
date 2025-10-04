@@ -117,3 +117,21 @@ class GeneratorStats(BaseModel, frozen=True, extra='forbid'):
         of written events since generator start time.
         """
         return self.total_written / self.uptime
+
+
+class BulkStartResponse(BaseModel, extra='forbid', frozen=True):
+    """Response model that contains info about running and non running
+    generator ids after bulk start operation.
+
+    Attributes
+    ----------
+    running_generator_ids : list[str]
+        List of ids of running generators.
+
+    non_running_generator_ids : list[str]
+        List of ids of non running generators.
+
+    """
+
+    running_generator_ids: list[str]
+    non_running_generator_ids: list[str]

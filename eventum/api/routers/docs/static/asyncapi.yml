@@ -18,6 +18,25 @@ servers:
     host: 0.0.0.0:9474
     protocol: ws
 channels:
+  stream_main_logs:
+    address: /instance/logs/main
+    messages:
+      stream_main_logs_LogChunk:
+        $ref: '#/components/messages/stream_main_logs_LogChunk'
+      stream_main_logs_Error_1011:
+        $ref: '#/components/messages/stream_main_logs_Error_1011'
+      stream_main_logs_Error_1013:
+        $ref: '#/components/messages/stream_main_logs_Error_1013'
+    title: ''
+    summary: ''
+    description: ''
+    servers:
+    - $ref: '#/servers/local'
+    parameters:
+      end_offset:
+        description: Offset from end of file to start reading from
+        default: '8192'
+    bindings: {}
   stream_generator_logs:
     address: /generators/{id}/logs
     messages:
@@ -42,6 +61,19 @@ channels:
         description: ID of the generator whose logs to stream
     bindings: {}
 operations:
+  stream_main_logs_LogChunk_receive:
+    action: receive
+    channel:
+      $ref: '#/channels/stream_main_logs'
+    title: Receive Log chunk
+    messages:
+    - $ref: '#/channels/stream_main_logs/messages/stream_main_logs_LogChunk'
+    summary: ''
+    description: ''
+    security:
+    - $ref: '#/components/securitySchemes/basicAuth'
+    tags: []
+    traits: []
   stream_generator_logs_LogChunk_receive:
     action: receive
     channel:
@@ -57,6 +89,52 @@ operations:
     traits: []
 components:
   messages:
+    stream_main_logs_LogChunk:
+      name: LogChunk
+      title: Log chunk
+      summary: ''
+      description: ''
+      contentType: text/plain
+      payload:
+        type: string
+      tags: []
+      bindings: {}
+      examples: []
+      traits: []
+    stream_main_logs_Error_1011:
+      name: Error_1011
+      title: Websocket error 1011
+      description: Failed to read log file due to OS error
+      contentType: application/json
+      payload:
+        type: object
+        required:
+        - code
+        - reason
+        properties:
+          code:
+            type: integer
+            description: Websocket error code
+          reason:
+            type: string
+            description: Reason of error
+    stream_main_logs_Error_1013:
+      name: Error_1013
+      title: Websocket error 1013
+      description: Log file does not exist
+      contentType: application/json
+      payload:
+        type: object
+        required:
+        - code
+        - reason
+        properties:
+          code:
+            type: integer
+            description: Websocket error code
+          reason:
+            type: string
+            description: Reason of error
     stream_generator_logs_LogChunk:
       name: LogChunk
       title: Log chunk

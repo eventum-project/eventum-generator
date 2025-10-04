@@ -3,7 +3,13 @@
 from pathlib import Path
 from typing import Any, Self
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 from pytz import all_timezones_set
 
 
@@ -128,6 +134,10 @@ class GeneratorParameters(GenerationParameters, frozen=True):
     live_mode: bool = True
     skip_past: bool = Field(default=True)
     params: dict[str, Any] = Field(default_factory=dict)
+
+    @field_serializer('path')
+    def serialize_paths(self, value: Path, _) -> str:  # noqa: ANN001, D102
+        return str(value)
 
     def as_absolute(self, base_dir: Path) -> 'GeneratorParameters':
         """Get instance with absolute path to generator.

@@ -63,7 +63,7 @@ router = APIRouter()
 
 
 @router.post(
-    '/{name}/input_plugins/generate',
+    '/{name}/input-plugins/generate',
     description='Generate timestamps using input plugins',
     response_description='Generated timestamps',
     responses=merge_responses(
@@ -95,7 +95,7 @@ async def generate_timestamps(
     iterator = merged_plugins.iterate(size=size, skip_past=skip_past)
 
     try:
-        timestamps = next(iterator)
+        timestamps = await asyncio.to_thread(lambda: next(iterator))
     except PluginGenerationError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -105,17 +105,16 @@ async def generate_timestamps(
             },
         ) from None
 
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(
-        executor=None,
-        func=lambda: aggregate_timestamps(timestamps=timestamps, span=span),
+    return await asyncio.to_thread(
+        lambda: aggregate_timestamps(timestamps=timestamps, span=span),
     )
 
 
 @router.post(
-    '/{name}/event_plugin',
+    '/{name}/event-plugin',
     description='Initialize event plugin',
     responses=merge_responses(load_event_plugin.responses),
+    status_code=status.HTTP_201_CREATED,
 )
 async def initialize_event_plugin(
     plugin: EventPluginDep,
@@ -124,7 +123,7 @@ async def initialize_event_plugin(
 
 
 @router.post(
-    '/{name}/event_plugin/produce',
+    '/{name}/event-plugin/produce',
     description='Produce events using initialized event plugin',
     responses=merge_responses(get_event_plugin_from_storage.responses),
 )
@@ -146,7 +145,10 @@ async def produce_events(
 
     for i, params in enumerate(params_list):
         try:
-            events.extend(plugin.produce(params=params))
+            produced = await asyncio.to_thread(
+                lambda params=params: plugin.produce(params=params),  # type: ignore[misc]
+            )
+            events.extend(produced)
         except PluginProduceError as e:
             errors.append((i, e))
         except PluginExhaustedError:
@@ -168,7 +170,7 @@ async def produce_events(
 
 
 @router.delete(
-    '/{name}/event_plugin',
+    '/{name}/event-plugin',
     description='Release event plugin with freeing acquired resource',
     responses=merge_responses(get_event_plugin_from_storage.responses),
 )
@@ -177,7 +179,7 @@ async def release_event_plugin(plugin: EventPluginFromStorageDep) -> None:
 
 
 @router.get(
-    '/{name}/event_plugin/jinja/state/local/{alias}',
+    '/{name}/event-plugin/jinja/state/local/{alias}',
     description=(
         'Get local state of jinja event plugin for the specified template '
         'by its alias'
@@ -191,7 +193,9 @@ async def get_jinja_event_plugin_local_state(
     state: JinjaEventPluginLocalStateDep,
 ) -> dict[str, Any]:
     try:
-        return normalize_types(state.as_dict())
+        return await asyncio.to_thread(
+            lambda: normalize_types(state.as_dict()),
+        )
     except RuntimeError as e:  # catch recursion errors etc.
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -200,7 +204,7 @@ async def get_jinja_event_plugin_local_state(
 
 
 @router.patch(
-    '/{name}/event_plugin/jinja/state/local/{alias}',
+    '/{name}/event-plugin/jinja/state/local/{alias}',
     description=(
         'Patch local state of jinja event plugin for the specified template '
         'by its alias'
@@ -218,7 +222,7 @@ async def update_jinja_event_plugin_local_state(
 
 
 @router.delete(
-    '/{name}/event_plugin/jinja/state/local/{alias}',
+    '/{name}/event-plugin/jinja/state/local/{alias}',
     description=(
         'Clear local state of jinja event plugin for the specified template '
         'by its alias'
@@ -232,7 +236,7 @@ async def clear_jinja_event_plugin_local_state(
 
 
 @router.get(
-    '/{name}/event_plugin/jinja/state/shared',
+    '/{name}/event-plugin/jinja/state/shared',
     description='Get shared state of jinja event plugin',
     responses=merge_responses(
         get_jinja_shared_state.responses,
@@ -243,7 +247,9 @@ async def get_jinja_event_plugin_shared_state(
     state: JinjaEventPluginSharedStateDep,
 ) -> dict[str, Any]:
     try:
-        return normalize_types(state.as_dict())
+        return await asyncio.to_thread(
+            lambda: normalize_types(state.as_dict()),
+        )
     except RuntimeError as e:  # catch recursion errors etc.
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -252,7 +258,7 @@ async def get_jinja_event_plugin_shared_state(
 
 
 @router.patch(
-    '/{name}/event_plugin/jinja/state/shared',
+    '/{name}/event-plugin/jinja/state/shared',
     description='Patch shared state of jinja event plugin',
     responses=get_jinja_shared_state.responses,
 )
@@ -267,7 +273,7 @@ async def update_jinja_event_plugin_shared_state(
 
 
 @router.delete(
-    '/{name}/event_plugin/jinja/state/shared',
+    '/{name}/event-plugin/jinja/state/shared',
     description='Clear shared state of jinja event plugin',
     responses=get_jinja_shared_state.responses,
 )
@@ -278,7 +284,7 @@ async def clear_jinja_event_plugin_shared_state(
 
 
 @router.get(
-    '/{name}/event_plugin/jinja/state/global',
+    '/{name}/event-plugin/jinja/state/global',
     description='Get global state of jinja event plugin',
     responses=merge_responses(
         get_jinja_global_state.responses,
@@ -289,7 +295,9 @@ async def get_jinja_event_plugin_global_state(
     state: JinjaEventPluginGlobalStateDep,
 ) -> dict[str, Any]:
     try:
-        return normalize_types(state.as_dict())
+        return await asyncio.to_thread(
+            lambda: normalize_types(state.as_dict()),
+        )
     except RuntimeError as e:  # catch recursion errors etc.
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -298,7 +306,7 @@ async def get_jinja_event_plugin_global_state(
 
 
 @router.patch(
-    '/{name}/event_plugin/jinja/state/global',
+    '/{name}/event-plugin/jinja/state/global',
     description='Patch global state of jinja event plugin',
     responses=get_jinja_global_state.responses,
 )
@@ -313,7 +321,7 @@ async def update_jinja_event_plugin_global_state(
 
 
 @router.delete(
-    '/{name}/event_plugin/jinja/state/global',
+    '/{name}/event-plugin/jinja/state/global',
     description='Clear global state of jinja event plugin',
     responses=get_jinja_global_state.responses,
 )
@@ -348,10 +356,8 @@ async def format_events(
         params={'base_path': path},
     )
 
-    loop = asyncio.get_running_loop()
-    result = await loop.run_in_executor(
-        executor=None,
-        func=lambda: formatter.format_events(events=body.events),
+    result = await asyncio.to_thread(
+        lambda: formatter.format_events(events=body.events),
     )
 
     return FormattingResult(

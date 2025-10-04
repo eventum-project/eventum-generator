@@ -142,9 +142,8 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         All errors from formatting result are logged.
 
         """
-        formatting_result = await self._loop.run_in_executor(
-            executor=None,
-            func=lambda: self._formatter.format_events(events),
+        formatting_result = await asyncio.to_thread(
+            lambda: self._formatter.format_events(events),
         )
 
         if formatting_result.errors:

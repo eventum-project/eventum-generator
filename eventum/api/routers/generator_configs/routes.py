@@ -52,10 +52,8 @@ async def list_generator_dirs(settings: SettingsDep) -> list[str]:
     if not settings.path.generators_dir.exists():
         return []
 
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(
-        executor=None,
-        func=lambda: [
+    return await asyncio.to_thread(
+        lambda: [
             path.parent.name
             for path in settings.path.generators_dir.glob(
                 f'*/{settings.path.generator_config_filename}',
@@ -104,10 +102,8 @@ async def get_generator_config(
         async with aiofiles.open(path) as f:
             raw_yaml = await f.read()
 
-        loop = asyncio.get_running_loop()
-        config_data = await loop.run_in_executor(
-            executor=None,
-            func=lambda: yaml.load(stream=raw_yaml, Loader=yaml.SafeLoader),
+        config_data = await asyncio.to_thread(
+            lambda: yaml.load(stream=raw_yaml, Loader=yaml.SafeLoader),
         )
 
         return GeneratorConfig.model_validate(config_data)
@@ -147,6 +143,7 @@ async def get_generator_config(
             },
         },
     ),
+    status_code=status.HTTP_201_CREATED,
 )
 async def create_generator_config(
     name: Annotated[
@@ -254,11 +251,9 @@ async def delete_generator_config(
 ) -> None:
     generator_config_dir = (settings.path.generators_dir / name).resolve()
 
-    loop = asyncio.get_running_loop()
     try:
-        await loop.run_in_executor(
-            executor=None,
-            func=lambda: shutil.rmtree(generator_config_dir),
+        await asyncio.to_thread(
+            lambda: shutil.rmtree(generator_config_dir),
         )
     except OSError as e:
         raise HTTPException(
@@ -298,7 +293,7 @@ def get_generator_config_path(
 
 
 @router.get(
-    '/{name}/file_tree',
+    '/{name}/file-tree',
     description=(
         'Get file tree of the generator directory with specified name.'
     ),
@@ -323,11 +318,9 @@ async def get_generator_file_tree(
 ) -> list[FileNode]:
     path = (settings.path.generators_dir / name).resolve()
 
-    loop = asyncio.get_running_loop()
     try:
-        return await loop.run_in_executor(
-            executor=None,
-            func=lambda: build_file_tree(path).children or [],
+        return await asyncio.to_thread(
+            lambda: build_file_tree(path).children or [],
         )
     except OSError as e:
         raise HTTPException(
@@ -394,6 +387,7 @@ async def get_generator_file(
             500: {'description': 'File cannot be uploaded due to OS error'},
         },
     ),
+    status_code=status.HTTP_201_CREATED,
 )
 async def upload_generator_file(
     name: Annotated[
@@ -504,18 +498,11 @@ async def delete_generator_file(
             detail='File does not exist',
         )
 
-    loop = asyncio.get_running_loop()
     try:
         if path.is_file():
-            await loop.run_in_executor(
-                executor=None,
-                func=lambda: path.unlink(),
-            )
+            await asyncio.to_thread(path.unlink)
         else:
-            await loop.run_in_executor(
-                executor=None,
-                func=lambda: shutil.rmtree(path),
-            )
+            await asyncio.to_thread(shutil.rmtree, path)
 
     except OSError as e:
         raise HTTPException(
@@ -525,7 +512,7 @@ async def delete_generator_file(
 
 
 @router.post(
-    '/{name}/file_move/',
+    '/{name}/file-move/',
     description=(
         'Move file from source to destination location inside '
         'generator directory with specified name.'
@@ -564,8 +551,8 @@ async def move_generator_file(
     settings: SettingsDep,
 ) -> None:
     # Checks performed here to avoid mixing `Query` and `Depends` in signature
-    source = check_filepath_is_directly_relative(source)
-    destination = check_filepath_is_directly_relative(destination)
+    source = await check_filepath_is_directly_relative(source)
+    destination = await check_filepath_is_directly_relative(destination)
 
     source = (settings.path.generators_dir / name / source).resolve()
     destination = (settings.path.generators_dir / name / destination).resolve()
@@ -585,11 +572,9 @@ async def move_generator_file(
     if source == destination:
         return
 
-    loop = asyncio.get_running_loop()
     try:
-        await loop.run_in_executor(
-            executor=None,
-            func=lambda: shutil.move(src=source, dst=destination),
+        await asyncio.to_thread(
+            lambda: shutil.move(src=source, dst=destination),
         )
     except OSError as e:
         raise HTTPException(
@@ -599,7 +584,7 @@ async def move_generator_file(
 
 
 @router.post(
-    '/{name}/file_copy/',
+    '/{name}/file-copy/',
     description=(
         'Copy file from source to destination location inside '
         'generator directory with specified name.'
@@ -638,8 +623,8 @@ async def copy_generator_file(
     settings: SettingsDep,
 ) -> None:
     # Checks performed here to avoid mixing `Query` and `Depends` in signature
-    source = check_filepath_is_directly_relative(source)
-    destination = check_filepath_is_directly_relative(destination)
+    source = await check_filepath_is_directly_relative(source)
+    destination = await check_filepath_is_directly_relative(destination)
 
     source = (settings.path.generators_dir / name / source).resolve()
     destination = (settings.path.generators_dir / name / destination).resolve()
@@ -659,17 +644,14 @@ async def copy_generator_file(
     if source == destination:
         return
 
-    loop = asyncio.get_running_loop()
     try:
         if source.is_file():
-            await loop.run_in_executor(
-                executor=None,
-                func=lambda: shutil.copyfile(src=source, dst=destination),
+            await asyncio.to_thread(
+                lambda: shutil.copyfile(src=source, dst=destination),
             )
         else:
-            await loop.run_in_executor(
-                executor=None,
-                func=lambda: shutil.copytree(src=source, dst=destination),
+            await asyncio.to_thread(
+                lambda: shutil.copytree(src=source, dst=destination),
             )
     except OSError as e:
         raise HTTPException(

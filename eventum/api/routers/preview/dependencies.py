@@ -43,7 +43,7 @@ from eventum.plugins.input.utils.relative_time import parse_relative_time
         },
     },
 )
-def get_timezone(
+async def get_timezone(
     timezone: Annotated[
         str,
         Query(
@@ -89,7 +89,7 @@ TimezoneDep = Annotated[BaseTzInfo, Depends(get_timezone)]
         },
     },
 )
-def get_span(
+async def get_span(
     span: Annotated[
         str | None,
         Query(
@@ -125,7 +125,9 @@ def get_span(
         return None
 
     try:
-        return parse_relative_time(expression=span)
+        return await asyncio.to_thread(
+            lambda: parse_relative_time(expression=span),
+        )
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -194,14 +196,12 @@ async def load_input_plugins(
     path = (settings.path.generators_dir / name).resolve()
 
     plugins: list[InputPlugin] = []
-    loop = asyncio.get_running_loop()
     for i, plugin_config in enumerate(plugin_configs, start=1):
         plugin_config = cast('PluginNamedConfig', plugin_config)
 
         try:
-            plugin = await loop.run_in_executor(
-                executor=None,
-                func=lambda i=i,  # type: ignore[misc]
+            plugin = await asyncio.to_thread(
+                lambda i=i,  # type: ignore[misc]
                 plugin_config=plugin_config: (
                     init_plugin(
                         name=plugin_config.get_name(),
@@ -278,13 +278,11 @@ async def load_event_plugin(
     """
     path = (settings.path.generators_dir / name).resolve()
 
-    loop = asyncio.get_running_loop()
     plugin_named_config = cast('PluginNamedConfig', plugin_config)
 
     try:
-        return await loop.run_in_executor(
-            executor=None,
-            func=lambda: (
+        return await asyncio.to_thread(
+            lambda: (
                 init_plugin(
                     name=plugin_named_config.get_name(),
                     type='event',
@@ -372,7 +370,7 @@ EventPluginFromStorageDep = Annotated[
         },
     },
 )
-def check_event_plugin_is_jinja(plugin: EventPlugin) -> EventPlugin:
+async def check_event_plugin_is_jinja(plugin: EventPlugin) -> EventPlugin:
     """Check that provided event plugin is `jinja` event plugin.
 
     Parameters
@@ -419,7 +417,7 @@ CheckEventPluginIsJinjaDep = Annotated[
         },
     ),
 )
-def get_jinja_event_plugin_local_state(
+async def get_jinja_event_plugin_local_state(
     plugin: Annotated[EventPluginFromStorageDep, CheckEventPluginIsJinjaDep],
     alias: Annotated[
         str,
@@ -471,7 +469,7 @@ JinjaEventPluginLocalStateDep = Annotated[
         check_event_plugin_is_jinja.responses,
     ),
 )
-def get_jinja_event_plugin_shared_state(
+async def get_jinja_event_plugin_shared_state(
     plugin: Annotated[EventPluginFromStorageDep, CheckEventPluginIsJinjaDep],
 ) -> SingleThreadState:
     """Get shared state of jinja event plugin.
@@ -508,7 +506,7 @@ JinjaEventPluginSharedStateDep = Annotated[
         check_event_plugin_is_jinja.responses,
     ),
 )
-def get_jinja_event_plugin_global_state(
+async def get_jinja_event_plugin_global_state(
     plugin: Annotated[EventPluginFromStorageDep, CheckEventPluginIsJinjaDep],
 ) -> MultiThreadState:
     """Get global state of jinja event plugin.

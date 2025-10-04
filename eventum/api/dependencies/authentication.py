@@ -13,7 +13,7 @@ from eventum.api.dependencies.app import SettingsDep
 security = HTTPBasic()
 
 
-def check_http_credentials(
+async def check_http_credentials(
     credentials: Annotated[HTTPBasicCredentials, Depends(security)],
     settings: SettingsDep,
 ) -> None:
@@ -55,7 +55,7 @@ HttpAuthDepends = Depends(check_http_credentials)
 HttpAuthDep = Annotated[None, HttpAuthDepends]
 
 
-def check_websocket_credentials(
+async def check_websocket_credentials(
     websocket: WebSocket,
     settings: SettingsDep,
 ) -> None:

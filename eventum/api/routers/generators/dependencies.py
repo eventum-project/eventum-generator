@@ -19,7 +19,7 @@ from eventum.core.parameters import GeneratorParameters
         },
     },
 )
-def get_generator(
+async def get_generator(
     id: Annotated[str, Path(description='Generator id', min_length=1)],
     generator_manager: GeneratorManagerDep,
 ) -> Generator:
@@ -56,7 +56,7 @@ def get_generator(
 GeneratorDep = Annotated[Generator, Depends(get_generator)]
 
 
-def get_prepared_generator_params_from_request(
+async def get_prepared_generator_params_from_request(
     id: Annotated[str, Path(description='Generator id', min_length=1)],
     params: Annotated[
         GeneratorParameters,
@@ -112,7 +112,7 @@ PreparedGeneratorParamsDep = Annotated[
         },
     },
 )
-def check_path_exists(
+async def check_path_exists(
     params: PreparedGeneratorParamsDep,
 ) -> PreparedGeneratorParamsDep:
     """Check if the path in generator parameters exists.

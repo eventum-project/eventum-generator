@@ -3,7 +3,6 @@
 import os
 import signal
 import sys
-from io import TextIOWrapper
 from pathlib import Path
 from typing import Literal, NoReturn
 
@@ -16,6 +15,7 @@ from setproctitle import setproctitle
 
 import eventum
 import eventum.logging.config as logconf
+from eventum.app.hooks import InstanceHooks
 from eventum.app.main import App, AppError
 from eventum.app.models.settings import Settings
 from eventum.cli.pydantic_converter import from_model
@@ -39,21 +39,22 @@ def cli():  # noqa: ANN201
     """Events generation platform."""
 
 
-@cli.command
-@click.option(
-    '-c',
-    '--config',
-    required=True,
-    help='Path to main configuration file',
-    type=click.File(),
-)
-def run(config: TextIOWrapper) -> None:
-    """Run application with all defined generators."""
+def _start_app_instance(config: str) -> App:
+    """Start application instance."""
+    config_path = Path(config)
     try:
-        data = yaml.load(config, Loader=yaml.SafeLoader)
-    except yaml.error.YAMLError as e:
+        with config_path.open() as f:
+            try:
+                data = yaml.load(f, Loader=yaml.SafeLoader)
+            except yaml.error.YAMLError as e:
+                click.echo(
+                    f'Error: Failed to parse configuration YAML content: {e}',
+                    err=True,
+                )
+                sys.exit(1)
+    except OSError as e:
         click.echo(
-            f'Error: Failed to parse configuration YAML content: {e}',
+            f'Error: Failed to open config file: {e}',
             err=True,
         )
         sys.exit(1)
@@ -73,6 +74,9 @@ def run(config: TextIOWrapper) -> None:
         )
         sys.exit(1)
 
+    # Since current function can be called many times, we should clear logconf
+    logconf.clear()
+
     logconf.use_console_and_file(
         format=settings.log.format,
         level=settings.log.level.upper(),  # type: ignore[arg-type]
@@ -83,7 +87,14 @@ def run(config: TextIOWrapper) -> None:
 
     click.echo(SPLASH_SCREEN)
 
-    app = App(settings)
+    app = App(
+        settings=settings,
+        instance_hooks=InstanceHooks(
+            get_settings_file_path=lambda: config_path,
+            terminate=lambda: os.kill(os.getpid(), signal.SIGTERM),
+            restart=lambda: os.kill(os.getpid(), signal.SIGHUP),
+        ),
+    )
 
     logger.info('Starting application')
     try:
@@ -98,18 +109,51 @@ def run(config: TextIOWrapper) -> None:
         )
         sys.exit(1)
 
+    return app
+
+
+@cli.command
+@click.option(
+    '-c',
+    '--config',
+    required=True,
+    help='Path to main configuration file',
+    type=click.Path(exists=True, resolve_path=True),
+)
+def run(config: str) -> None:
+    """Run application with all defined generators."""
+    app: App = None  # type: ignore[assignment]
+
     def handle_termination(signal_num: int) -> NoReturn:
+        nonlocal app
+
         logger.info(
-            'Termination signal is received',
+            'OS signal is received',
             signal=signal.Signals(signal_num).name,
         )
+        logger.info('App is going to be stopped')
         app.stop()
         sys.exit(1)
 
+    def handle_restart(signal_num: int) -> None:
+        nonlocal app
+
+        logger.info(
+            'OS signal is received',
+            signal=signal.Signals(signal_num).name,
+        )
+        logger.info('App is going to be restarted')
+        app.stop()
+        app = _start_app_instance(config=config)
+
+    app = _start_app_instance(config=config)
+
     signal.signal(signal.SIGINT, lambda sig, __: handle_termination(sig))
     signal.signal(signal.SIGTERM, lambda sig, __: handle_termination(sig))
-    signal.pause()
-    sys.exit(0)
+    signal.signal(signal.SIGHUP, lambda sig, __: handle_restart(sig))
+
+    while True:
+        signal.pause()
 
 
 type VerbosityLevel = Literal[1, 2, 3, 4, 5]

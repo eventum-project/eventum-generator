@@ -83,7 +83,7 @@ def merge_responses(*responses: ResponsesInfo) -> ResponsesInfo:
                 merged_responses[code] = dict(item_info)
             elif 'description' in item_info:
                 if 'description' in info:
-                    info['description'] += f'\n\n{item_info["description"]}'
+                    info['description'] += f'\n\n{item_info["description"]};'
                 else:
                     info['description'] = item_info['description']
 

@@ -274,7 +274,7 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
         msg = 'Failed to read configuration file'
         raise ConfigurationLoadError(
             msg,
-            context={'reason': str(e), 'file_path': path},
+            context={'reason': str(e), 'file_path': str(path)},
         ) from None
 
     logger.debug('Extracting params used in config file')
@@ -291,7 +291,7 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
         msg = 'Failed to obtain params used in configuration'
         raise ConfigurationLoadError(
             msg,
-            context={'reason': str(e), 'file_path': path},
+            context={'reason': str(e), 'file_path': str(path)},
         ) from None
 
     logger.debug('Extracting secrets used in config file')
@@ -307,7 +307,7 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
         msg = 'Failed to obtain secrets used in configuration'
         raise ConfigurationLoadError(
             msg,
-            context={'reason': str(e), 'file_path': path},
+            context={'reason': str(e), 'file_path': str(path)},
         ) from None
 
     logger.debug('Substituting params and secrets to config')
@@ -323,7 +323,7 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
             msg,
             context={
                 'reason': str(e),
-                'file_path': path,
+                'file_path': str(path),
             },
         ) from None
 
@@ -336,7 +336,7 @@ def load(path: Path, params: dict[str, Any]) -> GeneratorConfig:
             msg,
             context={
                 'reason': str(e),
-                'file_path': path,
+                'file_path': str(path),
             },
         ) from None
 

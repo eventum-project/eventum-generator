@@ -1,12 +1,11 @@
 """Routes."""
 
 import asyncio
-import os
 from typing import Annotated
 
-import aiofiles
 from fastapi import (
     APIRouter,
+    Body,
     HTTPException,
     Path,
     Query,
@@ -27,12 +26,14 @@ from eventum.api.routers.generators.dependencies import (
     get_generator as _get_generator,
 )
 from eventum.api.routers.generators.models import (
+    BulkStartResponse,
     EventPluginStats,
     GeneratorStats,
     GeneratorStatus,
     InputPluginStats,
     OutputPluginStats,
 )
+from eventum.api.utils.file_streaming import stream_file
 from eventum.api.utils.response_description import merge_responses
 from eventum.api.utils.websocket_annotations import (
     AsyncAPIMessage,
@@ -100,6 +101,7 @@ async def get_generator_status(generator: GeneratorDep) -> GeneratorStatus:
             422: {'description': 'No configuration exists in specified path'},
         },
     ),
+    status_code=status.HTTP_201_CREATED,
 )
 async def add_generator(
     params: Annotated[PreparedGeneratorParamsDep, CheckPathExistsDep],
@@ -141,10 +143,8 @@ async def update_generator(
             detail='Generator must be stopped before updating',
         ) from None
 
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(
-        executor=None,
-        func=lambda: generator_manager.remove(generator_id=id),
+    await asyncio.to_thread(
+        lambda: generator_manager.remove(generator_id=id),
     )
 
     generator_manager.add(params=params)
@@ -162,12 +162,8 @@ async def start_generator(
     id: Annotated[str, Path(description='Generator id', min_length=1)],
     generator_manager: GeneratorManagerDep,
 ) -> bool:
-    loop = asyncio.get_running_loop()
     try:
-        return await loop.run_in_executor(
-            executor=None,
-            func=lambda: generator_manager.start(id),
-        )
+        return await asyncio.to_thread(lambda: generator_manager.start(id))
     except ManagingError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -186,12 +182,8 @@ async def stop_generator(
     id: Annotated[str, Path(description='Generator id', min_length=1)],
     generator_manager: GeneratorManagerDep,
 ) -> None:
-    loop = asyncio.get_running_loop()
     try:
-        await loop.run_in_executor(
-            executor=None,
-            func=lambda: generator_manager.stop(id),
-        )
+        await asyncio.to_thread(lambda: generator_manager.stop(id))
     except ManagingError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -210,12 +202,8 @@ async def delete_generator(
     id: Annotated[str, Path(description='Generator id', min_length=1)],
     generator_manager: GeneratorManagerDep,
 ) -> None:
-    loop = asyncio.get_running_loop()
     try:
-        await loop.run_in_executor(
-            executor=None,
-            func=lambda: generator_manager.remove(id),
-        )
+        await asyncio.to_thread(lambda: generator_manager.remove(id))
     except ManagingError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -264,6 +252,59 @@ async def get_generator_stats(generator: GeneratorDep) -> GeneratorStats:
             for plugin in plugins.output
         ],
     )
+
+
+@router.post(
+    '/group-actions/bulk-start/',
+    description='Bulk start several generators',
+    response_description=(
+        'Ids of running and non running generators after start. '
+        'IDs of not existing generators are just ignored and added to list '
+        'of non running generators in the response.'
+    ),
+)
+async def bulk_start_generators(
+    ids: Annotated[
+        list[str],
+        Body(description='Generator IDs to start', min_length=1),
+    ],
+    generator_manager: GeneratorManagerDep,
+) -> BulkStartResponse:
+    running_ids, non_running_ids = await asyncio.to_thread(
+        lambda: generator_manager.bulk_start(ids),
+    )
+    return BulkStartResponse(
+        running_generator_ids=running_ids,
+        non_running_generator_ids=non_running_ids,
+    )
+
+
+@router.post(
+    '/group-actions/bulk-stop/',
+    description='Bulk stop several generators',
+)
+async def bulk_stop_generators(
+    ids: Annotated[
+        list[str],
+        Body(description='Generator IDs to stop', min_length=1),
+    ],
+    generator_manager: GeneratorManagerDep,
+) -> None:
+    await asyncio.to_thread(lambda: generator_manager.bulk_stop(ids))
+
+
+@router.post(
+    '/group-actions/bulk-remove/',
+    description='Bulk remove several generators',
+)
+async def bulk_remove_generators(
+    ids: Annotated[
+        list[str],
+        Body(description='Generator IDs to remove', min_length=1),
+    ],
+    generator_manager: GeneratorManagerDep,
+) -> None:
+    await asyncio.to_thread(lambda: generator_manager.bulk_remove(ids))
 
 
 @ws_router.websocket('/{id}/logs')
@@ -326,22 +367,11 @@ async def stream_generator_logs(
         )
 
     try:
-        async with aiofiles.open(path) as f:
-            await f.seek(0, os.SEEK_END)
-            size = await f.tell()
-            start_pos = max(0, size - end_offset)
-            await f.seek(start_pos, os.SEEK_SET)
-
-            while True:
-                content = await f.read(8192)
-                if content:
-                    try:
-                        await websocket.send_text(content)
-                    except WebSocketDisconnect:
-                        break
-                else:
-                    await asyncio.sleep(0.5)
-
+        async for content in stream_file(path=path, end_offset=end_offset):
+            try:
+                await websocket.send_text(content)
+            except WebSocketDisconnect:
+                break
     except OSError as e:
         if websocket.client_state.name == 'CONNECTED':
             raise WebSocketException(

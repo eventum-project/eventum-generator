@@ -21,11 +21,6 @@ api.port: 9474
 # Optional, default is true
 api.ssl.enabled: true
 
-# Verification mode of SSL connections
-# Available value are "none", "optional", "required"
-# Optional, default is "optional"
-api.ssl.verify_mode: optional
-
 # Absolute path to CA certificate
 # Optional, default is null
 api.ssl.ca_cert: null
