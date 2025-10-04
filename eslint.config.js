@@ -32,6 +32,7 @@ export default tseslint.config({
     'unicorn/prevent-abbreviations': 'off',
     'unicorn/no-null': 'off',
     'sonarjs/void-use': 'off',
+    'unicorn/prefer-ternary': 'off',
   },
   languageOptions: {
     ecmaVersion: 2020,

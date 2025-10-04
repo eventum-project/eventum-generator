@@ -7,14 +7,21 @@ import BlankLayout from '@/components/layout/BlankLayout';
 
 const ConnectPage = lazy(
   () =>
-    import('@/pages/ConnectPage') as Promise<{ default: React.ComponentType }>
+    import('@/pages/ConnectPage') as Promise<{
+      default: React.ComponentType;
+    }>
 );
 const MainPage = lazy(
-  () => import('@/pages/MainPage') as Promise<{ default: React.ComponentType }>
+  () =>
+    import('@/pages/MainPage') as Promise<{
+      default: React.ComponentType;
+    }>
 );
 const NotFoundPage = lazy(
   () =>
-    import('@/pages/NotFoundPage') as Promise<{ default: React.ComponentType }>
+    import('@/pages/NotFoundPage') as Promise<{
+      default: React.ComponentType;
+    }>
 );
 
 export const routes: RouteObject[] = [
