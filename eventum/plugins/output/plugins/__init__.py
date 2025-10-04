@@ -1,0 +1,1 @@
+"""Output plugins definition package."""
