@@ -4,6 +4,7 @@ import { RouteObject } from 'react-router-dom';
 import { ROUTE_PATHS } from './paths';
 import AppLayout from '@/components/layout/AppLayout';
 import BlankLayout from '@/components/layout/BlankLayout';
+import FooterOnlyLayout from '@/components/layout/FooterOnlyLayout';
 
 const ConnectPage = lazy(
   () =>
@@ -28,9 +29,9 @@ export const routes: RouteObject[] = [
   {
     path: ROUTE_PATHS.CONNECT,
     element: (
-      <BlankLayout>
+      <FooterOnlyLayout>
         <ConnectPage />
-      </BlankLayout>
+      </FooterOnlyLayout>
     ),
   },
   {
