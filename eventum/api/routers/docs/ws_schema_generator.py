@@ -72,6 +72,12 @@ def generate_asyncapi_schema(  # noqa: C901, PLR0912, PLR0915
         'type': 'userPassword',
         'description': 'Basic authentication with username and password',
     }
+    components['securitySchemes']['sessionAuth'] = {
+        'type': 'httpApiKey',
+        'description': 'Session-based authentication using cookie',
+        'in': 'cookie',
+        'name': 'session_id',
+    }
 
     for route in app.routes:
         if not isinstance(route, WebSocketRoute):
@@ -143,6 +149,11 @@ def generate_asyncapi_schema(  # noqa: C901, PLR0912, PLR0915
                         **operation,
                         'security': [
                             {'$ref': '#/components/securitySchemes/basicAuth'},
+                            {
+                                '$ref': (
+                                    '#/components/securitySchemes/sessionAuth'
+                                ),
+                            },
                         ],
                     }
                 if isinstance(meta, ws_info.Rejects):

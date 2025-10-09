@@ -72,6 +72,7 @@ operations:
     description: ''
     security:
     - $ref: '#/components/securitySchemes/basicAuth'
+    - $ref: '#/components/securitySchemes/sessionAuth'
     tags: []
     traits: []
   stream_generator_logs_LogChunk_receive:
@@ -85,6 +86,7 @@ operations:
     description: ''
     security:
     - $ref: '#/components/securitySchemes/basicAuth'
+    - $ref: '#/components/securitySchemes/sessionAuth'
     tags: []
     traits: []
 components:
@@ -202,3 +204,8 @@ components:
     basicAuth:
       type: userPassword
       description: Basic authentication with username and password
+    sessionAuth:
+      type: httpApiKey
+      description: Session-based authentication using cookie
+      in: cookie
+      name: session_id
