@@ -8,6 +8,7 @@ from eventum.api.dependencies.authentication import (
     HttpAuthDepends,
     WebsocketAuthDepends,
 )
+from eventum.api.routers.auth import router as auth_router
 from eventum.api.routers.docs import router as docs_router
 from eventum.api.routers.docs.routes import ASYNCAPI_SCHEMA_PATH
 from eventum.api.routers.docs.ws_schema_generator import (
@@ -93,6 +94,11 @@ def build_api_app(
     app.state.instance_hooks = instance_hooks
 
     logger.debug('Connecting routers')
+    app.include_router(
+        auth_router,
+        prefix='/auth',
+        tags=['Authentication'],
+    )
     app.include_router(
         instance_router,
         prefix='/instance',
