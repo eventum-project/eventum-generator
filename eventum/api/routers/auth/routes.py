@@ -8,7 +8,9 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from eventum.api.dependencies.app import SettingsDep
 from eventum.api.dependencies.authentication import (
+    HttpAuthDep,
     check_auth,
+    check_http_auth,
     clear_session,
     set_session,
 )
@@ -45,6 +47,15 @@ async def login(
     )
 
     return session_id
+
+
+@router.post(
+    '/me',
+    description='Get current user',
+    responses=check_http_auth.responses,
+)
+async def get_current_user(user: HttpAuthDep) -> str:
+    return user
 
 
 @router.post(

@@ -9,6 +9,7 @@ from fastapi.security import HTTPBasic
 from fastapi.security.utils import get_authorization_scheme_param
 
 from eventum.api.dependencies.app import SettingsDep
+from eventum.api.utils.response_description import set_responses
 from eventum.app.models.settings import Settings
 
 security = HTTPBasic()
@@ -148,6 +149,7 @@ def check_auth(
     )
 
 
+@set_responses({401: {'description': 'Authentication fails'}})
 async def check_http_auth(request: Request, settings: SettingsDep) -> str:
     """Check authentication with HTTP request context.
 
