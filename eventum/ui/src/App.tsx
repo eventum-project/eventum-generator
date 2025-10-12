@@ -4,6 +4,7 @@ import {
   createTheme,
 } from '@mantine/core';
 import '@mantine/core/styles.css';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 
 import AppRouter from '@/routing';
@@ -39,12 +40,16 @@ const theme = createTheme({
   },
 });
 
+const queryClient = new QueryClient();
+
 export default function App() {
   return (
-    <MantineProvider theme={theme} defaultColorScheme="dark">
-      <BrowserRouter>
-        <AppRouter />
-      </BrowserRouter>
-    </MantineProvider>
+    <QueryClientProvider client={queryClient}>
+      <MantineProvider theme={theme} defaultColorScheme="dark">
+        <BrowserRouter>
+          <AppRouter />
+        </BrowserRouter>
+      </MantineProvider>
+    </QueryClientProvider>
   );
 }
