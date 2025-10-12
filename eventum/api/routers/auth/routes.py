@@ -25,6 +25,7 @@ security = HTTPBasic()
         'Authenticate user via basic auth and create a server-side session '
         'with a HttpOnly cookie'
     ),
+    response_description='Authenticated user',
     responses={401: {'description': 'Unauthorized'}},
 )
 async def login(
@@ -46,7 +47,7 @@ async def login(
         secure=False,
     )
 
-    return session_id
+    return username
 
 
 @router.post(
