@@ -1,4 +1,4 @@
 export const ROUTE_PATHS = {
-  CONNECT: '/connect',
+  SIGNIN: '/signin',
   MAIN: '/',
 };

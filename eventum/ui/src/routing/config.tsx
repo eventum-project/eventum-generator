@@ -6,9 +6,9 @@ import AppLayout from '@/components/layout/AppLayout';
 import BlankLayout from '@/components/layout/BlankLayout';
 import FooterOnlyLayout from '@/components/layout/FooterOnlyLayout';
 
-const ConnectPage = lazy(
+const SignInPage = lazy(
   () =>
-    import('@/pages/ConnectPage') as Promise<{
+    import('@/pages/SignInPage') as Promise<{
       default: React.ComponentType;
     }>
 );
@@ -27,10 +27,10 @@ const NotFoundPage = lazy(
 
 export const routes: RouteObject[] = [
   {
-    path: ROUTE_PATHS.CONNECT,
+    path: ROUTE_PATHS.SIGNIN,
     element: (
       <FooterOnlyLayout>
-        <ConnectPage />
+        <SignInPage />
       </FooterOnlyLayout>
     ),
   },

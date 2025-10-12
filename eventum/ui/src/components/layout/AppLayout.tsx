@@ -24,7 +24,7 @@ export default function AppLayout({
   const navigate = useNavigate();
 
   const handleDisconnect = () => {
-    navigate(ROUTE_PATHS.CONNECT);
+    navigate(ROUTE_PATHS.SIGNIN);
   };
 
   const handleSaveSettings = () => {
