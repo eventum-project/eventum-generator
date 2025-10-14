@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import { RouteObject } from 'react-router-dom';
 
+import { PrivateRoute, SignInRoute } from './guards';
 import { ROUTE_PATHS } from './paths';
 import AppLayout from '@/components/layout/AppLayout';
 import BlankLayout from '@/components/layout/BlankLayout';
@@ -29,17 +30,21 @@ export const routes: RouteObject[] = [
   {
     path: ROUTE_PATHS.SIGNIN,
     element: (
-      <FooterOnlyLayout>
-        <SignInPage />
-      </FooterOnlyLayout>
+      <SignInRoute>
+        <FooterOnlyLayout>
+          <SignInPage />
+        </FooterOnlyLayout>
+      </SignInRoute>
     ),
   },
   {
     path: ROUTE_PATHS.MAIN,
     element: (
-      <AppLayout>
-        <MainPage />
-      </AppLayout>
+      <PrivateRoute>
+        <AppLayout>
+          <MainPage />
+        </AppLayout>
+      </PrivateRoute>
     ),
   },
   {
