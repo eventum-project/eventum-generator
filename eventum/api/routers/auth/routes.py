@@ -50,7 +50,7 @@ async def login(
     return username
 
 
-@router.post(
+@router.get(
     '/me',
     description='Get current user',
     responses=check_http_auth.responses,
