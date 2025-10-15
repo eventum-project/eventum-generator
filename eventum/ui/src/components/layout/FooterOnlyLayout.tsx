@@ -1,10 +1,6 @@
 import { Anchor, AppShell, Group, Text } from '@mantine/core';
 
-import {
-  GITHUB_ORGANIZATION,
-  LICENSE,
-  TG_COMMUNITY_GROUP,
-} from '@/routing/links';
+import { LINKS } from '@/routing/links';
 
 export default function FooterOnlyLayout({
   children,
@@ -12,15 +8,15 @@ export default function FooterOnlyLayout({
   const data = [
     {
       label: 'Documentation',
-      link: 'https://eventum-project.github.io/website/',
+      link: LINKS.DOCUMENTATION,
     },
     {
       label: 'GitHub',
-      link: GITHUB_ORGANIZATION,
+      link: LINKS.GITHUB_ORGANIZATION,
     },
     {
       label: 'Community',
-      link: TG_COMMUNITY_GROUP,
+      link: LINKS.TG_COMMUNITY_GROUP,
     },
   ];
   return (
@@ -30,7 +26,13 @@ export default function FooterOnlyLayout({
         <Group justify="space-between" mx="50px" my="20px">
           <Text c="dimmed" size="sm">
             © {new Date().getFullYear()} Eventum Project.{' '}
-            <Anchor href={LICENSE} c="dimmed" lh={1} size="sm" target="_blank">
+            <Anchor
+              href={LINKS.LICENSE}
+              c="dimmed"
+              lh={1}
+              size="sm"
+              target="_blank"
+            >
               All rights reserved.
             </Anchor>
           </Text>

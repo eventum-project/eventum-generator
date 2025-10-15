@@ -1,89 +1,118 @@
 'use client';
 
+import { AppShell, Box, Divider, Group, NavLink, Stack } from '@mantine/core';
 import {
-  ActionIcon,
-  AppShell,
-  Button,
-  Group,
-  Modal,
-  Stack,
-  Text,
-  TextInput,
-} from '@mantine/core';
-import { IconPower, IconSettings } from '@tabler/icons-react';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+  IconBook,
+  IconBug,
+  IconFolder,
+  IconHome,
+  IconLock,
+  IconPlayerPlay,
+  IconRepeat,
+  IconSettings,
+  IconUsersGroup,
+} from '@tabler/icons-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
+import { LINKS } from '@/routing/links';
 import { ROUTE_PATHS } from '@/routing/paths';
 
 export default function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const [settingsOpened, setSettingsOpened] = useState(false);
-  const [serverSetting, setServerSetting] = useState('');
+  const location = useLocation();
   const navigate = useNavigate();
-
-  const handleDisconnect = () => {
-    navigate(ROUTE_PATHS.SIGNIN);
-  };
-
-  const handleSaveSettings = () => {
-    setSettingsOpened(false);
-  };
-
   return (
-    <>
-      <AppShell padding="60px">
-        <AppShell.Header
-          px="md"
-          style={{
-            padding: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div style={{ fontWeight: 'bold' }}>Logo</div>
-
+    <AppShell
+      padding="md"
+      header={{ height: 60 }}
+      navbar={{
+        width: 220,
+        breakpoint: 'sm',
+      }}
+    >
+      <AppShell.Header>
+        <Group justify="space-between">
           <Group>
-            <ActionIcon
-              onClick={() => setSettingsOpened(true)}
-              title="Settings"
-            >
-              <IconSettings size={20} />
-            </ActionIcon>
-            <ActionIcon
-              color="red"
-              variant="filled"
-              onClick={handleDisconnect}
-              title="Disconnect"
-            >
-              <IconPower size={20} />
-            </ActionIcon>
+            <Box>Logo</Box>
           </Group>
-        </AppShell.Header>
-
-        <AppShell.Main>{children}</AppShell.Main>
-      </AppShell>
-
-      <Modal
-        opened={settingsOpened}
-        onClose={() => setSettingsOpened(false)}
-        title="Server Settings"
-        centered
-      >
-        <Stack>
-          <Text>Configure your server settings here.</Text>
-          <TextInput
-            label="Example setting"
-            value={serverSetting}
-            onChange={(e) => setServerSetting(e.currentTarget.value)}
-          />
-          <Group mt="md">
-            <Button onClick={handleSaveSettings}>Save</Button>
+          <Group>
+            <Box>Username</Box>
+            <Box>Log Out</Box>
           </Group>
+        </Group>
+      </AppShell.Header>
+
+      <AppShell.Navbar>
+        <Stack gap="0" h="100%" justify="space-between">
+          <Box>
+            <NavLink
+              label="Overview"
+              leftSection={<IconHome size="20px" />}
+              active={location.pathname === ROUTE_PATHS.MAIN}
+              onClick={() => void navigate(ROUTE_PATHS.MAIN)}
+            />
+            <Divider />
+            <NavLink label="Generators" defaultOpened>
+              <NavLink
+                label="Instances"
+                leftSection={<IconPlayerPlay size="20px" />}
+                active={location.pathname === ROUTE_PATHS.INSTANCES}
+                onClick={() => void navigate(ROUTE_PATHS.INSTANCES)}
+              />
+              <NavLink
+                label="Projects"
+                leftSection={<IconFolder size="20px" />}
+                active={location.pathname === ROUTE_PATHS.PROJECTS}
+                onClick={() => void navigate(ROUTE_PATHS.PROJECTS)}
+              />
+              <NavLink
+                label="Startup"
+                leftSection={<IconRepeat size="20px" />}
+                active={location.pathname === ROUTE_PATHS.STARTUP}
+                onClick={() => void navigate(ROUTE_PATHS.STARTUP)}
+              />
+            </NavLink>
+            <Divider />
+            <NavLink label="Management" defaultOpened>
+              <NavLink
+                label="Secrets"
+                leftSection={<IconLock size="20px" />}
+                active={location.pathname === ROUTE_PATHS.SECRETS}
+                onClick={() => void navigate(ROUTE_PATHS.SECRETS)}
+              />
+              <NavLink
+                label="Settings"
+                leftSection={<IconSettings size="20px" />}
+                active={location.pathname === ROUTE_PATHS.SETTINGS}
+                onClick={() => void navigate(ROUTE_PATHS.SETTINGS)}
+              />
+            </NavLink>
+          </Box>
+          <Box>
+            <NavLink
+              label="Documentation"
+              leftSection={<IconBook size="20px" />}
+              href={LINKS.DOCUMENTATION}
+              target="_blank"
+            />
+            <NavLink
+              label="Join the community"
+              leftSection={<IconUsersGroup size="20px" />}
+              href={LINKS.TG_COMMUNITY_GROUP}
+              target="_blank"
+            />
+            <NavLink
+              label="Report an issue"
+              leftSection={<IconBug size="20px" />}
+              href={LINKS.GITHUB_ISSUES}
+              target="_blank"
+            />
+          </Box>
         </Stack>
-      </Modal>
-    </>
+      </AppShell.Navbar>
+
+      <AppShell.Main>{children}</AppShell.Main>
+    </AppShell>
   );
 }
