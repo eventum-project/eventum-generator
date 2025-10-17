@@ -1,9 +1,21 @@
 'use client';
 
-import { AppShell, Box, Divider, Group, NavLink, Stack } from '@mantine/core';
+import {
+  AppShell,
+  Badge,
+  Box,
+  Breadcrumbs,
+  Divider,
+  Group,
+  Image,
+  NavLink,
+  Stack,
+  Title,
+} from '@mantine/core';
 import {
   IconBook,
   IconBug,
+  IconChevronRight,
   IconFolder,
   IconHome,
   IconLock,
@@ -89,9 +101,58 @@ export default function AppLayout({
       }}
     >
       <AppShell.Header>
-        <Group justify="space-between">
+        <Group justify="space-between" h="100%" ml="xs" mr="xl">
           <Group>
-            <Box>Logo</Box>
+            <Group
+              gap="xs"
+              onClick={() => void navigate(ROUTE_PATHS.MAIN)}
+              style={{ cursor: 'pointer' }}
+            >
+              <Box>
+                <Image
+                  src="/logo.svg"
+                  alt="Eventum Logo"
+                  h={27}
+                  w="auto"
+                  fit="contain"
+                  mx="auto"
+                  draggable={false}
+                />
+              </Box>
+              <Box>
+                <Title fz="lg" fw="normal">
+                  Eventum Studio
+                </Title>
+              </Box>
+            </Group>
+            <Breadcrumbs
+              ml="40px"
+              separator={<IconChevronRight size={'16px'} />}
+              separatorMargin="0"
+            >
+              {location.pathname
+                .split('/')
+                .slice(1)
+                .map((item, index) => (
+                  <Box
+                    key={index}
+                    style={{
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Badge
+                      variant="light"
+                      radius="sm"
+                      key={index}
+                      style={{
+                        textTransform: index === 0 ? 'capitalize' : 'none',
+                      }}
+                    >
+                      {item === '' ? 'Overview' : item}
+                    </Badge>
+                  </Box>
+                ))}
+            </Breadcrumbs>
           </Group>
           <Group>
             <ThemeToggle />
