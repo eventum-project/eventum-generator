@@ -26,7 +26,6 @@ const mainColorTuple: MantineColorsTuple = [
 
 const theme = createTheme({
   autoContrast: true,
-  luminanceThreshold: 0.35,
   fontFamily: 'Montserrat, sans-serif',
   defaultRadius: 'md',
   cursorType: 'pointer',
