@@ -9,9 +9,10 @@ import '@mantine/notifications/styles.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 
+import '@/index.css';
 import AppRouter from '@/routing';
 
-const mainColorTuple: MantineColorsTuple = [
+const primaryColorTuple: MantineColorsTuple = [
   '#ececff',
   '#d4d5fd',
   '#a7a7f5',
@@ -30,9 +31,9 @@ const theme = createTheme({
   defaultRadius: 'md',
   cursorType: 'pointer',
   colors: {
-    main: mainColorTuple,
+    primary: primaryColorTuple,
   },
-  primaryColor: 'main',
+  primaryColor: 'primary',
   primaryShade: 3,
   defaultGradient: {
     from: '#8282ef',

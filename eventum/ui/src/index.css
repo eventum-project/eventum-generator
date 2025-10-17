@@ -1,0 +1,8 @@
+/* Light theme overrides */
+[data-mantine-color-scheme='light'] .mantine-Badge-root {
+  --badge-color: var(--mantine-color-primary-5) !important;
+}
+
+[data-mantine-color-scheme='light'] .mantine-NavLink-root {
+  --nl-color: var(--mantine-color-primary-5) !important;
+}
