@@ -16,7 +16,7 @@ export default function ThemeToggle() {
   return (
     <ActionIcon
       onClick={toggleColorScheme}
-      variant="outline"
+      variant="default"
       title={`Switch to ${dark ? 'light' : 'dark'} mode`}
       size="lg"
     >

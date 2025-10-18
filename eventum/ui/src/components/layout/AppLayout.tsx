@@ -1,31 +1,56 @@
 'use client';
 
 import {
+  ActionIcon,
+  Alert,
   AppShell,
+  Avatar,
   Badge,
   Box,
   Breadcrumbs,
+  Button,
+  Center,
+  CopyButton,
   Divider,
   Group,
   Image,
+  Loader,
+  Menu,
+  Modal,
   NavLink,
   Stack,
+  Text,
   Title,
+  Tooltip,
+  UnstyledButton,
 } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
 import {
+  IconAlertSquareRounded,
   IconBook,
+  IconBox,
+  IconBrandPython,
   IconBug,
+  IconCheck,
+  IconChevronDown,
   IconChevronRight,
+  IconCopy,
   IconFolder,
   IconHome,
+  IconInfoCircle,
   IconLock,
+  IconLogout,
   IconPlayerPlay,
   IconRepeat,
+  IconServer,
   IconSettings,
   IconUsersGroup,
 } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { useCurrentUser, useLogout } from '@/api/hooks/useAuth';
+import { useInstanceInfo } from '@/api/hooks/useInstance';
 import ThemeToggle from '@/components/ThemeToggle';
 import { LINKS } from '@/routing/links';
 import { ROUTE_PATHS } from '@/routing/paths';
@@ -35,6 +60,17 @@ export default function AppLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { data: user, isLoading: isUserLoading } = useCurrentUser();
+  const [openedAboutModel, { open: openAboutModal, close: closeAboutModal }] =
+    useDisclosure(false);
+  const logout = useLogout();
+  const {
+    data: instanceInfo,
+    isLoading: isInstanceInfoLoading,
+    isSuccess: isInstanceInfoSuccess,
+    isError: isInstanceInfoError,
+    error: instanceInfoError,
+  } = useInstanceInfo();
 
   const navigationData = [
     {
@@ -91,6 +127,7 @@ export default function AppLayout({
       link: LINKS.GITHUB_ISSUES,
     },
   ];
+
   return (
     <AppShell
       padding="md"
@@ -156,8 +193,62 @@ export default function AppLayout({
           </Group>
           <Group>
             <ThemeToggle />
-            <Box>Username</Box>
-            <Box>Log Out</Box>
+            <Box ml="sm">
+              <Menu>
+                <Menu.Target>
+                  <UnstyledButton>
+                    <Group gap="xs">
+                      <Stack gap="0">
+                        <Group gap="0">
+                          <Text size="sm" fw={600} mr="2px">
+                            {user}
+                          </Text>
+                          <IconChevronDown size="16px" />
+                        </Group>
+                        <Text size="xs" fw={500}>
+                          Internal user
+                        </Text>
+                      </Stack>
+
+                      <Avatar ml="0" color="primary">
+                        {isUserLoading ? (
+                          <Loader size="xs" />
+                        ) : (
+                          user?.charAt(0).toUpperCase()
+                        )}
+                      </Avatar>
+                    </Group>
+                  </UnstyledButton>
+                </Menu.Target>
+
+                <Menu.Dropdown w="195px">
+                  <Menu.Label>Application</Menu.Label>
+                  <Menu.Item
+                    leftSection={<IconInfoCircle size="19px" />}
+                    onClick={openAboutModal}
+                  >
+                    About
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item
+                    leftSection={<IconLogout size="19px" />}
+                    onClick={() =>
+                      logout.mutate(undefined, {
+                        onSuccess: () => void navigate(ROUTE_PATHS.SIGNIN),
+                        onError: (error) =>
+                          notifications.show({
+                            title: 'Sign out failed',
+                            message: error.message,
+                            color: 'red',
+                          }),
+                      })
+                    }
+                  >
+                    Sign out
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </Box>
           </Group>
         </Group>
       </AppShell.Header>
@@ -206,7 +297,124 @@ export default function AppLayout({
         </Stack>
       </AppShell.Navbar>
 
-      <AppShell.Main>{children}</AppShell.Main>
+      <AppShell.Main>
+        <Modal
+          opened={openedAboutModel}
+          onClose={closeAboutModal}
+          title={<Title order={4}>About Eventum</Title>}
+          size="lg"
+        >
+          {isInstanceInfoLoading ? (
+            <Center>
+              <Loader />
+            </Center>
+          ) : (
+            <></>
+          )}
+          {isInstanceInfoError ? (
+            <Alert
+              mt="md"
+              variant="default"
+              icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
+              title="Failed to get instance information"
+            >
+              {instanceInfoError.message}
+            </Alert>
+          ) : (
+            <></>
+          )}
+          {isInstanceInfoSuccess ? (
+            <Stack>
+              {[
+                {
+                  sectionName: 'Application',
+                  icon: IconBox,
+                  sectionItems: [
+                    { label: 'Version', value: instanceInfo.app_version },
+                  ],
+                },
+                {
+                  sectionName: 'Python',
+                  icon: IconBrandPython,
+                  sectionItems: [
+                    { label: 'Version', value: instanceInfo.python_version },
+                    {
+                      label: 'Implementation',
+                      value: instanceInfo.python_implementation,
+                    },
+                    { label: 'Compiler', value: instanceInfo.python_compiler },
+                  ],
+                },
+                {
+                  sectionName: 'Server',
+                  icon: IconServer,
+                  sectionItems: [
+                    {
+                      label: 'Platform',
+                      value: instanceInfo.platform,
+                    },
+                    {
+                      label: 'Boot time',
+                      value: new Date(
+                        instanceInfo.boot_timestamp * 1000
+                      ).toLocaleString(),
+                    },
+                  ],
+                },
+              ].map((section, index, arr) => (
+                <Stack key={index}>
+                  <Group mt="sm">
+                    <section.icon />
+                    <Title order={5} fw={600}>
+                      {section.sectionName}
+                    </Title>
+                  </Group>
+                  {
+                    <Stack gap="xs">
+                      {section.sectionItems.map((sectionItem, index) => (
+                        <Group key={index}>
+                          <Text>
+                            {sectionItem.label}: {sectionItem.value}
+                          </Text>
+                        </Group>
+                      ))}
+                    </Stack>
+                  }
+                  {index < arr.length - 1 ? <Divider /> : <></>}
+                </Stack>
+              ))}
+              <Group justify="flex-end" mt="xs" gap="xs">
+                <CopyButton value={JSON.stringify(instanceInfo, undefined, 2)}>
+                  {({ copied, copy }) => (
+                    <Tooltip
+                      label={copied ? 'Copied' : 'Copy full info'}
+                      withArrow
+                      position="left"
+                    >
+                      <ActionIcon
+                        color={copied ? 'teal' : 'gray'}
+                        variant={copied ? 'filled' : 'default'}
+                        onClick={copy}
+                        size="lg"
+                      >
+                        {copied ? (
+                          <IconCheck size={16} />
+                        ) : (
+                          <IconCopy size={16} />
+                        )}
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                </CopyButton>
+                <Button onClick={closeAboutModal}>Close</Button>
+              </Group>
+            </Stack>
+          ) : (
+            <></>
+          )}
+        </Modal>
+        {children}
+      </AppShell.Main>
     </AppShell>
   );
 }
