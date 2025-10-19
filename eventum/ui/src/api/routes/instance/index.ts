@@ -12,14 +12,14 @@ export async function getInstanceInfo(): Promise<InstanceInfo> {
 }
 
 export async function getInstanceSettings(): Promise<Settings> {
-  const res = await apiClient.get('/instance/info');
+  const res = await apiClient.get('/instance/settings');
   return SettingsSchema.parse(res.data);
 }
 
 export async function updateInstanceSettings(
   settings: Settings
 ): Promise<undefined> {
-  await apiClient.put('/instance/info', settings);
+  await apiClient.put('/instance/settings', settings);
 }
 
 export async function stopInstance(): Promise<undefined> {
