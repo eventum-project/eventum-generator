@@ -172,7 +172,7 @@ export default function AppLayout({
                 .slice(1)
                 .map((item, index) => (
                   <Box
-                    key={index}
+                    key={item}
                     style={{
                       cursor: 'pointer',
                     }}
@@ -180,7 +180,6 @@ export default function AppLayout({
                     <Badge
                       variant="light"
                       radius="sm"
-                      key={index}
                       style={{
                         textTransform: index === 0 ? 'capitalize' : 'none',
                       }}
@@ -263,13 +262,9 @@ export default function AppLayout({
               onClick={() => void navigate(ROUTE_PATHS.MAIN)}
             />
             {navigationData.map((group) => (
-              <>
+              <Box key={group.groupName}>
                 <Divider />
-                <NavLink
-                  label={group.groupName}
-                  key={group.groupName}
-                  defaultOpened
-                >
+                <NavLink label={group.groupName} defaultOpened>
                   {group.items.map((item) => (
                     <NavLink
                       label={item.label}
@@ -280,7 +275,7 @@ export default function AppLayout({
                     />
                   ))}
                 </NavLink>
-              </>
+              </Box>
             ))}
           </Box>
           <Box>
@@ -362,7 +357,7 @@ export default function AppLayout({
                   ],
                 },
               ].map((section, index, arr) => (
-                <Stack key={index}>
+                <Stack key={section.sectionName}>
                   <Group mt="sm">
                     <section.icon />
                     <Title order={5} fw={600}>
@@ -371,8 +366,8 @@ export default function AppLayout({
                   </Group>
                   {
                     <Stack gap="xs">
-                      {section.sectionItems.map((sectionItem, index) => (
-                        <Group key={index}>
+                      {section.sectionItems.map((sectionItem) => (
+                        <Group key={sectionItem.label}>
                           <Text>
                             {sectionItem.label}: {sectionItem.value}
                           </Text>
