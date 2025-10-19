@@ -29,7 +29,7 @@ export function useLoginMutation() {
   });
 }
 
-export function useLogout() {
+export function useLogoutMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({

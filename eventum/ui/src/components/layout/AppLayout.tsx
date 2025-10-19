@@ -49,7 +49,7 @@ import {
 } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { useCurrentUser, useLogout } from '@/api/hooks/useAuth';
+import { useCurrentUser, useLogoutMutation } from '@/api/hooks/useAuth';
 import { useInstanceInfo } from '@/api/hooks/useInstance';
 import ThemeToggle from '@/components/ThemeToggle';
 import { LINKS } from '@/routing/links';
@@ -63,7 +63,7 @@ export default function AppLayout({
   const { data: user, isLoading: isUserLoading } = useCurrentUser();
   const [openedAboutModel, { open: openAboutModal, close: closeAboutModal }] =
     useDisclosure(false);
-  const logout = useLogout();
+  const logout = useLogoutMutation();
   const {
     data: instanceInfo,
     isLoading: isInstanceInfoLoading,
