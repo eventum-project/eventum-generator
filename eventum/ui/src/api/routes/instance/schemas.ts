@@ -24,8 +24,11 @@ export const InstanceInfoSchema = z.object({
 
 export type InstanceInfo = z.infer<typeof InstanceInfoSchema>;
 
+export const VERIFY_MODES = ['none', 'optional', 'required'];
+
 export const SSLParametersSchema = z.object({
   enabled: z.boolean(),
+  verify_mode: z.enum(VERIFY_MODES).nullable(),
   ca_cert: z.string().nullable(),
   cert: z.string().nullable(),
   cert_key: z.string().nullable(),
@@ -39,14 +42,14 @@ export const AuthParametersSchema = z.object({
 export const APIParametersSchema = z.object({
   enabled: z.boolean(),
   host: z.string().min(1),
-  port: z.number().int().gte(1),
+  port: z.number().int().gte(1).lte(65_535),
   ssl: SSLParametersSchema,
   auth: AuthParametersSchema,
 });
 
 export const BatchParametersSchema = z.object({
-  size: z.number(),
-  delay: z.number(),
+  size: z.number().gte(1).int().nullable(),
+  delay: z.number().gte(0.1).nullable(),
 });
 
 const QueueParametersSchema = z.object({
@@ -54,7 +57,7 @@ const QueueParametersSchema = z.object({
   max_event_batches: z.number().int().gte(1),
 });
 
-export const Timezones = [
+export const TIMEZONES = [
   'Africa/Abidjan',
   'Africa/Accra',
   'Africa/Addis_Ababa',
@@ -490,20 +493,20 @@ export const Timezones = [
 ];
 
 export const GenerationParametersSchema = z.object({
-  timezone: z.enum(Timezones),
+  timezone: z.enum(TIMEZONES),
   batch: BatchParametersSchema,
   queue: QueueParametersSchema,
   keep_order: z.boolean(),
-  max_concurrency: z.number().int(),
+  max_concurrency: z.number().int().gte(1),
   write_timeout: z.number().int().gte(1),
 });
 
-export const LogLevels = ['debug', 'info', 'warning', 'error', 'critical'];
-export const LogFormats = ['plain', 'json'];
+export const LOG_LEVELS = ['debug', 'info', 'warning', 'error', 'critical'];
+export const LOG_FORMATS = ['plain', 'json'];
 
 export const LogParametersSchema = z.object({
-  level: z.enum(LogLevels),
-  format: z.enum(LogFormats),
+  level: z.enum(LOG_LEVELS),
+  format: z.enum(LOG_FORMATS),
   max_bytes: z.number().int().gte(1024),
   backups: z.number().int().gte(1),
 });
