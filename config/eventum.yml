@@ -78,12 +78,12 @@ generation.queue.max_timestamp_batches: 10
 generation.queue.max_event_batches: 10
 
 
-# Whether to keep chronological order of timestamps by disabling output plugins
-# concurrency
+# Whether to keep chronological order of event using their timestamps
+# by disabling output plugins concurrency
 # Optional, default is false
 generation.keep_order: false
 
-# Maximum number of concurrent write operations performed by output plugins
+# Maximum number of write operations performed by output plugins concurrently
 # Optional, default is 100
 generation.max_concurrency: 100
 

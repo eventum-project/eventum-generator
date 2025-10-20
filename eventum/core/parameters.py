@@ -75,12 +75,12 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
         Queue parameters.
 
     keep_order : bool, default=False
-        Whether to keep chronological order of timestamps by disabling
-        output plugins concurrency.
+        Whether to keep chronological order of events using their
+        timestamps by disabling output plugins concurrency.
 
     max_concurrency : int, default=100
-        Maximum number of concurrent write operations performed by
-        output plugins.
+        Maximum number of write operations performed by output plugins
+        concurrently.
 
     write_timeout : int, default=10
         Timeout (in seconds) before canceling single write task.
