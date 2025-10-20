@@ -91,7 +91,7 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
     batch: BatchParameters = Field(default_factory=BatchParameters)
     queue: QueueParameters = Field(default_factory=QueueParameters)
     keep_order: bool = Field(default=False)
-    max_concurrency: int = Field(default=100)
+    max_concurrency: int = Field(default=100, ge=1)
     write_timeout: int = Field(default=10, ge=1)
 
     @field_validator('timezone')
