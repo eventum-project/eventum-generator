@@ -1,5 +1,6 @@
 """Main application definition."""
 
+import ssl
 from threading import Thread
 from typing import TYPE_CHECKING
 
@@ -308,6 +309,12 @@ class App:
                 'ssl_ca_certs': self._settings.api.ssl.ca_cert,
                 'ssl_certfile': self._settings.api.ssl.cert,
                 'ssl_keyfile': self._settings.api.ssl.cert_key,
+                'ssl_cert_reqs': {
+                    None: ssl.CERT_NONE,
+                    'none': ssl.CERT_NONE,
+                    'optional': ssl.CERT_OPTIONAL,
+                    'required': ssl.CERT_REQUIRED,
+                }[self._settings.api.ssl.verify_mode],
             }
         else:
             ssl_settings = {}
