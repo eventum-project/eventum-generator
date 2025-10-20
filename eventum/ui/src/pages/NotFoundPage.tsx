@@ -2,7 +2,7 @@ import { Button, Center, Container, Title } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 
 import NotFoundSvg from '@/assets/notFound.svg?react';
-import PageIllustration from '@/components/PageIllustration';
+import PageIllustration from '@/components/ui/PageIllustration';
 
 export default function NotFound() {
   const navigate = useNavigate();

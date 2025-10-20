@@ -1,7 +1,7 @@
 import { Button, Center, Container, Text, Title } from '@mantine/core';
 
 import ErrorSVG from '@/assets/error.svg?react';
-import PageIllustration from '@/components/PageIllustration';
+import PageIllustration from '@/components/ui/PageIllustration';
 
 export default function ErrorPage({
   error,
