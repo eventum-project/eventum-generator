@@ -12,3 +12,13 @@
   --avatar-color: var(--mantine-color-primary-5) !important;
   --avatar-bg: var(--mantine-color-primary-1) !important;
 }
+
+h2 {
+  scroll-margin-top: 80px; /* fix hidden title under app header  */
+}
+
+:root[data-mantine-color-scheme='light'] {
+  --mantine-color-red-text: var(--mantine-color-red-6);
+  --mantine-color-blue-text: var(--mantine-color-blue-6);
+  --mantine-color-orange-text: var(--mantine-color-orange-5);
+}
