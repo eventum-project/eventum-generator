@@ -21,6 +21,13 @@ api.port: 9474
 # Optional, default is true
 api.ssl.enabled: true
 
+# Verification mode of SSL connections. The default null value
+# is the same as "none", but null value can also be used as
+# meaningful value of "not provided" when SSL is disabled.
+# Available values are null, "none", "optional", "required"
+# Optional, default is null
+api.ssl.verify_mode: null
+
 # Absolute path to CA certificate
 # Optional, default is null
 api.ssl.ca_cert: null
@@ -88,7 +95,7 @@ generation.write_timeout : 10
 # =============================== Log Parameters ==============================
 
 # Log level
-# Available value are "debug", "info", "warning", "error", "critical"
+# Available values are "debug", "info", "warning", "error", "critical"
 # Optional, default is "info"
 log.level: info
 
@@ -122,4 +129,3 @@ path.keyring_cryptfile: /app/eventum/config/cryptfile.cfg
 # endpoints.
 # Optional, default is "generator.yml"
 generator_config_filename: generator.yml
-        
