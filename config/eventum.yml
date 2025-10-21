@@ -94,15 +94,23 @@ generation.write_timeout : 10
 
 # =============================== Log Parameters ==============================
 
-# Log level
+# Logging level
 # Available values are "debug", "info", "warning", "error", "critical"
 # Optional, default is "info"
 log.level: info
 
-# Format format
+# Logging format
 # Available options are "plain" and "json"
 # Optional, default is "plain"
 log.format: plain
+
+# Max bytes for log file before rotation.
+# Optional, default is 10485760 (10MiB)
+log.max_bytes: 10485760
+
+# Number of rotated log files to keep.
+# Optional, default is 5
+log.backups: 5
 
 # ============================== Path Parameters ==============================
 

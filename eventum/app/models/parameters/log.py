@@ -12,16 +12,16 @@ class LogParameters(BaseModel, extra='forbid', frozen=True):
     ----------
     level : Literal['debug', 'info', 'warning', 'error', 'critical'],\
         default='info'
-        Log level.
+        Logging level.
 
     format : Literal['plain', 'json'], default='plain'
-        Format format.
+        Logging format.
 
     max_bytes : int, default=10485760
-        Max bytes for log file before triggering rollover.
+        Max bytes for log file before rotation.
 
     backups : int, default=5
-        Number of rolled over log files to keep.
+        Number of rotated log files to keep.
 
     """
 
