@@ -22,3 +22,9 @@ h2 {
   --mantine-color-blue-text: var(--mantine-color-blue-6);
   --mantine-color-orange-text: var(--mantine-color-orange-5);
 }
+
+.mantine-Notifications-root {
+  --mantine-color-red-filled: var(--mantine-color-red-5);
+  --mantine-color-green-filled: var(--mantine-color-green-5);
+  --mantine-color-blue-filled: var(--mantine-color-blue-5);
+}
