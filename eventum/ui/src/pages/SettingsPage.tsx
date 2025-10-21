@@ -22,7 +22,7 @@ import {
 import { useForm } from '@mantine/form';
 import {
   IconAlertSquareRounded,
-  IconApiOff,
+  IconAlertTriangle,
   IconCalculator,
   IconInfoCircle,
   IconLockExclamation,
@@ -142,7 +142,7 @@ export default function SettingsPage() {
                 />
                 <Alert
                   variant="default"
-                  icon={<Box c="orange" component={IconApiOff}></Box>}
+                  icon={<Box c="orange" component={IconAlertTriangle}></Box>}
                   title="Disabling API"
                   hidden={form.values.api.enabled}
                 >
@@ -570,7 +570,6 @@ export default function SettingsPage() {
                       Timestamps queue ~
                       <b>
                         {form.values.generation.batch.size !== null ? (
-                          // eslint-disable-next-line @typescript-eslint/no-unsafe-call
                           bytes(
                             form.values.generation.batch.size *
                               form.values.generation.queue
@@ -589,7 +588,6 @@ export default function SettingsPage() {
                       Events queue ~
                       <b>
                         {form.values.generation.batch.size !== null ? (
-                          // eslint-disable-next-line @typescript-eslint/no-unsafe-call
                           bytes(
                             form.values.generation.batch.size *
                               form.values.generation.queue.max_event_batches *
@@ -610,35 +608,63 @@ export default function SettingsPage() {
                 </Title>
                 <Divider my="sm" />
                 <TextInput
-                  label="Generator configuration file name"
+                  label={
+                    <LabelWithTooltip
+                      label="Generator configuration file name"
+                      tooltip={`Filename for generator configurations.
+                        This parameter is used by the API for detection directories with generator configurations.
+                        Directory with generator configuration named other than this parameter value will not be operable using API endpoints.`}
+                      maw="500px"
+                    />
+                  }
                   placeholder="file name (e.g. generator.yml)"
                   {...form.getInputProps('path.generator_config_filename', {
                     type: 'input',
                   })}
                 />
                 <TextInput
-                  label="Path to generators directory"
+                  label={
+                    <LabelWithTooltip
+                      label="Path to generators directory"
+                      tooltip="Absolute path to directory with generators configuration files"
+                    />
+                  }
                   placeholder="/path/to/generators/"
                   {...form.getInputProps('path.generators_dir', {
                     type: 'input',
                   })}
                 />
                 <TextInput
-                  label="Path to startup file"
+                  label={
+                    <LabelWithTooltip
+                      label="Path to startup file"
+                      tooltip="Absolute path to file with list of generators to run at startup"
+                    />
+                  }
                   placeholder="/path/to/startup.yml"
                   {...form.getInputProps('path.startup', {
                     type: 'input',
                   })}
                 />
                 <TextInput
-                  label="Path to keyring file"
+                  label={
+                    <LabelWithTooltip
+                      label="Path to keyring file"
+                      tooltip="Absolute path to keyring encrypted file with stored secrets"
+                    />
+                  }
                   placeholder="/path/to/cryptfile_pass.cfg"
                   {...form.getInputProps('path.keyring_cryptfile', {
                     type: 'input',
                   })}
                 />
                 <TextInput
-                  label="Path to logs directory"
+                  label={
+                    <LabelWithTooltip
+                      label="Path to logs directory"
+                      tooltip="Absolute path to logs directory"
+                    />
+                  }
                   placeholder="/path/to/logs/"
                   {...form.getInputProps('path.logs', {
                     type: 'input',
@@ -649,7 +675,12 @@ export default function SettingsPage() {
                 </Title>
                 <Divider my="sm" />
                 <Select
-                  label="Logging level"
+                  label={
+                    <LabelWithTooltip
+                      label="Logging level"
+                      tooltip="Minimal severity of messages to log"
+                    />
+                  }
                   data={LOG_LEVELS}
                   placeholder="level"
                   {...form.getInputProps('log.level', {
@@ -657,7 +688,12 @@ export default function SettingsPage() {
                   })}
                 />
                 <Select
-                  label="Logs format"
+                  label={
+                    <LabelWithTooltip
+                      label="Logs format"
+                      tooltip="Logging format"
+                    />
+                  }
                   data={LOG_FORMATS}
                   placeholder="format"
                   {...form.getInputProps('log.format', {
@@ -669,14 +705,31 @@ export default function SettingsPage() {
                 </Title>
                 <Group grow>
                   <NumberInput
-                    label="Maximum bytes per file"
+                    label={
+                      <LabelWithTooltip
+                        label="Maximum bytes"
+                        tooltip="Maximum bytes for log file before rotation"
+                      />
+                    }
+                    min={1024}
+                    allowDecimal={false}
+                    suffix={` (${bytes(form.values.log.max_bytes, {
+                      decimalPlaces: 2,
+                    })})`}
                     placeholder="bytes"
                     {...form.getInputProps('log.max_bytes', {
                       type: 'input',
                     })}
                   />
                   <NumberInput
-                    label="Rotated files count"
+                    label={
+                      <LabelWithTooltip
+                        label="Rotated files count"
+                        tooltip="Number of rotated log files to keep"
+                      />
+                    }
+                    min={1}
+                    allowDecimal={false}
                     placeholder="number"
                     {...form.getInputProps('log.backups', {
                       type: 'input',
@@ -712,4 +765,16 @@ export default function SettingsPage() {
       </Container>
     );
   }
+
+  return (
+    <Container size="md" mt="xl">
+      <Alert
+        variant="default"
+        icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
+        title="Failed to get instance settings"
+      >
+        Data for this page was not properly loaded. Please try refresh the page.
+      </Alert>
+    </Container>
+  );
 }
