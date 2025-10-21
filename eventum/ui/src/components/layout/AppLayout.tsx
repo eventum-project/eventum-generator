@@ -296,8 +296,8 @@ export default function AppLayout({
         <Modal
           opened={openedAboutModel}
           onClose={closeAboutModal}
-          title={<Title order={4}>About Eventum</Title>}
-          size="lg"
+          title="About Eventum"
+          size="md"
         >
           {isInstanceInfoLoading ? (
             <Center>
@@ -358,9 +358,9 @@ export default function AppLayout({
                 },
               ].map((section, index, arr) => (
                 <Stack key={section.sectionName}>
-                  <Group mt="sm">
-                    <section.icon />
-                    <Title order={5} fw={600}>
+                  <Group mt="sm" gap="xs">
+                    <section.icon size="19px" />
+                    <Title order={6} fw={600}>
                       {section.sectionName}
                     </Title>
                   </Group>
@@ -368,7 +368,7 @@ export default function AppLayout({
                     <Stack gap="xs">
                       {section.sectionItems.map((sectionItem) => (
                         <Group key={sectionItem.label}>
-                          <Text>
+                          <Text size="sm">
                             {sectionItem.label}: {sectionItem.value}
                           </Text>
                         </Group>
@@ -401,7 +401,9 @@ export default function AppLayout({
                     </Tooltip>
                   )}
                 </CopyButton>
-                <Button onClick={closeAboutModal}>Close</Button>
+                <Button onClick={closeAboutModal} variant="default">
+                  Close
+                </Button>
               </Group>
             </Stack>
           ) : (
