@@ -4,6 +4,7 @@ import {
   createTheme,
 } from '@mantine/core';
 import '@mantine/core/styles.css';
+import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -50,9 +51,11 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <MantineProvider theme={theme} defaultColorScheme="dark">
         <Notifications />
-        <BrowserRouter>
-          <AppRouter />
-        </BrowserRouter>
+        <ModalsProvider>
+          <BrowserRouter>
+            <AppRouter />
+          </BrowserRouter>
+        </ModalsProvider>
       </MantineProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
