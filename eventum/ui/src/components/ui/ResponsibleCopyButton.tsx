@@ -11,9 +11,9 @@ import { FC } from 'react';
 interface ResponsibleCopyButtonProps {
   content: string;
   label: string;
-  tooltipPosition: FloatingPosition | undefined;
+  tooltipPosition?: FloatingPosition;
   // eslint-disable-next-line sonarjs/no-useless-intersection
-  size: number | (string & {}) | MantineSize | undefined;
+  size?: number | (string & {}) | MantineSize;
 }
 
 export const ResponsibleCopyButton: FC<ResponsibleCopyButtonProps> = ({
