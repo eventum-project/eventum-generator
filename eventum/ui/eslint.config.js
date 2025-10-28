@@ -36,6 +36,7 @@ export default tseslint.config({
     'unicorn/no-nested-ternary': 'off',
     'sonarjs/no-nested-conditional': 'off',
     'unicorn/no-negated-condition': 'off',
+    'unicorn/prefer-switch': 'off',
   },
   languageOptions: {
     ecmaVersion: 2020,
