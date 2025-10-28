@@ -13,11 +13,10 @@ import {
 } from '@mantine/core';
 import { isNotEmpty, useForm } from '@mantine/form';
 import { IconAlertSquareRounded } from '@tabler/icons-react';
-import { AxiosError } from 'axios';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ZodError } from 'zod';
 
+import { APIError } from '@/api/errors';
 import { useLoginMutation } from '@/api/hooks/useAuth';
 import { ROUTE_PATHS } from '@/routing/paths';
 
@@ -53,27 +52,10 @@ export default function SignInPage() {
           void navigate(ROUTE_PATHS.MAIN);
         },
         onError: (error: unknown) => {
-          if (error instanceof AxiosError) {
-            if (error?.status !== undefined && error.status >= 500) {
-              setCommonError('Server error, try again later');
-              return;
-            }
-
-            const responseData = error?.response?.data as
-              | { detail?: string }
-              | undefined;
-            const detail = responseData?.detail;
-
-            if (detail && typeof detail === 'string') {
-              setCommonError(detail);
-              return;
-            }
-
+          if (error instanceof APIError) {
             setCommonError(error.message);
-          } else if (error instanceof ZodError) {
-            setCommonError('Server respond with invalid data');
           } else {
-            setCommonError('Failed to connect to server');
+            setCommonError('Unknown error');
           }
         },
       }
