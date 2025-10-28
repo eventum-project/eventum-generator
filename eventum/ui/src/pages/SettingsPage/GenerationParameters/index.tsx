@@ -28,9 +28,7 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
 }) => {
   const [batchingMode, setBatchingMode] = useState<
     'size' | 'delay' | 'combined'
-  >();
-
-  setBatchingMode(
+  >(
     form.values.generation.batch.size !== null &&
       form.values.generation.batch.delay !== null
       ? 'combined'

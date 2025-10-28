@@ -72,12 +72,12 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    if (instanceSettings) {
+    if (isSettingsSuccess) {
       form.initialize(instanceSettings);
       form.resetDirty();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [instanceSettings]);
+  }, [isSettingsSuccess]);
 
   if (isLoadingSettings) {
     return (
