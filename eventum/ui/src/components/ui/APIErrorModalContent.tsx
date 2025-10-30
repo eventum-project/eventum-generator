@@ -35,8 +35,8 @@ export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
             <Text size="sm">Headers:</Text>
             <Spoiler
               maxHeight={95}
-              showLabel={<Text size="sm">Show more</Text>}
-              hideLabel={<Text size="sm">Hide</Text>}
+              showLabel={<Text size="xs">Show more</Text>}
+              hideLabel={<Text size="xs">Hide</Text>}
             >
               <Code block>
                 {JSON.stringify(error.requestConfig.headers, undefined, 2)}
@@ -46,8 +46,8 @@ export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
             <Text size="sm">Body:</Text>
             <Spoiler
               maxHeight={95}
-              showLabel={<Text size="sm">Show more</Text>}
-              hideLabel={<Text size="sm">Hide</Text>}
+              showLabel={<Text size="xs">Show more</Text>}
+              hideLabel={<Text size="xs">Hide</Text>}
             >
               <Code block>
                 {error.requestConfig.data !== undefined ? (
@@ -74,8 +74,8 @@ export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
             <Text size="sm">Headers:</Text>
             <Spoiler
               maxHeight={95}
-              showLabel={<Text size="sm">Show more</Text>}
-              hideLabel={<Text size="sm">Hide</Text>}
+              showLabel={<Text size="xs">Show more</Text>}
+              hideLabel={<Text size="xs">Hide</Text>}
             >
               <Code block>
                 {JSON.stringify(error.response.headers, undefined, 2)}
@@ -85,8 +85,8 @@ export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
             <Text size="sm">Body:</Text>
             <Spoiler
               maxHeight={95}
-              showLabel={<Text size="sm">Show more</Text>}
-              hideLabel={<Text size="sm">Hide</Text>}
+              showLabel={<Text size="xs">Show more</Text>}
+              hideLabel={<Text size="xs">Hide</Text>}
             >
               <Code block>
                 {error.response.data !== undefined ? (
