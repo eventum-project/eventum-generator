@@ -1,9 +1,9 @@
 import { apiClient } from '@/api/client';
 import { Username, usernameSchema } from '@/api/routes/auth/schemas';
+import { validateResponse } from '@/api/wrappers';
 
 export async function getCurrentUser(): Promise<Username> {
-  const res = await apiClient.get('/auth/me');
-  return usernameSchema.parse(res.data);
+  return await validateResponse(usernameSchema, apiClient.get('/auth/me'));
 }
 
 export async function login(

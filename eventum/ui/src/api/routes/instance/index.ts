@@ -5,15 +5,20 @@ import {
   Settings,
   SettingsSchema,
 } from '@/api/routes/instance/schemas';
+import { validateResponse } from '@/api/wrappers';
 
 export async function getInstanceInfo(): Promise<InstanceInfo> {
-  const res = await apiClient.get('/instance/info');
-  return InstanceInfoSchema.parse(res.data);
+  return await validateResponse(
+    InstanceInfoSchema,
+    apiClient.get('/instance/info')
+  );
 }
 
 export async function getInstanceSettings(): Promise<Settings> {
-  const res = await apiClient.get('/instance/settings');
-  return SettingsSchema.parse(res.data);
+  return await validateResponse(
+    SettingsSchema,
+    apiClient.get('/instance/settings')
+  );
 }
 
 export async function updateInstanceSettings(
