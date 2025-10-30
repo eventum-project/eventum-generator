@@ -3,7 +3,9 @@ export interface APIErrorOptions {
   details?: string;
   status?: number;
   responseBody?: unknown;
-  responseValidationErrors?: unknown;
+  responseValidationErrors?: {
+    errors: string[];
+  };
 }
 
 export class APIError extends Error {

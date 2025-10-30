@@ -1,5 +1,4 @@
 import axios, { AxiosError } from 'axios';
-import { ZodError } from 'zod/v3';
 
 import { APIError } from './errors';
 
@@ -37,9 +36,9 @@ apiClient.interceptors.response.use(
       } else if (statusCode === 403) {
         message = 'Forbidden';
       } else if (statusCode === 404) {
-        message = 'Not found';
+        message = 'Resource not found';
       } else if (statusCode === 409) {
-        message = 'Already exists';
+        message = 'Resource already exists';
       } else if (statusCode === 413) {
         message = 'Content too large';
       } else if (statusCode === 422) {
@@ -54,15 +53,6 @@ apiClient.interceptors.response.use(
           details: `Server respond with status code ${error.response.status}`,
           responseBody: response,
           status: statusCode,
-        })
-      );
-    } else if (error instanceof ZodError) {
-      return Promise.reject(
-        new APIError({
-          message: 'Unexpected server response',
-          details:
-            'Server respond with body that does not match to defined schema',
-          responseValidationErrors: error.flatten(),
         })
       );
     } else if (error instanceof Error) {
