@@ -54,7 +54,7 @@ export const AboutModal: FC = () => {
 
   if (isInstanceInfoSuccess) {
     return (
-      <Stack>
+      <Stack gap="xs">
         {[
           {
             sectionName: 'Application',
@@ -91,16 +91,19 @@ export const AboutModal: FC = () => {
               },
             ],
           },
-        ].map((section, index, arr) => (
-          <Stack key={section.sectionName}>
-            <Group mt="sm" gap="xs">
+        ].map((section) => (
+          <Stack gap="4px" mb="xs" key={section.sectionName}>
+            <Group gap="xs">
               <section.icon size="19px" />
               <Title order={6} fw={600}>
                 {section.sectionName}
               </Title>
             </Group>
+
+            <Divider my="4px" />
+
             {
-              <Stack gap="xs">
+              <Stack gap="4px">
                 {section.sectionItems.map((sectionItem) => (
                   <Group key={sectionItem.label}>
                     <Text size="sm">
@@ -110,10 +113,9 @@ export const AboutModal: FC = () => {
                 ))}
               </Stack>
             }
-            {index < arr.length - 1 ? <Divider /> : <></>}
           </Stack>
         ))}
-        <Group justify="flex-end" mt="xs" gap="xs">
+        <Group justify="flex-end" gap="xs">
           <ResponsibleCopyButton
             content={JSON.stringify(instanceInfo, undefined, 2)}
             label="Copy full info"
