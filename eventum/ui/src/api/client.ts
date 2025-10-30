@@ -18,13 +18,17 @@ apiClient.interceptors.response.use(
     if (error instanceof AxiosError) {
       if (error.response === undefined) {
         return Promise.reject(
-          new APIError({ message: 'Request failed', details: error.message })
+          new APIError({
+            message: 'Request failed',
+            details: error.message,
+            requestConfig: error.config,
+          })
         );
       }
 
       const statusCode = error.response.status;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const response = error.response.data;
+      const response = error.response;
+      const requestConfig = error.config;
 
       let message: string;
 
@@ -50,9 +54,9 @@ apiClient.interceptors.response.use(
       return Promise.reject(
         new APIError({
           message: message,
-          details: `Server respond with status code ${error.response.status}`,
-          responseBody: response,
-          status: statusCode,
+          details: `Server respond with status code ${statusCode}`,
+          response: response,
+          requestConfig: requestConfig,
         })
       );
     } else if (error instanceof Error) {
