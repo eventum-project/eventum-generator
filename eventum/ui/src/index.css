@@ -1,4 +1,19 @@
-/* Light theme overrides */
+:root[data-mantine-color-scheme='light'] {
+  --mantine-color-red-text: var(--mantine-color-red-6);
+  --mantine-color-blue-text: var(--mantine-color-blue-6);
+  --mantine-color-orange-text: var(--mantine-color-orange-5);
+}
+
+h2 {
+  scroll-margin-top: 80px; /* fix hidden title under app header  */
+}
+
+.mantine-Notifications-root {
+  --mantine-color-red-filled: var(--mantine-color-red-5);
+  --mantine-color-green-filled: var(--mantine-color-green-5);
+  --mantine-color-blue-filled: var(--mantine-color-blue-5);
+}
+
 [data-mantine-color-scheme='light'] .mantine-Badge-root {
   --badge-color: var(--mantine-color-primary-5) !important;
   --badge-bg: var(--mantine-color-primary-1) !important;
@@ -13,18 +28,10 @@
   --avatar-bg: var(--mantine-color-primary-1) !important;
 }
 
-h2 {
-  scroll-margin-top: 80px; /* fix hidden title under app header  */
+[data-mantine-color-scheme='light'] .mantine-Anchor-root {
+  --mantine-color-anchor: var(--mantine-color-primary-5) !important;
 }
 
-:root[data-mantine-color-scheme='light'] {
-  --mantine-color-red-text: var(--mantine-color-red-6);
-  --mantine-color-blue-text: var(--mantine-color-blue-6);
-  --mantine-color-orange-text: var(--mantine-color-orange-5);
-}
-
-.mantine-Notifications-root {
-  --mantine-color-red-filled: var(--mantine-color-red-5);
-  --mantine-color-green-filled: var(--mantine-color-green-5);
-  --mantine-color-blue-filled: var(--mantine-color-blue-5);
+[data-mantine-color-scheme='dark'] .mantine-Anchor-root {
+  --mantine-color-anchor: var(--mantine-color-primary-3) !important;
 }
