@@ -47,7 +47,7 @@ export const LoggingParameters: FC<LoggingParametersProps> = ({ form }) => {
       <Title order={3} fw={500} mt="md">
         Rotation
       </Title>
-      <Group grow>
+      <Group grow align="start">
         <NumberInput
           label={
             <LabelWithTooltip
