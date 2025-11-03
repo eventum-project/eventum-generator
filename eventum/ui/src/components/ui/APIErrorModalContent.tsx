@@ -3,7 +3,7 @@ import { FC } from 'react';
 
 import { APIError } from '@/api/errors';
 
-interface APIErrorModalContentProps {
+export interface APIErrorModalContentProps {
   error: APIError | Error;
 }
 
