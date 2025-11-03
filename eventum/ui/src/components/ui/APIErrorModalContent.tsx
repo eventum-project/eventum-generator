@@ -4,7 +4,7 @@ import { FC } from 'react';
 import { APIError } from '@/api/errors';
 
 export interface APIErrorModalContentProps {
-  error: APIError | Error;
+  error: unknown;
 }
 
 export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
@@ -102,7 +102,9 @@ export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
         )}
       </Stack>
     );
-  } else {
+  } else if (error instanceof Error) {
     return <>{error.message}</>;
+  } else {
+    return <>Unknown error: {typeof error}</>;
   }
 };
