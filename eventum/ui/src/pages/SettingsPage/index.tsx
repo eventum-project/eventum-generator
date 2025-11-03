@@ -12,7 +12,6 @@ import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { IconAlertSquareRounded } from '@tabler/icons-react';
-import { AxiosError } from 'axios';
 import { useEffect } from 'react';
 import validator from 'validator';
 
@@ -21,14 +20,20 @@ import { GenerationParameters } from './GenerationParameters';
 import { LoggingParameters } from './LoggingParameters';
 import { PathParameters } from './PathParameters';
 import { SavePanel } from './SavePanelContent';
+import { APIError } from '@/api/errors';
 import {
   useInstanceSettings,
   useRestartInstanceMutation,
   useUpdateInstanceSettingsMutation,
 } from '@/api/hooks/useInstance';
 import { Settings } from '@/api/routes/instance/schemas';
+import {
+  ValidationErrorDetails,
+  ValidationErrorDetailsSchema,
+} from '@/api/schemas';
 import { FloatingPanel } from '@/components/ui/FloatingPanel';
 import { FloatingTableOfContents } from '@/components/ui/FloatingTableOfContents';
+import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 export default function SettingsPage() {
   const {
@@ -96,6 +101,7 @@ export default function SettingsPage() {
           title="Failed to get instance settings"
         >
           {settingsError.message}
+          <ShowErrorDetailsAnchor error={settingsError} prependDot />
         </Alert>
       </Container>
     );
@@ -106,99 +112,73 @@ export default function SettingsPage() {
       { settings: values },
       {
         onSuccess: () => {
+          notifications.show({
+            title: 'Success',
+            message: 'Settings was successfully updated',
+            color: 'green',
+          });
+          notifications.show({
+            title: 'Info',
+            message:
+              'Restarting the instance. Service may be unavailable for some time',
+            color: 'blue',
+          });
           restartInstance.mutate(undefined, {
-            onSuccess: () => {
+            onError: (error) => {
               notifications.show({
-                title: 'Success',
-                message: 'Settings was successfully updated',
-                color: 'green',
+                title: 'Error',
+                message: (
+                  <>
+                    Failed to restart instance.{' '}
+                    <ShowErrorDetailsAnchor error={error} />
+                  </>
+                ),
+                color: 'red',
               });
-              notifications.show({
-                title: 'Info',
-                message: 'Instance is currently restarting',
-                color: 'blue',
-              });
-            },
-            onError: () => {
-              if (settingsError instanceof AxiosError) {
-                if (
-                  settingsError?.status !== undefined &&
-                  settingsError.status >= 500
-                ) {
-                  notifications.show({
-                    title: 'Error',
-                    message: 'Server error, please try again later',
-                    color: 'red',
-                  });
-                  return;
-                }
-
-                const responseData = settingsError?.response?.data as
-                  | { detail?: string }
-                  | undefined;
-                const detail = responseData?.detail;
-
-                if (detail && typeof detail === 'string') {
-                  notifications.show({
-                    title: 'Error',
-                    message: detail,
-                    color: 'red',
-                  });
-                  return;
-                }
-
-                notifications.show({
-                  title: 'Error',
-                  message: settingsError.message,
-                  color: 'red',
-                });
-              } else {
-                notifications.show({
-                  title: 'Error',
-                  message: 'Failed to connect to server',
-                  color: 'red',
-                });
-              }
             },
           });
           form.resetDirty();
         },
         onError: (error: unknown) => {
-          if (error instanceof AxiosError) {
-            if (error?.status !== undefined && error.status >= 500) {
+          if (error instanceof APIError && error?.response?.status === 422) {
+            let validationDetails: ValidationErrorDetails;
+
+            try {
+              validationDetails = ValidationErrorDetailsSchema.parse(
+                error.response.data
+              );
+            } catch (error: unknown) {
               notifications.show({
                 title: 'Error',
-                message: 'Server error, please try again later',
+                message: (
+                  <>
+                    Failed to parse server validation errors{' '}
+                    <ShowErrorDetailsAnchor error={error} />
+                  </>
+                ),
                 color: 'red',
               });
               return;
             }
 
-            const responseData = error?.response?.data as
-              | { detail?: string }
-              | undefined;
-            const detail = responseData?.detail;
-
-            // TODO: implement setting errors to form
-
-            if (detail && typeof detail === 'string') {
-              notifications.show({
-                title: 'Error',
-                message: detail,
-                color: 'red',
-              });
-              return;
+            for (const validationError of validationDetails.detail) {
+              const fieldPath = validationError.loc.slice(1).join('.');
+              form.setFieldError(fieldPath, validationError.msg);
             }
-
             notifications.show({
               title: 'Error',
-              message: error.message,
+              message: 'Failed to update settings. See form errors',
               color: 'red',
             });
           } else {
             notifications.show({
               title: 'Error',
-              message: 'Failed to connect to server',
+              message: (
+                <>
+                  Failed to update settings.{' '}
+                  <ShowErrorDetailsAnchor error={error} />
+                </>
+              ),
               color: 'red',
             });
           }
@@ -232,6 +212,7 @@ export default function SettingsPage() {
                           </Text>
                         ),
                         onConfirm: () => handleSubmit(form.getValues()),
+                        labels: { cancel: 'Cancel', confirm: 'Confirm' },
                       })
                     }
                   />
