@@ -1,12 +1,14 @@
 """Module for securely storing and retrieving secrets using a keyring."""
 
 import os
+from configparser import ConfigParser
 from functools import lru_cache
 from pathlib import Path
 from typing import TypedDict
 
 import keyrings.cryptfile.cryptfile as crypt  # type: ignore[import-untyped]
 import structlog
+from keyrings.cryptfile.escape import unescape  # type: ignore[import-untyped]
 
 DEFAULT_PASSWORD = 'eventum'  # noqa: S105
 KEYRING_PASS_ENV_VAR = 'EVENTUM_KEYRING_PASSWORD'  # noqa: S105
@@ -57,6 +59,64 @@ class SecuritySettings(TypedDict):
 SECURITY_SETTINGS = SecuritySettings(cryptfile_location=None)
 
 
+def _get_keyring(path: Path | None = None) -> crypt.CryptFileKeyring:
+    """Get keyring instance.
+
+    path : Path | None, default=None
+        Path to keyring file, default location is used if none is
+        provided and security setting cryptfile_location is none.
+
+    Returns
+    -------
+    crypt.CryptFileKeyring
+        Keyring instance.
+
+    """
+    keyring = crypt.CryptFileKeyring()
+
+    path = path or SECURITY_SETTINGS['cryptfile_location']
+    if path is not None:
+        keyring.file_path = path  # type: ignore[assignment]
+
+    keyring.keyring_key = get_keyring_password()
+
+    return keyring
+
+
+def list_secrets(path: Path | None = None) -> list[str]:
+    """Get secret names from keyring.
+
+    Parameters
+    ----------
+    path : Path | None, default=None
+        Path to keyring file, default location is used if none is
+        provided and security setting cryptfile_location is none.
+
+    Returns
+    -------
+    list[str]
+        List with names of secrets.
+
+    """
+    keyring = _get_keyring(path)
+    keyring_path = Path(str(keyring.file_path))
+
+    if not keyring_path.exists():
+        return []
+
+    keyring_content = keyring_path.read_text()
+
+    config = ConfigParser()
+    config.read_string(keyring_content)
+
+    try:
+        service_section = config[KEYRING_SERVICE_NAME]
+    except KeyError:
+        return []
+
+    return [unescape(secret_name) for secret_name in service_section]
+
+
 def get_secret(name: str, path: Path | None = None) -> str:
     """Get secret from keyring.
 
@@ -88,13 +148,7 @@ def get_secret(name: str, path: Path | None = None) -> str:
         msg = 'Name of secret cannot be blank'
         raise ValueError(msg)
 
-    keyring = crypt.CryptFileKeyring()
-
-    path = path or SECURITY_SETTINGS['cryptfile_location']
-    if path is not None:
-        keyring.file_path = path  # type: ignore[assignment]
-
-    keyring.keyring_key = get_keyring_password()
+    keyring = _get_keyring(path)
 
     try:
         secret = keyring.get_password(
@@ -141,13 +195,7 @@ def set_secret(name: str, value: str, path: Path | None = None) -> None:
         msg = 'Name and value of secret cannot be empty'
         raise ValueError(msg)
 
-    keyring = crypt.CryptFileKeyring()
-
-    path = path or SECURITY_SETTINGS['cryptfile_location']
-    if path is not None:
-        keyring.file_path = path  # type: ignore[assignment]
-
-    keyring.keyring_key = get_keyring_password()
+    keyring = _get_keyring(path)
 
     try:
         keyring.set_password(  # type: ignore[call-arg]
@@ -186,13 +234,7 @@ def remove_secret(name: str, path: Path | None = None) -> None:
         msg = 'Name of secret cannot be blank'
         raise ValueError(msg)
 
-    keyring = crypt.CryptFileKeyring()
-
-    path = path or SECURITY_SETTINGS['cryptfile_location']
-    if path is not None:
-        keyring.file_path = path  # type: ignore[assignment]
-
-    keyring.keyring_key = get_keyring_password()
+    keyring = _get_keyring(path)
 
     try:
         keyring.delete_password(
