@@ -6,4 +6,5 @@ export const ROUTE_PATHS = {
   STARTUP: '/startup',
   SECRETS: '/secrets',
   SETTINGS: '/settings',
+  MANAGEMENT: '/management',
 };

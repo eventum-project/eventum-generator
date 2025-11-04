@@ -35,3 +35,13 @@ h2 {
 [data-mantine-color-scheme='dark'] .mantine-Anchor-root {
   --mantine-color-anchor: var(--mantine-color-primary-3) !important;
 }
+
+[data-mantine-color-scheme='light'] .mantine-Button-root {
+  --mantine-color-red-filled: var(--mantine-color-red-5);
+  --mantine-color-red-filled-hover: var(--mantine-color-red-6);
+}
+
+[data-mantine-color-scheme='dark'] .mantine-Button-root {
+  --mantine-color-red-filled: var(--mantine-color-red-4);
+  --mantine-color-red-filled-hover: var(--mantine-color-red-5);
+}

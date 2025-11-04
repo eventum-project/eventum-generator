@@ -49,6 +49,12 @@ const SettingsPage = lazy(
       default: React.ComponentType;
     }>
 );
+const ManagementPage = lazy(
+  () =>
+    import('@/pages/ManagementPage') as Promise<{
+      default: React.ComponentType;
+    }>
+);
 const NotFoundPage = lazy(
   () =>
     import('@/pages/NotFoundPage') as Promise<{
@@ -123,6 +129,16 @@ export const routes: RouteObject[] = [
       <PrivateRoute>
         <AppLayout>
           <SettingsPage />
+        </AppLayout>
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: ROUTE_PATHS.MANAGEMENT,
+    element: (
+      <PrivateRoute>
+        <AppLayout>
+          <ManagementPage />
         </AppLayout>
       </PrivateRoute>
     ),

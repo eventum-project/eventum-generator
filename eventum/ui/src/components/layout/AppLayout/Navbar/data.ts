@@ -5,6 +5,7 @@ import {
   IconLock,
   IconPlayerPlay,
   IconRepeat,
+  IconServerCog,
   IconSettings,
   IconUsersGroup,
 } from '@tabler/icons-react';
@@ -45,6 +46,11 @@ export const NAVIGATION_DATA = [
         label: 'Settings',
         icon: IconSettings,
         pathname: ROUTE_PATHS.SETTINGS,
+      },
+      {
+        label: 'Management',
+        icon: IconServerCog,
+        pathname: ROUTE_PATHS.MANAGEMENT,
       },
     ],
   },
