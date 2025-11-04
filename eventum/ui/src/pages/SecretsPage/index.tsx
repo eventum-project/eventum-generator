@@ -108,7 +108,7 @@ export default function SecretsPage() {
 
   if (isSecretNamesSuccess) {
     return (
-      <Container size="lg" mt="xl" mb="4090px">
+      <Container size="lg" mt="xl" mb="400px">
         <Title order={2} fw={500}>
           Secrets
         </Title>
