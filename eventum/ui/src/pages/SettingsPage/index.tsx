@@ -190,7 +190,7 @@ export default function SettingsPage() {
   if (isSettingsSuccess && form.initialized) {
     return (
       <>
-        <Container size="xl" mt="xl" mb="400px">
+        <Container size="xl" mt="xl" mb="490px">
           <Grid gutter="xl">
             <Grid.Col span="auto">
               <form>
