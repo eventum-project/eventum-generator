@@ -5,7 +5,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Body, HTTPException, Path
 
-from eventum.security.manage import get_secret, remove_secret, set_secret
+from eventum.security.manage import (
+    get_secret,
+    list_secrets,
+    remove_secret,
+    set_secret,
+)
 
 router = APIRouter()
 
@@ -33,6 +38,24 @@ async def get_secret_value(
         raise HTTPException(
             status_code=500,
             detail=f'Failed to obtain secret: {e}',
+        ) from None
+
+
+@router.get(
+    '/',
+    description='List all secrets names',
+    response_description='List with names of secrets',
+    responses={
+        500: {'description': 'Failed to list secret names'},
+    },
+)
+async def list_secret_names() -> list[str]:
+    try:
+        return await asyncio.to_thread(lambda: list_secrets())
+    except OSError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f'Failed to list secret names: {e}',
         ) from None
 
 
