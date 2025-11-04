@@ -30,11 +30,11 @@ export function useSetSecretValueMutation() {
   return useMutation({
     mutationFn: ({ name, value }: { name: string; value: string }) =>
       setSecretValue(name, value),
-    onSuccess: (_, variables) => {
-      queryClient.setQueryData(
-        [...SECRETS_QUERY_KEY, variables.name],
-        variables.value
-      );
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: SECRETS_QUERY_KEY,
+        exact: true,
+      });
     },
   });
 }
@@ -45,7 +45,10 @@ export function useDeleteSecretValueMutation() {
   return useMutation({
     mutationFn: ({ name }: { name: string }) => deleteSecretValue(name),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: SECRETS_QUERY_KEY });
+      await queryClient.invalidateQueries({
+        queryKey: SECRETS_QUERY_KEY,
+        exact: true,
+      });
     },
   });
 }

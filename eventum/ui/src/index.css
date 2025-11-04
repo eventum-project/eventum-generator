@@ -1,17 +1,25 @@
+/* ========== Mantine settings ========== */
+
+/* Common styles */
 :root[data-mantine-color-scheme='light'] {
-  --mantine-color-red-text: var(--mantine-color-red-6);
-  --mantine-color-blue-text: var(--mantine-color-blue-6);
-  --mantine-color-orange-text: var(--mantine-color-orange-5);
+  --mantine-color-red-text: var(--mantine-color-red-7) !important;
+  --mantine-color-blue-text: var(--mantine-color-blue-6) !important;
+  --mantine-color-orange-text: var(--mantine-color-orange-5) !important;
+}
+
+:root[data-mantine-color-scheme='dark'] {
+  --mantine-color-red-text: var(--mantine-color-red-5) !important;
 }
 
 h2 {
-  scroll-margin-top: 80px; /* fix hidden title under app header  */
+  scroll-margin-top: 80px !important; /* fix hidden title under app header  */
 }
 
+/* Components styles */
 .mantine-Notifications-root {
-  --mantine-color-red-filled: var(--mantine-color-red-5);
-  --mantine-color-green-filled: var(--mantine-color-green-5);
-  --mantine-color-blue-filled: var(--mantine-color-blue-5);
+  --mantine-color-red-filled: var(--mantine-color-red-5) !important;
+  --mantine-color-green-filled: var(--mantine-color-green-5) !important;
+  --mantine-color-blue-filled: var(--mantine-color-blue-5) !important;
 }
 
 [data-mantine-color-scheme='light'] .mantine-Badge-root {
@@ -37,11 +45,26 @@ h2 {
 }
 
 [data-mantine-color-scheme='light'] .mantine-Button-root {
-  --mantine-color-red-filled: var(--mantine-color-red-5);
-  --mantine-color-red-filled-hover: var(--mantine-color-red-6);
+  --mantine-color-red-filled: var(--mantine-color-red-5) !important;
+  --mantine-color-red-filled-hover: var(--mantine-color-red-6) !important;
 }
 
 [data-mantine-color-scheme='dark'] .mantine-Button-root {
-  --mantine-color-red-filled: var(--mantine-color-red-4);
-  --mantine-color-red-filled-hover: var(--mantine-color-red-5);
+  --mantine-color-red-filled: var(--mantine-color-red-4) !important;
+  --mantine-color-red-filled-hover: var(--mantine-color-red-5) !important;
+}
+
+[data-mantine-color-scheme='light'] .mantine-ActionIcon-root {
+  --mantine-color-red-filled: var(--mantine-color-red-5) !important;
+  --mantine-color-red-filled-hover: var(--mantine-color-red-6) !important;
+}
+
+[data-mantine-color-scheme='dark'] .mantine-ActionIcon-root {
+  --mantine-color-red-filled: var(--mantine-color-red-4) !important;
+  --mantine-color-red-filled-hover: var(--mantine-color-red-5) !important;
+}
+
+/* ========== Tabler settings ========== */
+svg.tabler-icon {
+  stroke-width: 1.6 !important;
 }
