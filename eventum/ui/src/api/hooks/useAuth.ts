@@ -34,8 +34,8 @@ export function useLogoutMutation() {
 
   return useMutation({
     mutationFn: logout,
-    onSuccess: () => {
-      queryClient.removeQueries({ queryKey: CURRENT_USER_QUERY_KEY });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY });
     },
   });
 }
