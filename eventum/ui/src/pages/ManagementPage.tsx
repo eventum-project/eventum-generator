@@ -91,6 +91,8 @@ export default function ManagementPage() {
         </Alert>
         <Group grow>
           <Button
+            h="60px"
+            variant="default"
             onClick={() =>
               modals.openConfirmModal({
                 title: 'Restarting instance',
@@ -110,7 +112,9 @@ export default function ManagementPage() {
             Restart
           </Button>
           <Button
-            color="red"
+            h="60px"
+            variant="default"
+            c="red"
             onClick={() =>
               modals.openConfirmModal({
                 title: 'Stopping instance',
