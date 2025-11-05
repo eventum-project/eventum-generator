@@ -3,11 +3,9 @@ import {
   Box,
   Button,
   Container,
-  Divider,
   Group,
   Stack,
   Text,
-  Title,
 } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
@@ -74,16 +72,12 @@ export default function ManagementPage() {
     });
   }
   return (
-    <Container size="lg" mt="xl" mb="400px">
-      <Title order={2} fw={500}>
-        Instance Management
-      </Title>
-      <Divider my="sm" />
+    <Container size="lg" mt="lg" mb="400px">
       <Stack>
         <Alert
           variant="default"
           icon={<Box c="blue" component={IconInfoSquareRounded}></Box>}
-          title="About management"
+          title="Info"
         >
           Note, that during the restart, web interface may be unavailable for
           some time. After stopping the instance you will not be able to start

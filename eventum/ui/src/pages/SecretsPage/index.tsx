@@ -4,12 +4,10 @@ import {
   Box,
   Center,
   Container,
-  Divider,
   Group,
   Loader,
   Table,
   TextInput,
-  Title,
 } from '@mantine/core';
 import { isNotEmpty, useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
@@ -89,7 +87,7 @@ export default function SecretsPage() {
 
   if (isSecretNamesError) {
     return (
-      <Container size="md" mt="xl">
+      <Container size="md" mt="lg">
         <Alert
           variant="default"
           icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
@@ -104,12 +102,7 @@ export default function SecretsPage() {
 
   if (isSecretNamesSuccess) {
     return (
-      <Container size="lg" mt="xl" mb="400px">
-        <Title order={2} fw={500}>
-          Secrets
-        </Title>
-        <Divider my="sm" />
-
+      <Container size="lg" mt="lg" mb="400px">
         <Table mt="md" highlightOnHover stickyHeader stickyHeaderOffset={60}>
           <Table.Thead>
             <Table.Tr>
