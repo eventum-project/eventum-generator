@@ -83,11 +83,11 @@ export default function ManagementPage() {
         <Alert
           variant="default"
           icon={<Box c="blue" component={IconInfoSquareRounded}></Box>}
-          title="Info"
+          title="About management"
         >
-          You can manually restart or stop Eventum instance. Note that after
-          stopping the instance you will not be able to start it using web
-          interface.
+          Note, that during the restart, web interface may be unavailable for
+          some time. After stopping the instance you will not be able to start
+          it using web interface.
         </Alert>
         <Group grow>
           <Button

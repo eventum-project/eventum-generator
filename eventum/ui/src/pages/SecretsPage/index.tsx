@@ -13,11 +13,7 @@ import {
 } from '@mantine/core';
 import { isNotEmpty, useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import {
-  IconAlertSquareRounded,
-  IconDeviceFloppy,
-  IconInfoSquareRounded,
-} from '@tabler/icons-react';
+import { IconAlertSquareRounded, IconDeviceFloppy } from '@tabler/icons-react';
 import { useState } from 'react';
 
 import { TableRow } from './TableRow';
@@ -113,15 +109,7 @@ export default function SecretsPage() {
           Secrets
         </Title>
         <Divider my="sm" />
-        <Alert
-          variant="default"
-          icon={<Box c="blue" component={IconInfoSquareRounded}></Box>}
-          title="Info"
-        >
-          Manage secrets that are stored in keyring. Secrets are used in
-          generator configuration files for hiding sensitive data in values of
-          parameters like passwords etc.
-        </Alert>
+
         <Table mt="md" highlightOnHover stickyHeader stickyHeaderOffset={60}>
           <Table.Thead>
             <Table.Tr>
