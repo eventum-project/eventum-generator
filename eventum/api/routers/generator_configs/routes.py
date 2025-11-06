@@ -54,7 +54,9 @@ router = APIRouter()
         'List all generator directory names inside `path.generators_dir` '
         'with generator configs.'
     ),
-    response_description=('Directory names with generator configs'),
+    response_description=(
+        'List of directory names or objects with extended directory info'
+    ),
 )
 async def list_generator_dirs(
     dir_names: GeneratorDirsDep,
@@ -66,7 +68,7 @@ async def list_generator_dirs(
             description='Whether to include extended info about directories',
         ),
     ] = False,
-) -> list[str] | list[GeneratorDirExtendedInfo]:
+) -> list[GeneratorDirExtendedInfo] | list[str]:
     if not extended:
         return dir_names
 
