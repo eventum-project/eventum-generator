@@ -16,5 +16,10 @@ def calculate_dir_size(path: Path) -> int:
     int
         Size in bytes.
 
+    Raises
+    ------
+    OSError
+        If some of the resources cannot be accessed.
+
     """
     return sum(f.stat().st_size for f in path.glob('**/*') if f.is_file())
