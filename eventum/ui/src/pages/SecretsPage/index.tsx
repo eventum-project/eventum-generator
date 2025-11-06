@@ -135,7 +135,7 @@ export default function SecretsPage() {
               <Table.Td>
                 <Group gap="xs">
                   <ActionIcon
-                    variant="default"
+                    variant="transparent"
                     title="Save"
                     size="lg"
                     onClick={() => handleSetNewSecret(form.values)}
