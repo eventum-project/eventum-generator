@@ -1,6 +1,6 @@
 """Module for managing multiple generators."""
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor
 
 import structlog
@@ -249,3 +249,14 @@ class GeneratorManager:
     def generator_ids(self) -> list[str]:
         """List of generator ids."""
         return list(self._generators.keys())
+
+    def iter_generators(self) -> Iterator[Generator]:
+        """Iterate over all generators that are added to manager.
+
+        Yields
+        ------
+        Generator
+            Generator instance.
+
+        """
+        yield from self._generators.values()
