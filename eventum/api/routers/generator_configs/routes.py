@@ -18,12 +18,13 @@ from fastapi import (
 )
 from pydantic import ValidationError
 
-from eventum.api.dependencies.app import SettingsDep
+from eventum.api.dependencies.app import GeneratorManagerDep, SettingsDep
 from eventum.api.routers.generator_configs.dependencies import (
     CheckConfigurationExistsDep,
     CheckConfigurationNotExistsDep,
     CheckDirectoryIsAllowedDep,
     CheckFilepathIsDirectlyRelativeDep,
+    GeneratorDirsDep,
     check_configuration_exists,
     check_configuration_not_exists,
     check_directory_is_allowed,
@@ -33,8 +34,15 @@ from eventum.api.routers.generator_configs.file_tree import (
     FileNode,
     build_file_tree,
 )
+from eventum.api.routers.generator_configs.models import (
+    GeneratorDirExtendedInfo,
+)
 from eventum.api.routers.generator_configs.runtime_types import GeneratorConfig
 from eventum.api.utils.response_description import merge_responses
+from eventum.utils.fs_utils import (
+    calculate_dir_size,
+    get_dir_last_modification_time,
+)
 from eventum.utils.validation_prettier import prettify_validation_errors
 
 router = APIRouter()
@@ -48,18 +56,63 @@ router = APIRouter()
     ),
     response_description=('Directory names with generator configs'),
 )
-async def list_generator_dirs(settings: SettingsDep) -> list[str]:
-    if not settings.path.generators_dir.exists():
-        return []
+async def list_generator_dirs(
+    dir_names: GeneratorDirsDep,
+    manager: GeneratorManagerDep,
+    settings: SettingsDep,
+    extended: Annotated[  # noqa: FBT002
+        bool,
+        Query(
+            description='Whether to include extended info about directories',
+        ),
+    ] = False,
+) -> list[str] | list[GeneratorDirExtendedInfo]:
+    if not extended:
+        return dir_names
 
-    return await asyncio.to_thread(
-        lambda: [
-            path.parent.name
-            for path in settings.path.generators_dir.glob(
-                f'*/{settings.path.generator_config_filename}',
+    result: list[GeneratorDirExtendedInfo] = []
+    dir_names_to_ids: dict[str, list[str]] = {}
+
+    for generator in manager.iter_generators():
+        params = generator.params
+        generator_dir_name = params.path.parent.name
+        generator_id = params.id
+
+        if generator_dir_name not in dir_names_to_ids:
+            dir_names_to_ids[generator_dir_name] = [generator_id]
+        else:
+            dir_names_to_ids[generator_dir_name].append(generator_id)
+
+    generators_dir = settings.path.generators_dir
+    for dir_name in dir_names:
+        dir_path = generators_dir / dir_name
+
+        try:
+            dir_size: int | None = await asyncio.to_thread(
+                lambda dir_path=dir_path: calculate_dir_size(dir_path),  # type: ignore[misc]
             )
-        ],
-    )
+        except OSError:
+            dir_size = None
+
+        try:
+            dir_modification_time: float | None = await asyncio.to_thread(
+                lambda dir_path=dir_path: get_dir_last_modification_time(  # type: ignore[misc]
+                    dir_path,
+                ),
+            )
+        except OSError:
+            dir_modification_time = None
+
+        result.append(
+            GeneratorDirExtendedInfo(
+                name=dir_name,
+                size_in_bytes=dir_size,
+                last_modified=dir_modification_time,
+                generator_ids=dir_names_to_ids.get(dir_name, []),
+            ),
+        )
+
+    return result
 
 
 @router.get(

@@ -1,5 +1,6 @@
 """Dependencies."""
 
+import asyncio
 from pathlib import Path
 from typing import Annotated
 
@@ -7,6 +8,37 @@ from fastapi import Depends, HTTPException, Query, status
 
 from eventum.api.dependencies.app import SettingsDep
 from eventum.api.utils.response_description import set_responses
+
+
+async def list_generator_dirs(settings: SettingsDep) -> list[str]:
+    """List all generator directory names inside `path.generators_dir` '
+    with generator configs.
+
+    Parameters
+    ----------
+    settings : SettingsDep
+        Application settings dependency.
+
+    Returns
+    -------
+    list[str]
+        List of directory names.
+
+    """
+    if not settings.path.generators_dir.exists():
+        return []
+
+    return await asyncio.to_thread(
+        lambda: [
+            path.parent.name
+            for path in settings.path.generators_dir.glob(
+                f'*/{settings.path.generator_config_filename}',
+            )
+        ],
+    )
+
+
+GeneratorDirsDep = Annotated[list[str], Depends(list_generator_dirs)]
 
 
 @set_responses(
