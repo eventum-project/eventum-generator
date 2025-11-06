@@ -183,7 +183,7 @@ export const TableRow: FC<TableRowProps> = ({ name }) => {
       <Table.Td style={{ verticalAlign: 'top' }}>
         <Group gap="xs" wrap="nowrap">
           <ActionIcon
-            variant="default"
+            variant="transparent"
             title={isValueShown ? 'Hide' : 'Show'}
             size="lg"
             onClick={() => void handleOnValueVisibilityChange()}
@@ -193,7 +193,7 @@ export const TableRow: FC<TableRowProps> = ({ name }) => {
           </ActionIcon>
 
           <ActionIcon
-            variant="default"
+            variant="transparent"
             title={isEditMode ? 'Save' : 'Edit'}
             size="lg"
             onClick={() => void handleOnEditModeChange(form.values)}
@@ -209,7 +209,7 @@ export const TableRow: FC<TableRowProps> = ({ name }) => {
           </ActionIcon>
 
           <ActionIcon
-            variant="default"
+            variant="transparent"
             c="red"
             title="Remove"
             size="lg"
@@ -232,7 +232,7 @@ export const TableRow: FC<TableRowProps> = ({ name }) => {
           </ActionIcon>
 
           <ActionIcon
-            variant="default"
+            variant="transparent"
             title="Cancel"
             size="lg"
             onClick={handleCancelEditing}
