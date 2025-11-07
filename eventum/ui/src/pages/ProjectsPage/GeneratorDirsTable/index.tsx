@@ -1,4 +1,13 @@
-import { ActionIcon, Center, Group, Stack, Table, Text } from '@mantine/core';
+import {
+  ActionIcon,
+  Center,
+  Group,
+  Pagination,
+  Select,
+  Stack,
+  Table,
+  Text,
+} from '@mantine/core';
 import {
   IconArrowsSort,
   IconSortAscending,
@@ -6,10 +15,12 @@ import {
 } from '@tabler/icons-react';
 import {
   ColumnFiltersState,
+  PaginationState,
   SortingState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
@@ -31,16 +42,22 @@ export const GeneratorDirsTable: FC<GeneratorDirsTableProps> = ({
 }) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 15,
+  });
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnFilters },
+    state: { sorting, columnFilters, pagination },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
 
   useEffect(() => {
@@ -129,7 +146,47 @@ export const GeneratorDirsTable: FC<GeneratorDirsTableProps> = ({
           </Text>
         </Center>
       ) : (
-        <></>
+        <Group w="100%" justify="end" gap="lg">
+          <Text size="sm" c="gray.6">
+            Showing{' '}
+            {table.getState().pagination.pageIndex *
+              table.getState().pagination.pageSize +
+              1}{' '}
+            -{' '}
+            {Math.min(
+              (table.getState().pagination.pageIndex + 1) *
+                table.getState().pagination.pageSize,
+              table.getFilteredRowModel().rows.length
+            )}{' '}
+            of {table.getFilteredRowModel().rows.length}
+          </Text>
+          <Group gap="xs">
+            <Text size="sm" c="gray.6">
+              Page size:
+            </Text>
+
+            <Select
+              data={['10', '15', '25', '50', '100']}
+              size="sm"
+              w="60px"
+              variant="unstyled"
+              value={table.getState().pagination.pageSize.toString()}
+              onChange={(value) =>
+                table.setPageSize(Number.parseInt(value ?? '15'))
+              }
+              withCheckIcon={false}
+            />
+          </Group>
+          <Pagination
+            size="sm"
+            total={table.getPageCount()}
+            value={pagination.pageIndex + 1}
+            onChange={(page) => {
+              console.log(page - 1);
+              table.setPageIndex(page - 1);
+            }}
+          />
+        </Group>
       )}
     </Stack>
   );
