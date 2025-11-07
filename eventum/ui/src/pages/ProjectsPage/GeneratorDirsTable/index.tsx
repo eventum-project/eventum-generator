@@ -33,12 +33,14 @@ interface GeneratorDirsTableProps {
   data: GeneratorDirsExtendedInfo;
   projectNameFilter?: string;
   instancesFilter?: string[];
+  anyInstanceFilter?: boolean;
 }
 
 export const GeneratorDirsTable: FC<GeneratorDirsTableProps> = ({
   data,
-  projectNameFilter,
-  instancesFilter,
+  projectNameFilter = '',
+  instancesFilter = [],
+  anyInstanceFilter = false,
 }) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -61,9 +63,12 @@ export const GeneratorDirsTable: FC<GeneratorDirsTableProps> = ({
   });
 
   useEffect(() => {
-    table.getColumn('name')?.setFilterValue(projectNameFilter ?? '');
-    table.getColumn('generator_ids')?.setFilterValue(instancesFilter ?? []);
-  }, [projectNameFilter, instancesFilter, table]);
+    table.getColumn('name')?.setFilterValue(projectNameFilter);
+    table.getColumn('generator_ids')?.setFilterValue({
+      instancesFilter: instancesFilter,
+      anyInstanceFilter: anyInstanceFilter,
+    });
+  }, [projectNameFilter, instancesFilter, anyInstanceFilter, table]);
 
   return (
     <Stack>

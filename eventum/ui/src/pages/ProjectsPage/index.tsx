@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Center,
+  Checkbox,
   Container,
   Group,
   Loader,
@@ -27,6 +28,7 @@ export default function ProjectsPage() {
 
   const [projectNameFilter, setProjectNameFilter] = useState('');
   const [instanceFilter, setInstanceFilter] = useState<string[]>([]);
+  const [anyInstanceFilter, setAnyInstanceFilter] = useState(false);
 
   const {
     data: generatorDirs,
@@ -94,6 +96,15 @@ export default function ProjectsPage() {
               data={[...uniqueInstances].sort((a, b) => a.localeCompare(b))}
               value={instanceFilter}
               onChange={(values) => setInstanceFilter(values)}
+              disabled={anyInstanceFilter}
+            />
+            <Checkbox
+              label="Any used"
+              radius="sm"
+              checked={anyInstanceFilter}
+              onChange={(event) =>
+                setAnyInstanceFilter(event.currentTarget.checked)
+              }
             />
           </Group>
           <Button onClick={openCreateModal}>Create new</Button>
@@ -103,6 +114,7 @@ export default function ProjectsPage() {
           data={generatorDirs}
           projectNameFilter={projectNameFilter}
           instancesFilter={instanceFilter}
+          anyInstanceFilter={anyInstanceFilter}
         />
       </Container>
     );

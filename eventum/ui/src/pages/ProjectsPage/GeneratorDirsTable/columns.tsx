@@ -22,11 +22,20 @@ export const columns = [
     id: 'generator_ids',
     enableSorting: false,
     enableColumnFilter: true,
-    filterFn: (row, columnId, filterValue: string[]) => {
-      if (filterValue.length === 0) return true;
-
+    filterFn: (
+      row,
+      columnId,
+      filterValue: { instancesFilter: string[]; anyInstanceFilter: boolean }
+    ) => {
       const rowValue: string[] = row.getValue(columnId);
-      return filterValue.some((selectedItem) =>
+
+      if (filterValue.anyInstanceFilter) {
+        return rowValue.length > 0;
+      }
+
+      if (filterValue.instancesFilter.length === 0) return true;
+
+      return filterValue.instancesFilter.some((selectedItem) =>
         rowValue.includes(selectedItem)
       );
     },
