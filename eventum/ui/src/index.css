@@ -15,27 +15,31 @@ h2 {
   scroll-margin-top: 80px !important; /* fix hidden title under app header  */
 }
 
-/* Components styles */
+/* Notifications */
 .mantine-Notifications-root {
-  --mantine-color-red-filled: var(--mantine-color-red-5) !important;
-  --mantine-color-green-filled: var(--mantine-color-green-5) !important;
-  --mantine-color-blue-filled: var(--mantine-color-blue-5) !important;
+  --mantine-color-red-filled: var(--mantine-color-red-5);
+  --mantine-color-green-filled: var(--mantine-color-green-5);
+  --mantine-color-blue-filled: var(--mantine-color-blue-5);
 }
 
-[data-mantine-color-scheme='light'] .mantine-Badge-root {
+/* Badge */
+[data-mantine-color-scheme='light'] .mantine-Badge-root[data-variant='light'] {
   --badge-color: var(--mantine-color-primary-5) !important;
   --badge-bg: var(--mantine-color-primary-1) !important;
 }
 
+/* NavLink */
 [data-mantine-color-scheme='light'] .mantine-NavLink-root {
-  --nl-color: var(--mantine-color-primary-5) !important;
+  --nl-color: var(--mantine-color-primary-5);
 }
 
+/* Avatar */
 [data-mantine-color-scheme='light'] .mantine-Avatar-root {
   --avatar-color: var(--mantine-color-primary-5) !important;
   --avatar-bg: var(--mantine-color-primary-1) !important;
 }
 
+/* Anchor */
 [data-mantine-color-scheme='light'] .mantine-Anchor-root {
   --mantine-color-anchor: var(--mantine-color-primary-5) !important;
 }
@@ -44,24 +48,19 @@ h2 {
   --mantine-color-anchor: var(--mantine-color-primary-3) !important;
 }
 
-[data-mantine-color-scheme='light'] .mantine-Button-root {
-  --mantine-color-red-filled: var(--mantine-color-red-5) !important;
-  --mantine-color-red-filled-hover: var(--mantine-color-red-6) !important;
+/* ActionIcon */
+.mantine-ActionIcon-root[data-variant='transparent'] {
+  --ai-color: var(--mantine-color-text) !important;
 }
 
-[data-mantine-color-scheme='dark'] .mantine-Button-root {
-  --mantine-color-red-filled: var(--mantine-color-red-4) !important;
-  --mantine-color-red-filled-hover: var(--mantine-color-red-5) !important;
+[data-mantine-color-scheme='light']
+  .mantine-ActionIcon-root[data-variant='transparent'][data-input-section] {
+  color: var(--mantine-color-gray-7);
 }
 
-[data-mantine-color-scheme='light'] .mantine-ActionIcon-root {
-  --mantine-color-red-filled: var(--mantine-color-red-5) !important;
-  --mantine-color-red-filled-hover: var(--mantine-color-red-6) !important;
-}
-
-[data-mantine-color-scheme='dark'] .mantine-ActionIcon-root {
-  --mantine-color-red-filled: var(--mantine-color-red-4) !important;
-  --mantine-color-red-filled-hover: var(--mantine-color-red-5) !important;
+[data-mantine-color-scheme='dark']
+  .mantine-ActionIcon-root[data-variant='transparent'][data-input-section] {
+  color: var(--mantine-color-dark-1);
 }
 
 /* ========== Tabler settings ========== */
