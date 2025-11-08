@@ -1,4 +1,6 @@
 import {
+  GeneratorConfig,
+  GeneratorConfigSchema,
   GeneratorDirsExtendedInfo,
   GeneratorDirsExtendedInfoSchema,
 } from './schemas';
@@ -11,6 +13,29 @@ export async function listGeneratorDirs(): Promise<GeneratorDirsExtendedInfo> {
     GeneratorDirsExtendedInfoSchema,
     apiClient.get('/generator-configs/', { params: { extended: true } })
   );
+}
+
+export async function getGeneratorConfig(
+  name: string
+): Promise<GeneratorConfig> {
+  return await validateResponse(
+    GeneratorConfigSchema,
+    apiClient.get(`/generator-configs/${name}`)
+  );
+}
+
+export async function createGeneratorConfig(
+  name: string,
+  config: GeneratorConfig
+): Promise<undefined> {
+  await apiClient.post(`/generator-configs/${name}`, config);
+}
+
+export async function updateGeneratorConfig(
+  name: string,
+  config: GeneratorConfig
+): Promise<undefined> {
+  await apiClient.put(`/generator-configs/${name}`, config);
 }
 
 export async function deleteGeneratorConfig(name: string): Promise<undefined> {
