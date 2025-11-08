@@ -112,7 +112,7 @@ class ClickhouseOutputPluginConfig(OutputPluginConfig, frozen=True):
     """
 
     host: str = Field(min_length=1)
-    port: int = Field(default=8123, ge=1)
+    port: int = Field(default=8123, ge=1, le=65535)
     protocol: Literal['http', 'https'] = Field(default='http')
     database: str = Field(default='default', min_length=1)
     table: str = Field(min_length=1)
