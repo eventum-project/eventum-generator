@@ -215,8 +215,8 @@ class JinjaEventPluginConfigCommonFields(
 
     """
 
-    params: dict[str, Any]
-    samples: dict[str, SampleConfig]
+    params: dict[str, Any] = Field(default_factory=dict)
+    samples: dict[str, SampleConfig] = Field(default_factory=dict)
 
     def get_picking_common_fields(self) -> dict[str, Any]:
         """Get common fields used in templates picking.
