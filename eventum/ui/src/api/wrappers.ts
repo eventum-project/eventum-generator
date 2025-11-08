@@ -3,10 +3,10 @@ import { ZodError, ZodType, z } from 'zod';
 
 import { APIError } from '@/api/errors';
 
-export async function validateResponse<T>(
-  schema: ZodType<T>,
+export async function validateResponse<S extends ZodType>(
+  schema: S,
   promise: Promise<AxiosResponse>
-): Promise<T> {
+): Promise<z.infer<S>> {
   const response = await promise;
 
   try {
