@@ -411,10 +411,10 @@ class TimestampComponents(BaseModel, frozen=True, extra='forbid'):
     year: int | None = Field(default=None, ge=0, le=10_000)
     month: int | None = Field(default=None, ge=1, le=12)
     day: int | None = Field(default=None, ge=1, le=31)
-    hour: int | None = Field(default=None, ge=0, le=24)
-    minute: int | None = Field(default=None, ge=0, le=60)
-    second: int | None = Field(default=None, ge=0, le=60)
-    microsecond: int | None = Field(default=None, ge=0, le=1_000_000)
+    hour: int | None = Field(default=None, ge=0, lt=24)
+    minute: int | None = Field(default=None, ge=0, lt=60)
+    second: int | None = Field(default=None, ge=0, lt=60)
+    microsecond: int | None = Field(default=None, ge=0, lt=1_000_000)
 
     @model_validator(mode='after')
     def validate_specified(self) -> Self:  # noqa: D102
