@@ -186,19 +186,6 @@ class TemplateConfigForFSMMode(TemplateConfigForGeneralModes, frozen=True):
     initial: bool = False
 
 
-class TemplateConfigForChainMode(TemplateConfigForGeneralModes, frozen=True):
-    """Template configuration for `chain` picking mode.
-
-    Attributes
-    ----------
-    chain : list[str]
-        Chain of template aliases.
-
-    """
-
-    chain: list[str] = Field(min_length=1)
-
-
 class JinjaEventPluginConfigCommonFields(
     EventPluginConfig,
     frozen=True,
