@@ -118,7 +118,7 @@ export const JinjaEventPluginNamedConfig = z.object({
   jinja: JinjaEventPluginConfig,
 });
 
-const ReplayEventPluginConfigSchema = z.object({
+const ReplayEventPluginConfigSchema = EventPluginConfigSchema.extend({
   path: z.string().min(1),
   timestamp_pattern: z.string().min(1).nullable().optional(),
   timestamp_format: z.string().min(1).nullable().optional(),
@@ -131,7 +131,7 @@ export const ReplayEventPluginNamedConfigSchema = z.object({
   replay: ReplayEventPluginConfigSchema,
 });
 
-const ScriptEventPluginConfigSchema = z.object({
+const ScriptEventPluginConfigSchema = EventPluginConfigSchema.extend({
   path: z.string().min(1),
 });
 
