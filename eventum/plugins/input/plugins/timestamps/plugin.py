@@ -37,7 +37,9 @@ class TimestampsInputPlugin(
             )
             timestamps: list[datetime] = [
                 to_naive(ts, self._timezone)
-                for ts in self._read_timestamps_from_file(config.source)
+                for ts in self._read_timestamps_from_file(
+                    self.resolve_path(config.source),
+                )
             ]
         else:
             self._logger.debug('Reading timestamps from configuration')
@@ -60,7 +62,7 @@ class TimestampsInputPlugin(
 
         Parameters
         ----------
-        filename : str
+        filename : Path
             Path to file with timestamps that are delimited with new
             line.
 
