@@ -125,6 +125,7 @@ async def add_generator_to_startup(
                 params.as_absolute(
                     base_dir=settings.path.generators_dir,
                 ).model_dump(
+                    mode='json',
                     exclude_unset=True,
                 ),
             ],
@@ -173,6 +174,7 @@ async def update_generator_in_startup(
     generators_parameters_raw_content[target_index] = params.as_absolute(
         base_dir=settings.path.generators_dir,
     ).model_dump(
+        mode='json',
         exclude_unset=True,
     )
     new_content = await asyncio.to_thread(

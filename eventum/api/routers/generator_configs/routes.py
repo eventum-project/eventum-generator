@@ -223,7 +223,10 @@ async def create_generator_config(
 
         async with aiofiles.open(generator_config_path, 'w') as f:
             await f.write(
-                yaml.dump(data=config.model_dump(), sort_keys=False),
+                yaml.dump(
+                    data=config.model_dump(mode='json', exclude_unset=True),
+                    sort_keys=False,
+                ),
             )
     except OSError as e:
         raise HTTPException(
@@ -270,7 +273,10 @@ async def update_generator_config(
     try:
         async with aiofiles.open(generator_config_path, 'w') as f:
             await f.write(
-                yaml.dump(data=config.model_dump(), sort_keys=False),
+                yaml.dump(
+                    data=config.model_dump(mode='json', exclude_unset=True),
+                    sort_keys=False,
+                ),
             )
     except OSError as e:
         raise HTTPException(
