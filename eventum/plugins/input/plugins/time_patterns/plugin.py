@@ -358,12 +358,13 @@ class TimePatternsInputPlugin(
         """
         time_patterns: list[TimePatternInputPlugin] = []
         for pattern_path in self._config.patterns:
+            resolved_pattern_path = self.resolve_path(pattern_path)
             self._logger.debug(
                 'Reading time pattern configuration',
-                file_path=str(pattern_path),
+                file_path=str(resolved_pattern_path),
             )
             try:
-                with pattern_path.open() as f:
+                with resolved_pattern_path.open() as f:
                     time_pattern_obj = yaml.load(f, yaml.SafeLoader)
 
                 time_pattern = TimePatternConfig.model_validate(
@@ -374,7 +375,7 @@ class TimePatternsInputPlugin(
                 raise PluginConfigurationError(
                     msg,
                     context={
-                        'file_path': pattern_path,
+                        'file_path': resolved_pattern_path,
                         'reason': str(e),
                     },
                 ) from None
@@ -383,7 +384,7 @@ class TimePatternsInputPlugin(
                 raise PluginConfigurationError(
                     msg,
                     context={
-                        'file_path': pattern_path,
+                        'file_path': resolved_pattern_path,
                         'reason': str(e),
                     },
                 ) from None
@@ -392,14 +393,14 @@ class TimePatternsInputPlugin(
                 raise PluginConfigurationError(
                     msg,
                     context={
-                        'file_path': pattern_path,
+                        'file_path': resolved_pattern_path,
                         'reason': str(e),
                     },
                 ) from None
 
             self._logger.debug(
                 'Initializing time pattern plugin for configuration',
-                file_path=str(pattern_path),
+                file_path=str(resolved_pattern_path),
             )
             try:
                 time_pattern_plugin = TimePatternInputPlugin(
@@ -415,7 +416,7 @@ class TimePatternsInputPlugin(
                 raise PluginConfigurationError(
                     msg,
                     context={
-                        'file_path': pattern_path,
+                        'file_path': resolved_pattern_path,
                         'reason': str(e),
                     },
                 ) from None
