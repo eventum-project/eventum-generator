@@ -3,13 +3,7 @@
 from pathlib import Path
 from typing import Literal, Self
 
-from pydantic import (
-    BaseModel,
-    Field,
-    field_serializer,
-    field_validator,
-    model_validator,
-)
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class SSLParameters(BaseModel, extra='forbid', frozen=True):
@@ -77,10 +71,6 @@ class SSLParameters(BaseModel, extra='forbid', frozen=True):
             raise ValueError(msg)
 
         return self
-
-    @field_serializer('ca_cert', 'cert', 'cert_key')
-    def serialize_paths(self, value: Path, _) -> str:  # noqa: ANN001, D102
-        return str(value)
 
 
 class AuthParameters(BaseModel, extra='forbid', frozen=True):

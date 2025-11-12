@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from pydantic import BaseModel, field_serializer, field_validator
+from pydantic import BaseModel, field_validator
 
 
 class PathParameters(BaseModel, extra='forbid', frozen=True):
@@ -63,13 +63,3 @@ class PathParameters(BaseModel, extra='forbid', frozen=True):
             raise ValueError(msg)
 
         return v
-
-    @field_serializer(
-        'logs',
-        'startup',
-        'generators_dir',
-        'keyring_cryptfile',
-        'generator_config_filename',
-    )
-    def serialize_paths(self, value: Path, _) -> str:  # noqa: ANN001, D102
-        return str(value)
