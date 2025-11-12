@@ -289,6 +289,29 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
             plugin_config_class=config_cls.__name__,
         )
 
+    def resolve_path(self, path: Path) -> Path:
+        """Resolve path using plugin base path.
+
+        Parameters
+        ----------
+        path : Path
+            Path to resolve.
+
+        Returns
+        -------
+        Path
+            Resolved path.
+
+        Notes
+        -----
+        If path is already absolute it is returned as is.
+
+        """
+        if path.is_absolute():
+            return path
+
+        return self._base_path / path
+
     @property
     def id(self) -> int:
         """ID of the plugin."""
