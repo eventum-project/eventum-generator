@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Self
 
-from pydantic import Field, HttpUrl, field_validator, model_validator
+from pydantic import Field, HttpUrl, model_validator
 
 from eventum.plugins.output.base.config import OutputPluginConfig
 from eventum.plugins.output.fields import (
@@ -44,13 +44,13 @@ class OpensearchOutputPluginConfig(OutputPluginConfig, frozen=True):
         connecting to them.
 
     ca_cert: str | None, default=None
-        Absolute path to CA certificate.
+        Path to CA certificate.
 
     client_cert: str | None, default=None
-        Absolute path to client certificate.
+        Path to client certificate.
 
     client_cert_key: str | None, default=None
-        Absolute path to client certificate key.
+        Path to client certificate key.
 
     proxy_url : HttpUrl
         HTTP(S) proxy address.
@@ -80,18 +80,6 @@ class OpensearchOutputPluginConfig(OutputPluginConfig, frozen=True):
         validate_default=True,
         discriminator='format',
     )
-
-    @field_validator('ca_cert', 'client_cert', 'client_cert_key')
-    @classmethod
-    def validate_absolute_paths(cls, v: Path | None) -> Path | None:  # noqa: D102
-        if v is None:
-            return v
-
-        if not v.is_absolute():
-            msg = 'Path must be absolute'
-            raise ValueError(msg)
-
-        return v
 
     @model_validator(mode='after')
     def validate_client_cert(self) -> Self:  # noqa: D102
