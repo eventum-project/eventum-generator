@@ -40,6 +40,8 @@ class ReplayEventPlugin(
         self._lines = self._get_next_line()
         self._last_read_position = 0
 
+        self._filepath = self.resolve_path(self._config.path)
+
     def _check_file_existence(self) -> None:
         """Check if source file exists.
 
@@ -49,11 +51,11 @@ class ReplayEventPlugin(
             If file does not exist.
 
         """
-        if not self._config.path.exists():
+        if not self._filepath.exists():
             msg = 'File does not exist'
             raise PluginConfigurationError(
                 msg,
-                context={'file_path': self._config.path},
+                context={'file_path': self._filepath},
             )
 
     def _initialize_pattern(self) -> re.Pattern | None:
@@ -106,7 +108,7 @@ class ReplayEventPlugin(
         """
         self._logger.debug('Reading next lines')
         try:
-            with self._config.path.open('rb') as f:
+            with self._filepath.open('rb') as f:
                 f.seek(self._last_read_position, os.SEEK_SET)
                 byte_lines = f.readlines(hint)
                 self._last_read_position = f.tell()
@@ -116,7 +118,7 @@ class ReplayEventPlugin(
                 msg,
                 context={
                     'reason': str(e),
-                    'file_path': self._config.path,
+                    'file_path': self._filepath,
                 },
             ) from None
 
@@ -126,7 +128,7 @@ class ReplayEventPlugin(
         if not lines:
             self._logger.info(
                 'End of file is reached',
-                file_path=str(self._config.path),
+                file_path=str(self._filepath),
             )
             return lines
 
@@ -135,7 +137,7 @@ class ReplayEventPlugin(
 
         self._logger.debug(
             'Next lines from file have been read',
-            file_name=self._config.path,
+            file_name=self._filepath,
             count=len(lines),
         )
         return lines
@@ -162,7 +164,7 @@ class ReplayEventPlugin(
             else:
                 self._logger.info(
                     'Reset read position to beginning of the file',
-                    file_path=str(self._config.path),
+                    file_path=str(self._filepath),
                 )
 
             self._last_read_position = 0
