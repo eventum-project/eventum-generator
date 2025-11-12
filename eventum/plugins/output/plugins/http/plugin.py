@@ -32,9 +32,21 @@ class HttpOutputPlugin(
         try:
             self._ssl_context = create_ssl_context(
                 verify=config.verify,
-                ca_cert=config.ca_cert,
-                client_cert=config.client_cert,
-                client_key=config.client_cert_key,
+                ca_cert=(
+                    self.resolve_path(config.ca_cert)
+                    if config.ca_cert
+                    else None
+                ),
+                client_cert=(
+                    self.resolve_path(config.client_cert)
+                    if config.client_cert
+                    else None
+                ),
+                client_key=(
+                    self.resolve_path(config.client_cert_key)
+                    if config.client_cert_key
+                    else None
+                ),
             )
         except OSError as e:
             msg = 'Failed to create SSL context'
