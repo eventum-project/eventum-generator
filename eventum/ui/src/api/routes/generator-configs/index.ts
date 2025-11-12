@@ -1,8 +1,13 @@
 import {
+  FileNodesList,
+  FileNodesListSchema,
   GeneratorConfig,
+  GeneratorConfigPathSchema,
   GeneratorConfigSchema,
   GeneratorDirsExtendedInfo,
   GeneratorDirsExtendedInfoSchema,
+  GeneratorFileContent,
+  GeneratorFileContentSchema,
 } from './schemas';
 import { apiClient } from '@/api/client';
 import '@/api/routes/instance/schemas';
@@ -27,17 +32,95 @@ export async function getGeneratorConfig(
 export async function createGeneratorConfig(
   name: string,
   config: GeneratorConfig
-): Promise<undefined> {
+) {
   await apiClient.post(`/generator-configs/${name}`, config);
 }
 
 export async function updateGeneratorConfig(
   name: string,
   config: GeneratorConfig
-): Promise<undefined> {
+) {
   await apiClient.put(`/generator-configs/${name}`, config);
 }
 
-export async function deleteGeneratorConfig(name: string): Promise<undefined> {
+export async function deleteGeneratorConfig(name: string) {
   await apiClient.delete(`/generator-configs/${name}`);
+}
+
+export async function getGeneratorConfigPath(name: string): Promise<string> {
+  return await validateResponse(
+    GeneratorConfigPathSchema,
+    apiClient.get(`/generator-configs/${name}/path`)
+  );
+}
+
+export async function getGeneratorFileTree(
+  name: string
+): Promise<FileNodesList> {
+  return await validateResponse(
+    FileNodesListSchema,
+    apiClient.get(`/generator-configs/${name}/file-tree`)
+  );
+}
+
+export async function getGeneratorFile(
+  name: string,
+  filepath: string
+): Promise<GeneratorFileContent> {
+  return await validateResponse(
+    GeneratorFileContentSchema,
+    apiClient.get(`/generator-configs/${name}/file/${filepath}`)
+  );
+}
+
+export async function uploadGeneratorFile(
+  name: string,
+  filepath: string,
+  content: string
+) {
+  const form = new FormData();
+  form.append('content', new Blob([content], { type: 'text/plain' }));
+
+  await apiClient.post(`/generator-configs/${name}/file/${filepath}`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+}
+
+export async function putGeneratorFile(
+  name: string,
+  filepath: string,
+  content: string
+) {
+  const form = new FormData();
+  form.append('content', new Blob([content], { type: 'text/plain' }));
+
+  await apiClient.put(`/generator-configs/${name}/file/${filepath}`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+}
+
+export async function deleteGeneratorFile(name: string, filepath: string) {
+  await apiClient.delete(`/generator-configs/${name}/file/${filepath}`);
+}
+
+export async function moveGeneratorFile(
+  name: string,
+  source: string,
+  destination: string
+) {
+  await apiClient.post(`/generator-configs/${name}/file-move`, {
+    source,
+    destination,
+  });
+}
+
+export async function copyGeneratorFile(
+  name: string,
+  source: string,
+  destination: string
+) {
+  await apiClient.post(`/generator-configs/${name}/file-copy`, {
+    source,
+    destination,
+  });
 }
