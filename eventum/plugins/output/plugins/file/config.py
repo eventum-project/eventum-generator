@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field
 
 from eventum.plugins.fields import Encoding
 from eventum.plugins.output.base.config import OutputPluginConfig
@@ -16,7 +16,7 @@ class FileOutputPluginConfig(OutputPluginConfig, frozen=True):
     Attributes
     ----------
     path : Path
-        Absolute path of the file to write.
+        Path of the file to write.
 
     flush_interval : float, default = 1
         Flush interval (in seconds) for flushing events, if value is 0
@@ -47,12 +47,3 @@ class FileOutputPluginConfig(OutputPluginConfig, frozen=True):
     write_mode: Literal['append', 'overwrite'] = 'append'
     encoding: Encoding = Field(default='utf_8')
     separator: str = Field(default=os.linesep)
-
-    @field_validator('path')
-    @classmethod
-    def validate_path(cls, v: Path) -> Path:  # noqa: D102
-        if v.is_absolute():
-            return v
-
-        msg = 'Path must be absolute'
-        raise ValueError(msg)
