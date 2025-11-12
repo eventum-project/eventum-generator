@@ -50,10 +50,14 @@ export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
               hideLabel={<Text size="xs">Hide</Text>}
             >
               <Code block>
-                {error.requestConfig.data !== undefined ? (
-                  JSON.stringify(error.requestConfig.data, undefined, 2)
+                {typeof error.requestConfig.data === 'string' ? (
+                  JSON.stringify(
+                    JSON.parse(error.requestConfig.data),
+                    undefined,
+                    2
+                  )
                 ) : (
-                  <i>Empty</i>
+                  <i>Cannot show</i>
                 )}
               </Code>
             </Spoiler>
