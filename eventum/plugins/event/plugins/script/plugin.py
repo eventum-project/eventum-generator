@@ -59,7 +59,7 @@ class ScriptEventPlugin(
             other error occurred during module execution.
 
         """
-        script_path = self._config.path
+        script_path = self.resolve_path(self._config.path)
         spec = util.spec_from_file_location('user_module', script_path)
 
         if spec is None:
