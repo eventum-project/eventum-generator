@@ -11,7 +11,7 @@ const enum SampleType {
   JSON = 'json',
 }
 
-const enum TemplatePickingMode {
+export const enum TemplatePickingMode {
   All = 'all',
   Any = 'any',
   Chance = 'chance',
@@ -123,8 +123,8 @@ const ReplayEventPluginConfigSchema = EventPluginConfigSchema.extend({
   timestamp_pattern: z.string().min(1).nullable().optional(),
   timestamp_format: z.string().min(1).nullable().optional(),
   repeat: z.boolean().optional(),
-  chunk_size: z.number().int().gte(0),
-  encoding: z.enum(ENCODINGS),
+  chunk_size: z.number().int().gte(0).optional(),
+  encoding: z.enum(ENCODINGS).optional(),
 });
 
 export const ReplayEventPluginNamedConfigSchema = z.object({
@@ -144,3 +144,7 @@ export const EventPluginNamedConfigSchema = z.union([
   ReplayEventPluginNamedConfigSchema,
   ScriptEventPluginNamedConfigSchema,
 ]);
+
+export type EventPluginNamedConfig = z.infer<
+  typeof EventPluginNamedConfigSchema
+>;

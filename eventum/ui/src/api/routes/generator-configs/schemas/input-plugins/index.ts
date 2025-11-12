@@ -90,3 +90,7 @@ export const InputPluginNamedConfigSchema = z.union([
   TimerInputPluginNamedConfigSchema,
   TimestampsInputPluginNamedConfigSchema,
 ]);
+
+export type InputPluginNamedConfig = z.infer<
+  typeof InputPluginNamedConfigSchema
+>;

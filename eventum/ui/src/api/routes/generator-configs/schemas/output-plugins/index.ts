@@ -109,3 +109,7 @@ export const OutputPluginNamedConfigSchema = z.union([
   OpensearchOutputPluginNamedConfigSchema,
   StdoutOutputPluginNamedConfigSchema,
 ]);
+
+export type OutputPluginNamedConfig = z.infer<
+  typeof OutputPluginNamedConfigSchema
+>;
