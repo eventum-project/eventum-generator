@@ -11,7 +11,7 @@ import {
   TagsInput,
   TextInput,
 } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { modals } from '@mantine/modals';
 import { IconAlertSquareRounded, IconSearch, IconX } from '@tabler/icons-react';
 import { useState } from 'react';
 
@@ -21,11 +21,6 @@ import { useGeneratorDirs } from '@/api/hooks/useGeneratorConfigs';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 export default function ProjectsPage() {
-  const [
-    isCreateModalOpened,
-    { open: openCreateModal, close: closeCreateModal },
-  ] = useDisclosure(false);
-
   const [projectNameFilter, setProjectNameFilter] = useState('');
   const [instanceFilter, setInstanceFilter] = useState<string[]>([]);
   const [anyInstanceFilter, setAnyInstanceFilter] = useState(false);
@@ -68,11 +63,6 @@ export default function ProjectsPage() {
 
     return (
       <Container size="100%" mt="lg">
-        <CreateProjectModal
-          opened={isCreateModalOpened}
-          onClose={closeCreateModal}
-        />
-
         <Group justify="space-between">
           <Group>
             <TextInput
@@ -107,7 +97,23 @@ export default function ProjectsPage() {
               }
             />
           </Group>
-          <Button onClick={openCreateModal}>Create new</Button>
+          <Button
+            onClick={() =>
+              modals.open({
+                title: 'New project',
+                children: (
+                  <CreateProjectModal
+                    existingProjectNames={generatorDirs.map(
+                      (item) => item.name
+                    )}
+                  />
+                ),
+                size: 'lg',
+              })
+            }
+          >
+            Create new
+          </Button>
         </Group>
 
         <GeneratorDirsTable
