@@ -17,6 +17,6 @@ export async function login(
   return usernameSchema.parse(res.data);
 }
 
-export async function logout(): Promise<undefined> {
+export async function logout() {
   await apiClient.post('/auth/logout');
 }

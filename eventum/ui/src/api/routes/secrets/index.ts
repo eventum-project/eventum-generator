@@ -18,13 +18,10 @@ export async function getSecretNames(): Promise<SecretNames> {
   return await validateResponse(SecretNamesSchema, apiClient.get(`/secrets/`));
 }
 
-export async function setSecretValue(
-  name: string,
-  value: string
-): Promise<undefined> {
+export async function setSecretValue(name: string, value: string) {
   await apiClient.put(`/secrets/${name}`, JSON.stringify(value));
 }
 
-export async function deleteSecretValue(name: string): Promise<undefined> {
+export async function deleteSecretValue(name: string) {
   await apiClient.delete(`/secrets/${name}`);
 }

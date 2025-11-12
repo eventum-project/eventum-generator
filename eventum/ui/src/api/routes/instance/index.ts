@@ -21,16 +21,14 @@ export async function getInstanceSettings(): Promise<Settings> {
   );
 }
 
-export async function updateInstanceSettings(
-  settings: Settings
-): Promise<undefined> {
+export async function updateInstanceSettings(settings: Settings) {
   await apiClient.put('/instance/settings', settings);
 }
 
-export async function stopInstance(): Promise<undefined> {
+export async function stopInstance() {
   await apiClient.post('/instance/stop');
 }
 
-export async function restartInstance(): Promise<undefined> {
+export async function restartInstance() {
   await apiClient.post('/instance/restart');
 }
