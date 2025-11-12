@@ -49,9 +49,21 @@ class ClickhouseOutputPlugin(
                 send_receive_timeout=self._config.request_timeout,
                 client_name=self._config.client_name,
                 verify=self._config.verify,
-                ca_cert=self._config.ca_cert,
-                client_cert=self._config.client_cert,
-                client_cert_key=self._config.client_cert_key,
+                ca_cert=(
+                    self.resolve_path(self._config.ca_cert)
+                    if self._config.ca_cert
+                    else None
+                ),
+                client_cert=(
+                    self.resolve_path(self._config.client_cert)
+                    if self._config.client_cert
+                    else None
+                ),
+                client_cert_key=(
+                    self.resolve_path(self._config.client_cert_key)
+                    if self._config.client_cert_key
+                    else None
+                ),
                 server_host_name=self._config.server_host_name,
                 tls_mode=self._config.tls_mode,
                 http_proxy=(

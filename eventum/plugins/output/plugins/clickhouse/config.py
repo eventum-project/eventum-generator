@@ -3,13 +3,7 @@
 from pathlib import Path
 from typing import Literal, Self
 
-from pydantic import (
-    ClickHouseDsn,
-    Field,
-    HttpUrl,
-    field_validator,
-    model_validator,
-)
+from pydantic import ClickHouseDsn, Field, HttpUrl, model_validator
 
 from eventum.plugins.output.base.config import OutputPluginConfig
 from eventum.plugins.output.fields import (
@@ -67,13 +61,13 @@ class ClickhouseOutputPluginConfig(OutputPluginConfig, frozen=True):
         Whether to verify SSL certificate of ClickHouse server.
 
     ca_cert : Path | None, default=None
-        Absolute path to CA certificate.
+        Path to CA certificate.
 
     client_cert : Path | None, default=None
-        Absolute path to client certificate.
+        Path to client certificate.
 
     client_cert_key : Path | None, default=None
-        Absolute path to client certificate key.
+        Path to client certificate key.
 
     server_host_name : str | None, default=None
         The ClickHouse server hostname as identified by the CN or SNI
@@ -144,18 +138,6 @@ class ClickhouseOutputPluginConfig(OutputPluginConfig, frozen=True):
         validate_default=True,
         discriminator='format',
     )
-
-    @field_validator('ca_cert', 'client_cert', 'client_cert_key')
-    @classmethod
-    def validate_ca_cert(cls, v: Path | None) -> Path | None:  # noqa: D102
-        if v is None:
-            return v
-
-        if not v.is_absolute():
-            msg = 'Path must be absolute'
-            raise ValueError(msg)
-
-        return v
 
     @model_validator(mode='after')
     def validate_client_cert(self) -> Self:  # noqa: D102
