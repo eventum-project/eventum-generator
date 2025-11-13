@@ -8,4 +8,5 @@ export const ROUTE_PATHS = {
   SECRETS: '/secrets',
   SETTINGS: '/settings',
   MANAGEMENT: '/management',
+  NOT_FOUND: '/404',
 };
