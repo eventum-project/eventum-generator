@@ -3,9 +3,11 @@ import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { IconEdit, IconTrash } from '@tabler/icons-react';
 import { FC, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { useDeleteGeneratorConfigMutation } from '@/api/hooks/useGeneratorConfigs';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
+import { ROUTE_PATHS } from '@/routing/paths';
 
 interface RowActionsProps {
   target: ReactNode;
@@ -19,6 +21,11 @@ export const RowActions: FC<RowActionsProps> = ({
   generatorIds,
 }) => {
   const deleteGeneratorConfig = useDeleteGeneratorConfigMutation();
+  const navigate = useNavigate();
+
+  function handleEdit(projectName: string) {
+    void navigate(`${ROUTE_PATHS.PROJECTS}/${projectName}`);
+  }
 
   function handleDelete() {
     if (generatorIds.length > 0) {
@@ -88,7 +95,12 @@ export const RowActions: FC<RowActionsProps> = ({
       <Menu.Target>{target}</Menu.Target>
 
       <Menu.Dropdown>
-        <Menu.Item leftSection={<IconEdit size={14} />}>Edit</Menu.Item>
+        <Menu.Item
+          leftSection={<IconEdit size={14} />}
+          onClick={() => handleEdit(dirName)}
+        >
+          Edit
+        </Menu.Item>
 
         <Menu.Divider />
 
