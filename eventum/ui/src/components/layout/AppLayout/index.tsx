@@ -1,15 +1,13 @@
 import { AppShell, Center, Loader } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 
 import { Header } from './Header';
 import { Navbar } from './Navbar';
 import { useCurrentUser, useLogoutMutation } from '@/api/hooks/useAuth';
 import { ROUTE_PATHS } from '@/routing/paths';
 
-export default function AppLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function AppLayout() {
   const navigate = useNavigate();
   const {
     data: user,
@@ -61,7 +59,9 @@ export default function AppLayout({
         <Navbar />
       </AppShell.Navbar>
 
-      <AppShell.Main>{children}</AppShell.Main>
+      <AppShell.Main>
+        <Outlet />
+      </AppShell.Main>
     </AppShell>
   );
 }

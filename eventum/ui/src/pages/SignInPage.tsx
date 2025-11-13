@@ -49,7 +49,7 @@ export default function SignInPage() {
       },
       {
         onSuccess: () => {
-          void navigate(ROUTE_PATHS.MAIN);
+          void navigate(ROUTE_PATHS.ROOT);
         },
         onError: (error: unknown) => {
           if (error instanceof APIError) {

@@ -57,7 +57,7 @@ export function SignInRoute({
       </Center>
     );
 
-  if (isSuccess) return <Navigate to={ROUTE_PATHS.MAIN} replace />;
+  if (isSuccess) return <Navigate to={ROUTE_PATHS.ROOT} replace />;
 
   return children;
 }

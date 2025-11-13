@@ -31,6 +31,12 @@ const ProjectsPage = lazy(
       default: React.ComponentType;
     }>
 );
+const ProjectPage = lazy(
+  () =>
+    import('@/pages/ProjectPage') as Promise<{
+      default: React.ComponentType;
+    }>
+);
 const StartupPage = lazy(
   () =>
     import('@/pages/StartupPage') as Promise<{
@@ -74,74 +80,22 @@ export const routes: RouteObject[] = [
     ),
   },
   {
-    path: ROUTE_PATHS.MAIN,
+    path: ROUTE_PATHS.ROOT,
     element: (
       <PrivateRoute>
-        <AppLayout>
-          <MainPage />
-        </AppLayout>
+        <AppLayout />
       </PrivateRoute>
     ),
-  },
-  {
-    path: ROUTE_PATHS.INSTANCES,
-    element: (
-      <PrivateRoute>
-        <AppLayout>
-          <InstancesPage />
-        </AppLayout>
-      </PrivateRoute>
-    ),
-  },
-  {
-    path: ROUTE_PATHS.PROJECTS,
-    element: (
-      <PrivateRoute>
-        <AppLayout>
-          <ProjectsPage />
-        </AppLayout>
-      </PrivateRoute>
-    ),
-  },
-  {
-    path: ROUTE_PATHS.STARTUP,
-    element: (
-      <PrivateRoute>
-        <AppLayout>
-          <StartupPage />
-        </AppLayout>
-      </PrivateRoute>
-    ),
-  },
-  {
-    path: ROUTE_PATHS.SECRETS,
-    element: (
-      <PrivateRoute>
-        <AppLayout>
-          <SecretsPage />
-        </AppLayout>
-      </PrivateRoute>
-    ),
-  },
-  {
-    path: ROUTE_PATHS.SETTINGS,
-    element: (
-      <PrivateRoute>
-        <AppLayout>
-          <SettingsPage />
-        </AppLayout>
-      </PrivateRoute>
-    ),
-  },
-  {
-    path: ROUTE_PATHS.MANAGEMENT,
-    element: (
-      <PrivateRoute>
-        <AppLayout>
-          <ManagementPage />
-        </AppLayout>
-      </PrivateRoute>
-    ),
+    children: [
+      { index: true, element: <MainPage /> },
+      { path: ROUTE_PATHS.INSTANCES, element: <InstancesPage /> },
+      { path: ROUTE_PATHS.PROJECTS, element: <ProjectsPage /> },
+      { path: ROUTE_PATHS.PROJECT, element: <ProjectPage /> },
+      { path: ROUTE_PATHS.STARTUP, element: <StartupPage /> },
+      { path: ROUTE_PATHS.SECRETS, element: <SecretsPage /> },
+      { path: ROUTE_PATHS.SETTINGS, element: <SettingsPage /> },
+      { path: ROUTE_PATHS.MANAGEMENT, element: <ManagementPage /> },
+    ],
   },
   {
     path: '*',

@@ -15,8 +15,8 @@ export const Navbar: FC = () => {
         <NavLink
           label="Overview"
           leftSection={<IconHome size="19px" />}
-          active={location.pathname === ROUTE_PATHS.MAIN}
-          onClick={() => void navigate(ROUTE_PATHS.MAIN)}
+          active={location.pathname === ROUTE_PATHS.ROOT}
+          onClick={() => void navigate(ROUTE_PATHS.ROOT)}
         />
         {NAVIGATION_DATA.map((group) => (
           <Box key={group.groupName}>

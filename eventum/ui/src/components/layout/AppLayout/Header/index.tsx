@@ -22,7 +22,7 @@ export const Header: FC<HeaderProps> = ({ username, onSignOut }) => {
       <Group>
         <Group
           gap="xs"
-          onClick={() => void navigate(ROUTE_PATHS.MAIN)}
+          onClick={() => void navigate(ROUTE_PATHS.ROOT)}
           style={{ cursor: 'pointer' }}
         >
           <Box>
