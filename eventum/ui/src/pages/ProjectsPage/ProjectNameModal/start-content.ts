@@ -1,11 +1,10 @@
+import { EventPluginName } from '@/api/models/plugins';
 import {
   EventPluginNamedConfig,
   TemplatePickingMode,
 } from '@/api/routes/generator-configs/schemas/event-plugins';
 import { InputPluginNamedConfig } from '@/api/routes/generator-configs/schemas/input-plugins';
 import { OutputPluginNamedConfig } from '@/api/routes/generator-configs/schemas/output-plugins';
-
-export type EventPluginName = 'template' | 'replay' | 'script';
 
 export function getEventPluginDefaultConfig(
   pluginName: EventPluginName

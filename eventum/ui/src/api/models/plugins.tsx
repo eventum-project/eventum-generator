@@ -34,6 +34,12 @@ export type OutputPluginName =
   | 'opensearch'
   | 'stdout';
 
+export interface PluginInfo {
+  label: string;
+  icon: Icon;
+  description: string;
+}
+
 export const INPUT_PLUGINS_INFO = {
   cron: {
     label: 'Cron',
@@ -71,14 +77,7 @@ export const INPUT_PLUGINS_INFO = {
     icon: IconList,
     description: 'Generate at specified timestamps',
   },
-} as const satisfies Record<
-  InputPluginName,
-  {
-    label: string;
-    icon: Icon;
-    description: string;
-  }
->;
+} as const satisfies Record<InputPluginName, PluginInfo>;
 
 export const EVENT_PLUGINS_INFO = {
   template: {
@@ -89,21 +88,14 @@ export const EVENT_PLUGINS_INFO = {
   replay: {
     label: 'Replay',
     icon: IconRepeat,
-    description: 'Produce events using existing log file by replaying',
+    description: 'Produce events by replaying existing log files',
   },
   script: {
     label: 'Script',
     icon: IconCode,
-    description: 'Producing events using Python script with user defined logic',
+    description: 'Produce events using Python scripts',
   },
-} as const satisfies Record<
-  EventPluginName,
-  {
-    label: string;
-    icon: Icon;
-    description: string;
-  }
->;
+} as const satisfies Record<EventPluginName, PluginInfo>;
 
 export const OUTPUT_PLUGINS_INFO = {
   clickhouse: {
@@ -131,11 +123,4 @@ export const OUTPUT_PLUGINS_INFO = {
     icon: IconTerminal2,
     description: 'Write events to stdout',
   },
-} as const satisfies Record<
-  OutputPluginName,
-  {
-    label: string;
-    icon: Icon;
-    description: string;
-  }
->;
+} as const satisfies Record<OutputPluginName, PluginInfo>;
