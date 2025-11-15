@@ -1,0 +1,141 @@
+import {
+  Icon,
+  IconAsteriskSimple,
+  IconBraces,
+  IconCalendarMonthFilled,
+  IconChartBar,
+  IconCode,
+  IconFileDescription,
+  IconList,
+  IconNumber100Small,
+  IconRepeat,
+  IconTallymark4,
+  IconTerminal2,
+  IconTimeDuration45,
+} from '@tabler/icons-react';
+
+import { IconOpenSearch } from '@/components/ui/icons/IconOpenSearch';
+
+export type InputPluginName =
+  | 'cron'
+  | 'http'
+  | 'linspace'
+  | 'static'
+  | 'time_patterns'
+  | 'timer'
+  | 'timestamps';
+
+export type EventPluginName = 'jinja' | 'replay' | 'script';
+
+export type OutputPluginName =
+  | 'clickhouse'
+  | 'file'
+  | 'http'
+  | 'opensearch'
+  | 'stdout';
+
+export const INPUT_PLUGINS_INFO = {
+  cron: {
+    label: 'Cron',
+    icon: IconAsteriskSimple,
+    description: 'Generate timestamps at moments defined by cron expression',
+  },
+  http: {
+    label: 'HTTP',
+    icon: IconCode,
+    description: 'Generate timestamps when HTTP request is received',
+  },
+  linspace: {
+    label: 'Linspace',
+    icon: IconCalendarMonthFilled,
+    description: 'Generate timestamps linearly spaced in date range',
+  },
+  static: {
+    label: 'Static',
+    icon: IconNumber100Small,
+    description: 'Generate specified number of current timestamps',
+  },
+  time_patterns: {
+    label: 'Time patterns',
+    icon: IconChartBar,
+    description:
+      'Generate events with specific pattern of distribution in time',
+  },
+  timer: {
+    label: 'Timer',
+    icon: IconTimeDuration45,
+    description: 'Generate timestamps after specified amount of time',
+  },
+  timestamps: {
+    label: 'Timestamps',
+    icon: IconList,
+    description: 'Generate at specified timestamps',
+  },
+} as const satisfies Record<
+  InputPluginName,
+  {
+    label: string;
+    icon: Icon;
+    description: string;
+  }
+>;
+
+export const EVENT_PLUGINS_INFO = {
+  jinja: {
+    label: 'Jinja',
+    icon: IconBraces,
+    description: 'Produce events using Jinja templates',
+  },
+  replay: {
+    label: 'Replay',
+    icon: IconRepeat,
+    description: 'Produce events using existing log file by replaying',
+  },
+  script: {
+    label: 'Script',
+    icon: IconCode,
+    description: 'Producing events using Python script with user defined logic',
+  },
+} as const satisfies Record<
+  EventPluginName,
+  {
+    label: string;
+    icon: Icon;
+    description: string;
+  }
+>;
+
+export const OUTPUT_PLUGINS_INFO = {
+  clickhouse: {
+    label: 'ClickHouse',
+    icon: IconTallymark4,
+    description: 'Index events to ClickHouse',
+  },
+  file: {
+    label: 'File',
+    icon: IconFileDescription,
+    description: 'Write events to a file',
+  },
+  http: {
+    label: 'HTTP',
+    icon: IconCode,
+    description: 'Send events using HTTP requests',
+  },
+  opensearch: {
+    label: 'OpenSearch',
+    icon: IconOpenSearch,
+    description: 'Index events to OpenSearch',
+  },
+  stdout: {
+    label: 'Stdout',
+    icon: IconTerminal2,
+    description: 'Write events to stdout',
+  },
+} as const satisfies Record<
+  OutputPluginName,
+  {
+    label: string;
+    icon: Icon;
+    description: string;
+  }
+>;
