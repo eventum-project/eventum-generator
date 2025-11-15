@@ -27,7 +27,7 @@ export const Navbar: FC = () => {
                   label={item.label}
                   key={item.label}
                   leftSection={<item.icon size="19px" />}
-                  active={location.pathname == item.pathname}
+                  active={location.pathname.startsWith(item.pathname)}
                   onClick={() => void navigate(item.pathname)}
                 />
               ))}
