@@ -5,14 +5,14 @@ import {
 import { InputPluginNamedConfig } from '@/api/routes/generator-configs/schemas/input-plugins';
 import { OutputPluginNamedConfig } from '@/api/routes/generator-configs/schemas/output-plugins';
 
-export type EventPluginName = 'jinja' | 'replay' | 'script';
+export type EventPluginName = 'template' | 'replay' | 'script';
 
 export function getEventPluginDefaultConfig(
   pluginName: EventPluginName
 ): EventPluginNamedConfig {
-  if (pluginName === 'jinja') {
+  if (pluginName === 'template') {
     return {
-      jinja: {
+      template: {
         mode: TemplatePickingMode.All,
         templates: [
           {
@@ -57,7 +57,7 @@ export function getEventPluginAsset(pluginName: EventPluginName): {
   path: string;
   content: string;
 } {
-  if (pluginName === 'jinja') {
+  if (pluginName === 'template') {
     return {
       path: 'templates/template.jinja',
       content: 'Template content',

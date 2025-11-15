@@ -25,7 +25,7 @@ export type InputPluginName =
   | 'timer'
   | 'timestamps';
 
-export type EventPluginName = 'jinja' | 'replay' | 'script';
+export type EventPluginName = 'template' | 'replay' | 'script';
 
 export type OutputPluginName =
   | 'clickhouse'
@@ -81,10 +81,10 @@ export const INPUT_PLUGINS_INFO = {
 >;
 
 export const EVENT_PLUGINS_INFO = {
-  jinja: {
-    label: 'Jinja',
+  template: {
+    label: 'Template',
     icon: IconBraces,
-    description: 'Produce events using Jinja templates',
+    description: 'Produce events using templates',
   },
   replay: {
     label: 'Replay',

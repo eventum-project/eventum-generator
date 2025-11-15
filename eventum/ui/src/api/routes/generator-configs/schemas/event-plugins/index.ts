@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { ENCODINGS } from '../encodings';
-import { ConditionSchema } from './jinja-fsm-conditions';
+import { ConditionSchema } from './template-fsm-conditions';
 
 const EventPluginConfigSchema = z.object({});
 
@@ -63,15 +63,14 @@ const TemplateConfigForFSMModeSchema =
     initial: z.boolean().optional(),
   });
 
-const JinjaEventPluginConfigCommonFieldsSchema = EventPluginConfigSchema.extend(
-  {
+const TemplateEventPluginConfigCommonFieldsSchema =
+  EventPluginConfigSchema.extend({
     params: z.object().optional(),
     samples: z.record(z.string(), SampleConfigSchema).optional(),
-  }
-);
+  });
 
-const JinjaEventPluginConfigForGeneralModesSchema =
-  JinjaEventPluginConfigCommonFieldsSchema.extend({
+const TemplateEventPluginConfigForGeneralModesSchema =
+  TemplateEventPluginConfigCommonFieldsSchema.extend({
     mode: z.union([
       z.literal(TemplatePickingMode.All),
       z.literal(TemplatePickingMode.Any),
@@ -82,24 +81,24 @@ const JinjaEventPluginConfigForGeneralModesSchema =
       .min(1),
   });
 
-const JinjaEventPluginConfigForChanceModeSchema =
-  JinjaEventPluginConfigCommonFieldsSchema.extend({
+const TemplateEventPluginConfigForChanceModeSchema =
+  TemplateEventPluginConfigCommonFieldsSchema.extend({
     mode: z.literal(TemplatePickingMode.Chance),
     templates: z
       .array(z.record(z.string().min(1), TemplateConfigForChanceModeSchema))
       .min(1),
   });
 
-const JinjaEventPluginConfigForFSMModeSchema =
-  JinjaEventPluginConfigCommonFieldsSchema.extend({
+const TemplateEventPluginConfigForFSMModeSchema =
+  TemplateEventPluginConfigCommonFieldsSchema.extend({
     mode: z.literal(TemplatePickingMode.FSM),
     templates: z
       .array(z.record(z.string().min(1), TemplateConfigForFSMModeSchema))
       .min(1),
   });
 
-const JinjaEventPluginConfigForChainModeSchema =
-  JinjaEventPluginConfigCommonFieldsSchema.extend({
+const TemplateEventPluginConfigForChainModeSchema =
+  TemplateEventPluginConfigCommonFieldsSchema.extend({
     mode: z.literal(TemplatePickingMode.Chain),
     chain: z.array(z.string().min(1)).min(1),
     templates: z
@@ -107,15 +106,15 @@ const JinjaEventPluginConfigForChainModeSchema =
       .min(1),
   });
 
-const JinjaEventPluginConfig = z.union([
-  JinjaEventPluginConfigForGeneralModesSchema,
-  JinjaEventPluginConfigForChanceModeSchema,
-  JinjaEventPluginConfigForFSMModeSchema,
-  JinjaEventPluginConfigForChainModeSchema,
+const TemplateEventPluginConfig = z.union([
+  TemplateEventPluginConfigForGeneralModesSchema,
+  TemplateEventPluginConfigForChanceModeSchema,
+  TemplateEventPluginConfigForFSMModeSchema,
+  TemplateEventPluginConfigForChainModeSchema,
 ]);
 
-export const JinjaEventPluginNamedConfig = z.object({
-  jinja: JinjaEventPluginConfig,
+export const TemplateEventPluginNamedConfig = z.object({
+  template: TemplateEventPluginConfig,
 });
 
 const ReplayEventPluginConfigSchema = EventPluginConfigSchema.extend({
@@ -140,7 +139,7 @@ export const ScriptEventPluginNamedConfigSchema = z.object({
 });
 
 export const EventPluginNamedConfigSchema = z.union([
-  JinjaEventPluginNamedConfig,
+  TemplateEventPluginNamedConfig,
   ReplayEventPluginNamedConfigSchema,
   ScriptEventPluginNamedConfigSchema,
 ]);
