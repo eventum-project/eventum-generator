@@ -15,8 +15,7 @@ info:
     url: https://eventum-project.github.io/website/
 servers:
   local:
-    host: <MagicMock name='mock.api.host' id='129060762700832'>:<MagicMock name='mock.api.port'
-      id='129060762701168'>
+    host: 0.0.0.0:9474
     protocol: ws
 channels:
   stream_main_logs:
