@@ -6,35 +6,32 @@ import {
 import { InputPluginNamedConfig } from '@/api/routes/generator-configs/schemas/input-plugins';
 import { OutputPluginNamedConfig } from '@/api/routes/generator-configs/schemas/output-plugins';
 
+const eventPluginDefaultConfigs: Record<
+  EventPluginName,
+  EventPluginNamedConfig
+> = {
+  template: {
+    template: {
+      mode: TemplatePickingMode.All,
+      templates: [
+        {
+          template: { template: 'templates/template.jinja' },
+        },
+      ],
+    },
+  },
+  replay: {
+    replay: { path: 'static/example.log' },
+  },
+  script: {
+    script: { path: 'scripts/produce.py' },
+  },
+};
+
 export function getEventPluginDefaultConfig(
   pluginName: EventPluginName
 ): EventPluginNamedConfig {
-  if (pluginName === 'template') {
-    return {
-      template: {
-        mode: TemplatePickingMode.All,
-        templates: [
-          {
-            template: {
-              template: 'templates/template.jinja',
-            },
-          },
-        ],
-      },
-    };
-  } else if (pluginName === 'replay') {
-    return {
-      replay: {
-        path: 'static/example.log',
-      },
-    };
-  } else {
-    return {
-      script: {
-        path: 'scripts/produce.py',
-      },
-    };
-  }
+  return eventPluginDefaultConfigs[pluginName];
 }
 
 export function getDefaultInputPluginDefaultConfig(): InputPluginNamedConfig {
