@@ -19,7 +19,7 @@ from eventum.plugins.output.plugins.http.config import HttpOutputPluginConfig
 class HttpOutputPlugin(
     OutputPlugin[HttpOutputPluginConfig, OutputPluginParams],
 ):
-    """Output plugin for indexing events to OpenSearch."""
+    """Output plugin for sending events using HTTP requests."""
 
     @override
     def __init__(

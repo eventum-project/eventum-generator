@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class ClickhouseOutputPlugin(
     OutputPlugin[ClickhouseOutputPluginConfig, OutputPluginParams],
 ):
-    """Output plugin for indexing events to OpenSearch."""
+    """Output plugin for indexing events to ClickHouse."""
 
     @override
     def __init__(
