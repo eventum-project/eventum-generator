@@ -1,6 +1,5 @@
 import { Button, Group, Stack, Text } from '@mantine/core';
 import { modals } from '@mantine/modals';
-import { capitalCase } from 'change-case';
 import { FC } from 'react';
 
 import {
@@ -43,7 +42,7 @@ export const CreateProjectModal: FC<CreateProjectModalProps> = ({
             <Stack gap="xs" align="center">
               <Group gap="xs">
                 <PluginIcon size={18} />
-                {capitalCase(label)} based project
+                {label} based project
               </Group>
               <Text fz="sm" c="gray.6">
                 {description}
