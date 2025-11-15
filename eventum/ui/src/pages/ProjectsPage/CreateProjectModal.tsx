@@ -1,12 +1,13 @@
 import { Button, Group, Stack, Text } from '@mantine/core';
 import { modals } from '@mantine/modals';
-import { IconBraces, IconCode, IconFileDescription } from '@tabler/icons-react';
+import { capitalCase } from 'change-case';
 import { FC } from 'react';
 
 import {
   CreateProjectSubmitModal,
   CreateProjectSubmitModalProps,
 } from './ProjectNameModal';
+import { EVENT_PLUGINS_INFO, EventPluginName } from '@/api/models/plugins';
 
 interface CreateProjectModalProps {
   existingProjectNames: string[];
@@ -28,53 +29,29 @@ export const CreateProjectModal: FC<CreateProjectModalProps> = ({
       ),
     });
   }
+
   return (
     <Stack>
-      <Button
-        variant="default"
-        h="100px"
-        onClick={() => handleCreateProject('jinja')}
-      >
-        <Stack gap="xs" align="center">
-          <Group gap="xs">
-            <IconBraces size={18} />
-            Template based project
-          </Group>
-          <Text fz="sm" c="gray.6">
-            Generate events using Jinja templates
-          </Text>
-        </Stack>
-      </Button>
-      <Button
-        variant="default"
-        h="100px"
-        onClick={() => handleCreateProject('replay')}
-      >
-        <Stack gap="xs" align="center">
-          <Group gap="xs">
-            <IconFileDescription size={18} />
-            Log based project
-          </Group>
-          <Text fz="sm" c="gray.6">
-            Replay events from existing log files
-          </Text>
-        </Stack>
-      </Button>
-      <Button
-        variant="default"
-        h="100px"
-        onClick={() => handleCreateProject('script')}
-      >
-        <Stack gap="xs" align="center">
-          <Group gap="xs">
-            <IconCode size={18} />
-            Script based project
-          </Group>
-          <Text fz="sm" c="gray.6">
-            Generate events using Python programming language
-          </Text>
-        </Stack>
-      </Button>
+      {Object.entries(EVENT_PLUGINS_INFO).map(
+        ([name, { label, description, icon: PluginIcon }]) => (
+          <Button
+            key={name}
+            variant="default"
+            h="100px"
+            onClick={() => handleCreateProject(name as EventPluginName)}
+          >
+            <Stack gap="xs" align="center">
+              <Group gap="xs">
+                <PluginIcon size={18} />
+                {capitalCase(label)} based project
+              </Group>
+              <Text fz="sm" c="gray.6">
+                {description}
+              </Text>
+            </Stack>
+          </Button>
+        )
+      )}
     </Stack>
   );
 };

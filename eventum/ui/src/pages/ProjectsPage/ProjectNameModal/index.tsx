@@ -5,7 +5,6 @@ import { notifications } from '@mantine/notifications';
 import { FC, useState } from 'react';
 
 import {
-  EventPluginName,
   getDefaultInputPluginDefaultConfig,
   getDefaultOutputPluginDefaultConfig,
   getEventPluginAsset,
@@ -15,6 +14,7 @@ import {
   useCreateGeneratorConfigMutation,
   useUploadGeneratorFileMutation,
 } from '@/api/hooks/useGeneratorConfigs';
+import { EventPluginName } from '@/api/models/plugins';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 const VALID_PROJECT_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
