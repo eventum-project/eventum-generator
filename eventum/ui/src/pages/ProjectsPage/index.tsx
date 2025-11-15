@@ -18,6 +18,7 @@ import { useState } from 'react';
 import { CreateProjectModal } from './CreateProjectModal';
 import { GeneratorDirsTable } from './GeneratorDirsTable';
 import { useGeneratorDirs } from '@/api/hooks/useGeneratorConfigs';
+import { PageTitle } from '@/components/ui/PageTitle';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 export default function ProjectsPage() {
@@ -44,6 +45,7 @@ export default function ProjectsPage() {
   if (isGeneratorDirsError) {
     return (
       <Container size="md" mt="lg">
+        <PageTitle title="Projects" />
         <Alert
           variant="default"
           icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
@@ -62,8 +64,9 @@ export default function ProjectsPage() {
     );
 
     return (
-      <Container size="100%" mt="lg">
-        <Group justify="space-between">
+      <Container size="100%">
+        <PageTitle title="Projects" />
+        <Group justify="space-between" mt="lg">
           <Group>
             <TextInput
               leftSection={<IconSearch size={16} />}

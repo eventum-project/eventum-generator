@@ -28,7 +28,7 @@ export const APIParameters: FC<APIParametersProps> = ({ form }) => {
       <Title order={2} fw={500}>
         API parameters
       </Title>
-      <Divider my="sm" />
+      <Divider />
       <Switch
         label={
           <LabelWithTooltip

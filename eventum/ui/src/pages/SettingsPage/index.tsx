@@ -94,7 +94,7 @@ export default function SettingsPage() {
 
   if (isSettingsError) {
     return (
-      <Container size="md" mt="lg">
+      <Container size="md">
         <Alert
           variant="default"
           icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
@@ -190,7 +190,7 @@ export default function SettingsPage() {
   if (isSettingsSuccess && form.initialized) {
     return (
       <>
-        <Container size="xl" mt="lg" mb="490px">
+        <Container size="xl" mb="510px">
           <Grid gutter="xl">
             <Grid.Col span="auto">
               <form>

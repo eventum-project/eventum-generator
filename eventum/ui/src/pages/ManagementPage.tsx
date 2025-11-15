@@ -19,6 +19,7 @@ import {
   useRestartInstanceMutation,
   useStopInstanceMutation,
 } from '@/api/hooks/useInstance';
+import { PageTitle } from '@/components/ui/PageTitle';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 export default function ManagementPage() {
@@ -72,8 +73,9 @@ export default function ManagementPage() {
     });
   }
   return (
-    <Container size="lg" mt="lg" mb="400px">
+    <Container size="lg" mb="400px">
       <Stack>
+        <PageTitle title="Management" />
         <Alert
           variant="default"
           icon={<Box c="blue" component={IconInfoSquareRounded}></Box>}

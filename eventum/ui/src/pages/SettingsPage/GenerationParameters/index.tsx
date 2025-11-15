@@ -42,7 +42,7 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
       <Title order={2} fw={500} mt="xl">
         Generation parameters
       </Title>
-      <Divider my="sm" />
+      <Divider />
       <Switch
         label={
           <LabelWithTooltip

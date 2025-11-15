@@ -15,7 +15,7 @@ export const PathParameters: FC<PathParametersProps> = ({ form }) => {
       <Title order={2} fw={500} mt="xl">
         Path parameters
       </Title>
-      <Divider my="sm" />
+      <Divider />
       <TextInput
         label={
           <LabelWithTooltip

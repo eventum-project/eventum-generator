@@ -19,6 +19,7 @@ import {
   useSecretNames,
   useSetSecretValueMutation,
 } from '@/api/hooks/useSecrets';
+import { PageTitle } from '@/components/ui/PageTitle';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 export default function SecretsPage() {
@@ -88,6 +89,7 @@ export default function SecretsPage() {
   if (isSecretNamesError) {
     return (
       <Container size="md" mt="lg">
+        <PageTitle title="Secrets" />
         <Alert
           variant="default"
           icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
@@ -102,7 +104,8 @@ export default function SecretsPage() {
 
   if (isSecretNamesSuccess) {
     return (
-      <Container size="lg" mt="lg" mb="400px">
+      <Container size="lg" mb="400px">
+        <PageTitle title="Secrets" />
         <Table mt="md" highlightOnHover stickyHeader stickyHeaderOffset={60}>
           <Table.Thead>
             <Table.Tr>

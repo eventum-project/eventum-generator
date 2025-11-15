@@ -20,7 +20,7 @@ export const LoggingParameters: FC<LoggingParametersProps> = ({ form }) => {
       <Title order={2} fw={500} mt="xl">
         Logging parameters
       </Title>
-      <Divider my="sm" />
+      <Divider />
       <Select
         label={
           <LabelWithTooltip
