@@ -8,7 +8,6 @@ export const AppBreadcrumbs: FC = () => {
 
   return (
     <Breadcrumbs
-      ml="40px"
       separator={<IconChevronRight size={'16px'} />}
       separatorMargin="0"
     >

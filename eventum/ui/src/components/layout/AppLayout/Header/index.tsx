@@ -1,5 +1,6 @@
-import { Box, Group, Image, Title } from '@mantine/core';
+import { ActionIcon, Box, Group, Image, Title } from '@mantine/core';
 import { modals } from '@mantine/modals';
+import { IconMenu2 } from '@tabler/icons-react';
 import { FC } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -12,18 +13,27 @@ import { ROUTE_PATHS } from '@/routing/paths';
 interface HeaderProps {
   username: string;
   onSignOut: () => void;
+  onMenuClick: () => void;
 }
 
-export const Header: FC<HeaderProps> = ({ username, onSignOut }) => {
+export const Header: FC<HeaderProps> = ({
+  username,
+  onSignOut,
+  onMenuClick,
+}) => {
   const navigate = useNavigate();
 
   return (
     <Group justify="space-between" h="100%" ml="xs" mr="xl">
-      <Group>
+      <Group gap="lg">
+        <ActionIcon variant="transparent" onClick={onMenuClick}>
+          <IconMenu2 size={20} />
+        </ActionIcon>
         <Group
           gap="xs"
           onClick={() => void navigate(ROUTE_PATHS.ROOT)}
           style={{ cursor: 'pointer' }}
+          mr="md"
         >
           <Box>
             <Image
