@@ -33,14 +33,13 @@ class ReplayEventPlugin(
         params: EventPluginParams,
     ) -> None:
         super().__init__(config, params)
+        self._filepath = self.resolve_path(self._config.path)
 
         self._check_file_existence()
 
         self._pattern = self._initialize_pattern()
         self._lines = self._get_next_line()
         self._last_read_position = 0
-
-        self._filepath = self.resolve_path(self._config.path)
 
     def _check_file_existence(self) -> None:
         """Check if source file exists.

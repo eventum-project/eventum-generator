@@ -241,7 +241,7 @@
 
 ### Event plugins
 
-#### Jinja Event plugin
+#### Template Event plugin
 
 <table>
     <th>Name</th>

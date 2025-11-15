@@ -4,13 +4,13 @@ import random
 from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Generic, TypeVar, override
 
-from eventum.plugins.event.plugins.jinja.config import (
+from eventum.plugins.event.plugins.template.config import (
     TemplateConfigForChanceMode,
     TemplateConfigForFSMMode,
     TemplateConfigForGeneralModes,
     TemplatePickingMode,
 )
-from eventum.plugins.event.plugins.jinja.context import EventContext
+from eventum.plugins.event.plugins.template.context import EventContext
 
 T = TypeVar('T', bound=TemplateConfigForGeneralModes)
 

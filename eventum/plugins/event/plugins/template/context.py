@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import TypedDict
 
-from eventum.plugins.event.plugins.jinja.state import State
+from eventum.plugins.event.plugins.template.state import State
 
 
 class BaseEventContext(TypedDict):

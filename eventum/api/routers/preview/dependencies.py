@@ -27,8 +27,8 @@ from eventum.api.utils.response_description import (
 )
 from eventum.core.plugins_initializer import InitializationError, init_plugin
 from eventum.plugins.event.base.plugin import EventPlugin
-from eventum.plugins.event.plugins.jinja.plugin import JinjaEventPlugin
-from eventum.plugins.event.plugins.jinja.state import (
+from eventum.plugins.event.plugins.template.plugin import TemplateEventPlugin
+from eventum.plugins.event.plugins.template.state import (
     MultiThreadState,
     SingleThreadState,
 )
@@ -370,8 +370,8 @@ EventPluginFromStorageDep = Annotated[
         },
     },
 )
-async def check_event_plugin_is_jinja(plugin: EventPlugin) -> EventPlugin:
-    """Check that provided event plugin is `jinja` event plugin.
+async def check_event_plugin_is_template(plugin: EventPlugin) -> EventPlugin:
+    """Check that provided event plugin is `template` event plugin.
 
     Parameters
     ----------
@@ -380,7 +380,7 @@ async def check_event_plugin_is_jinja(plugin: EventPlugin) -> EventPlugin:
 
     Returns
     -------
-    JinjaEventPlugin
+    TemplateEventPlugin
         Original event plugin.
 
     Raises
@@ -389,7 +389,7 @@ async def check_event_plugin_is_jinja(plugin: EventPlugin) -> EventPlugin:
         If currently used plugin is inappropriate for this operation.
 
     """
-    if not isinstance(plugin, JinjaEventPlugin):
+    if not isinstance(plugin, TemplateEventPlugin):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Currently used plugin is inappropriate for this operation',
@@ -398,16 +398,16 @@ async def check_event_plugin_is_jinja(plugin: EventPlugin) -> EventPlugin:
     return plugin
 
 
-CheckEventPluginIsJinjaDep = Annotated[
-    JinjaEventPlugin,
-    Depends(check_event_plugin_is_jinja),
+CheckEventPluginIsTemplateDep = Annotated[
+    TemplateEventPlugin,
+    Depends(check_event_plugin_is_template),
 ]
 
 
 @set_responses(
     responses=merge_responses(
         get_event_plugin_from_storage.responses,
-        check_event_plugin_is_jinja.responses,
+        check_event_plugin_is_template.responses,
         {
             404: {
                 'description': (
@@ -417,19 +417,23 @@ CheckEventPluginIsJinjaDep = Annotated[
         },
     ),
 )
-async def get_jinja_event_plugin_local_state(
-    plugin: Annotated[EventPluginFromStorageDep, CheckEventPluginIsJinjaDep],
+async def get_template_event_plugin_local_state(
+    plugin: Annotated[
+        EventPluginFromStorageDep,
+        CheckEventPluginIsTemplateDep,
+    ],
     alias: Annotated[
         str,
         Path(description='Alias of template to get state of'),
     ],
 ) -> SingleThreadState:
-    """Get local state of provided template by its alias of jinja event plugin.
+    """Get local state of provided template by its alias of template event
+    plugin.
 
     Parameters
     ----------
     plugin : EventPluginFromStorageDep
-        Jinja event plugin from storage dependency.
+        Template event plugin from storage dependency.
 
     alias : str
         Alias of template to get state of.
@@ -446,7 +450,7 @@ async def get_jinja_event_plugin_local_state(
         the dependency fails to load.
 
     """
-    plugin = cast('JinjaEventPlugin', plugin)
+    plugin = cast('TemplateEventPlugin', plugin)
 
     try:
         return plugin.local_states[alias]
@@ -457,27 +461,30 @@ async def get_jinja_event_plugin_local_state(
         ) from None
 
 
-JinjaEventPluginLocalStateDep = Annotated[
+TemplateEventPluginLocalStateDep = Annotated[
     SingleThreadState,
-    Depends(get_jinja_event_plugin_local_state),
+    Depends(get_template_event_plugin_local_state),
 ]
 
 
 @set_responses(
     responses=merge_responses(
         get_event_plugin_from_storage.responses,
-        check_event_plugin_is_jinja.responses,
+        check_event_plugin_is_template.responses,
     ),
 )
-async def get_jinja_event_plugin_shared_state(
-    plugin: Annotated[EventPluginFromStorageDep, CheckEventPluginIsJinjaDep],
+async def get_template_event_plugin_shared_state(
+    plugin: Annotated[
+        EventPluginFromStorageDep,
+        CheckEventPluginIsTemplateDep,
+    ],
 ) -> SingleThreadState:
-    """Get shared state of jinja event plugin.
+    """Get shared state of template event plugin.
 
     Parameters
     ----------
     plugin : EventPluginFromStorageDep
-        Jinja event plugin from storage dependency.
+        Template event plugin from storage dependency.
 
     Returns
     -------
@@ -490,31 +497,34 @@ async def get_jinja_event_plugin_shared_state(
         If some of the dependency fails to load.
 
     """
-    plugin = cast('JinjaEventPlugin', plugin)
+    plugin = cast('TemplateEventPlugin', plugin)
     return plugin.shared_state
 
 
-JinjaEventPluginSharedStateDep = Annotated[
+TemplateEventPluginSharedStateDep = Annotated[
     SingleThreadState,
-    Depends(get_jinja_event_plugin_shared_state),
+    Depends(get_template_event_plugin_shared_state),
 ]
 
 
 @set_responses(
     responses=merge_responses(
         get_event_plugin_from_storage.responses,
-        check_event_plugin_is_jinja.responses,
+        check_event_plugin_is_template.responses,
     ),
 )
-async def get_jinja_event_plugin_global_state(
-    plugin: Annotated[EventPluginFromStorageDep, CheckEventPluginIsJinjaDep],
+async def get_template_event_plugin_global_state(
+    plugin: Annotated[
+        EventPluginFromStorageDep,
+        CheckEventPluginIsTemplateDep,
+    ],
 ) -> MultiThreadState:
-    """Get global state of jinja event plugin.
+    """Get global state of template event plugin.
 
     Parameters
     ----------
     plugin : EventPluginFromStorageDep
-        Jinja event plugin from storage dependency.
+        Template event plugin from storage dependency.
 
     Returns
     -------
@@ -527,11 +537,11 @@ async def get_jinja_event_plugin_global_state(
         If some of the dependency fails to load.
 
     """
-    plugin = cast('JinjaEventPlugin', plugin)
+    plugin = cast('TemplateEventPlugin', plugin)
     return plugin.global_state
 
 
-JinjaEventPluginGlobalStateDep = Annotated[
+TemplateEventPluginGlobalStateDep = Annotated[
     SingleThreadState,
-    Depends(get_jinja_event_plugin_global_state),
+    Depends(get_template_event_plugin_global_state),
 ]

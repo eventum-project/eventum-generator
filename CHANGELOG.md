@@ -18,7 +18,7 @@ All notable changes to this project will be documented in this file.
 - New `script` event plugin is added
 - New `replay` event plugin is added
 
-##### Jinja event plugin
+##### Template event plugin
 
 - New modules `mimesis` and `faker` are added to use in templates
 - Any python package can be used now in templates
@@ -57,11 +57,12 @@ All notable changes to this project will be documented in this file.
 
 ### 🚜 Refactor
 
-- Architecture of package is globally refactored
+- Architecture of project is globally refactored
 
 ### 💼 Other
 
 - `sample` input plugin is renamed to `static`
+- `jinja` event plugin is renamed to `template`
 - Logging is improved, structured logging is used now
 - Exceptions are formalized and enriched with context
 

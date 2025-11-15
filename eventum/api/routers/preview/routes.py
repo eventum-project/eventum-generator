@@ -1,6 +1,6 @@
 """Routes."""
 
-import asyncio  # noqa: I001
+import asyncio
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, HTTPException, Query, status
@@ -16,25 +16,23 @@ from eventum.api.routers.preview.dependencies import (
     EventPluginDep,
     EventPluginFromStorageDep,
     InputPluginsDep,
-    JinjaEventPluginGlobalStateDep,
-    JinjaEventPluginLocalStateDep,
-    JinjaEventPluginSharedStateDep,
     SpanDep,
+    TemplateEventPluginGlobalStateDep,
+    TemplateEventPluginLocalStateDep,
+    TemplateEventPluginSharedStateDep,
     get_event_plugin_from_storage,
-)
-from eventum.api.routers.preview.dependencies import (
-    get_jinja_event_plugin_global_state as get_jinja_global_state,
-)
-from eventum.api.routers.preview.dependencies import (
-    get_jinja_event_plugin_local_state as get_jinja_local_state,
-)
-from eventum.api.routers.preview.dependencies import (
-    get_jinja_event_plugin_shared_state as get_jinja_shared_state,
-)
-from eventum.api.routers.preview.dependencies import (
     get_span,
     load_event_plugin,
     load_input_plugins,
+)
+from eventum.api.routers.preview.dependencies import (
+    get_template_event_plugin_global_state as get_template_plugin_global_state,
+)
+from eventum.api.routers.preview.dependencies import (
+    get_template_event_plugin_local_state as get_template_plugin_local_state,
+)
+from eventum.api.routers.preview.dependencies import (
+    get_template_event_plugin_shared_state as get_template_plugin_shared_state,
 )
 from eventum.api.routers.preview.models import (
     AggregatedTimestamps,
@@ -179,18 +177,18 @@ async def release_event_plugin(plugin: EventPluginFromStorageDep) -> None:
 
 
 @router.get(
-    '/{name}/event-plugin/jinja/state/local/{alias}',
+    '/{name}/event-plugin/template/state/local/{alias}',
     description=(
-        'Get local state of jinja event plugin for the specified template '
+        'Get local state of template event plugin for the specified template '
         'by its alias'
     ),
     responses=merge_responses(
-        get_jinja_local_state.responses,
+        get_template_plugin_local_state.responses,
         {500: {'description': 'Failed to serialize plugin state'}},
     ),
 )
-async def get_jinja_event_plugin_local_state(
-    state: JinjaEventPluginLocalStateDep,
+async def get_template_event_plugin_local_state(
+    state: TemplateEventPluginLocalStateDep,
 ) -> dict[str, Any]:
     try:
         return await asyncio.to_thread(
@@ -204,15 +202,15 @@ async def get_jinja_event_plugin_local_state(
 
 
 @router.patch(
-    '/{name}/event-plugin/jinja/state/local/{alias}',
+    '/{name}/event-plugin/template/state/local/{alias}',
     description=(
-        'Patch local state of jinja event plugin for the specified template '
-        'by its alias'
+        'Patch local state of template event plugin for the specified '
+        'template by its alias'
     ),
-    responses=get_jinja_local_state.responses,
+    responses=get_template_plugin_local_state.responses,
 )
-async def update_jinja_event_plugin_local_state(
-    state: JinjaEventPluginLocalStateDep,
+async def update_template_event_plugin_local_state(
+    state: TemplateEventPluginLocalStateDep,
     content: Annotated[
         dict[str, Any],
         Body(description='Content to patch in state'),
@@ -222,29 +220,29 @@ async def update_jinja_event_plugin_local_state(
 
 
 @router.delete(
-    '/{name}/event-plugin/jinja/state/local/{alias}',
+    '/{name}/event-plugin/template/state/local/{alias}',
     description=(
-        'Clear local state of jinja event plugin for the specified template '
-        'by its alias'
+        'Clear local state of template event plugin for the specified '
+        'template by its alias'
     ),
-    responses=get_jinja_local_state.responses,
+    responses=get_template_plugin_local_state.responses,
 )
-async def clear_jinja_event_plugin_local_state(
-    state: JinjaEventPluginLocalStateDep,
+async def clear_template_event_plugin_local_state(
+    state: TemplateEventPluginLocalStateDep,
 ) -> None:
     state.clear()
 
 
 @router.get(
-    '/{name}/event-plugin/jinja/state/shared',
-    description='Get shared state of jinja event plugin',
+    '/{name}/event-plugin/template/state/shared',
+    description='Get shared state of template event plugin',
     responses=merge_responses(
-        get_jinja_shared_state.responses,
+        get_template_plugin_shared_state.responses,
         {500: {'description': 'Failed to serialize plugin state'}},
     ),
 )
-async def get_jinja_event_plugin_shared_state(
-    state: JinjaEventPluginSharedStateDep,
+async def get_template_event_plugin_shared_state(
+    state: TemplateEventPluginSharedStateDep,
 ) -> dict[str, Any]:
     try:
         return await asyncio.to_thread(
@@ -258,12 +256,12 @@ async def get_jinja_event_plugin_shared_state(
 
 
 @router.patch(
-    '/{name}/event-plugin/jinja/state/shared',
-    description='Patch shared state of jinja event plugin',
-    responses=get_jinja_shared_state.responses,
+    '/{name}/event-plugin/template/state/shared',
+    description='Patch shared state of template event plugin',
+    responses=get_template_plugin_shared_state.responses,
 )
-async def update_jinja_event_plugin_shared_state(
-    state: JinjaEventPluginSharedStateDep,
+async def update_template_event_plugin_shared_state(
+    state: TemplateEventPluginSharedStateDep,
     content: Annotated[
         dict[str, Any],
         Body(description='Content to patch in state'),
@@ -273,26 +271,26 @@ async def update_jinja_event_plugin_shared_state(
 
 
 @router.delete(
-    '/{name}/event-plugin/jinja/state/shared',
-    description='Clear shared state of jinja event plugin',
-    responses=get_jinja_shared_state.responses,
+    '/{name}/event-plugin/template/state/shared',
+    description='Clear shared state of template event plugin',
+    responses=get_template_plugin_shared_state.responses,
 )
-async def clear_jinja_event_plugin_shared_state(
-    state: JinjaEventPluginSharedStateDep,
+async def clear_template_event_plugin_shared_state(
+    state: TemplateEventPluginSharedStateDep,
 ) -> None:
     state.clear()
 
 
 @router.get(
-    '/{name}/event-plugin/jinja/state/global',
-    description='Get global state of jinja event plugin',
+    '/{name}/event-plugin/template/state/global',
+    description='Get global state of template event plugin',
     responses=merge_responses(
-        get_jinja_global_state.responses,
+        get_template_plugin_global_state.responses,
         {500: {'description': 'Failed to serialize plugin state'}},
     ),
 )
-async def get_jinja_event_plugin_global_state(
-    state: JinjaEventPluginGlobalStateDep,
+async def get_template_event_plugin_global_state(
+    state: TemplateEventPluginGlobalStateDep,
 ) -> dict[str, Any]:
     try:
         return await asyncio.to_thread(
@@ -306,12 +304,12 @@ async def get_jinja_event_plugin_global_state(
 
 
 @router.patch(
-    '/{name}/event-plugin/jinja/state/global',
-    description='Patch global state of jinja event plugin',
-    responses=get_jinja_global_state.responses,
+    '/{name}/event-plugin/template/state/global',
+    description='Patch global state of template event plugin',
+    responses=get_template_plugin_global_state.responses,
 )
-async def update_jinja_event_plugin_global_state(
-    state: JinjaEventPluginGlobalStateDep,
+async def update_template_event_plugin_global_state(
+    state: TemplateEventPluginGlobalStateDep,
     content: Annotated[
         dict[str, Any],
         Body(description='Content to patch in state'),
@@ -321,12 +319,12 @@ async def update_jinja_event_plugin_global_state(
 
 
 @router.delete(
-    '/{name}/event-plugin/jinja/state/global',
-    description='Clear global state of jinja event plugin',
-    responses=get_jinja_global_state.responses,
+    '/{name}/event-plugin/template/state/global',
+    description='Clear global state of template event plugin',
+    responses=get_template_plugin_global_state.responses,
 )
-async def clear_jinja_event_plugin_global_state(
-    state: JinjaEventPluginGlobalStateDep,
+async def clear_template_event_plugin_global_state(
+    state: TemplateEventPluginGlobalStateDep,
 ) -> None:
     state.clear()
 

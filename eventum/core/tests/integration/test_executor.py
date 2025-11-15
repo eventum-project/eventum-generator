@@ -6,13 +6,13 @@ from pytz import timezone
 
 from eventum.core.executor import Executor
 from eventum.core.parameters import GeneratorParameters
-from eventum.plugins.event.plugins.jinja.config import (
-    JinjaEventPluginConfig,
-    JinjaEventPluginConfigForGeneralModes,
+from eventum.plugins.event.plugins.template.config import (
     TemplateConfigForGeneralModes,
+    TemplateEventPluginConfig,
+    TemplateEventPluginConfigForGeneralModes,
     TemplatePickingMode,
 )
-from eventum.plugins.event.plugins.jinja.plugin import JinjaEventPlugin
+from eventum.plugins.event.plugins.template.plugin import TemplateEventPlugin
 from eventum.plugins.input.plugins.static.config import StaticInputPluginConfig
 from eventum.plugins.input.plugins.static.plugin import StaticInputPlugin
 from eventum.plugins.output.plugins.file.config import FileOutputPluginConfig
@@ -62,9 +62,9 @@ def executor(file1, file2):
                 },
             ),
         ],
-        event=JinjaEventPlugin(
-            config=JinjaEventPluginConfig(
-                root=JinjaEventPluginConfigForGeneralModes(
+        event=TemplateEventPlugin(
+            config=TemplateEventPluginConfig(
+                root=TemplateEventPluginConfigForGeneralModes(
                     params={},
                     samples={},
                     mode=TemplatePickingMode.ALL,

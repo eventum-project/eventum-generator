@@ -2,14 +2,14 @@ from pathlib import Path
 
 import pytest
 
-from eventum.plugins.event.plugins.jinja.config import (
+from eventum.plugins.event.plugins.template.config import (
     CSVSampleConfig,
     ItemsSampleConfig,
     JSONSampleConfig,
     SampleConfig,
     SampleType,
 )
-from eventum.plugins.event.plugins.jinja.sample_reader import (
+from eventum.plugins.event.plugins.template.sample_reader import (
     Sample,
     SampleLoadError,
     SamplesReader,

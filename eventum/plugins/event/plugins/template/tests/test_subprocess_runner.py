@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from eventum.plugins.event.plugins.jinja.subprocess_runner import (
+from eventum.plugins.event.plugins.template.subprocess_runner import (
     SubprocessRunner,
 )
 

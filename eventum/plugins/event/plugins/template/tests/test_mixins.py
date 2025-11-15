@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
-from eventum.plugins.event.plugins.jinja.mixins import (
+from eventum.plugins.event.plugins.template.mixins import (
     TemplateAliasesUniquenessValidatorMixin,
     TemplateSingleItemElementsValidatorMixin,
 )

@@ -96,7 +96,7 @@ def test_bulk_start_stop_join(mock_generator_class, manager):
 
     running, non_running = manager.bulk_start(ids + ['nonexistent'])
     assert set(running) == {'g0', 'g2'}
-    assert set(non_running) == {'g1'}
+    assert set(non_running) == {'g1', 'nonexistent'}
 
     # bulk_stop calls stop on all existing
     manager.bulk_stop(ids + ['nonexistent'])

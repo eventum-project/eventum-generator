@@ -3,7 +3,7 @@ from threading import RLock
 
 import pytest
 
-from eventum.plugins.event.plugins.jinja.state import (
+from eventum.plugins.event.plugins.template.state import (
     MultiThreadState,
     SingleThreadState,
 )

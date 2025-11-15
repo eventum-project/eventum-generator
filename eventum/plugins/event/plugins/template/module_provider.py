@@ -9,7 +9,7 @@ logger = structlog.stdlib.get_logger()
 
 
 class ModuleProvider:
-    """Provider of modules used in jinja templates.
+    """Provider of modules used in templates.
     By default custom modules are searched in `package_name` package,
     if module is not found there, then it is searched in environment
     packages.

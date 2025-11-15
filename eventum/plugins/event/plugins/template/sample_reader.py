@@ -9,7 +9,7 @@ import structlog
 import tablib  # type: ignore[import-untyped]
 
 from eventum.exceptions import ContextualError
-from eventum.plugins.event.plugins.jinja.config import (
+from eventum.plugins.event.plugins.template.config import (
     CSVSampleConfig,
     ItemsSampleConfig,
     JSONSampleConfig,

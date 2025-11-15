@@ -11,7 +11,7 @@ from string import (
 
 import pytest
 
-import eventum.plugins.event.plugins.jinja.modules.rand as rand
+import eventum.plugins.event.plugins.template.modules.rand as rand
 
 
 # ---- General Random Functions ----

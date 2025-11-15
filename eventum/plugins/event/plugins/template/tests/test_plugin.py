@@ -4,16 +4,16 @@ from datetime import datetime
 
 from jinja2 import DictLoader
 
-from eventum.plugins.event.plugins.jinja.config import (
+from eventum.plugins.event.plugins.template.config import (
     CSVSampleConfig,
     ItemsSampleConfig,
-    JinjaEventPluginConfig,
-    JinjaEventPluginConfigForGeneralModes,
     SampleType,
     TemplateConfigForGeneralModes,
+    TemplateEventPluginConfig,
+    TemplateEventPluginConfigForGeneralModes,
     TemplatePickingMode,
 )
-from eventum.plugins.event.plugins.jinja.plugin import JinjaEventPlugin
+from eventum.plugins.event.plugins.template.plugin import TemplateEventPlugin
 
 STATIC_FILES_DIR = os.path.join(
     os.path.abspath(os.path.dirname(__file__)), 'static'
@@ -21,9 +21,9 @@ STATIC_FILES_DIR = os.path.join(
 
 
 def test_rendering():
-    plugin = JinjaEventPlugin(
-        config=JinjaEventPluginConfig(
-            root=JinjaEventPluginConfigForGeneralModes(
+    plugin = TemplateEventPlugin(
+        config=TemplateEventPluginConfig(
+            root=TemplateEventPluginConfigForGeneralModes(
                 params={},
                 samples={},
                 mode=TemplatePickingMode.ALL,
@@ -53,9 +53,9 @@ def test_rendering():
 
 
 def test_rendering_parameters():
-    plugin = JinjaEventPlugin(
-        config=JinjaEventPluginConfig(
-            root=JinjaEventPluginConfigForGeneralModes(
+    plugin = TemplateEventPlugin(
+        config=TemplateEventPluginConfig(
+            root=TemplateEventPluginConfigForGeneralModes(
                 params={'passed_parameter': 'value of parameter'},
                 samples={},
                 mode=TemplatePickingMode.ALL,
@@ -85,9 +85,9 @@ def test_rendering_parameters():
 
 
 def test_items_sample():
-    plugin = JinjaEventPlugin(
-        config=JinjaEventPluginConfig(
-            root=JinjaEventPluginConfigForGeneralModes(
+    plugin = TemplateEventPlugin(
+        config=TemplateEventPluginConfig(
+            root=TemplateEventPluginConfigForGeneralModes(
                 params={},
                 samples={
                     'test_sample': ItemsSampleConfig(
@@ -121,9 +121,9 @@ def test_items_sample():
 
 
 def test_csv_sample():
-    plugin = JinjaEventPlugin(
-        config=JinjaEventPluginConfig(
-            root=JinjaEventPluginConfigForGeneralModes(
+    plugin = TemplateEventPlugin(
+        config=TemplateEventPluginConfig(
+            root=TemplateEventPluginConfigForGeneralModes(
                 params={},
                 samples={
                     'test_sample': CSVSampleConfig(
@@ -159,9 +159,9 @@ def test_csv_sample():
 
 
 def test_subprocess():
-    plugin = JinjaEventPlugin(
-        config=JinjaEventPluginConfig(
-            root=JinjaEventPluginConfigForGeneralModes(
+    plugin = TemplateEventPlugin(
+        config=TemplateEventPluginConfig(
+            root=TemplateEventPluginConfigForGeneralModes(
                 params={},
                 samples={
                     'test_sample': CSVSampleConfig(
@@ -200,9 +200,9 @@ def test_subprocess():
 
 
 def test_locals_state():
-    plugin = JinjaEventPlugin(
-        config=JinjaEventPluginConfig(
-            root=JinjaEventPluginConfigForGeneralModes(
+    plugin = TemplateEventPlugin(
+        config=TemplateEventPluginConfig(
+            root=TemplateEventPluginConfigForGeneralModes(
                 params={},
                 samples={
                     'test_sample': CSVSampleConfig(
@@ -258,9 +258,9 @@ def test_locals_state():
 
 
 def test_shared_state():
-    plugin = JinjaEventPlugin(
-        config=JinjaEventPluginConfig(
-            root=JinjaEventPluginConfigForGeneralModes(
+    plugin = TemplateEventPlugin(
+        config=TemplateEventPluginConfig(
+            root=TemplateEventPluginConfigForGeneralModes(
                 params={},
                 samples={
                     'test_sample': CSVSampleConfig(
@@ -316,9 +316,9 @@ def test_shared_state():
 
 
 def test_global_state():
-    plugin = JinjaEventPlugin(
-        config=JinjaEventPluginConfig(
-            root=JinjaEventPluginConfigForGeneralModes(
+    plugin = TemplateEventPlugin(
+        config=TemplateEventPluginConfig(
+            root=TemplateEventPluginConfigForGeneralModes(
                 params={},
                 samples={
                     'test_sample': CSVSampleConfig(
@@ -374,9 +374,9 @@ def test_global_state():
 
 
 def test_modules():
-    plugin = JinjaEventPlugin(
-        config=JinjaEventPluginConfig(
-            root=JinjaEventPluginConfigForGeneralModes(
+    plugin = TemplateEventPlugin(
+        config=TemplateEventPluginConfig(
+            root=TemplateEventPluginConfigForGeneralModes(
                 params={},
                 samples={
                     'test_sample': CSVSampleConfig(
@@ -413,9 +413,9 @@ def test_modules():
 
 
 def test_timestamp():
-    plugin = JinjaEventPlugin(
-        config=JinjaEventPluginConfig(
-            root=JinjaEventPluginConfigForGeneralModes(
+    plugin = TemplateEventPlugin(
+        config=TemplateEventPluginConfig(
+            root=TemplateEventPluginConfigForGeneralModes(
                 params={},
                 samples={
                     'test_sample': CSVSampleConfig(
@@ -449,9 +449,9 @@ def test_timestamp():
 
 
 def test_tags():
-    plugin = JinjaEventPlugin(
-        config=JinjaEventPluginConfig(
-            root=JinjaEventPluginConfigForGeneralModes(
+    plugin = TemplateEventPlugin(
+        config=TemplateEventPluginConfig(
+            root=TemplateEventPluginConfigForGeneralModes(
                 params={},
                 samples={
                     'test_sample': CSVSampleConfig(

@@ -3,13 +3,13 @@ from datetime import datetime
 
 import pytest
 
-from eventum.plugins.event.plugins.jinja.context import (
+from eventum.plugins.event.plugins.template.context import (
     EventContext,
     EventStateContext,
     EventTagsContext,
     EventTimestampContext,
 )
-from eventum.plugins.event.plugins.jinja.fsm.fields import (
+from eventum.plugins.event.plugins.template.fsm.fields import (
     After,
     And,
     Before,
@@ -32,7 +32,7 @@ from eventum.plugins.event.plugins.jinja.fsm.fields import (
     Or,
     TimestampComponents,
 )
-from eventum.plugins.event.plugins.jinja.state import (
+from eventum.plugins.event.plugins.template.state import (
     SingleThreadState as State,
 )
 

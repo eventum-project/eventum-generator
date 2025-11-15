@@ -1,4 +1,4 @@
-"""Definition of jinja event plugin."""
+"""Definition of template event plugin."""
 
 from collections.abc import MutableMapping
 from copy import copy
@@ -21,25 +21,27 @@ from eventum.plugins.event.base.plugin import (
     ProduceParams,
 )
 from eventum.plugins.event.exceptions import PluginProduceError
-from eventum.plugins.event.plugins.jinja import modules
-from eventum.plugins.event.plugins.jinja.config import (
-    JinjaEventPluginConfig,
+from eventum.plugins.event.plugins.template import modules
+from eventum.plugins.event.plugins.template.config import (
     TemplateConfigForGeneralModes,
+    TemplateEventPluginConfig,
 )
-from eventum.plugins.event.plugins.jinja.context import EventContext
-from eventum.plugins.event.plugins.jinja.module_provider import ModuleProvider
-from eventum.plugins.event.plugins.jinja.sample_reader import (
+from eventum.plugins.event.plugins.template.context import EventContext
+from eventum.plugins.event.plugins.template.module_provider import (
+    ModuleProvider,
+)
+from eventum.plugins.event.plugins.template.sample_reader import (
     SampleLoadError,
     SamplesReader,
 )
-from eventum.plugins.event.plugins.jinja.state import (
+from eventum.plugins.event.plugins.template.state import (
     MultiThreadState,
     SingleThreadState,
 )
-from eventum.plugins.event.plugins.jinja.subprocess_runner import (
+from eventum.plugins.event.plugins.template.subprocess_runner import (
     SubprocessRunner,
 )
-from eventum.plugins.event.plugins.jinja.template_pickers import (
+from eventum.plugins.event.plugins.template.template_pickers import (
     TemplatePicker,
     get_picker_class,
 )
@@ -47,8 +49,8 @@ from eventum.plugins.exceptions import PluginConfigurationError
 from eventum.utils.traceback_utils import shorten_traceback
 
 
-class JinjaEventPluginParams(EventPluginParams):
-    """Parameters for jinja event plugin.
+class TemplateEventPluginParams(EventPluginParams):
+    """Parameters for template event plugin.
 
     Attributes
     ----------
@@ -61,10 +63,10 @@ class JinjaEventPluginParams(EventPluginParams):
     templates_loader: NotRequired[BaseLoader]
 
 
-class JinjaEventPlugin(
-    EventPlugin[JinjaEventPluginConfig, JinjaEventPluginParams],
+class TemplateEventPlugin(
+    EventPlugin[TemplateEventPluginConfig, TemplateEventPluginParams],
 ):
-    """Event plugin for producing events using Jinja template engine."""
+    """Event plugin for producing events using templates."""
 
     _JINJA_EXTENSIONS = ('jinja2.ext.do', 'jinja2.ext.loopcontrols')
 
@@ -73,14 +75,14 @@ class JinjaEventPlugin(
     @override
     def __init__(
         self,
-        config: JinjaEventPluginConfig,
-        params: JinjaEventPluginParams,
+        config: TemplateEventPluginConfig,
+        params: TemplateEventPluginParams,
     ) -> None:
         super().__init__(config, params)
 
         self._logger.debug(
             'Using specified jinja extension',
-            value=list(JinjaEventPlugin._JINJA_EXTENSIONS),
+            value=list(TemplateEventPlugin._JINJA_EXTENSIONS),
         )
 
         self._logger.debug('Loading samples')
@@ -99,7 +101,7 @@ class JinjaEventPlugin(
         self._shared_state = SingleThreadState()
 
         self._logger.debug('Connecting to global state')
-        self._global_state = JinjaEventPlugin._GLOBAL_STATE
+        self._global_state = TemplateEventPlugin._GLOBAL_STATE
 
         loader = params.get('templates_loader', None)
         if loader is None:
@@ -185,7 +187,7 @@ class JinjaEventPlugin(
         )
         env = Environment(
             loader=loader,
-            extensions=JinjaEventPlugin._JINJA_EXTENSIONS,
+            extensions=TemplateEventPlugin._JINJA_EXTENSIONS,
         )
 
         self._logger.debug('Settings environment globals')

@@ -24,21 +24,21 @@ from pydantic import (
     model_validator,
 )
 
-from eventum.plugins.event.plugins.jinja.context import (
+from eventum.plugins.event.plugins.template.context import (
     BaseEventContext,
     EventContext,
     EventStateContext,
     EventTagsContext,
     EventTimestampContext,
 )
-from eventum.plugins.event.plugins.jinja.fsm.operators import (
+from eventum.plugins.event.plugins.template.fsm.operators import (
     len_eq,
     len_ge,
     len_gt,
     len_le,
     len_lt,
 )
-from eventum.plugins.event.plugins.jinja.state import State
+from eventum.plugins.event.plugins.template.state import State
 
 logger = structlog.stdlib.get_logger()
 

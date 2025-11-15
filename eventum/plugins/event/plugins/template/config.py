@@ -1,4 +1,4 @@
-"""Definition of jinja event plugin config."""
+"""Definition of template event plugin config."""
 
 from enum import StrEnum
 from pathlib import Path
@@ -13,8 +13,8 @@ from pydantic import (
 )
 
 from eventum.plugins.event.base.config import EventPluginConfig
-from eventum.plugins.event.plugins.jinja.fsm.fields import Condition
-from eventum.plugins.event.plugins.jinja.mixins import (
+from eventum.plugins.event.plugins.template.fsm.fields import Condition
+from eventum.plugins.event.plugins.template.mixins import (
     TemplateAliasesUniquenessValidatorMixin,
     TemplateSingleItemElementsValidatorMixin,
 )
@@ -186,11 +186,11 @@ class TemplateConfigForFSMMode(TemplateConfigForGeneralModes, frozen=True):
     initial: bool = False
 
 
-class JinjaEventPluginConfigCommonFields(
+class TemplateEventPluginConfigCommonFields(
     EventPluginConfig,
     frozen=True,
 ):
-    """Configuration common fields for `jinja` event plugin.
+    """Configuration common fields for `template` event plugin.
 
     Attributes
     ----------
@@ -217,13 +217,13 @@ class JinjaEventPluginConfigCommonFields(
         return {}
 
 
-class JinjaEventPluginConfigForGeneralModes(
+class TemplateEventPluginConfigForGeneralModes(
     TemplateSingleItemElementsValidatorMixin,
     TemplateAliasesUniquenessValidatorMixin,
-    JinjaEventPluginConfigCommonFields,
+    TemplateEventPluginConfigCommonFields,
     frozen=True,
 ):
-    """Configuration for `jinja` event plugin for general picking
+    """Configuration for `template` event plugin for general picking
     modes.
 
     Attributes
@@ -250,13 +250,13 @@ class JinjaEventPluginConfigForGeneralModes(
     )
 
 
-class JinjaEventPluginConfigForChanceMode(
+class TemplateEventPluginConfigForChanceMode(
     TemplateSingleItemElementsValidatorMixin,
     TemplateAliasesUniquenessValidatorMixin,
-    JinjaEventPluginConfigCommonFields,
+    TemplateEventPluginConfigCommonFields,
     frozen=True,
 ):
-    """Configuration for `jinja` event plugin for `chance` picking
+    """Configuration for `template` event plugin for `chance` picking
     mode.
 
     Attributes
@@ -275,13 +275,13 @@ class JinjaEventPluginConfigForChanceMode(
     )
 
 
-class JinjaEventPluginConfigForFSMMode(
+class TemplateEventPluginConfigForFSMMode(
     TemplateSingleItemElementsValidatorMixin,
     TemplateAliasesUniquenessValidatorMixin,
-    JinjaEventPluginConfigCommonFields,
+    TemplateEventPluginConfigCommonFields,
     frozen=True,
 ):
-    """Configuration for `jinja` event plugin for `fsm` picking mode.
+    """Configuration for `template` event plugin for `fsm` picking mode.
 
     Attributes
     ----------
@@ -316,13 +316,13 @@ class JinjaEventPluginConfigForFSMMode(
         return v
 
 
-class JinjaEventPluginConfigForChainMode(
+class TemplateEventPluginConfigForChainMode(
     TemplateSingleItemElementsValidatorMixin,
     TemplateAliasesUniquenessValidatorMixin,
-    JinjaEventPluginConfigCommonFields,
+    TemplateEventPluginConfigCommonFields,
     frozen=True,
 ):
-    """Configuration for `jinja` event plugin for `chain` picking
+    """Configuration for `template` event plugin for `chain` picking
     mode.
 
     Attributes
@@ -365,14 +365,14 @@ class JinjaEventPluginConfigForChainMode(
 
 
 ConfigModel = (
-    JinjaEventPluginConfigForGeneralModes
-    | JinjaEventPluginConfigForChanceMode
-    | JinjaEventPluginConfigForFSMMode
-    | JinjaEventPluginConfigForChainMode
+    TemplateEventPluginConfigForGeneralModes
+    | TemplateEventPluginConfigForChanceMode
+    | TemplateEventPluginConfigForFSMMode
+    | TemplateEventPluginConfigForChainMode
 )
 
 
-class JinjaEventPluginConfig(RootModel, frozen=True):
-    """Configuration for `jinja` event plugin."""
+class TemplateEventPluginConfig(RootModel, frozen=True):
+    """Configuration for `template` event plugin."""
 
     root: ConfigModel = Field(discriminator='mode')

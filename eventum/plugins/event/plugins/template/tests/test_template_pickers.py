@@ -2,16 +2,16 @@ from pathlib import Path
 
 import pytest
 
-from eventum.plugins.event.plugins.jinja.config import (
+from eventum.plugins.event.plugins.template.config import (
     TemplateConfigForChanceMode,
     TemplateConfigForFSMMode,
     TemplateConfigForGeneralModes,
     TemplatePickingMode,
     TemplateTransition,
 )
-from eventum.plugins.event.plugins.jinja.fsm.fields import Eq
-from eventum.plugins.event.plugins.jinja.state import SingleThreadState
-from eventum.plugins.event.plugins.jinja.template_pickers import (
+from eventum.plugins.event.plugins.template.fsm.fields import Eq
+from eventum.plugins.event.plugins.template.state import SingleThreadState
+from eventum.plugins.event.plugins.template.template_pickers import (
     AllTemplatePicker,
     AnyTemplatePicker,
     ChainTemplatePicker,

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from eventum.core.parameters import GeneratorParameters
 from eventum.core.plugins_initializer import init_plugins
-from eventum.plugins.event.plugins.jinja.plugin import JinjaEventPlugin
+from eventum.plugins.event.plugins.template.plugin import TemplateEventPlugin
 from eventum.plugins.input.plugins.cron.plugin import CronInputPlugin
 from eventum.plugins.input.plugins.static.plugin import StaticInputPlugin
 from eventum.plugins.output.plugins.file.plugin import FileOutputPlugin
@@ -19,7 +19,7 @@ def test_initializer():
         {'static': {'count': 100}},
     ]
     event_config = {
-        'jinja': {
+        'template': {
             'params': {},
             'samples': {},
             'mode': 'all',
@@ -45,7 +45,7 @@ def test_initializer():
     assert isinstance(plugins.input[0], CronInputPlugin)
     assert isinstance(plugins.input[1], StaticInputPlugin)
 
-    assert isinstance(plugins.event, JinjaEventPlugin)
+    assert isinstance(plugins.event, TemplateEventPlugin)
 
     assert isinstance(plugins.output[0], StdoutOutputPlugin)
     assert isinstance(plugins.output[1], FileOutputPlugin)

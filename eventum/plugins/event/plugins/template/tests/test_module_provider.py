@@ -1,8 +1,10 @@
 import pytest
 
-import eventum.plugins.event.plugins.jinja.modules as modules
-import eventum.plugins.event.plugins.jinja.modules.rand as rand
-from eventum.plugins.event.plugins.jinja.module_provider import ModuleProvider
+import eventum.plugins.event.plugins.template.modules as modules
+import eventum.plugins.event.plugins.template.modules.rand as rand
+from eventum.plugins.event.plugins.template.module_provider import (
+    ModuleProvider,
+)
 
 
 @pytest.fixture
@@ -22,4 +24,5 @@ def test_module_loader_from_env(module_provider):
 
 def test_module_loader_invalid(module_provider):
     with pytest.raises(KeyError):
+        module_provider['unexistent']
         module_provider['unexistent']

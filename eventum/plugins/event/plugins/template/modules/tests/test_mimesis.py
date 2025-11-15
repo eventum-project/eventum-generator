@@ -13,7 +13,7 @@ from mimesis.builtins import (
     USASpecProvider,
 )
 
-import eventum.plugins.event.plugins.jinja.modules.mimesis as mimesis
+import eventum.plugins.event.plugins.template.modules.mimesis as mimesis
 
 
 # ---- Test _Locale ----

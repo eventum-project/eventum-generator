@@ -1,7 +1,7 @@
 import pytest
 from faker import Faker
 
-import eventum.plugins.event.plugins.jinja.modules.faker as faker
+import eventum.plugins.event.plugins.template.modules.faker as faker
 
 
 # ---- Test _Locale ----

@@ -1,12 +1,12 @@
 input:
   - static:
       count: 100
-  
+
   - static:
       count: 100
-  
+
 event:
-  jinja:
+  template:
     samples: {}
     params: {}
     mode: all
@@ -19,7 +19,7 @@ output:
       path: "${params.file1}"
       flush_interval: 0
       write_mode: overwrite
-  
+
   - file:
       path: "${params.file2}"
       flush_interval: 0
