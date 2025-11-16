@@ -65,7 +65,7 @@ export const INPUT_PLUGINS_INFO = {
     label: 'Time patterns',
     icon: IconChartBar,
     description:
-      'Generate events with specific pattern of distribution in time',
+      'Generate timestamps with specific pattern of distribution in time',
   },
   timer: {
     label: 'Timer',
