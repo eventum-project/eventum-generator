@@ -16,6 +16,8 @@ import {
 
 import { IconOpenSearch } from '@/components/ui/icons/IconOpenSearch';
 
+export type PluginType = 'input' | 'event' | 'output';
+
 export type InputPluginName =
   | 'cron'
   | 'http'
