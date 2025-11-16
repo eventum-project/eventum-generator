@@ -9,6 +9,7 @@ export interface APIErrorModalContentProps {
 
 export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
   error,
+  // eslint-disable-next-line sonarjs/cognitive-complexity
 }) => {
   if (error instanceof APIError) {
     return (
@@ -56,6 +57,8 @@ export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
                     undefined,
                     2
                   )
+                ) : error.requestConfig.data === undefined ? (
+                  <i>Empty</i>
                 ) : (
                   <i>Cannot show</i>
                 )}
@@ -95,8 +98,10 @@ export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
               <Code block>
                 {error.response.data !== undefined ? (
                   JSON.stringify(error.response.data, undefined, 2)
-                ) : (
+                ) : error.response.data === undefined ? (
                   <i>Empty</i>
+                ) : (
+                  <i>Cannot show</i>
                 )}
               </Code>
             </Spoiler>
