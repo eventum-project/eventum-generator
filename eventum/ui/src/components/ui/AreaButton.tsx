@@ -1,4 +1,4 @@
-import { Button, Group, Stack, Text } from '@mantine/core';
+import { Button, Group, MantineSize, Stack, Text } from '@mantine/core';
 import { Icon } from '@tabler/icons-react';
 import { FC } from 'react';
 
@@ -7,6 +7,8 @@ interface AreaButtonProps {
   name: string;
   description: string;
   onClick: () => void;
+  h?: MantineSize | (string & {});
+  gap?: MantineSize | (string & {});
 }
 
 export const AreaButton: FC<AreaButtonProps> = ({
@@ -14,10 +16,12 @@ export const AreaButton: FC<AreaButtonProps> = ({
   name,
   description,
   onClick,
+  h = '100px',
+  gap = 'xs',
 }) => {
   return (
-    <Button variant="default" h="100px" onClick={onClick}>
-      <Stack gap="xs" align="center">
+    <Button variant="default" h={h} onClick={onClick}>
+      <Stack gap={gap} align="center">
         <Group gap="xs">
           <ButtonIcon size={18} />
           {name}
