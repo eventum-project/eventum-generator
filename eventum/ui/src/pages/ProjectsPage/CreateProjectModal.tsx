@@ -1,4 +1,4 @@
-import { Button, Group, Stack, Text } from '@mantine/core';
+import { Stack } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { FC } from 'react';
 
@@ -7,6 +7,7 @@ import {
   CreateProjectSubmitModalProps,
 } from './ProjectNameModal';
 import { EVENT_PLUGINS_INFO, EventPluginName } from '@/api/models/plugins';
+import { AreaButton } from '@/components/ui/AreaButton';
 
 interface CreateProjectModalProps {
   existingProjectNames: string[];
@@ -33,22 +34,13 @@ export const CreateProjectModal: FC<CreateProjectModalProps> = ({
     <Stack>
       {Object.entries(EVENT_PLUGINS_INFO).map(
         ([name, { label, description, icon: PluginIcon }]) => (
-          <Button
+          <AreaButton
             key={name}
-            variant="default"
-            h="100px"
+            icon={PluginIcon}
+            name={label}
+            description={description}
             onClick={() => handleCreateProject(name as EventPluginName)}
-          >
-            <Stack gap="xs" align="center">
-              <Group gap="xs">
-                <PluginIcon size={18} />
-                {label} based project
-              </Group>
-              <Text fz="sm" c="gray.6">
-                {description}
-              </Text>
-            </Stack>
-          </Button>
+          />
         )
       )}
     </Stack>
