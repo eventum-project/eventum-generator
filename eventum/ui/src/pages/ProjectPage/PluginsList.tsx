@@ -1,14 +1,20 @@
 import { ActionIcon, Button, NavLink, Stack, Text } from '@mantine/core';
 import { modals } from '@mantine/modals';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { Icon, IconPlus, IconTrash } from '@tabler/icons-react';
 import { capitalCase } from 'change-case';
 import { FC } from 'react';
 
-import { INPUT_PLUGINS_INFO, InputPluginName } from '@/api/models/plugins';
+import {
+  EVENT_PLUGINS_INFO,
+  INPUT_PLUGINS_INFO,
+  InputPluginName,
+  OUTPUT_PLUGINS_INFO,
+  PluginType,
+} from '@/api/models/plugins';
 import { AreaButton } from '@/components/ui/AreaButton';
 
 interface PluginsListProps {
-  type: 'input' | 'event' | 'output';
+  type: PluginType;
   plugins: string[];
   onChangeSelectedPlugin: (index: number) => void;
   selectedPlugin: number;
@@ -16,7 +22,14 @@ interface PluginsListProps {
   onDeletePlugin: (index: number) => void;
 }
 
+const pluginTypeToInfo = {
+  input: INPUT_PLUGINS_INFO,
+  event: EVENT_PLUGINS_INFO,
+  output: OUTPUT_PLUGINS_INFO,
+};
+
 export const PluginsList: FC<PluginsListProps> = ({
+  type,
   plugins,
   onChangeSelectedPlugin,
   selectedPlugin,
@@ -48,13 +61,13 @@ export const PluginsList: FC<PluginsListProps> = ({
       title: 'Adding plugin',
       children: (
         <Stack>
-          {Object.entries(INPUT_PLUGINS_INFO).map(
+          {Object.entries(pluginTypeToInfo[type]).map(
             ([name, { label, icon: PluginIcon, description }]) => (
               <AreaButton
                 key={name}
-                icon={PluginIcon}
-                name={label}
-                description={description}
+                icon={PluginIcon as Icon}
+                name={label as string}
+                description={description as string}
                 onClick={() => {
                   onAddNewPlugin(name as InputPluginName);
                   modals.closeAll();
