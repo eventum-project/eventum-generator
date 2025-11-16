@@ -44,7 +44,13 @@ const theme = createTheme({
   },
 });
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+    },
+  },
+});
 
 export default function App() {
   return (
