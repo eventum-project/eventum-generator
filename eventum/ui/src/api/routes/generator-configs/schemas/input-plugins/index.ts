@@ -1,5 +1,14 @@
 import z from 'zod';
 
+export type InputPluginName =
+  | 'cron'
+  | 'http'
+  | 'linspace'
+  | 'static'
+  | 'time_patterns'
+  | 'timer'
+  | 'timestamps';
+
 const VersatileDatetimeStrictSchema = z.string();
 const VersatileDatetimeSchema = VersatileDatetimeStrictSchema.nullable();
 

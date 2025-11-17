@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { ENCODINGS } from '../encodings';
 import { ConditionSchema } from './template-fsm-conditions';
 
+export type EventPluginName = 'template' | 'replay' | 'script';
+
 const BaseEventPluginConfigSchema = z.object({});
 
 /* Template event plugin */

@@ -4,6 +4,13 @@ import { ENCODINGS } from '../encodings';
 import { CLICKHOUSE_INPUT_FORMAT } from './clickhouse-input-formats';
 import { FormatterConfigSchema } from './formatters';
 
+export type OutputPluginName =
+  | 'clickhouse'
+  | 'file'
+  | 'http'
+  | 'opensearch'
+  | 'stdout';
+
 const BaseOutputPluginConfigSchema = z.object({
   formatter: FormatterConfigSchema.optional(),
 });

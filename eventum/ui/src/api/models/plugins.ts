@@ -14,27 +14,12 @@ import {
   IconTimeDuration45,
 } from '@tabler/icons-react';
 
+import { EventPluginName } from '../routes/generator-configs/schemas/event-plugins';
+import { InputPluginName } from '../routes/generator-configs/schemas/input-plugins';
+import { OutputPluginName } from '../routes/generator-configs/schemas/output-plugins';
 import { IconOpenSearch } from '@/components/ui/icons/IconOpenSearch';
 
 export type PluginType = 'input' | 'event' | 'output';
-
-export type InputPluginName =
-  | 'cron'
-  | 'http'
-  | 'linspace'
-  | 'static'
-  | 'time_patterns'
-  | 'timer'
-  | 'timestamps';
-
-export type EventPluginName = 'template' | 'replay' | 'script';
-
-export type OutputPluginName =
-  | 'clickhouse'
-  | 'file'
-  | 'http'
-  | 'opensearch'
-  | 'stdout';
 
 export interface PluginInfo {
   label: string;

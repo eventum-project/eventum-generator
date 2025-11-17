@@ -1,5 +1,5 @@
-import { EventPluginName } from '@/api/models/plugins';
 import {
+  EventPluginName,
   EventPluginNamedConfig,
   TemplatePickingMode,
 } from '@/api/routes/generator-configs/schemas/event-plugins';
