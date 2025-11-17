@@ -17,10 +17,24 @@ export type GeneratorDirsExtendedInfo = z.infer<
   typeof GeneratorDirsExtendedInfoSchema
 >;
 
+const InputPluginsNamedConfigSchema = z
+  .array(InputPluginNamedConfigSchema)
+  .min(1);
+export type InputPluginsNamedConfig = z.infer<
+  typeof InputPluginsNamedConfigSchema
+>;
+
+const OutputPluginsNamedConfigSchema = z
+  .array(OutputPluginNamedConfigSchema)
+  .min(1);
+export type OutputPluginsNamedConfig = z.infer<
+  typeof OutputPluginsNamedConfigSchema
+>;
+
 export const GeneratorConfigSchema = z.object({
-  input: z.array(InputPluginNamedConfigSchema).min(1),
+  input: InputPluginsNamedConfigSchema,
   event: EventPluginNamedConfigSchema,
-  output: z.array(OutputPluginNamedConfigSchema).min(1),
+  output: OutputPluginsNamedConfigSchema,
 });
 export type GeneratorConfig = z.infer<typeof GeneratorConfigSchema>;
 

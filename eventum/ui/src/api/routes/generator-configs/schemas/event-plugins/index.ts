@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { ENCODINGS } from '../encodings';
 import { ConditionSchema } from './template-fsm-conditions';
 
-const EventPluginConfigSchema = z.object({});
+const BaseEventPluginConfigSchema = z.object({});
 
 const enum SampleType {
   Items = 'items',
@@ -64,7 +64,7 @@ const TemplateConfigForFSMModeSchema =
   });
 
 const TemplateEventPluginConfigCommonFieldsSchema =
-  EventPluginConfigSchema.extend({
+  BaseEventPluginConfigSchema.extend({
     params: z.object().optional(),
     samples: z.record(z.string(), SampleConfigSchema).optional(),
   });
@@ -117,7 +117,7 @@ export const TemplateEventPluginNamedConfig = z.object({
   template: TemplateEventPluginConfig,
 });
 
-const ReplayEventPluginConfigSchema = EventPluginConfigSchema.extend({
+const ReplayEventPluginConfigSchema = BaseEventPluginConfigSchema.extend({
   path: z.string().min(1),
   timestamp_pattern: z.string().min(1).nullable().optional(),
   timestamp_format: z.string().min(1).nullable().optional(),
@@ -130,7 +130,7 @@ export const ReplayEventPluginNamedConfigSchema = z.object({
   replay: ReplayEventPluginConfigSchema,
 });
 
-const ScriptEventPluginConfigSchema = EventPluginConfigSchema.extend({
+const ScriptEventPluginConfigSchema = BaseEventPluginConfigSchema.extend({
   path: z.string().min(1),
 });
 
@@ -143,7 +143,13 @@ export const EventPluginNamedConfigSchema = z.union([
   ReplayEventPluginNamedConfigSchema,
   ScriptEventPluginNamedConfigSchema,
 ]);
-
 export type EventPluginNamedConfig = z.infer<
   typeof EventPluginNamedConfigSchema
 >;
+
+export const EventPluginConfigSchema = z.union([
+  TemplateEventPluginConfig,
+  ReplayEventPluginConfigSchema,
+  ScriptEventPluginConfigSchema,
+]);
+export type EventPluginConfig = z.infer<typeof EventPluginConfigSchema>;

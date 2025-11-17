@@ -4,11 +4,11 @@ import { ENCODINGS } from '../encodings';
 import { CLICKHOUSE_INPUT_FORMAT } from './clickhouse-input-formats';
 import { FormatterConfigSchema } from './formatters';
 
-const EventPluginConfigSchema = z.object({
+const BaseOutputPluginConfigSchema = z.object({
   formatter: FormatterConfigSchema.optional(),
 });
 
-const ClickhouseOutputPluginConfigSchema = EventPluginConfigSchema.extend({
+const ClickhouseOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   host: z.string().min(1),
   port: z.number().int().gte(1).lte(65_535).optional(),
   protocol: z.enum(['http', 'https']).optional(),
@@ -37,7 +37,7 @@ export const ClickhouseOutputPluginNamedConfigSchema = z.object({
   clickhouse: ClickhouseOutputPluginConfigSchema,
 });
 
-const FileOutputPluginConfigSchema = EventPluginConfigSchema.extend({
+const FileOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   path: z.string().min(1),
   flush_interval: z.number().gte(0).optional(),
   cleanup_interval: z.number().gte(1).optional(),
@@ -51,7 +51,7 @@ export const FileOutputPluginNamedConfigSchema = z.object({
   file: FileOutputPluginConfigSchema,
 });
 
-const HTTPOutputPluginConfigSchema = EventPluginConfigSchema.extend({
+const HTTPOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   url: z.httpUrl(),
   method: z
     .enum(['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'])
@@ -69,11 +69,11 @@ const HTTPOutputPluginConfigSchema = EventPluginConfigSchema.extend({
   proxy_url: z.httpUrl().nullable().optional(),
 });
 
-export const HttpOutputPluginNamedConfigSchema = z.object({
+export const HTTPOutputPluginNamedConfigSchema = z.object({
   http: HTTPOutputPluginConfigSchema,
 });
 
-const OpensearchOutputPluginConfigSchema = EventPluginConfigSchema.extend({
+const OpensearchOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   hosts: z.array(z.httpUrl()).min(1),
   username: z.string().min(1),
   password: z.string().min(1),
@@ -91,7 +91,7 @@ export const OpensearchOutputPluginNamedConfigSchema = z.object({
   opensearch: OpensearchOutputPluginConfigSchema,
 });
 
-const StdoutOutputPluginConfigSchema = EventPluginConfigSchema.extend({
+const StdoutOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   flush_interval: z.number().gte(0).optional(),
   stream: z.enum(['stdout', 'stderr']).optional(),
   encoding: z.enum(ENCODINGS).optional(),
@@ -105,11 +105,19 @@ export const StdoutOutputPluginNamedConfigSchema = z.object({
 export const OutputPluginNamedConfigSchema = z.union([
   ClickhouseOutputPluginNamedConfigSchema,
   FileOutputPluginNamedConfigSchema,
-  HttpOutputPluginNamedConfigSchema,
+  HTTPOutputPluginNamedConfigSchema,
   OpensearchOutputPluginNamedConfigSchema,
   StdoutOutputPluginNamedConfigSchema,
 ]);
-
 export type OutputPluginNamedConfig = z.infer<
   typeof OutputPluginNamedConfigSchema
 >;
+
+export const OutputPluginConfigSchema = z.union([
+  ClickhouseOutputPluginConfigSchema,
+  FileOutputPluginConfigSchema,
+  HTTPOutputPluginConfigSchema,
+  OpensearchOutputPluginConfigSchema,
+  StdoutOutputPluginConfigSchema,
+]);
+export type OutputPluginConfig = z.infer<typeof OutputPluginConfigSchema>;
