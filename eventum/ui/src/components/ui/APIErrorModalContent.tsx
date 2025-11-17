@@ -28,47 +28,47 @@ export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
             <Divider my="6px" />
 
             <Text size="sm">
-              Base URL: {error.requestConfig.baseURL ?? '-'}
+              Base URL: <Code>{error.requestConfig.baseURL ?? '-'}</Code>
             </Text>
-            <Text size="sm">URL: {error.requestConfig.url ?? '-'}</Text>
             <Text size="sm">
-              Method: {error.requestConfig.method?.toUpperCase() ?? '-'}
+              URL: <Code>{error.requestConfig.url ?? '-'}</Code>
+            </Text>
+            <Text size="sm">
+              Method:{' '}
+              <Code>{error.requestConfig.method?.toUpperCase() ?? '-'}</Code>
             </Text>
             <Text size="sm">Headers:</Text>
-            <Spoiler
-              maxHeight={95}
-              showLabel={<Text size="xs">Show more</Text>}
-              hideLabel={<Text size="xs">Hide</Text>}
-            >
-              <CodeHighlight
-                language="json"
-                code={JSON.stringify(error.requestConfig.headers, undefined, 2)}
-              />
-            </Spoiler>
+            <CodeHighlight
+              language="json"
+              code={JSON.stringify(error.requestConfig.headers, undefined, 2)}
+              withExpandButton
+              defaultExpanded={false}
+              expandCodeLabel="Expand"
+              collapseCodeLabel="Collapse"
+            />
 
             <Text size="sm">Body:</Text>
-            <Spoiler
-              maxHeight={95}
-              showLabel={<Text size="xs">Show more</Text>}
-              hideLabel={<Text size="xs">Hide</Text>}
-            >
-              {typeof error.requestConfig.data === 'string' ? (
-                <CodeHighlight
-                  language="json"
-                  code={JSON.stringify(
-                    JSON.parse(error.requestConfig.data),
-                    undefined,
-                    2
-                  )}
-                />
-              ) : (
-                <Code block>
-                  {error.requestConfig.data === undefined
-                    ? 'Empty'
-                    : 'Cannot show'}
-                </Code>
-              )}
-            </Spoiler>
+
+            {typeof error.requestConfig.data === 'string' ? (
+              <CodeHighlight
+                language="json"
+                code={JSON.stringify(
+                  JSON.parse(error.requestConfig.data),
+                  undefined,
+                  2
+                )}
+                withExpandButton
+                defaultExpanded={false}
+                expandCodeLabel="Expand"
+                collapseCodeLabel="Collapse"
+              />
+            ) : (
+              <Code block>
+                {error.requestConfig.data === undefined
+                  ? 'Empty'
+                  : 'Cannot show'}
+              </Code>
+            )}
           </Stack>
         ) : (
           <></>
@@ -81,37 +81,35 @@ export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
 
             <Divider my="4px" />
 
-            <Text size="sm">Code: {error.response.status}</Text>
+            <Text size="sm">
+              Code: <Code>{error.response.status}</Code>
+            </Text>
 
             <Text size="sm">Headers:</Text>
-            <Spoiler
-              maxHeight={95}
-              showLabel={<Text size="xs">Show more</Text>}
-              hideLabel={<Text size="xs">Hide</Text>}
-            >
-              <CodeHighlight
-                language="json"
-                code={JSON.stringify(error.response.headers, undefined, 2)}
-              />
-            </Spoiler>
+            <CodeHighlight
+              language="json"
+              code={JSON.stringify(error.response.headers, undefined, 2)}
+              withExpandButton
+              defaultExpanded={false}
+              expandCodeLabel="Expand"
+              collapseCodeLabel="Collapse"
+            />
 
             <Text size="sm">Body:</Text>
-            <Spoiler
-              maxHeight={95}
-              showLabel={<Text size="xs">Show more</Text>}
-              hideLabel={<Text size="xs">Hide</Text>}
-            >
-              {error.response.data !== undefined ? (
-                <CodeHighlight
-                  language="json"
-                  code={JSON.stringify(error.response.data, undefined, 2)}
-                />
-              ) : (
-                <Code block>
-                  <i>Empty</i>
-                </Code>
-              )}
-            </Spoiler>
+            {error.response.data !== undefined ? (
+              <CodeHighlight
+                language="json"
+                code={JSON.stringify(error.response.data, undefined, 2)}
+                withExpandButton
+                defaultExpanded={false}
+                expandCodeLabel="Expand"
+                collapseCodeLabel="Collapse"
+              />
+            ) : (
+              <Code block>
+                <i>Empty</i>
+              </Code>
+            )}
           </Stack>
         ) : (
           <></>
