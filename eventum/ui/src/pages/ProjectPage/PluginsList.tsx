@@ -7,10 +7,10 @@ import { FC } from 'react';
 import {
   EVENT_PLUGINS_INFO,
   INPUT_PLUGINS_INFO,
-  InputPluginName,
   OUTPUT_PLUGINS_INFO,
   PluginType,
 } from '@/api/models/plugins';
+import { InputPluginName } from '@/api/routes/generator-configs/schemas/input-plugins';
 import { AreaButton } from '@/components/ui/AreaButton';
 
 interface PluginsListProps {
