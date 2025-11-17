@@ -3,8 +3,11 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from pytz import all_timezones_set
 
+from eventum.plugins.input.fields import VersatileDatetime
+from eventum.plugins.input.normalizers import NonePoint
 from eventum.plugins.output.fields import FormatterConfigT
 
 
@@ -131,3 +134,40 @@ class FormattingResult(BaseModel, frozen=True, extra='forbid'):
     events: list[str]
     formatted_count: int
     errors: list[FormatErrorInfo]
+
+
+class VersatileDatetimeParametersBody(BaseModel, frozen=True, extra='forbid'):
+    """Request body containing info for normalizing versatile datetime.
+
+    Attributes
+    ----------
+    value : VersatileDatetime
+        Value to normalize.
+
+    timezone : str
+        Timezone that is used for returned datetime object.
+
+    relative_base : datetime | None
+        Base time to use when value represents relative time, default
+        is current time.
+
+    none_point : NonePoint, default='now'
+        What time to use when `value` parameter is `None`: 'now' -
+        current time; `min` - minimal value of datetime; `max` -
+        maximal value of datetime.
+
+    """
+
+    value: VersatileDatetime = Field(default=None, union_mode='left_to_right')
+    timezone: str
+    relative_base: datetime | None = None
+    none_point: NonePoint = 'now'
+
+    @field_validator('timezone')
+    @classmethod
+    def validate_timezone(cls, v: str) -> str:  # noqa: D102
+        if v in all_timezones_set:
+            return v
+
+        msg = f'Unknown time zone `{v}`'
+        raise ValueError(msg)

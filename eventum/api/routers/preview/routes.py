@@ -1,9 +1,10 @@
 """Routes."""
 
-import asyncio
+import asyncio  # noqa: I001
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, HTTPException, Query, status
+from pytz import timezone
 
 from eventum.api.dependencies.app import SettingsDep
 from eventum.api.routers.generator_configs.dependencies import (
@@ -22,8 +23,6 @@ from eventum.api.routers.preview.dependencies import (
     TemplateEventPluginSharedStateDep,
     get_event_plugin_from_storage,
     get_span,
-    load_event_plugin,
-    load_input_plugins,
 )
 from eventum.api.routers.preview.dependencies import (
     get_template_event_plugin_global_state as get_template_plugin_global_state,
@@ -34,6 +33,10 @@ from eventum.api.routers.preview.dependencies import (
 from eventum.api.routers.preview.dependencies import (
     get_template_event_plugin_shared_state as get_template_plugin_shared_state,
 )
+from eventum.api.routers.preview.dependencies import (
+    load_event_plugin,
+    load_input_plugins,
+)
 from eventum.api.routers.preview.models import (
     AggregatedTimestamps,
     FormatErrorInfo,
@@ -41,6 +44,7 @@ from eventum.api.routers.preview.models import (
     FormattingResult,
     ProducedEventsInfo,
     ProduceEventErrorInfo,
+    VersatileDatetimeParametersBody,
 )
 from eventum.api.routers.preview.plugins_storage import EVENT_PLUGINS
 from eventum.api.routers.preview.timestamps_aggregation import (
@@ -54,6 +58,9 @@ from eventum.plugins.event.exceptions import (
 )
 from eventum.plugins.input.exceptions import PluginGenerationError
 from eventum.plugins.input.merger import InputPluginsMerger
+from eventum.plugins.input.normalizers import (
+    normalize_versatile_datetime as norm_versatile_datetime,
+)
 from eventum.plugins.output.formatters import get_formatter_class
 from eventum.utils.json_utils import normalize_types
 
@@ -369,3 +376,34 @@ async def format_events(
             for error in result.errors
         ],
     )
+
+
+@router.post(
+    '/{name}/versatile-datetime/normalize',
+    description='Normalize versatile date time expression',
+    response_description='Normalized datetime string in ISO8601 format',
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+    ),
+)
+async def normalize_versatile_datetime(
+    name: Annotated[  # noqa: ARG001
+        str,
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
+    ],
+    body: Annotated[VersatileDatetimeParametersBody, Body()],
+) -> str:
+    try:
+        return norm_versatile_datetime(
+            value=body.value,
+            timezone=timezone(body.timezone),
+            relative_base=body.relative_base,
+            none_point=body.none_point,
+        ).isoformat()
+    except (ValueError, OverflowError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from None
