@@ -5,6 +5,7 @@ import { ConditionSchema } from './template-fsm-conditions';
 
 const BaseEventPluginConfigSchema = z.object({});
 
+/* Template event plugin */
 const enum SampleType {
   Items = 'items',
   CSV = 'csv',
@@ -106,17 +107,20 @@ const TemplateEventPluginConfigForChainModeSchema =
       .min(1),
   });
 
-const TemplateEventPluginConfig = z.union([
+const TemplateEventPluginConfigSchema = z.union([
   TemplateEventPluginConfigForGeneralModesSchema,
   TemplateEventPluginConfigForChanceModeSchema,
   TemplateEventPluginConfigForFSMModeSchema,
   TemplateEventPluginConfigForChainModeSchema,
 ]);
-
+export type TemplateEventPluginConfig = z.infer<
+  typeof TemplateEventPluginConfigSchema
+>;
 export const TemplateEventPluginNamedConfig = z.object({
-  template: TemplateEventPluginConfig,
+  template: TemplateEventPluginConfigSchema,
 });
 
+/* Replay event plugin */
 const ReplayEventPluginConfigSchema = BaseEventPluginConfigSchema.extend({
   path: z.string().min(1),
   timestamp_pattern: z.string().min(1).nullable().optional(),
@@ -125,15 +129,20 @@ const ReplayEventPluginConfigSchema = BaseEventPluginConfigSchema.extend({
   chunk_size: z.number().int().gte(0).optional(),
   encoding: z.enum(ENCODINGS).optional(),
 });
-
+export type ReplayEventPluginConfig = z.infer<
+  typeof ReplayEventPluginConfigSchema
+>;
 export const ReplayEventPluginNamedConfigSchema = z.object({
   replay: ReplayEventPluginConfigSchema,
 });
 
+/* Script event plugin */
 const ScriptEventPluginConfigSchema = BaseEventPluginConfigSchema.extend({
   path: z.string().min(1),
 });
-
+export type ScriptEventPluginConfig = z.infer<
+  typeof ScriptEventPluginConfigSchema
+>;
 export const ScriptEventPluginNamedConfigSchema = z.object({
   script: ScriptEventPluginConfigSchema,
 });
@@ -148,7 +157,7 @@ export type EventPluginNamedConfig = z.infer<
 >;
 
 export const EventPluginConfigSchema = z.union([
-  TemplateEventPluginConfig,
+  TemplateEventPluginConfigSchema,
   ReplayEventPluginConfigSchema,
   ScriptEventPluginConfigSchema,
 ]);

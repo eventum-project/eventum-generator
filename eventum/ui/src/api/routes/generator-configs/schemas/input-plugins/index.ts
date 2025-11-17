@@ -14,7 +14,7 @@ const CronInputPluginConfigSchema = BaseInputPluginConfigSchema.extend({
   expression: z.string(),
   count: z.number().int().gte(1),
 });
-
+export type CronInputPluginConfig = z.infer<typeof CronInputPluginConfigSchema>;
 export const CronInputPluginNamedConfigSchema = z.object({
   cron: CronInputPluginConfigSchema,
 });
@@ -25,7 +25,7 @@ const HTTPInputPluginConfigSchema = BaseInputPluginConfigSchema.extend({
   port: z.number().int().gte(1).lte(65_535),
   max_pending_requests: z.number().int().gte(1).optional(),
 });
-
+export type HTTPInputPluginConfig = z.infer<typeof HTTPInputPluginConfigSchema>;
 export const HTTPInputPluginNamedConfigSchema = z.object({
   http: HTTPInputPluginConfigSchema,
 });
@@ -37,7 +37,9 @@ const LinspaceInputPluginConfigSchema = BaseInputPluginConfigSchema.extend({
   count: z.number().int().gte(1),
   endpoint: z.boolean().optional(),
 });
-
+export type LinspaceInputPluginConfig = z.infer<
+  typeof LinspaceInputPluginConfigSchema
+>;
 export const LinspaceInputPluginNamedConfigSchema = z.object({
   linspace: LinspaceInputPluginConfigSchema,
 });
@@ -46,7 +48,9 @@ export const LinspaceInputPluginNamedConfigSchema = z.object({
 const StaticInputPluginConfigSchema = BaseInputPluginConfigSchema.extend({
   count: z.number().int().gte(1),
 });
-
+export type StaticInputPluginConfig = z.infer<
+  typeof StaticInputPluginConfigSchema
+>;
 export const StaticInputPluginNamedConfigSchema = z.object({
   static: StaticInputPluginConfigSchema,
 });
@@ -55,7 +59,9 @@ export const StaticInputPluginNamedConfigSchema = z.object({
 const TimePatternsInputPluginConfigSchema = BaseInputPluginConfigSchema.extend({
   patterns: z.array(z.string()).min(1),
 });
-
+export type TimePatternsInputPluginConfig = z.infer<
+  typeof TimePatternsInputPluginConfigSchema
+>;
 export const TimePatternsInputPluginNamedConfigSchema = z.object({
   time_patterns: TimePatternsInputPluginConfigSchema,
 });
@@ -67,7 +73,9 @@ const TimerInputPluginConfigSchema = BaseInputPluginConfigSchema.extend({
   count: z.number().int().gte(1),
   repeat: z.number().int().gte(0).nullable().optional(),
 });
-
+export type TimerInputPluginConfig = z.infer<
+  typeof TimerInputPluginConfigSchema
+>;
 export const TimerInputPluginNamedConfigSchema = z.object({
   timer: TimerInputPluginConfigSchema,
 });
@@ -76,7 +84,9 @@ export const TimerInputPluginNamedConfigSchema = z.object({
 const TimestampsInputPluginConfigSchema = BaseInputPluginConfigSchema.extend({
   source: z.union([z.array(z.string()).min(1), z.string()]),
 });
-
+export type TimestampsInputPluginConfig = z.infer<
+  typeof TimestampsInputPluginConfigSchema
+>;
 export const TimestampsInputPluginNamedConfigSchema = z.object({
   timestamps: TimestampsInputPluginConfigSchema,
 });

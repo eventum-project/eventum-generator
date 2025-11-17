@@ -8,6 +8,7 @@ const BaseOutputPluginConfigSchema = z.object({
   formatter: FormatterConfigSchema.optional(),
 });
 
+/* ClickHouse output plugin */
 const ClickhouseOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   host: z.string().min(1),
   port: z.number().int().gte(1).lte(65_535).optional(),
@@ -32,11 +33,14 @@ const ClickhouseOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   footer: z.string().optional(),
   separator: z.string().optional(),
 });
-
+export type ClickhouseOutputPluginConfig = z.infer<
+  typeof ClickhouseOutputPluginConfigSchema
+>;
 export const ClickhouseOutputPluginNamedConfigSchema = z.object({
   clickhouse: ClickhouseOutputPluginConfigSchema,
 });
 
+/* File output plugin */
 const FileOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   path: z.string().min(1),
   flush_interval: z.number().gte(0).optional(),
@@ -46,11 +50,14 @@ const FileOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   encoding: z.enum(ENCODINGS).optional(),
   separator: z.string().optional(),
 });
-
+export type FileOutputPluginConfig = z.infer<
+  typeof FileOutputPluginConfigSchema
+>;
 export const FileOutputPluginNamedConfigSchema = z.object({
   file: FileOutputPluginConfigSchema,
 });
 
+/* HTTP output plugin */
 const HTTPOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   url: z.httpUrl(),
   method: z
@@ -68,11 +75,14 @@ const HTTPOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   client_cert_key: z.string().min(1).nullable().optional(),
   proxy_url: z.httpUrl().nullable().optional(),
 });
-
+export type HTTPOutputPluginConfig = z.infer<
+  typeof HTTPOutputPluginConfigSchema
+>;
 export const HTTPOutputPluginNamedConfigSchema = z.object({
   http: HTTPOutputPluginConfigSchema,
 });
 
+/* OpenSearch output plugin */
 const OpensearchOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   hosts: z.array(z.httpUrl()).min(1),
   username: z.string().min(1),
@@ -86,18 +96,23 @@ const OpensearchOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   client_cert_key: z.string().min(1).nullable().optional(),
   proxy_url: z.httpUrl().nullable().optional(),
 });
-
+export type OpensearchOutputPluginConfig = z.infer<
+  typeof OpensearchOutputPluginConfigSchema
+>;
 export const OpensearchOutputPluginNamedConfigSchema = z.object({
   opensearch: OpensearchOutputPluginConfigSchema,
 });
 
+/* Stdout output plugin */
 const StdoutOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   flush_interval: z.number().gte(0).optional(),
   stream: z.enum(['stdout', 'stderr']).optional(),
   encoding: z.enum(ENCODINGS).optional(),
   separator: z.string().optional(),
 });
-
+export type StdoutOutputPluginConfig = z.infer<
+  typeof StdoutOutputPluginConfigSchema
+>;
 export const StdoutOutputPluginNamedConfigSchema = z.object({
   stdout: StdoutOutputPluginConfigSchema,
 });
