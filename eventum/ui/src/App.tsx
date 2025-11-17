@@ -1,22 +1,25 @@
+// sort-imports-ignore
 import {
   CodeHighlightAdapterProvider,
   createShikiAdapter,
 } from '@mantine/code-highlight';
-import '@mantine/code-highlight/styles.css';
 import {
   MantineColorsTuple,
   MantineProvider,
   createTheme,
 } from '@mantine/core';
+
 import '@mantine/core/styles.css';
+import '@mantine/code-highlight/styles.css';
+import '@mantine/notifications/styles.css';
+import '@/index.css';
+
 import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
-import '@mantine/notifications/styles.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { BrowserRouter } from 'react-router-dom';
 
-import '@/index.css';
 import AppRouter from '@/routing';
 
 const primaryColorTuple: MantineColorsTuple = [

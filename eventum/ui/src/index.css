@@ -63,6 +63,15 @@ h2 {
   color: var(--mantine-color-dark-1);
 }
 
+/* CodeHighlight */
+[data-mantine-color-scheme='light'] .mantine-CodeHighlight-codeHighlight {
+  --mantine-color-anchor: var(--mantine-color-primary-5) !important;
+}
+
+[data-mantine-color-scheme='dark'] .mantine-CodeHighlight-codeHighlight {
+  --mantine-color-anchor: var(--mantine-color-primary-3) !important;
+}
+
 /* ========== Tabler settings ========== */
 svg.tabler-icon {
   stroke-width: 1.6 !important;
