@@ -1,4 +1,9 @@
 import {
+  CodeHighlightAdapterProvider,
+  createShikiAdapter,
+} from '@mantine/code-highlight';
+import '@mantine/code-highlight/styles.css';
+import {
   MantineColorsTuple,
   MantineProvider,
   createTheme,
@@ -52,16 +57,29 @@ const queryClient = new QueryClient({
   },
 });
 
+async function loadShiki() {
+  const { createHighlighter } = await import('shiki');
+  const shiki = await createHighlighter({
+    langs: ['json', 'yml'],
+    themes: [],
+  });
+
+  return shiki;
+}
+const shikiAdapter = createShikiAdapter(loadShiki);
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <MantineProvider theme={theme} defaultColorScheme="dark">
-        <Notifications />
-        <ModalsProvider>
-          <BrowserRouter>
-            <AppRouter />
-          </BrowserRouter>
-        </ModalsProvider>
+        <CodeHighlightAdapterProvider adapter={shikiAdapter}>
+          <Notifications />
+          <ModalsProvider>
+            <BrowserRouter>
+              <AppRouter />
+            </BrowserRouter>
+          </ModalsProvider>
+        </CodeHighlightAdapterProvider>
       </MantineProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
