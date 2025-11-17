@@ -14,7 +14,7 @@ import {
   useCreateGeneratorConfigMutation,
   useUploadGeneratorFileMutation,
 } from '@/api/hooks/useGeneratorConfigs';
-import { EventPluginName } from '@/api/models/plugins';
+import { EventPluginName } from '@/api/routes/generator-configs/schemas/event-plugins';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 const VALID_PROJECT_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
