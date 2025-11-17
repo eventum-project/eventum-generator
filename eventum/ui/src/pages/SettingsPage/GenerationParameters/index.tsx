@@ -16,7 +16,7 @@ import { FC, useState } from 'react';
 
 import { QueueSizeApproximation } from './QueueSizeApproximation';
 import { Settings } from '@/api/routes/instance/schemas';
-import { TIMEZONES } from '@/api/routes/instance/timezones';
+import { TIMEZONES } from '@/api/schemas/timezones';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 
 interface GenerationParametersProps {

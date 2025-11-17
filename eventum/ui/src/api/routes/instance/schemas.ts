@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { TIMEZONES } from '@/api/routes/instance/timezones';
+import { TIMEZONES } from '@/api/schemas/timezones';
 
 export const InstanceInfoSchema = z.object({
   app_version: z.string(),
