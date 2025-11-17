@@ -1,3 +1,4 @@
+import { CodeHighlight } from '@mantine/code-highlight';
 import { Code, Divider, Spoiler, Stack, Text } from '@mantine/core';
 import { FC } from 'react';
 
@@ -39,9 +40,10 @@ export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
               showLabel={<Text size="xs">Show more</Text>}
               hideLabel={<Text size="xs">Hide</Text>}
             >
-              <Code block>
-                {JSON.stringify(error.requestConfig.headers, undefined, 2)}
-              </Code>
+              <CodeHighlight
+                language="json"
+                code={JSON.stringify(error.requestConfig.headers, undefined, 2)}
+              />
             </Spoiler>
 
             <Text size="sm">Body:</Text>
@@ -50,19 +52,22 @@ export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
               showLabel={<Text size="xs">Show more</Text>}
               hideLabel={<Text size="xs">Hide</Text>}
             >
-              <Code block>
-                {typeof error.requestConfig.data === 'string' ? (
-                  JSON.stringify(
+              {typeof error.requestConfig.data === 'string' ? (
+                <CodeHighlight
+                  language="json"
+                  code={JSON.stringify(
                     JSON.parse(error.requestConfig.data),
                     undefined,
                     2
-                  )
-                ) : error.requestConfig.data === undefined ? (
-                  <i>Empty</i>
-                ) : (
-                  <i>Cannot show</i>
-                )}
-              </Code>
+                  )}
+                />
+              ) : (
+                <Code block>
+                  {error.requestConfig.data === undefined
+                    ? 'Empty'
+                    : 'Cannot show'}
+                </Code>
+              )}
             </Spoiler>
           </Stack>
         ) : (
@@ -84,9 +89,10 @@ export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
               showLabel={<Text size="xs">Show more</Text>}
               hideLabel={<Text size="xs">Hide</Text>}
             >
-              <Code block>
-                {JSON.stringify(error.response.headers, undefined, 2)}
-              </Code>
+              <CodeHighlight
+                language="json"
+                code={JSON.stringify(error.response.headers, undefined, 2)}
+              />
             </Spoiler>
 
             <Text size="sm">Body:</Text>
@@ -95,15 +101,16 @@ export const APIErrorModalContent: FC<APIErrorModalContentProps> = ({
               showLabel={<Text size="xs">Show more</Text>}
               hideLabel={<Text size="xs">Hide</Text>}
             >
-              <Code block>
-                {error.response.data !== undefined ? (
-                  JSON.stringify(error.response.data, undefined, 2)
-                ) : error.response.data === undefined ? (
+              {error.response.data !== undefined ? (
+                <CodeHighlight
+                  language="json"
+                  code={JSON.stringify(error.response.data, undefined, 2)}
+                />
+              ) : (
+                <Code block>
                   <i>Empty</i>
-                ) : (
-                  <i>Cannot show</i>
-                )}
-              </Code>
+                </Code>
+              )}
             </Spoiler>
           </Stack>
         ) : (
