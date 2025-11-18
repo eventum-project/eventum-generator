@@ -7,7 +7,7 @@ import {
 } from '../routes/preview';
 import { VersatileDatetimeParametersBody } from '../routes/preview/schemas';
 
-export function useGenerateTimestampMutation() {
+export function useGenerateTimestampsMutation() {
   return useMutation({
     mutationFn: ({
       name,
