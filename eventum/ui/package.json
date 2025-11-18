@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mantine/charts": "^8.3.5",
     "@mantine/code-highlight": "^8.3.5",
     "@mantine/core": "^8.1.2",
     "@mantine/form": "^8.2.2",
@@ -27,6 +28,7 @@
     "react-dom": "^19.1.0",
     "react-error-boundary": "^6.0.0",
     "react-router-dom": "^7.6.3",
+    "recharts": "^3.4.1",
     "shiki": "^3.15.0",
     "validator": "^13.15.15",
     "yaml": "^2.8.1",
