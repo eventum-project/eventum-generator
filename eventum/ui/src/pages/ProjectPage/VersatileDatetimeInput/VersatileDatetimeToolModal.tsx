@@ -161,7 +161,7 @@ export const VersatileDatetimeToolModal: FC = () => {
             label={
               <LabelWithTooltip
                 label="Relative base"
-                tooltip="Base time to use when value represents relative time, default is the current time (i.e. now)."
+                tooltip="Base time to use when value represents relative time, default is the current time"
               />
             }
             placeholder="datetime (unix timestamps or ISO8601 string)"
