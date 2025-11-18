@@ -57,11 +57,11 @@ export const VersatileDatetimeToolModal: FC = () => {
     null
   );
 
-  function handleNormalizeDatetime() {
+  function handleNormalizeDatetime(values: typeof form.values) {
     normalizeDatetime.mutate(
       {
         name: projectName,
-        parameters: form.values,
+        parameters: values,
       },
       {
         onSuccess: (normalizedDatetime) => {
