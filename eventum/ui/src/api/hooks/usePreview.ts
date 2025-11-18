@@ -21,7 +21,7 @@ export function useGenerateTimestampsMutation() {
       size: number;
       skipPast: boolean;
       timezone: string;
-      span: string;
+      span: string | null;
       inputPluginsConfig: InputPluginsNamedConfig;
     }) =>
       generateTimestamps(

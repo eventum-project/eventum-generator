@@ -14,7 +14,7 @@ export async function generateTimestamps(
   size: number,
   skipPast: boolean,
   timezone: string,
-  span: string,
+  span: string | null,
   inputPluginsConfig: InputPluginsNamedConfig
 ): Promise<AggregatedTimestamps> {
   return await validateResponse(
