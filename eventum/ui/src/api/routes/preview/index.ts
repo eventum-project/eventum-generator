@@ -1,10 +1,38 @@
+import { InputPluginsNamedConfig } from '../generator-configs/schemas';
 import {
+  AggregatedTimestamps,
+  AggregatedTimestampsSchema,
   VersatileDatetimeParametersBody,
   VersatileDatetimeResponse,
   VersatileDatetimeResponseSchema,
 } from './schemas';
 import { apiClient } from '@/api/client';
 import { validateResponse } from '@/api/wrappers';
+
+export async function generateTimestamps(
+  name: string,
+  size: number,
+  skipPast: boolean,
+  timezone: string,
+  span: string,
+  inputPluginsConfig: InputPluginsNamedConfig
+): Promise<AggregatedTimestamps> {
+  return await validateResponse(
+    AggregatedTimestampsSchema,
+    apiClient.post(
+      `/preview/${name}/input-plugins/generate`,
+      inputPluginsConfig,
+      {
+        params: {
+          size,
+          skip_past: skipPast,
+          timezone,
+          span,
+        },
+      }
+    )
+  );
+}
 
 export async function normalizeVersatileDatetime(
   name: string,
