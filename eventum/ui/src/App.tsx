@@ -12,6 +12,7 @@ import {
 import '@mantine/core/styles.css';
 import '@mantine/code-highlight/styles.css';
 import '@mantine/notifications/styles.css';
+import '@mantine/charts/styles.css';
 import '@/index.css';
 
 import { ModalsProvider } from '@mantine/modals';
@@ -64,7 +65,7 @@ async function loadShiki() {
   const { createHighlighter } = await import('shiki');
   const shiki = await createHighlighter({
     langs: ['json', 'yml'],
-    themes: [],
+    themes: ['andromeeda'],
   });
 
   return shiki;
