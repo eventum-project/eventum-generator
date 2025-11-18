@@ -1,7 +1,7 @@
 import z from 'zod';
 
 export const VersatileDatetimeParametersBodySchema = z.object({
-  value: z.string().min(1).optional(),
+  value: z.string().nullable().optional(),
   timezone: z.string().min(1),
   relative_base: z.string().nullable().optional(),
   none_point: z

@@ -5,10 +5,12 @@
   --mantine-color-red-text: var(--mantine-color-red-7) !important;
   --mantine-color-blue-text: var(--mantine-color-blue-6) !important;
   --mantine-color-orange-text: var(--mantine-color-orange-5) !important;
+  --mantine-color-green-text: var(--mantine-color-green-6) !important;
 }
 
 :root[data-mantine-color-scheme='dark'] {
   --mantine-color-red-text: var(--mantine-color-red-5) !important;
+  --mantine-color-green-text: var(--mantine-color-green-5) !important;
 }
 
 h2 {
