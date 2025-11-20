@@ -98,7 +98,6 @@ export const TimerInputPluginParams: FC<TimerInputPluginParamsProps> = ({
         placeholder="Press Enter to submit a tag"
         {...form.getInputProps('tags', { type: 'input' })}
       />
-      <></>
     </Stack>
   );
 };
