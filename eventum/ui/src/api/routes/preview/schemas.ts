@@ -3,6 +3,7 @@ import z from 'zod';
 export const AggregatedTimestampsSchema = z.object({
   span_edges: z.array(z.string()),
   span_counts: z.record(z.string(), z.array(z.int())),
+  total: z.int(),
 });
 export type AggregatedTimestamps = z.infer<typeof AggregatedTimestampsSchema>;
 
