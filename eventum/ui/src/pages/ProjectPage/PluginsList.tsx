@@ -7,9 +7,9 @@ import {
   EVENT_PLUGINS_INFO,
   INPUT_PLUGINS_INFO,
   OUTPUT_PLUGINS_INFO,
+  PluginNamesMap,
   PluginType,
 } from '@/api/models/plugins';
-import { InputPluginName } from '@/api/routes/generator-configs/schemas/input-plugins';
 import { AreaButton } from '@/components/ui/AreaButton';
 
 interface PluginsListProps {
@@ -17,7 +17,10 @@ interface PluginsListProps {
   plugins: string[];
   onChangeSelectedPlugin: (index: number) => void;
   selectedPlugin: number;
-  onAddNewPlugin: (name: InputPluginName) => void;
+  onAddNewPlugin: <T extends PluginType>(
+    pluginType: T,
+    pluginName: PluginNamesMap[T]
+  ) => void;
   onDeletePlugin: (index: number) => void;
 }
 
@@ -68,7 +71,7 @@ export const PluginsList: FC<PluginsListProps> = ({
                 name={label as string}
                 description={description as string}
                 onClick={() => {
-                  onAddNewPlugin(name as InputPluginName);
+                  onAddNewPlugin(type, name as PluginNamesMap[typeof type]);
                   modals.closeAll();
                 }}
                 h="75px"

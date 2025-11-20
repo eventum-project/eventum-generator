@@ -111,3 +111,18 @@ export const OUTPUT_PLUGINS_INFO = {
     description: 'Write events to stdout',
   },
 } as const satisfies Record<OutputPluginName, PluginInfo>;
+
+export const PLUGINS_INFO = {
+  input: INPUT_PLUGINS_INFO,
+  event: EVENT_PLUGINS_INFO,
+  output: OUTPUT_PLUGINS_INFO,
+} as const satisfies Record<
+  PluginType,
+  | typeof INPUT_PLUGINS_INFO
+  | typeof EVENT_PLUGINS_INFO
+  | typeof OUTPUT_PLUGINS_INFO
+>;
+
+export type PluginNamesMap = {
+  [K in keyof typeof PLUGINS_INFO]: keyof (typeof PLUGINS_INFO)[K];
+};
