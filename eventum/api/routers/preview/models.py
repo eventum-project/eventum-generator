@@ -23,10 +23,14 @@ class AggregatedTimestamps(BaseModel, frozen=True, extra='forbid'):
     span_counts : dict[int, list[int]]
         Count of timestamps within spans for each plugin id.
 
+    total : int
+        Total count of timestamps
+
     """
 
     span_edges: list[datetime]
     span_counts: dict[int, list[int]]
+    total: int
 
 
 class ProduceEventErrorInfo(BaseModel, frozen=True, extra='forbid'):

@@ -94,7 +94,7 @@ async def generate_timestamps(
     )
 
     if not non_interactive_plugins:
-        return AggregatedTimestamps(span_edges=[], span_counts={})
+        return AggregatedTimestamps(span_edges=[], span_counts={}, total=0)
 
     merged_plugins = InputPluginsMerger(plugins=non_interactive_plugins)
     iterator = merged_plugins.iterate(size=size, skip_past=skip_past)

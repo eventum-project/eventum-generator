@@ -35,7 +35,7 @@ _AUTO_SPANS_US = np.array(
     dtype='timedelta64[s]',
 ).astype('timedelta64[us]')
 
-_OPTIMAL_SPANS_COUNT = 60
+_OPTIMAL_SPANS_COUNT = 30
 
 
 def calculate_auto_span(
@@ -107,7 +107,7 @@ def aggregate_timestamps(
     timestamps = timestamps['timestamp']
 
     if timestamps.size == 0:
-        return AggregatedTimestamps(span_edges=[], span_counts={})
+        return AggregatedTimestamps(span_edges=[], span_counts={}, total=0)
 
     if span is None:
         span_td64 = calculate_auto_span(
@@ -143,4 +143,5 @@ def aggregate_timestamps(
     return AggregatedTimestamps(
         span_edges=span_edges.tolist(),  # type: ignore[arg-type]
         span_counts=span_counts,
+        total=timestamps.size,
     )
