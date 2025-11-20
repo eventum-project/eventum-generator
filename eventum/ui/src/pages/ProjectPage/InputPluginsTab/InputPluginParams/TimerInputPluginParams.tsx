@@ -1,4 +1,4 @@
-import { Group, NumberInput, Stack, Switch, TagsInput } from '@mantine/core';
+import { Group, NumberInput, Stack, TagsInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { FC } from 'react';
 
@@ -17,7 +17,21 @@ export const TimerInputPluginParams: FC<TimerInputPluginParamsProps> = ({
 }) => {
   const form = useForm<TimerInputPluginConfig>({
     initialValues: initialConfig,
-    onValuesChange: (values) => onChange(values),
+    onValuesChange: () => {
+      onChange(form.getTransformedValues());
+    },
+    transformValues: (values) => {
+      if (values.start === '') {
+        values.start = null;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+      if (!values.repeat) {
+        values.repeat = null;
+      }
+
+      return values;
+    },
   });
 
   return (
@@ -49,16 +63,21 @@ export const TimerInputPluginParams: FC<TimerInputPluginParamsProps> = ({
           defaultValue={1}
           {...form.getInputProps('count', { type: 'input' })}
         />
+        <NumberInput
+          min={1}
+          allowDecimal={false}
+          label={
+            <LabelWithTooltip
+              label="Repeat"
+              tooltip="Number of cycles to repeat, if value is not set, then repeat infinitely"
+            />
+          }
+          placeholder="infinitely"
+          suffix=" times"
+          {...form.getInputProps('repeat', { type: 'input' })}
+        />
       </Group>
-      <Switch
-        label={
-          <LabelWithTooltip
-            label="Repeat"
-            tooltip="Number of cycles to repeat, if value is not set, then repeat infinitely"
-          />
-        }
-        {...form.getInputProps('repeat', { type: 'checkbox' })}
-      />
+
       <VersatileDatetimeInput
         label={
           <LabelWithTooltip
