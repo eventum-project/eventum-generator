@@ -1,7 +1,6 @@
 import { ActionIcon, Button, NavLink, Stack, Text } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { Icon, IconPlus, IconTrash } from '@tabler/icons-react';
-import { capitalCase } from 'change-case';
 import { FC } from 'react';
 
 import {
@@ -43,7 +42,7 @@ export const PluginsList: FC<PluginsListProps> = ({
         <Text size="sm">
           Plugin{' '}
           <b>
-            {plugins[index]} (#{index + 1})
+            {plugins[index]} #{index + 1}
           </b>{' '}
           will be deleted. Do you want to continue?
         </Text>
@@ -89,10 +88,7 @@ export const PluginsList: FC<PluginsListProps> = ({
         {plugins.map((item, idx) => (
           <NavLink
             key={idx}
-            label={item
-              .split('_')
-              .map((item) => capitalCase(item))
-              .join(' ')}
+            label={`${item} #${idx + 1}`}
             active={idx === selectedPlugin}
             style={{ borderRadius: '8px' }}
             p="4px 4px 4px 12px"
