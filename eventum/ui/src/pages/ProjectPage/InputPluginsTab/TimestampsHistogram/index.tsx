@@ -140,7 +140,7 @@ export const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
         onSuccess: (value) => {
           const groups = Object.keys(value.span_counts);
           const groupNames = pluginsConfig.map(
-            (item, index) => `${Object.keys(item)[0]!} (#${index + 1})`
+            (item, index) => `${Object.keys(item)[0]!} #${index + 1}`
           );
 
           const data: HistogramData = value.span_edges.map((edge, index) => {
