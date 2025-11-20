@@ -23,13 +23,17 @@ export const InputPluginsTab: FC<InputPluginsTabProps> = ({
         <Stack>
           <PluginsList
             type="input"
-            plugins={inputPluginsConfig.map(
-              (plugin) => Object.keys(plugin)[0]!
-            )}
+            plugins={pluginsConfig.map((plugin) => Object.keys(plugin)[0]!)}
             onChangeSelectedPlugin={setSelectedPluginIndex}
             selectedPlugin={selectedPluginIndex}
             onAddNewPlugin={() => null}
-            onDeletePlugin={() => null}
+            onDeletePlugin={(index) => {
+              const newConfig = [
+                ...pluginsConfig.slice(0, index),
+                ...pluginsConfig.slice(index + 1),
+              ];
+              setPluginsConfig(newConfig);
+            }}
           />
         </Stack>
       </Grid.Col>
