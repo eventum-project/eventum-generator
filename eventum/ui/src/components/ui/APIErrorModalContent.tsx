@@ -1,5 +1,5 @@
 import { CodeHighlight } from '@mantine/code-highlight';
-import { Code, Divider, Spoiler, Stack, Text } from '@mantine/core';
+import { Code, Divider, Stack, Text } from '@mantine/core';
 import { FC } from 'react';
 
 import { APIError } from '@/api/errors';
