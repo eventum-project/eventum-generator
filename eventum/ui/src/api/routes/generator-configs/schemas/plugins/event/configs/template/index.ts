@@ -1,13 +1,8 @@
-import { z } from 'zod';
+import z from 'zod';
 
-import { ENCODINGS } from '../encodings';
+import { BaseEventPluginConfigSchema } from '../..';
 import { ConditionSchema } from './template-fsm-conditions';
 
-export type EventPluginName = 'template' | 'replay' | 'script';
-
-const BaseEventPluginConfigSchema = z.object({});
-
-/* Template event plugin */
 const enum SampleType {
   Items = 'items',
   CSV = 'csv',
@@ -109,7 +104,7 @@ const TemplateEventPluginConfigForChainModeSchema =
       .min(1),
   });
 
-const TemplateEventPluginConfigSchema = z.union([
+export const TemplateEventPluginConfigSchema = z.union([
   TemplateEventPluginConfigForGeneralModesSchema,
   TemplateEventPluginConfigForChanceModeSchema,
   TemplateEventPluginConfigForFSMModeSchema,
@@ -121,46 +116,3 @@ export type TemplateEventPluginConfig = z.infer<
 export const TemplateEventPluginNamedConfig = z.object({
   template: TemplateEventPluginConfigSchema,
 });
-
-/* Replay event plugin */
-const ReplayEventPluginConfigSchema = BaseEventPluginConfigSchema.extend({
-  path: z.string().min(1),
-  timestamp_pattern: z.string().min(1).nullable().optional(),
-  timestamp_format: z.string().min(1).nullable().optional(),
-  repeat: z.boolean().optional(),
-  chunk_size: z.number().int().gte(0).optional(),
-  encoding: z.enum(ENCODINGS).optional(),
-});
-export type ReplayEventPluginConfig = z.infer<
-  typeof ReplayEventPluginConfigSchema
->;
-export const ReplayEventPluginNamedConfigSchema = z.object({
-  replay: ReplayEventPluginConfigSchema,
-});
-
-/* Script event plugin */
-const ScriptEventPluginConfigSchema = BaseEventPluginConfigSchema.extend({
-  path: z.string().min(1),
-});
-export type ScriptEventPluginConfig = z.infer<
-  typeof ScriptEventPluginConfigSchema
->;
-export const ScriptEventPluginNamedConfigSchema = z.object({
-  script: ScriptEventPluginConfigSchema,
-});
-
-export const EventPluginNamedConfigSchema = z.union([
-  TemplateEventPluginNamedConfig,
-  ReplayEventPluginNamedConfigSchema,
-  ScriptEventPluginNamedConfigSchema,
-]);
-export type EventPluginNamedConfig = z.infer<
-  typeof EventPluginNamedConfigSchema
->;
-
-export const EventPluginConfigSchema = z.union([
-  TemplateEventPluginConfigSchema,
-  ReplayEventPluginConfigSchema,
-  ScriptEventPluginConfigSchema,
-]);
-export type EventPluginConfig = z.infer<typeof EventPluginConfigSchema>;
