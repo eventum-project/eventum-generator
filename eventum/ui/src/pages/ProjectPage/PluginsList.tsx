@@ -4,12 +4,10 @@ import { Icon, IconPlus, IconTrash } from '@tabler/icons-react';
 import { FC } from 'react';
 
 import {
-  EVENT_PLUGINS_INFO,
-  INPUT_PLUGINS_INFO,
-  OUTPUT_PLUGINS_INFO,
+  PLUGINS_INFO,
   PluginNamesMap,
   PluginType,
-} from '@/api/models/plugins';
+} from '@/api/routes/generator-configs/modules/plugins/registry';
 import { AreaButton } from '@/components/ui/AreaButton';
 
 interface PluginsListProps {
@@ -23,12 +21,6 @@ interface PluginsListProps {
   ) => void;
   onDeletePlugin: (index: number) => void;
 }
-
-const pluginTypeToInfo = {
-  input: INPUT_PLUGINS_INFO,
-  event: EVENT_PLUGINS_INFO,
-  output: OUTPUT_PLUGINS_INFO,
-};
 
 export const PluginsList: FC<PluginsListProps> = ({
   type,
@@ -63,7 +55,7 @@ export const PluginsList: FC<PluginsListProps> = ({
       title: 'Adding plugin',
       children: (
         <Stack>
-          {Object.entries(pluginTypeToInfo[type]).map(
+          {Object.entries(PLUGINS_INFO[type]).map(
             ([name, { label, icon: PluginIcon, description }]) => (
               <AreaButton
                 key={name}
