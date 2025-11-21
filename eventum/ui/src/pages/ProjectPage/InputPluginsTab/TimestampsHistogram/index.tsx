@@ -186,7 +186,7 @@ export const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
   return (
     <Stack>
       <Text size="sm" fw="bold">
-        Timestamps histogram
+        Timestamps distribution preview
       </Text>
       <Divider />
 
