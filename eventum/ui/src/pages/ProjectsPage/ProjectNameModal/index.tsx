@@ -5,16 +5,20 @@ import { notifications } from '@mantine/notifications';
 import { FC, useState } from 'react';
 
 import {
-  getDefaultInputPluginDefaultConfig,
-  getDefaultOutputPluginDefaultConfig,
-  getEventPluginAsset,
-  getEventPluginDefaultConfig,
-} from './start-content';
-import {
   useCreateGeneratorConfigMutation,
   useUploadGeneratorFileMutation,
 } from '@/api/hooks/useGeneratorConfigs';
-import { EventPluginName } from '@/api/routes/generator-configs/schemas/event-plugins';
+import {
+  EVENT_PLUGIN_DEFAULT_ASSETS,
+  EVENT_PLUGIN_DEFAULT_CONFIGS,
+  INPUT_PLUGIN_DEFAULT_CONFIGS,
+  OUTPUT_PLUGIN_DEFAULT_CONFIGS,
+} from '@/api/routes/generator-configs/modules/plugins/registry';
+import { GeneratorConfig } from '@/api/routes/generator-configs/schemas';
+import {
+  EventPluginName,
+  EventPluginNamedConfig,
+} from '@/api/routes/generator-configs/schemas/plugins/event';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 const VALID_PROJECT_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
@@ -61,10 +65,12 @@ export const CreateProjectSubmitModal: FC<CreateProjectSubmitModalProps> = ({
   function handleCreate() {
     setIsCreatingProject(true);
 
-    const generatorConfig = {
-      input: [getDefaultInputPluginDefaultConfig()],
-      event: getEventPluginDefaultConfig(projectType),
-      output: [getDefaultOutputPluginDefaultConfig()],
+    const generatorConfig: GeneratorConfig = {
+      input: [{ timer: INPUT_PLUGIN_DEFAULT_CONFIGS.timer }],
+      event: {
+        [projectType]: EVENT_PLUGIN_DEFAULT_CONFIGS[projectType],
+      } as EventPluginNamedConfig,
+      output: [{ file: OUTPUT_PLUGIN_DEFAULT_CONFIGS.file }],
     };
 
     createGeneratorConfig.mutate(
@@ -89,7 +95,7 @@ export const CreateProjectSubmitModal: FC<CreateProjectSubmitModalProps> = ({
           });
         },
         onSuccess: () => {
-          const asset = getEventPluginAsset(projectType);
+          const asset = EVENT_PLUGIN_DEFAULT_ASSETS[projectType];
 
           uploadGeneratorFile.mutate(
             {

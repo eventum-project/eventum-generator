@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import { EventPluginNamedConfigSchema } from './event-plugins';
-import { InputPluginNamedConfigSchema } from './input-plugins';
-import { OutputPluginNamedConfigSchema } from './output-plugins';
+import { EventPluginNamedConfigSchema } from './plugins/event';
+import { InputPluginNamedConfigSchema } from './plugins/input';
+import { OutputPluginNamedConfigSchema } from './plugins/output';
 
 export const GeneratorDirsExtendedInfoSchema = z.array(
   z.object({
