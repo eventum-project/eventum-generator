@@ -1,7 +1,6 @@
 import { ActionIcon, Button, NavLink, Stack, Text } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { Icon, IconPlus, IconTrash } from '@tabler/icons-react';
-import { FC } from 'react';
 
 import {
   PLUGINS_INFO,
@@ -10,26 +9,23 @@ import {
 } from '@/api/routes/generator-configs/modules/plugins/registry';
 import { AreaButton } from '@/components/ui/AreaButton';
 
-interface PluginsListProps {
-  type: PluginType;
+interface PluginsListProps<T extends PluginType> {
+  type: T;
   plugins: string[];
   onChangeSelectedPlugin: (index: number) => void;
   selectedPlugin: number;
-  onAddNewPlugin: <T extends PluginType>(
-    pluginType: T,
-    pluginName: PluginNamesMap[T]
-  ) => void;
+  onAddNewPlugin: (pluginType: T, pluginName: PluginNamesMap[T]) => void;
   onDeletePlugin: (index: number) => void;
 }
 
-export const PluginsList: FC<PluginsListProps> = ({
+export const PluginsList = <T extends PluginType>({
   type,
   plugins,
   onChangeSelectedPlugin,
   selectedPlugin,
   onAddNewPlugin,
   onDeletePlugin,
-}) => {
+}: PluginsListProps<T>) => {
   function handleDeletePlugin(index: number) {
     modals.openConfirmModal({
       title: 'Deleting plugin',
