@@ -1,4 +1,4 @@
-import { Grid, Stack } from '@mantine/core';
+import { Center, Divider, Grid, Stack, Text } from '@mantine/core';
 import { FC, useState } from 'react';
 
 import { PluginsList } from '../PluginsList';
@@ -44,27 +44,59 @@ export const InputPluginsTab: FC<InputPluginsTabProps> = ({
                 ...pluginsConfig.slice(index + 1),
               ];
               setPluginsConfig(newConfig);
+
+              if (selectedPluginIndex >= newConfig.length) {
+                setSelectedPluginIndex(Math.max(newConfig.length - 1, 0));
+              }
             }}
           />
         </Stack>
       </Grid.Col>
       <Grid.Col span={6}>
-        <TimestampsHistogram
-          selectedPluginIndex={selectedPluginIndex}
-          inputPluginsConfig={pluginsConfig}
-        />
+        <Stack>
+          <Text size="sm" fw="bold">
+            Timestamps distribution preview
+          </Text>
+          <Divider />
+          {pluginsConfig.length === 0 ? (
+            <Center>
+              <Text size="sm" c="gray.6">
+                No plugins added
+              </Text>
+            </Center>
+          ) : (
+            <TimestampsHistogram
+              selectedPluginIndex={selectedPluginIndex}
+              inputPluginsConfig={pluginsConfig}
+            />
+          )}
+        </Stack>
       </Grid.Col>
       <Grid.Col span={4}>
-        <InputPluginParams
-          key={selectedPluginIndex}
-          inputPluginConfig={pluginsConfig[selectedPluginIndex]!}
-          onChange={(config) => {
-            const newConfig = [...pluginsConfig];
-            newConfig[selectedPluginIndex] = config;
+        <Stack>
+          <Text size="sm" fw="bold">
+            Plugin parameters
+          </Text>
+          <Divider />
+          {pluginsConfig.length === 0 ? (
+            <Center>
+              <Text size="sm" c="gray.6">
+                No plugins added
+              </Text>
+            </Center>
+          ) : (
+            <InputPluginParams
+              key={selectedPluginIndex}
+              inputPluginConfig={pluginsConfig[selectedPluginIndex]!}
+              onChange={(config) => {
+                const newConfig = [...pluginsConfig];
+                newConfig[selectedPluginIndex] = config;
 
-            setPluginsConfig(newConfig);
-          }}
-        />
+                setPluginsConfig(newConfig);
+              }}
+            />
+          )}
+        </Stack>
       </Grid.Col>
     </Grid>
   );
