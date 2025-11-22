@@ -7,7 +7,7 @@ from typing import override
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from numpy import datetime64
+from numpy import array, datetime64
 from numpy.typing import NDArray
 from pydantic import BaseModel, Field
 
@@ -183,8 +183,9 @@ class HttpInputPlugin(
             self._logger.debug('Waiting for incoming generation requests')
             while not (future.done() and self._request_queue.empty()):
                 try:
-                    count = self._request_queue.get(timeout=0.1)
+                    count = self._request_queue.get_nowait()
                 except Empty:
+                    yield array([], dtype='datetime64[us]')
                     continue
 
                 self._buffer.m_push(

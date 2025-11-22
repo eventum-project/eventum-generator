@@ -36,19 +36,20 @@ class InputPluginsMerger(
         Raises
         ------
         ValueError
-            If no plugins provided in sequence or some of the plugin is
-            interactive.
+            If no plugins provided in sequence.
 
         """
         self._plugins: dict[str, InputPlugin] = {}
 
         for plugin in plugins:
             if plugin.is_interactive:
-                msg = (
-                    f'"{plugin.name}" input plugin is interactive '
-                    'and cannot be merged'
+                logger.warning(
+                    'Interactive input plugin detected in list of merged '
+                    'plugins. Note that order of timestamps may be '
+                    'unpredictable.',
+                    plugin_name=plugin.name,
+                    plugin_id=plugin.id,
                 )
-                raise ValueError(msg)
 
             self._plugins[plugin.guid] = plugin
 
