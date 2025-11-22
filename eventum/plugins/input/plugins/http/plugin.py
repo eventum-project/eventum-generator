@@ -193,10 +193,12 @@ class HttpInputPlugin(
                 )
                 yield from self._buffer.read(size, partial=True)
 
-    @override
     @property
+    @override
     def has_interactive_timestamps(self) -> bool:
-        """Whether the interactive plugin is ready to yield any
-        timestamps.
-        """
         return not self._request_queue.empty()
+
+    @property
+    @override
+    def has_interaction(self) -> bool:
+        return self._server.started and not self._is_stopping

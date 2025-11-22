@@ -136,6 +136,13 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
         return False
 
     @property
+    def has_interaction(self) -> bool:
+        """Whether the interactive plugin is still available for
+        interaction (i.e. new timestamps may be yielded later).
+        """
+        return False
+
+    @property
     def generated(self) -> int:
         """Number of generated timestamps."""
         return self._generated
