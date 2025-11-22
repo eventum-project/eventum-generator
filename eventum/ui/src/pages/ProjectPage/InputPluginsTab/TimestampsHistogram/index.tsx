@@ -1,7 +1,6 @@
 import { BarChart } from '@mantine/charts';
 import {
   Button,
-  Divider,
   Group,
   Loader,
   NumberInput,
@@ -185,11 +184,6 @@ export const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
 
   return (
     <Stack>
-      <Text size="sm" fw="bold">
-        Timestamps distribution preview
-      </Text>
-      <Divider />
-
       <form onSubmit={form.onSubmit(handleGenerateTimestamp)}>
         <Stack>
           <Group grow align="start" h="65px">
