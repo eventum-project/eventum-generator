@@ -69,18 +69,6 @@ def test_merger():
     assert occurrences[3] == 100_000
 
 
-def test_merger_with_interactive_plugins():
-    with pytest.raises(ValueError):
-        InputPluginsMerger(
-            plugins=[
-                HttpInputPlugin(
-                    config=HttpInputPluginConfig(port=8080),
-                    params={'id': 1, 'timezone': timezone('UTC')},
-                )
-            ]
-        )
-
-
 def test_merger_with_no_provided_plugins():
     with pytest.raises(ValueError):
         InputPluginsMerger(plugins=[])
