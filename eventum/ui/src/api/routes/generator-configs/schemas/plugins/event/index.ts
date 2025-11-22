@@ -13,10 +13,6 @@ import {
   TemplateEventPluginNamedConfig,
 } from './configs/template';
 
-export type EventPluginName = 'template' | 'replay' | 'script';
-
-export const BaseEventPluginConfigSchema = z.object({});
-
 export const EventPluginNamedConfigSchema = z.union([
   TemplateEventPluginNamedConfig,
   ReplayEventPluginNamedConfigSchema,
