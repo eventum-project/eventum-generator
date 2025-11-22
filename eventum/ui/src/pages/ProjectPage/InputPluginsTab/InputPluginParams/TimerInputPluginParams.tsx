@@ -47,7 +47,6 @@ export const TimerInputPluginParams: FC<TimerInputPluginParamsProps> = ({
           suffix=" s."
           min={0.1}
           step={1}
-          defaultValue={5}
           {...form.getInputProps('seconds', { type: 'input' })}
         />
         <NumberInput
@@ -60,7 +59,6 @@ export const TimerInputPluginParams: FC<TimerInputPluginParamsProps> = ({
           min={1}
           step={1}
           allowDecimal={false}
-          defaultValue={1}
           {...form.getInputProps('count', { type: 'input' })}
         />
         <NumberInput
