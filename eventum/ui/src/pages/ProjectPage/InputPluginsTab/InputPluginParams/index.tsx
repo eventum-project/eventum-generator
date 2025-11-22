@@ -4,6 +4,7 @@ import { FC } from 'react';
 import YAML from 'yaml';
 
 import { CronInputPluginParams } from './CronInputPluginParams';
+import { HTTPInputPluginParams } from './HTTPInputPluginParams';
 import { TimerInputPluginParams } from './TimerInputPluginParams';
 import {
   InputPluginConfig,
@@ -25,7 +26,7 @@ type PluginNameToConfigType = {
 
 const pluginNamesToParamsComponent = {
   cron: CronInputPluginParams,
-  http: '',
+  http: HTTPInputPluginParams,
   linspace: '',
   static: '',
   time_patterns: '',
