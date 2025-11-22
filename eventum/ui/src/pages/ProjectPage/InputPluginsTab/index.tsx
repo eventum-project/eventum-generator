@@ -4,6 +4,7 @@ import { FC, useState } from 'react';
 import { PluginsList } from '../PluginsList';
 import { InputPluginParams } from './InputPluginParams';
 import { TimestampsHistogram } from './TimestampsHistogram';
+import { PLUGIN_DEFAULT_CONFIGS } from '@/api/routes/generator-configs/modules/plugins/registry';
 import { InputPluginsNamedConfig } from '@/api/routes/generator-configs/schemas';
 
 interface InputPluginsTabProps {
@@ -26,7 +27,17 @@ export const InputPluginsTab: FC<InputPluginsTabProps> = ({
             plugins={pluginsConfig.map((plugin) => Object.keys(plugin)[0]!)}
             onChangeSelectedPlugin={setSelectedPluginIndex}
             selectedPlugin={selectedPluginIndex}
-            onAddNewPlugin={() => null}
+            onAddNewPlugin={(pluginType, pluginName) => {
+              const defaultConfig =
+                PLUGIN_DEFAULT_CONFIGS[pluginType][pluginName];
+
+              const newConfig = [
+                ...pluginsConfig,
+                { [pluginName]: defaultConfig },
+              ] as InputPluginsNamedConfig;
+
+              setPluginsConfig(newConfig);
+            }}
             onDeletePlugin={(index) => {
               const newConfig = [
                 ...pluginsConfig.slice(0, index),
