@@ -2,7 +2,7 @@ import { Group, NumberInput, Stack, TagsInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { FC } from 'react';
 
-import { TimerInputPluginConfig } from '@/api/routes/generator-configs/schemas/input-plugins';
+import { TimerInputPluginConfig } from '@/api/routes/generator-configs/schemas/plugins/input/configs/timer';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 import { VersatileDatetimeInput } from '@/pages/ProjectPage/VersatileDatetimeInput';
 
