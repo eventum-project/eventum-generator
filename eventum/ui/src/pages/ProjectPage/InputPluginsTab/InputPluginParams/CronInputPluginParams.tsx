@@ -30,10 +30,10 @@ export const CronInputPluginParams: FC<CronInputPluginParamsProps> = ({
     },
     transformValues: (values) => {
       if (values.start === '') {
-        values.start = null;
+        values.start = undefined;
       }
       if (values.end === '') {
-        values.end = null;
+        values.end = undefined;
       }
 
       return values;

@@ -22,12 +22,12 @@ export const TimerInputPluginParams: FC<TimerInputPluginParamsProps> = ({
     },
     transformValues: (values) => {
       if (values.start === '') {
-        values.start = null;
+        values.start = undefined;
       }
 
       // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       if (!values.repeat) {
-        values.repeat = null;
+        values.repeat = undefined;
       }
 
       return values;
