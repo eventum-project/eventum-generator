@@ -7,7 +7,7 @@ from typing import override
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from numpy import array, datetime64
+from numpy import datetime64
 from numpy.typing import NDArray
 from pydantic import BaseModel, Field
 
@@ -181,11 +181,10 @@ class HttpInputPlugin(
             future.add_done_callback(self._watch_server)
 
             self._logger.debug('Waiting for incoming generation requests')
-            while not (future.done() and self._request_queue.empty()):
+            while not future.done() or not self._request_queue.empty():
                 try:
-                    count = self._request_queue.get_nowait()
+                    count = self._request_queue.get(timeout=0.1)
                 except Empty:
-                    yield array([], dtype='datetime64[us]')
                     continue
 
                 self._buffer.m_push(
@@ -193,3 +192,11 @@ class HttpInputPlugin(
                     multiply=count,
                 )
                 yield from self._buffer.read(size, partial=True)
+
+    @override
+    @property
+    def has_interactive_timestamps(self) -> bool:
+        """Whether the interactive plugin is ready to yield any
+        timestamps.
+        """
+        return not self._request_queue.empty()

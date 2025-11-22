@@ -83,7 +83,9 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
             full size. For interactive plugins it is allowed to yield
             array not of full size for each interaction with the plugin
             but if single interaction produces more than `size`
-            timestamps then they must be chunked.
+            timestamps then they must be chunked. If interactive plugin
+            is not ready to yield any timestamps it should indicate
+            about it via `has_interactive_timestamps` method.
 
         skip_past : bool, default=True
             Whether to skip past timestamps before starting generation.
@@ -125,6 +127,13 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
     def is_interactive(self) -> bool:
         """Whether the plugin is interactive."""
         return self._interactive  # type: ignore[attr-defined]
+
+    @property
+    def has_interactive_timestamps(self) -> bool:
+        """Whether the interactive plugin is ready to yield any
+        timestamps.
+        """
+        return False
 
     @property
     def generated(self) -> int:
