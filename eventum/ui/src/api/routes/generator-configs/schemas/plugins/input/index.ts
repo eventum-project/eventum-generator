@@ -29,19 +29,6 @@ import {
   TimestampsInputPluginNamedConfigSchema,
 } from './configs/timestamps';
 
-export const BaseInputPluginConfigSchema = z.object({
-  tags: z.array(z.string()).optional(),
-});
-
-export type InputPluginName =
-  | 'cron'
-  | 'http'
-  | 'linspace'
-  | 'static'
-  | 'time_patterns'
-  | 'timer'
-  | 'timestamps';
-
 export const InputPluginNamedConfigSchema = z.union([
   CronInputPluginNamedConfigSchema,
   HTTPInputPluginNamedConfigSchema,

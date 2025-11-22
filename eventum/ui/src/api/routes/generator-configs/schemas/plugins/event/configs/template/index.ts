@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import { BaseEventPluginConfigSchema } from '../..';
+import { BaseEventPluginConfigSchema } from '../../base-config';
 import { ConditionSchema } from './template-fsm-conditions';
 
 const enum SampleType {

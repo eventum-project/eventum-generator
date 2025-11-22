@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import { BaseOutputPluginConfigSchema } from '../..';
+import { BaseOutputPluginConfigSchema } from '../../base-config';
 import { CLICKHOUSE_INPUT_FORMAT } from './clickhouse-input-formats';
 
 export const ClickhouseOutputPluginConfigSchema =

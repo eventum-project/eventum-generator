@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import { BaseOutputPluginConfigSchema } from '..';
+import { BaseOutputPluginConfigSchema } from '../base-config';
 
 export const HTTPOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend(
   {

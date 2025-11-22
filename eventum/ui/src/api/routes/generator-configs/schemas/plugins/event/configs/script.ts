@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import { BaseEventPluginConfigSchema } from '..';
+import { BaseEventPluginConfigSchema } from '../base-config';
 
 export const ScriptEventPluginConfigSchema = BaseEventPluginConfigSchema.extend(
   {

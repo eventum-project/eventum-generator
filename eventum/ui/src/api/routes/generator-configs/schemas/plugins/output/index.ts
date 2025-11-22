@@ -20,18 +20,6 @@ import {
   StdoutOutputPluginConfigSchema,
   StdoutOutputPluginNamedConfigSchema,
 } from './configs/stdout';
-import { FormatterConfigSchema } from './formatters';
-
-export type OutputPluginName =
-  | 'clickhouse'
-  | 'file'
-  | 'http'
-  | 'opensearch'
-  | 'stdout';
-
-export const BaseOutputPluginConfigSchema = z.object({
-  formatter: FormatterConfigSchema.optional(),
-});
 
 export const OutputPluginNamedConfigSchema = z.union([
   ClickhouseOutputPluginNamedConfigSchema,

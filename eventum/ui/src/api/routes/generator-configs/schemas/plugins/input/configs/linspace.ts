@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import { BaseInputPluginConfigSchema } from '..';
+import { BaseInputPluginConfigSchema } from '../base-config';
 import { VersatileDatetimeStrictSchema } from '../versatile-datetime';
 
 export const LinspaceInputPluginConfigSchema =

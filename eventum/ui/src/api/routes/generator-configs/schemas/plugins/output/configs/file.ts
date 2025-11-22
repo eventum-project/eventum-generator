@@ -1,7 +1,7 @@
 import z from 'zod';
 
-import { BaseOutputPluginConfigSchema } from '..';
 import { ENCODINGS } from '../../../encodings';
+import { BaseOutputPluginConfigSchema } from '../base-config';
 
 export const FileOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend(
   {

@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import { BaseInputPluginConfigSchema } from '..';
+import { BaseInputPluginConfigSchema } from '../base-config';
 
 export const HTTPInputPluginConfigSchema = BaseInputPluginConfigSchema.extend({
   host: z.string().optional(),
