@@ -3,6 +3,7 @@ import { Stack, Text } from '@mantine/core';
 import { FC } from 'react';
 import YAML from 'yaml';
 
+import { CronInputPluginParams } from './CronInputPluginParams';
 import { TimerInputPluginParams } from './TimerInputPluginParams';
 import {
   InputPluginConfig,
@@ -23,7 +24,7 @@ type PluginNameToConfigType = {
 };
 
 const pluginNamesToParamsComponent = {
-  cron: '',
+  cron: CronInputPluginParams,
   http: '',
   linspace: '',
   static: '',
