@@ -53,7 +53,7 @@ export const TimerInputPluginParams: FC<TimerInputPluginParamsProps> = ({
           label={
             <LabelWithTooltip
               label="Count"
-              tooltip=" Number of timestamps to generate"
+              tooltip="Number of timestamps to generate"
             />
           }
           min={1}
