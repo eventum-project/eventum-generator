@@ -15,10 +15,8 @@ import {
   OUTPUT_PLUGIN_DEFAULT_CONFIGS,
 } from '@/api/routes/generator-configs/modules/plugins/registry';
 import { GeneratorConfig } from '@/api/routes/generator-configs/schemas';
-import {
-  EventPluginName,
-  EventPluginNamedConfig,
-} from '@/api/routes/generator-configs/schemas/plugins/event';
+import { EventPluginNamedConfig } from '@/api/routes/generator-configs/schemas/plugins/event';
+import { EventPluginName } from '@/api/routes/generator-configs/schemas/plugins/event/base-config';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 const VALID_PROJECT_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;

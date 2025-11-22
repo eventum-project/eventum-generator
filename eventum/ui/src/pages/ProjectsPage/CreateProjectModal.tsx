@@ -7,7 +7,7 @@ import {
   CreateProjectSubmitModalProps,
 } from './ProjectNameModal';
 import { EVENT_PLUGINS_INFO } from '@/api/routes/generator-configs/modules/plugins/registry';
-import { EventPluginName } from '@/api/routes/generator-configs/schemas/plugins/event';
+import { EventPluginName } from '@/api/routes/generator-configs/schemas/plugins/event/base-config';
 import { AreaButton } from '@/components/ui/AreaButton';
 
 interface CreateProjectModalProps {
