@@ -117,6 +117,7 @@ class AsyncIdentifiedTimestampsSyncAdapter(
 
             while True:
                 array = await self._queue.async_q.get()
+                self._queue.async_q.task_done()
 
                 if array is None:
                     break
