@@ -3,10 +3,11 @@
 import asyncio
 from collections.abc import Sequence
 from datetime import datetime
-from typing import cast
+from typing import TypedDict, cast
 
 import structlog
 import uvloop
+from aiostream import stream
 from pytz import timezone
 
 from eventum.core.parameters import GeneratorParameters
@@ -17,6 +18,7 @@ from eventum.plugins.event.exceptions import (
     PluginProduceError,
 )
 from eventum.plugins.input.adapters import (
+    AsyncIdentifiedTimestampsEmptyAdapter,
     AsyncIdentifiedTimestampsSyncAdapter,
     IdentifiedTimestampsPluginAdapter,
 )
@@ -106,7 +108,10 @@ class Executor:
         self._input_tags = self._build_input_tags_map()
 
         logger.debug('Configuring input')
-        self._configured_input = self._configure_input()
+        (
+            self._configured_non_interactive_input,
+            self._configured_interactive_input,
+        ) = self._configure_input()
 
         self._output_tasks: set[asyncio.Task] = set()
         self._output_semaphore = asyncio.Semaphore(
@@ -131,14 +136,20 @@ class Executor:
 
         return tags_map
 
-    def _configure_input(self) -> SupportsAsyncIdentifiedTimestampsIterate:
-        """Configure input plugins according to generator parameters
-        by wrapping it to merger, batcher and scheduler.
+    def _configure_input(
+        self,
+    ) -> tuple[
+        SupportsAsyncIdentifiedTimestampsIterate,
+        SupportsAsyncIdentifiedTimestampsIterate,
+    ]:
+        """Configure input plugins according to generator parameters by
+        wrapping it to merger, batcher and scheduler.
 
         Returns
         -------
-        SupportsAsyncIdentifiedTimestampsIterate
-            Configured input.
+        tuple[SupportsAsyncIdentifiedTimestampsIterate,\
+            SupportsAsyncIdentifiedTimestampsIterate]
+            Input configured for non interactive and interactive plugins.
 
         Raises
         ------
@@ -146,47 +157,77 @@ class Executor:
             If input plugins cannot be configured.
 
         """
-        if len(self._input) > 1:
-            logger.debug('Merging input plugins')
+
+        class PluginItem(TypedDict):
+            plugins: list[InputPlugin]
+            lax_batcher_mode: bool
+
+        non_interactive_plugins, interactive_plugins = (
+            list(
+                filter(lambda plugin: not plugin.is_interactive, self._input),
+            ),
+            list(filter(lambda plugin: plugin.is_interactive, self._input)),
+        )
+
+        result: list[SupportsAsyncIdentifiedTimestampsIterate] = []
+
+        items: list[PluginItem] = [
+            {'plugins': non_interactive_plugins, 'lax_batcher_mode': False},
+            {'plugins': interactive_plugins, 'lax_batcher_mode': True},
+        ]
+
+        for item in items:
+            if len(item['plugins']) > 1:
+                logger.debug('Merging input plugins')
+                try:
+                    input: SupportsIdentifiedTimestampsSizedIterate = (
+                        InputPluginsMerger(plugins=self._input)
+                    )
+                except ValueError as e:
+                    msg = 'Failed to merge input plugins'
+                    raise ImproperlyConfiguredError(
+                        msg,
+                        context={'reason': str(e)},
+                    ) from None
+            elif len(item['plugins']) == 1:
+                logger.debug('Adapting single input plugin')
+                input = IdentifiedTimestampsPluginAdapter(
+                    plugin=self._input[0],
+                )
+            else:
+                result.append(AsyncIdentifiedTimestampsEmptyAdapter())
+                continue
+
+            logger.debug('Wrapping to timestamps batcher')
             try:
-                input: SupportsIdentifiedTimestampsSizedIterate = (
-                    InputPluginsMerger(plugins=self._input)
+                batcher = TimestampsBatcher(
+                    source=input,
+                    batch_size=self._params.batch.size,
+                    batch_delay=self._params.batch.delay,
+                    lax=item['lax_batcher_mode'],
                 )
             except ValueError as e:
-                msg = 'Failed to merge input plugins'
+                msg = 'Failed to initialize batcher'
                 raise ImproperlyConfiguredError(
                     msg,
                     context={'reason': str(e)},
                 ) from None
-        else:
-            logger.debug('Adapting single input plugin')
-            input = IdentifiedTimestampsPluginAdapter(
-                plugin=self._input[0],
-            )
 
-        logger.debug('Wrapping to timestamps batcher')
-        try:
-            batcher = TimestampsBatcher(
-                source=input,
-                batch_size=self._params.batch.size,
-                batch_delay=self._params.batch.delay,
-            )
-        except ValueError as e:
-            msg = 'Failed to initialize batcher'
-            raise ImproperlyConfiguredError(
-                msg,
-                context={'reason': str(e)},
-            ) from None
+            if self._params.live_mode:
+                logger.debug('Wrapping to batch scheduler')
+                result.append(
+                    AsyncBatchScheduler(
+                        source=batcher,
+                        timezone=self._timezone,
+                    ),
+                )
+            else:
+                logger.debug('Adapting batcher for async iteration')
+                result.append(
+                    AsyncIdentifiedTimestampsSyncAdapter(target=batcher),
+                )
 
-        if self._params.live_mode:
-            logger.debug('Wrapping to batch scheduler')
-            return AsyncBatchScheduler(
-                source=batcher,
-                timezone=self._timezone,
-            )
-
-        logger.debug('Adapting batcher for async iteration')
-        return AsyncIdentifiedTimestampsSyncAdapter(target=batcher)
+        return result[0], result[1]
 
     async def _open_output_plugins(self) -> None:
         """Open output plugins.
@@ -288,8 +329,13 @@ class Executor:
 
         await logger.adebug('Starting to produce to timestamps queue')
         try:
-            async for timestamps in self._configured_input.iterate(
-                skip_past=skip_past,
+            async for timestamps in stream.merge(
+                self._configured_non_interactive_input.iterate(
+                    skip_past=skip_past,
+                ),
+                self._configured_interactive_input.iterate(
+                    skip_past=skip_past,
+                ),
             ):
                 if self._timestamps_queue.full() and self._params.live_mode:
                     await throttler(
