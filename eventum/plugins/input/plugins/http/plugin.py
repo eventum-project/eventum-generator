@@ -183,7 +183,7 @@ class HttpInputPlugin(
             self._logger.debug('Waiting for incoming generation requests')
             while not future.done() or not self._request_queue.empty():
                 try:
-                    count = self._request_queue.get(timeout=0.1)
+                    count = self._request_queue.get(timeout=1)
                 except Empty:
                     continue
 
