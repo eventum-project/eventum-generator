@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import TypedDict, cast
 
+import janus
 import structlog
 import uvloop
 from aiostream import stream
@@ -12,6 +13,7 @@ from pytz import timezone
 
 from eventum.core.parameters import GeneratorParameters
 from eventum.exceptions import ContextualError
+from eventum.logging.context import propagate_logger_context
 from eventum.plugins.event.base.plugin import EventPlugin, ProduceParams
 from eventum.plugins.event.exceptions import (
     PluginExhaustedError,
@@ -34,7 +36,7 @@ from eventum.plugins.input.protocols import (
 from eventum.plugins.input.scheduler import AsyncBatchScheduler
 from eventum.plugins.output.base.plugin import OutputPlugin
 from eventum.plugins.output.exceptions import PluginOpenError, PluginWriteError
-from eventum.utils.throttler import AsyncThrottler
+from eventum.utils.throttler import AsyncThrottler, Throttler
 
 logger = structlog.stdlib.get_logger()
 
@@ -97,10 +99,10 @@ class Executor:
             raise ValueError(msg)
 
         logger.debug('Initializing queues')
-        self._timestamps_queue: asyncio.Queue[IdentifiedTimestamps | None] = (
-            asyncio.Queue(maxsize=params.queue.max_timestamp_batches)
+        self._timestamps_queue: janus.Queue[IdentifiedTimestamps | None] = (
+            janus.Queue(maxsize=params.queue.max_timestamp_batches)
         )
-        self._events_queue: asyncio.Queue[list[str] | None] = asyncio.Queue(
+        self._events_queue: janus.Queue[list[str] | None] = janus.Queue(
             maxsize=params.queue.max_event_batches,
         )
 
@@ -119,6 +121,7 @@ class Executor:
         )
 
         self._stop_event = asyncio.Event()
+        self._end_execution_event = asyncio.Event()
 
     def _build_input_tags_map(self) -> dict[int, tuple[str, ...]]:
         """Build map of input plugin tags.
@@ -279,28 +282,43 @@ class Executor:
         await logger.adebug('Opening output plugins')
         await self._open_output_plugins()
 
+        # input task is executed in underlying thread due to async adapter,
+        # event task is executed in separate thread of loop thread pool
+        # and output task is executed in current thread
         await logger.adebug('Starting input, event and output tasks')
         input_task = loop.create_task(self._execute_input())
-        event_task = loop.create_task(self._execute_event())
+        event_task = loop.run_in_executor(
+            executor=None,
+            func=propagate_logger_context()(self._execute_event),
+        )
         output_task = loop.create_task(self._execute_output())
 
-        await logger.adebug('Entering execution loop')
-        while True:
-            if input_task.done() and event_task.done() and output_task.done():
-                break
+        done_event_task = loop.create_task(self._end_execution_event.wait())
+        stop_event_task = loop.create_task(self._stop_event.wait())
 
-            if self._stop_event.is_set():
-                await logger.adebug('Stop event is detected, canceling tasks')
-                input_task.cancel()
-                event_task.cancel()
-                output_task.cancel()
+        done, _ = await asyncio.wait(
+            [done_event_task, stop_event_task],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
 
-                self._stop_event.clear()
+        if stop_event_task in done:
+            await logger.adebug('Stop event is detected')
 
-                await logger.adebug('Breaking execution loop')
-                break
+            await logger.adebug('Stopping interactive input plugins')
+            for plugin in self._input:
+                if plugin.is_interactive:
+                    plugin.stop_interacting()
 
-            await asyncio.sleep(0.1)
+            await logger.adebug('Canceling executing tasks')
+            input_task.cancel()
+            event_task.cancel()
+            output_task.cancel()
+
+            self._stop_event.clear()
+
+        if done_event_task in done:
+            await logger.adebug('Done event is detected')
+            self._end_execution_event.clear()
 
         await logger.adebug('Closing output plugins')
         await self._close_output_plugins()
@@ -339,7 +357,7 @@ class Executor:
             ).stream() as streamer:
                 async for timestamps in streamer:
                     if (
-                        self._timestamps_queue.full()
+                        self._timestamps_queue.async_q.full()
                         and self._params.live_mode
                     ):
                         await throttler(
@@ -351,12 +369,15 @@ class Executor:
                             ),
                         )
 
-                    await self._timestamps_queue.put(timestamps)
+                    await self._timestamps_queue.async_q.put(timestamps)
         except asyncio.QueueShutDown:
-            await logger.ainfo(
+            await logger.adebug(
                 'Stopping input plugins execution due to downstream queue '
                 'is closed',
             )
+            for plugin in self._input:
+                if plugin.is_interactive:
+                    plugin.stop_interacting()
         except PluginGenerationError as e:
             await logger.aerror(str(e), **e.context)
         except Exception as e:  # noqa: BLE001
@@ -365,18 +386,21 @@ class Executor:
                 reason=str(e),
             )
 
-        await logger.ainfo('Finishing input plugins execution')
-        await self._timestamps_queue.put(None)
+        await logger.adebug('Finishing input plugins execution')
+        if not self._timestamps_queue.closed:
+            await self._timestamps_queue.async_q.put(None)
+            await self._timestamps_queue.async_q.join()
+            await self._timestamps_queue.aclose()
 
-    async def _execute_event(self) -> None:
+    def _execute_event(self) -> None:
         """Execute event plugin."""
         exhausted = False
 
-        throttler = AsyncThrottler(limit=1, period=10)
+        throttler = Throttler(limit=1, period=10)
 
-        await logger.adebug('Starting to consume timestamps queue')
+        logger.debug('Starting to consume timestamps queue')
         while not exhausted:
-            timestamps = await self._timestamps_queue.get()
+            timestamps = self._timestamps_queue.sync_q.get()
 
             if timestamps is None:
                 break
@@ -396,26 +420,26 @@ class Executor:
                 params['timestamp'] = self._timezone.localize(timestamp)
 
                 try:
-                    events.extend(self._event.produce(params=params))
+                    events.extend(self._event.produce(params))
                 except PluginProduceError as e:
-                    await logger.aerror(str(e), **e.context)
+                    logger.error(str(e), **e.context)
                 except PluginExhaustedError:
-                    await logger.ainfo(
+                    logger.debug(
                         'Events exhausted, closing upstream queue',
                     )
-                    self._timestamps_queue.shutdown(immediate=True)
+                    self._timestamps_queue.close()
                     exhausted = True
                     break
-                except Exception as e:  # noqa: BLE001
-                    await logger.aexception(
+                except Exception as e:
+                    logger.exception(
                         'Unexpected error during event plugin execution',
                         reason=str(e),
                     )
 
             if events:
-                if self._events_queue.full() and self._params.live_mode:
-                    await throttler(
-                        logger.awarning,
+                if self._events_queue.sync_q.full() and self._params.live_mode:
+                    throttler(
+                        logger.warning,
                         (
                             'Events queue is full, consider decreasing EPS '
                             'or changing batching settings to avoid time lag '
@@ -423,9 +447,12 @@ class Executor:
                         ),
                     )
 
-                await self._events_queue.put(events)
+                self._events_queue.sync_q.put(events)
 
-        await self._events_queue.put(None)
+        logger.debug('Finishing event plugin execution')
+        self._events_queue.sync_q.put(None)
+        self._events_queue.sync_q.join()
+        self._events_queue.close()
 
     def _handle_write_result(self, task: asyncio.Task[int]) -> None:
         """Handle result of output plugin write task.
@@ -468,7 +495,7 @@ class Executor:
         gathering_tasks: list[asyncio.Task] = []
         await logger.adebug('Starting to consume events queue')
         while True:
-            events = await self._events_queue.get()
+            events = await self._events_queue.async_q.get()
 
             if events is None:
                 break
@@ -496,6 +523,8 @@ class Executor:
         if self._output_tasks:
             await asyncio.gather(*self._output_tasks, return_exceptions=True)
             self._output_tasks.clear()
+
+        self._end_execution_event.set()
 
     def request_stop(self) -> None:
         """Request stop of execution. This method is expected to be
