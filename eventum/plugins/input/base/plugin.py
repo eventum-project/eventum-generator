@@ -129,14 +129,14 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
         return self._interactive  # type: ignore[attr-defined]
 
     @property
-    def has_interactive_timestamps(self) -> bool:
+    def has_interaction(self) -> bool:
         """Whether the interactive plugin is ready to yield any
-        timestamps.
+        timestamps or stop iteration.
         """
         return False
 
     @property
-    def has_interaction(self) -> bool:
+    def can_interact(self) -> bool:
         """Whether the interactive plugin is still available for
         interaction (i.e. new timestamps may be yielded later).
         """

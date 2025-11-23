@@ -83,7 +83,7 @@ class HttpInputPlugin(
                 log_config=None,
             ),
         )
-        self._request_queue: Queue[int] = Queue(
+        self._request_queue: Queue[int | None] = Queue(
             maxsize=config.max_pending_requests,
         )
         self._is_stopping = False
@@ -157,6 +157,8 @@ class HttpInputPlugin(
                 msg,
                 context={'reason': str(e)},
             ) from e
+        finally:
+            self._request_queue.put(None)
 
     @override
     def _generate(
@@ -181,11 +183,14 @@ class HttpInputPlugin(
             future.add_done_callback(self._watch_server)
 
             self._logger.debug('Waiting for incoming generation requests')
-            while not future.done() or not self._request_queue.empty():
+            while True:
                 try:
-                    count = self._request_queue.get(timeout=1)
+                    count = self._request_queue.get()
                 except Empty:
                     continue
+
+                if count is None:
+                    break
 
                 self._buffer.m_push(
                     timestamp=now64(self._timezone),
@@ -195,10 +200,10 @@ class HttpInputPlugin(
 
     @property
     @override
-    def has_interactive_timestamps(self) -> bool:
+    def has_interaction(self) -> bool:
         return not self._request_queue.empty()
 
     @property
     @override
-    def has_interaction(self) -> bool:
+    def can_interact(self) -> bool:
         return self._server.started and not self._is_stopping
