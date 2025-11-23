@@ -7,6 +7,7 @@ from typing import override
 import janus
 import numpy as np
 
+from eventum.logging.context import propagate_logger_context
 from eventum.plugins.input.base.plugin import InputPlugin
 from eventum.plugins.input.protocols import (
     IdentifiedTimestamps,
@@ -89,7 +90,7 @@ class AsyncIdentifiedTimestampsSyncAdapter(
         for array in self._target.iterate(skip_past=skip_past):
             self._queue.sync_q.put(array)
 
-    def _finalize_iteration(self, future: Future[None]) -> None:
+    def _finalize_iteration(self, future: Future) -> None:
         """Finalize iteration over target by putting sentinel to queue."""
         try:
             future.result()  # propagate possible exceptions
@@ -108,7 +109,9 @@ class AsyncIdentifiedTimestampsSyncAdapter(
             thread_name_prefix='async-identified-timestamps-sync-adapter',
         ) as executor:
             future = executor.submit(
-                lambda: self._start_iteration(skip_past=skip_past),
+                propagate_logger_context()(
+                    lambda: self._start_iteration(skip_past=skip_past),
+                ),
             )
             future.add_done_callback(self._finalize_iteration)
 
