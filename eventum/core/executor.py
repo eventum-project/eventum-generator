@@ -33,7 +33,7 @@ from eventum.plugins.input.protocols import (
     SupportsAsyncIdentifiedTimestampsIterate,
     SupportsIdentifiedTimestampsSizedIterate,
 )
-from eventum.plugins.input.scheduler import AsyncBatchScheduler
+from eventum.plugins.input.scheduler import BatchScheduler
 from eventum.plugins.output.base.plugin import OutputPlugin
 from eventum.plugins.output.exceptions import PluginOpenError, PluginWriteError
 from eventum.utils.throttler import AsyncThrottler, Throttler
@@ -122,6 +122,8 @@ class Executor:
 
         self._stop_event = asyncio.Event()
         self._end_execution_event = asyncio.Event()
+
+        self._event_loop: None | asyncio.AbstractEventLoop = None
 
     def _build_input_tags_map(self) -> dict[int, tuple[str, ...]]:
         """Build map of input plugin tags.
@@ -217,11 +219,16 @@ class Executor:
                 ) from None
 
             if self._params.live_mode:
-                logger.debug('Wrapping to batch scheduler')
+                logger.debug(
+                    'Wrapping to batch scheduler and adapting '
+                    'for async iteration',
+                )
                 result.append(
-                    AsyncBatchScheduler(
-                        source=batcher,
-                        timezone=self._timezone,
+                    AsyncIdentifiedTimestampsSyncAdapter(
+                        target=BatchScheduler(
+                            source=batcher,
+                            timezone=self._timezone,
+                        ),
                     ),
                 )
             else:
@@ -276,8 +283,9 @@ class Executor:
             If any error occurs during execution.
 
         """
-        await logger.adebug('Getting event loop')
+        await logger.adebug('Setting event loop')
         loop = asyncio.get_running_loop()
+        self._event_loop = loop
 
         await logger.adebug('Opening output plugins')
         await self._open_output_plugins()
@@ -322,6 +330,8 @@ class Executor:
 
         await logger.adebug('Closing output plugins')
         await self._close_output_plugins()
+
+        self._event_loop = None
 
     def execute(self) -> None:
         """Start execution of plugins.
@@ -532,5 +542,15 @@ class Executor:
         """Request stop of execution. This method is expected to be
         called from thread other than the one executing `execute`
         method.
+
+        Raises
+        ------
+        RuntimeError
+            If executor is not currently executed.
+
         """
-        self._stop_event.set()
+        if self._event_loop is None:
+            msg = 'Not currently executed'
+            raise RuntimeError(msg)
+
+        self._event_loop.call_soon_threadsafe(self._stop_event.set)
