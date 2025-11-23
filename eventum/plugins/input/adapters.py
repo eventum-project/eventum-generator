@@ -81,3 +81,20 @@ class AsyncIdentifiedTimestampsSyncAdapter(
     ) -> AsyncIterator[IdentifiedTimestamps]:
         for array in self._target.iterate(skip_past=skip_past):
             yield array
+
+
+class AsyncIdentifiedTimestampsEmptyAdapter(
+    SupportsAsyncIdentifiedTimestampsIterate,
+):
+    """Adapter that follows `SupportsAsyncIdentifiedTimestampsIterate`
+    but it's empty.
+    """
+
+    @override
+    async def iterate(
+        self,
+        *,
+        skip_past: bool = True,
+    ) -> AsyncIterator[IdentifiedTimestamps]:
+        return
+        yield
