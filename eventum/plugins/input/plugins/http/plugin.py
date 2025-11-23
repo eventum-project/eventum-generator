@@ -211,3 +211,8 @@ class HttpInputPlugin(
     @override
     def can_interact(self) -> bool:
         return self._server.started and not self._is_stopping
+
+    @override
+    def stop_interacting(self) -> None:
+        self._is_stopping = True
+        self._server.should_exit = True

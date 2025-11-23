@@ -140,14 +140,20 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
         """Whether the interactive plugin is ready to yield any
         timestamps or stop iteration.
         """
-        return False
+        raise NotImplementedError
 
     @property
     def can_interact(self) -> bool:
         """Whether the interactive plugin is still available for
         interaction (i.e. new timestamps may be yielded later).
         """
-        return False
+        raise NotImplementedError
+
+    def stop_interacting(self) -> None:
+        """Stop interacting of interactive plugin. After this method is
+        called no new timestamps can be added for yielding.
+        """
+        raise NotImplementedError
 
     def set_interaction_callback(
         self,
