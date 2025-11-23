@@ -36,6 +36,7 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
         source: SupportsIdentifiedTimestampsSizedIterate,
         batch_size: int | None = 100_000,
         batch_delay: float | None = None,
+        lax: bool = False,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize batcher.
 
@@ -52,6 +53,11 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
             Maximum time (in seconds) for single batch to accumulate
             incoming timestamps, not limited if value is `None`, cannot be
             less then `MIN_BATCH_DELAY` attribute.
+
+        lax : bool, default=False
+            Whether the batches should not be accumulated but only
+            chunked. In this mode iterations of consuming timestamps
+            are isolated from each other and not concatenated.
 
         Raises
         ------
@@ -80,6 +86,7 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
         self._batch_delay = batch_delay
 
         self._source = source
+        self._lax_mode_enabled = lax
 
     def _iterate_without_delay(
         self,
@@ -101,7 +108,7 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
             to_concatenate.append(array)
             current_size += array.size
 
-            if current_size >= self._batch_size:
+            if current_size >= self._batch_size or self._lax_mode_enabled:
                 chunks = chunk_array(
                     array=np.concatenate(to_concatenate),
                     size=self._batch_size,
@@ -109,7 +116,10 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
                 to_concatenate.clear()
                 current_size = 0
 
-                if chunks[-1].size < self._batch_size:
+                if (
+                    chunks[-1].size < self._batch_size
+                    and not self._lax_mode_enabled
+                ):
                     last_partial_chunk = chunks.pop()
                     to_concatenate.append(last_partial_chunk)
                     current_size += last_partial_chunk.size
@@ -228,7 +238,7 @@ class TimestampsBatcher(SupportsIdentifiedTimestampsIterate):
             cutoff_index = min(delay_cutoff_index, size_cutoff_index)
 
             # process cutoff index
-            if cutoff_index >= array.size:
+            if cutoff_index >= array.size and not self._lax_mode_enabled:
                 to_concatenate.append(array)
                 current_size += array.size
             else:
