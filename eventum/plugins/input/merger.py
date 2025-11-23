@@ -3,6 +3,7 @@ single source.
 """
 
 from collections.abc import Iterable, Iterator
+from threading import Event
 from typing import override
 
 import numpy as np
@@ -36,7 +37,7 @@ class InputPluginsMerger(
         Raises
         ------
         ValueError
-            If no plugins provided in sequence.
+            If one or less plugins provided in sequence.
 
         """
         self._plugins: dict[str, InputPlugin] = {}
@@ -53,11 +54,19 @@ class InputPluginsMerger(
 
             self._plugins[plugin.guid] = plugin
 
-        if not self._plugins:
-            msg = 'At least one plugin must be provided'
+        if len(self._plugins) < 2:  # noqa: PLR2004
+            msg = 'At least two plugin must be provided'
             raise ValueError(msg)
 
-    def _slice(  # noqa: C901, PLR0912
+        self._interaction_event = Event()
+
+        for plugin in self._plugins.values():
+            if plugin.is_interactive:
+                plugin.set_interaction_callback(
+                    lambda: self._interaction_event.set(),
+                )
+
+    def _slice(  # noqa: C901, PLR0912, PLR0915
         self,
         size: int,
         *,
@@ -119,12 +128,14 @@ class InputPluginsMerger(
             # get next arrays from generators if required
             if next_required_guids:
                 postponed_interactive_plugin_guids: list[str] = []
+                self._interaction_event.clear()
+
                 for guid in next_required_guids:
                     plugin: InputPlugin = active_generators[guid]['plugin']  # type: ignore[assignment]
                     if (
                         plugin.is_interactive
-                        and plugin.has_interaction
-                        and not plugin.has_interactive_timestamps
+                        and plugin.can_interact
+                        and not plugin.has_interaction
                     ):
                         postponed_interactive_plugin_guids.append(guid)
                         continue
@@ -157,6 +168,17 @@ class InputPluginsMerger(
                             plugin_name=plugin.name,
                             reason=str(e),
                         )
+
+                # if all remaining plugins are interactive
+                # and there are no timestamps from all of them
+                # we are waiting for event that should be set via
+                # interactive plugins callback to avoid busy waiting
+                if postponed_interactive_plugin_guids and set(
+                    postponed_interactive_plugin_guids,
+                ) == set(
+                    next_required_guids,
+                ):
+                    self._interaction_event.wait()
 
                 next_required_guids.clear()
                 next_required_guids.extend(postponed_interactive_plugin_guids)
