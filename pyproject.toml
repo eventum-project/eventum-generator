@@ -37,6 +37,7 @@ requires-python = ">=3.13"
 dependencies = [
     "aioconsole>=0.8.1",
     "aiofiles>=24.1.0",
+    "aiostream>=0.7.1",
     "case-converter>=1.2.0",
     "click>=8.1.8",
     "clickhouse-connect>=0.8.15",
