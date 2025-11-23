@@ -1,8 +1,10 @@
 """Adapters for protocols defined in `protocols` module."""
 
 from collections.abc import AsyncIterator, Iterator
+from concurrent.futures import Future, ThreadPoolExecutor
 from typing import override
 
+import janus
 import numpy as np
 
 from eventum.plugins.input.base.plugin import InputPlugin
@@ -60,6 +62,12 @@ class AsyncIdentifiedTimestampsSyncAdapter(
     """Adapter for object that follows
     `SupportsIdentifiedTimestampsIterate` protocol to follow
     `SupportsAsyncIdentifiedTimestampsIterate` protocol.
+
+    Notes
+    -----
+    Target is iterated in a separate thread to avoid possible blocking
+    of event loop.
+
     """
 
     def __init__(self, target: SupportsIdentifiedTimestampsIterate) -> None:
@@ -72,6 +80,21 @@ class AsyncIdentifiedTimestampsSyncAdapter(
 
         """
         self._target = target
+        self._queue: janus.Queue[IdentifiedTimestamps | None] = janus.Queue(
+            maxsize=1,
+        )
+
+    def _start_iteration(self, *, skip_past: bool = True) -> None:
+        """Start iteration over target with producing to queue."""
+        for array in self._target.iterate(skip_past=skip_past):
+            self._queue.sync_q.put(array)
+
+    def _finalize_iteration(self, future: Future[None]) -> None:
+        """Finalize iteration over target by putting sentinel to queue."""
+        try:
+            future.result()  # propagate possible exceptions
+        finally:
+            self._queue.sync_q.put(None)
 
     @override
     async def iterate(
@@ -79,8 +102,22 @@ class AsyncIdentifiedTimestampsSyncAdapter(
         *,
         skip_past: bool = True,
     ) -> AsyncIterator[IdentifiedTimestamps]:
-        for array in self._target.iterate(skip_past=skip_past):
-            yield array
+        with ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix='async-identified-timestamps-sync-adapter',
+        ) as executor:
+            future = executor.submit(
+                lambda: self._start_iteration(skip_past=skip_past),
+            )
+            future.add_done_callback(self._finalize_iteration)
+
+            while True:
+                array = await self._queue.async_q.get()
+
+                if array is None:
+                    break
+
+                yield array
 
 
 class AsyncIdentifiedTimestampsEmptyAdapter(
