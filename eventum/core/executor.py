@@ -329,25 +329,29 @@ class Executor:
 
         await logger.adebug('Starting to produce to timestamps queue')
         try:
-            async for timestamps in stream.merge(
+            async with stream.merge(
                 self._configured_non_interactive_input.iterate(
                     skip_past=skip_past,
                 ),
                 self._configured_interactive_input.iterate(
                     skip_past=skip_past,
                 ),
-            ):
-                if self._timestamps_queue.full() and self._params.live_mode:
-                    await throttler(
-                        logger.awarning,
-                        (
-                            'Timestamps queue is full, consider decreasing EPS'
-                            ' or changing batching settings to avoid time lag '
-                            'with actual event timestamps'
-                        ),
-                    )
+            ).stream() as streamer:
+                async for timestamps in streamer:
+                    if (
+                        self._timestamps_queue.full()
+                        and self._params.live_mode
+                    ):
+                        await throttler(
+                            logger.awarning,
+                            (
+                                'Timestamps queue is full, consider decreasing'
+                                ' EPS or changing batching settings to avoid '
+                                'time lag with actual event timestamps'
+                            ),
+                        )
 
-                await self._timestamps_queue.put(timestamps)
+                    await self._timestamps_queue.put(timestamps)
         except asyncio.QueueShutDown:
             await logger.ainfo(
                 'Stopping input plugins execution due to downstream queue '
