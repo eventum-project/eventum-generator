@@ -125,11 +125,15 @@ class HttpInputPlugin(
                 status_code=429,
                 detail='Too Many Requests',
             )
+
         await self._logger.adebug(
             'Generate request is received',
             count=data.count,
         )
         self._request_queue.put_nowait(data.count)
+
+        if self._interaction_callback is not None:
+            self._interaction_callback()
 
     async def _handle_stop(self) -> None:
         """Handle incoming stop request."""

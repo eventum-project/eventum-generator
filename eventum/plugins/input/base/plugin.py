@@ -1,7 +1,7 @@
 """Definition of base input plugin."""
 
 from abc import abstractmethod
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import Any, Required, TypeVar, override
 
 from numpy import datetime64
@@ -55,6 +55,8 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
             self._timezone = params['timezone']
 
         self._buffer = Buffer()
+
+        self._interaction_callback: Callable[[], None] | None = None
         self._generated = 0
 
     def __init_subclass__(
@@ -83,9 +85,7 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
             full size. For interactive plugins it is allowed to yield
             array not of full size for each interaction with the plugin
             but if single interaction produces more than `size`
-            timestamps then they must be chunked. If interactive plugin
-            is not ready to yield any timestamps it should indicate
-            about it via `has_interactive_timestamps` method.
+            timestamps then they must be chunked.
 
         skip_past : bool, default=True
             Whether to skip past timestamps before starting generation.
@@ -99,6 +99,13 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
         ------
         PluginGenerationError
             If any error occurs during timestamps generation.
+
+        Notes
+        -----
+        If interactive plugin is not ready to yield any timestamps it
+        should indicate about it via `has_interactive_timestamps`
+        method. And when it is ready notify about it via callback set
+        with `set_interaction_callback` method.
 
         """
         self._generated = 0
@@ -141,6 +148,15 @@ class InputPlugin(Plugin[ConfigT, ParamsT], register=False):
         interaction (i.e. new timestamps may be yielded later).
         """
         return False
+
+    def set_interaction_callback(
+        self,
+        callback: Callable[[], None] | None,
+    ) -> None:
+        """Register callback that will be called each time interaction
+        happens with interactive plugin.
+        """
+        self._interaction_callback = callback
 
     @property
     def generated(self) -> int:
