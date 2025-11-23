@@ -95,6 +95,7 @@ class AsyncIdentifiedTimestampsSyncAdapter(
             future.result()  # propagate possible exceptions
         finally:
             self._queue.sync_q.put(None)
+            self._queue.sync_q.join()
 
     @override
     async def iterate(
@@ -118,6 +119,8 @@ class AsyncIdentifiedTimestampsSyncAdapter(
                     break
 
                 yield array
+
+            await self._queue.aclose()
 
 
 class AsyncIdentifiedTimestampsEmptyAdapter(
