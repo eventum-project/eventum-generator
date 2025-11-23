@@ -120,7 +120,7 @@ class InputPluginsMerger(
             if next_required_guids:
                 postponed_interactive_plugin_guids: list[str] = []
                 for guid in next_required_guids:
-                    plugin: InputPlugin = active_generators[guid]['plugin']
+                    plugin: InputPlugin = active_generators[guid]['plugin']  # type: ignore[assignment]
                     if (
                         plugin.is_interactive
                         and plugin.has_interaction
@@ -130,7 +130,7 @@ class InputPluginsMerger(
                         continue
 
                     try:
-                        array = next(active_generators[guid]['generate'])
+                        array = next(active_generators[guid]['generate'])  # type: ignore[call-overload]
                         next_arrays[guid] = array
                     except StopIteration:
                         del active_generators[guid]
