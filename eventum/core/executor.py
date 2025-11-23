@@ -401,6 +401,7 @@ class Executor:
         logger.debug('Starting to consume timestamps queue')
         while not exhausted:
             timestamps = self._timestamps_queue.sync_q.get()
+            self._timestamps_queue.sync_q.task_done()
 
             if timestamps is None:
                 break
@@ -496,6 +497,7 @@ class Executor:
         await logger.adebug('Starting to consume events queue')
         while True:
             events = await self._events_queue.async_q.get()
+            self._events_queue.async_q.task_done()
 
             if events is None:
                 break
