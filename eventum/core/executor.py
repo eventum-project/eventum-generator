@@ -323,10 +323,12 @@ class Executor:
             output_task.cancel()
 
             self._stop_event.clear()
+            done_event_task.cancel()
 
         if done_event_task in done:
             await logger.adebug('Done event is detected')
             self._end_execution_event.clear()
+            stop_event_task.cancel()
 
         await logger.adebug('Closing output plugins')
         await self._close_output_plugins()
