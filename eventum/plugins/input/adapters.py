@@ -6,6 +6,7 @@ from typing import override
 
 import janus
 import numpy as np
+import structlog
 
 from eventum.logging.context import propagate_logger_context
 from eventum.plugins.input.base.plugin import InputPlugin
@@ -15,6 +16,8 @@ from eventum.plugins.input.protocols import (
     SupportsIdentifiedTimestampsIterate,
     SupportsIdentifiedTimestampsSizedIterate,
 )
+
+logger = structlog.stdlib.get_logger()
 
 
 class IdentifiedTimestampsPluginAdapter(
@@ -90,13 +93,12 @@ class AsyncIdentifiedTimestampsSyncAdapter(
         for array in self._target.iterate(skip_past=skip_past):
             self._queue.sync_q.put(array)
 
-    def _finalize_iteration(self, future: Future) -> None:
+    def _finalize_iteration(self, _: Future) -> None:
         """Finalize iteration over target by putting sentinel to queue."""
-        try:
-            future.result()  # propagate possible exceptions
-        finally:
+        # queue can be closed ahead of time if iteration coroutine
+        # is canceled
+        if not self._queue.closed:
             self._queue.sync_q.put(None)
-            self._queue.sync_q.join()
 
     @override
     async def iterate(
@@ -115,16 +117,17 @@ class AsyncIdentifiedTimestampsSyncAdapter(
             )
             future.add_done_callback(self._finalize_iteration)
 
-            while True:
-                array = await self._queue.async_q.get()
-                self._queue.async_q.task_done()
+            try:
+                while True:
+                    array = await self._queue.async_q.get()
+                    self._queue.async_q.task_done()
 
-                if array is None:
-                    break
+                    if array is None:
+                        break
 
-                yield array
-
-            await self._queue.aclose()
+                    yield array
+            finally:  # coroutine can be canceled but we must close the queue
+                await self._queue.aclose()
 
 
 class AsyncIdentifiedTimestampsEmptyAdapter(
