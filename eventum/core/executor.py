@@ -182,11 +182,12 @@ class Executor:
         ]
 
         for item in items:
-            if len(item['plugins']) > 1:
+            plugins = item['plugins']
+            if len(plugins) > 1:
                 logger.debug('Merging input plugins')
                 try:
                     input: SupportsIdentifiedTimestampsSizedIterate = (
-                        InputPluginsMerger(plugins=self._input)
+                        InputPluginsMerger(plugins=plugins)
                     )
                 except ValueError as e:
                     msg = 'Failed to merge input plugins'
@@ -194,10 +195,10 @@ class Executor:
                         msg,
                         context={'reason': str(e)},
                     ) from None
-            elif len(item['plugins']) == 1:
+            elif len(plugins) == 1:
                 logger.debug('Adapting single input plugin')
                 input = IdentifiedTimestampsPluginAdapter(
-                    plugin=self._input[0],
+                    plugin=plugins[0],
                 )
             else:
                 result.append(AsyncIdentifiedTimestampsEmptyAdapter())
