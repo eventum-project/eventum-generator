@@ -294,15 +294,27 @@ class Executor:
         # event task is executed in separate thread of loop thread pool
         # and output task is executed in current thread
         await logger.adebug('Starting input, event and output tasks')
-        input_task = loop.create_task(self._execute_input())
-        event_task = loop.run_in_executor(
+        input_task = loop.create_task(
+            self._execute_input(),
+            name=f'execute-input-{self._params.id}',
+        )
+        loop.run_in_executor(
             executor=None,
             func=propagate_logger_context()(self._execute_event),
         )
-        output_task = loop.create_task(self._execute_output())
+        output_task = loop.create_task(
+            self._execute_output(),
+            name=f'execute-output-{self._params.id}',
+        )
 
-        done_event_task = loop.create_task(self._end_execution_event.wait())
-        stop_event_task = loop.create_task(self._stop_event.wait())
+        done_event_task = loop.create_task(
+            self._end_execution_event.wait(),
+            name=f'monitor-done-{self._params.id}',
+        )
+        stop_event_task = loop.create_task(
+            self._stop_event.wait(),
+            name=f'monitor-stop-{self._params.id}',
+        )
 
         done, _ = await asyncio.wait(
             [done_event_task, stop_event_task],
@@ -312,15 +324,16 @@ class Executor:
         if stop_event_task in done:
             await logger.adebug('Stop event is detected')
 
+            # interactive plugin must be stopped anyway because they can use
+            # underlying threads that serve interaction
             await logger.adebug('Stopping interactive input plugins')
             for plugin in self._input:
                 if plugin.is_interactive:
                     plugin.stop_interacting()
 
-            await logger.adebug('Canceling executing tasks')
             input_task.cancel()
-            event_task.cancel()
-            output_task.cancel()
+
+            await output_task
 
             self._stop_event.clear()
             done_event_task.cancel()
@@ -382,6 +395,8 @@ class Executor:
                         )
 
                     await self._timestamps_queue.async_q.put(timestamps)
+
+            await logger.adebug('Finishing input plugins execution')
         except asyncio.QueueShutDown:
             await logger.adebug(
                 'Stopping input plugins execution due to downstream queue '
@@ -397,12 +412,11 @@ class Executor:
                 'Unexpected error during input plugins execution',
                 reason=str(e),
             )
-
-        await logger.adebug('Finishing input plugins execution')
-        if not self._timestamps_queue.closed:
-            await self._timestamps_queue.async_q.put(None)
-            await self._timestamps_queue.async_q.join()
-            await self._timestamps_queue.aclose()
+        finally:
+            if not self._timestamps_queue.closed:
+                await self._timestamps_queue.async_q.put(None)
+                await self._timestamps_queue.async_q.join()
+                await self._timestamps_queue.aclose()
 
     def _execute_event(self) -> None:
         """Execute event plugin."""
@@ -554,5 +568,8 @@ class Executor:
         if self._event_loop is None:
             msg = 'Not currently executed'
             raise RuntimeError(msg)
+
+        if self._stop_event.is_set():
+            return
 
         self._event_loop.call_soon_threadsafe(self._stop_event.set)
