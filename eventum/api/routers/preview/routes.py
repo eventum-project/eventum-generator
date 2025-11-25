@@ -1,7 +1,7 @@
 """Routes."""
 
 import asyncio  # noqa: I001
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 from fastapi import APIRouter, Body, HTTPException, Query, status
 from pytz import timezone
@@ -56,6 +56,7 @@ from eventum.plugins.event.exceptions import (
     PluginExhaustedError,
     PluginProduceError,
 )
+from eventum.plugins.input.adapters import IdentifiedTimestampsPluginAdapter
 from eventum.plugins.input.exceptions import PluginGenerationError
 from eventum.plugins.input.merger import InputPluginsMerger
 from eventum.plugins.input.normalizers import (
@@ -63,6 +64,11 @@ from eventum.plugins.input.normalizers import (
 )
 from eventum.plugins.output.formatters import get_formatter_class
 from eventum.utils.json_utils import normalize_types
+
+if TYPE_CHECKING:
+    from eventum.plugins.input.protocols import (
+        SupportsIdentifiedTimestampsSizedIterate,
+    )
 
 router = APIRouter()
 
@@ -96,7 +102,14 @@ async def generate_timestamps(
     if not non_interactive_plugins:
         return AggregatedTimestamps(span_edges=[], span_counts={}, total=0)
 
-    merged_plugins = InputPluginsMerger(plugins=non_interactive_plugins)
+    if len(non_interactive_plugins) == 1:
+        merged_plugins: SupportsIdentifiedTimestampsSizedIterate = (
+            IdentifiedTimestampsPluginAdapter(
+                plugin=non_interactive_plugins[0],
+            )
+        )
+    else:
+        merged_plugins = InputPluginsMerger(plugins=non_interactive_plugins)
     iterator = merged_plugins.iterate(size=size, skip_past=skip_past)
 
     try:
