@@ -5,6 +5,7 @@ import YAML from 'yaml';
 
 import { CronInputPluginParams } from './CronInputPluginParams';
 import { HTTPInputPluginParams } from './HTTPInputPluginParams';
+import { LinspaceInputPluginParams } from './LinspaceInputPluginParams';
 import { TimerInputPluginParams } from './TimerInputPluginParams';
 import {
   InputPluginConfig,
@@ -27,7 +28,7 @@ type PluginNameToConfigType = {
 const pluginNamesToParamsComponent = {
   cron: CronInputPluginParams,
   http: HTTPInputPluginParams,
-  linspace: '',
+  linspace: LinspaceInputPluginParams,
   static: '',
   time_patterns: '',
   timer: TimerInputPluginParams,
