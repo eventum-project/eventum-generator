@@ -52,7 +52,7 @@ export const InputPluginsTab: FC<InputPluginsTabProps> = ({
           />
         </Stack>
       </Grid.Col>
-      <Grid.Col span={6}>
+      <Grid.Col span={7}>
         <Stack>
           <Text size="sm" fw="bold">
             Timestamps distribution preview
@@ -72,7 +72,7 @@ export const InputPluginsTab: FC<InputPluginsTabProps> = ({
           )}
         </Stack>
       </Grid.Col>
-      <Grid.Col span={4}>
+      <Grid.Col span={3}>
         <Stack>
           <Text size="sm" fw="bold">
             Plugin parameters
