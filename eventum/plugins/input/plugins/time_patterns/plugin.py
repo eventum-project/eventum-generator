@@ -375,7 +375,7 @@ class TimePatternsInputPlugin(
                 raise PluginConfigurationError(
                     msg,
                     context={
-                        'file_path': resolved_pattern_path,
+                        'file_path': str(resolved_pattern_path),
                         'reason': str(e),
                     },
                 ) from None
@@ -384,7 +384,7 @@ class TimePatternsInputPlugin(
                 raise PluginConfigurationError(
                     msg,
                     context={
-                        'file_path': resolved_pattern_path,
+                        'file_path': str(resolved_pattern_path),
                         'reason': str(e),
                     },
                 ) from None
@@ -393,7 +393,7 @@ class TimePatternsInputPlugin(
                 raise PluginConfigurationError(
                     msg,
                     context={
-                        'file_path': resolved_pattern_path,
+                        'file_path': str(resolved_pattern_path),
                         'reason': str(e),
                     },
                 ) from None
@@ -416,7 +416,7 @@ class TimePatternsInputPlugin(
                 raise PluginConfigurationError(
                     msg,
                     context={
-                        'file_path': resolved_pattern_path,
+                        'file_path': str(resolved_pattern_path),
                         'reason': str(e),
                     },
                 ) from None
