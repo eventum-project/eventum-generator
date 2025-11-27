@@ -100,7 +100,14 @@ async def generate_timestamps(
     )
 
     if not non_interactive_plugins:
-        return AggregatedTimestamps(span_edges=[], span_counts={}, total=0)
+        return AggregatedTimestamps(
+            span_edges=[],
+            span_counts={},
+            total=0,
+            first_timestamps=None,
+            last_timestamps=None,
+            timestamps=[],
+        )
 
     if len(non_interactive_plugins) == 1:
         merged_plugins: SupportsIdentifiedTimestampsSizedIterate = (

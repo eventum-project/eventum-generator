@@ -37,6 +37,8 @@ _AUTO_SPANS_US = np.array(
 
 _OPTIMAL_SPANS_COUNT = 30
 
+_MAX_FULLY_RETURNED_TIMESTAMPS_SAMPLE_SIZE = 100
+
 
 def calculate_auto_span(
     earliest_ts: np.datetime64,
@@ -107,7 +109,14 @@ def aggregate_timestamps(
     timestamps = timestamps['timestamp']
 
     if timestamps.size == 0:
-        return AggregatedTimestamps(span_edges=[], span_counts={}, total=0)
+        return AggregatedTimestamps(
+            span_edges=[],
+            span_counts={},
+            total=0,
+            first_timestamps=None,
+            last_timestamps=None,
+            timestamps=[],
+        )
 
     if span is None:
         span_td64 = calculate_auto_span(
@@ -140,8 +149,20 @@ def aggregate_timestamps(
         for plugin_id, plugin_counts in enumerate(counts.T, start=1)
     }
 
+    if timestamps.size <= _MAX_FULLY_RETURNED_TIMESTAMPS_SAMPLE_SIZE:
+        first_timestamps = None
+        last_timestamps = None
+        all_timestamps = timestamps.tolist()
+    else:
+        first_timestamps = timestamps[:50].tolist()
+        last_timestamps = timestamps[-50:].tolist()
+        all_timestamps = None
+
     return AggregatedTimestamps(
         span_edges=span_edges.tolist(),  # type: ignore[arg-type]
         span_counts=span_counts,
         total=timestamps.size,
+        first_timestamps=first_timestamps,  # type: ignore[arg-type]
+        last_timestamps=last_timestamps,  # type: ignore[arg-type]
+        timestamps=all_timestamps,  # type: ignore[arg-type]
     )

@@ -26,11 +26,29 @@ class AggregatedTimestamps(BaseModel, frozen=True, extra='forbid'):
     total : int
         Total count of timestamps
 
+    first_timestamps : list[datetime] | None
+        First x timestamps from sample.
+
+    last_timestamps : list[datetime] | None
+        Last x timestamps from sample.
+
+    timestamps : list[datetime] | None
+        All timestamps from sample.
+
+    Notes
+    -----
+    All timestamps sample is provided if its size is not that much
+    (<= 100), otherwise first_timestamps and last_timestamps are
+    provided with size of 50 each.
+
     """
 
     span_edges: list[datetime]
     span_counts: dict[int, list[int]]
     total: int
+    first_timestamps: list[datetime] | None
+    last_timestamps: list[datetime] | None
+    timestamps: list[datetime] | None
 
 
 class ProduceEventErrorInfo(BaseModel, frozen=True, extra='forbid'):
