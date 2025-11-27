@@ -55,7 +55,7 @@ export const InputPluginsTab: FC<InputPluginsTabProps> = ({
       <Grid.Col span={7}>
         <Stack>
           <Text size="sm" fw="bold">
-            Timestamps distribution preview
+            Timestamps preview
           </Text>
           <Divider />
           {pluginsConfig.length === 0 ? (

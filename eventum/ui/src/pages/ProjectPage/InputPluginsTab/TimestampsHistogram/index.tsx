@@ -1,5 +1,7 @@
 import { BarChart } from '@mantine/charts';
+import { CodeHighlight } from '@mantine/code-highlight';
 import {
+  Box,
   Button,
   Group,
   Loader,
@@ -8,6 +10,7 @@ import {
   Select,
   Stack,
   Switch,
+  Tabs,
   Text,
   TextInput,
 } from '@mantine/core';
@@ -116,6 +119,7 @@ export const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
 
   const [histogramData, setHistogramData] = useState<HistogramData>([]);
   const [histogramSeries, setHistogramSeries] = useState<HistogramSeries>([]);
+  const [timestampsList, setTimestampsList] = useState('No timestamps');
 
   function handleGenerateTimestamp(values: typeof form.values) {
     let pluginsConfig: InputPluginsNamedConfig;
@@ -167,6 +171,20 @@ export const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
           );
 
           setTotalCount(value.total);
+
+          setTimestampsList(
+            value.timestamps === null
+              ? JSON.stringify(
+                  [
+                    ...(value.first_timestamps ?? []),
+                    `... (${value.total - (value.first_timestamps?.length ?? 0) - (value.last_timestamps?.length ?? 0)} lines skipped)`,
+                    ...(value.last_timestamps ?? []),
+                  ],
+                  undefined,
+                  2
+                )
+              : JSON.stringify(value.timestamps, undefined, 2)
+          );
         },
         onError: (error) => {
           notifications.show({
@@ -261,24 +279,45 @@ export const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
         </Stack>
       </form>
 
-      <Stack gap="0">
-        <BarChart
-          h="300px"
-          w="100%"
-          data={histogramData}
-          dataKey="timestamp"
-          type="stacked"
-          series={histogramSeries}
-          xAxisLabel="Time"
-          yAxisLabel="Count"
-          withLegend
-        />
-        <Group justify="end">
-          <Text size="sm" c="gray.6">
-            Total count: {totalCount}
-          </Text>
-        </Group>
-      </Stack>
+      <Tabs defaultValue="histogram">
+        <Tabs.List>
+          <Tabs.Tab value="histogram">Distribution histogram</Tabs.Tab>
+          <Tabs.Tab value="timestamps">Timestamps</Tabs.Tab>
+        </Tabs.List>
+
+        <Box mt="xs">
+          <Tabs.Panel value="histogram">
+            <Stack gap="0">
+              <BarChart
+                h="300px"
+                w="100%"
+                data={histogramData}
+                dataKey="timestamp"
+                type="stacked"
+                series={histogramSeries}
+                xAxisLabel="Time"
+                yAxisLabel="Count"
+                withLegend
+              />
+              <Group justify="end">
+                <Text size="sm" c="gray.6">
+                  Total count: {totalCount}
+                </Text>
+              </Group>
+            </Stack>
+          </Tabs.Panel>
+        </Box>
+        <Tabs.Panel value="timestamps">
+          <CodeHighlight
+            code={timestampsList}
+            language="json"
+            withExpandButton
+            defaultExpanded={false}
+            expandCodeLabel="Expand"
+            collapseCodeLabel="Collapse"
+          />
+        </Tabs.Panel>
+      </Tabs>
     </Stack>
   );
 };

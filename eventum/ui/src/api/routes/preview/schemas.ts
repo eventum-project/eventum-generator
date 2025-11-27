@@ -4,6 +4,9 @@ export const AggregatedTimestampsSchema = z.object({
   span_edges: z.array(z.string()),
   span_counts: z.record(z.string(), z.array(z.int())),
   total: z.int(),
+  first_timestamps: z.array(z.string()).nullable(),
+  last_timestamps: z.array(z.string()).nullable(),
+  timestamps: z.array(z.string()).nullable(),
 });
 export type AggregatedTimestamps = z.infer<typeof AggregatedTimestampsSchema>;
 
