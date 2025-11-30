@@ -2,7 +2,7 @@
 
 from collections.abc import Iterator
 from datetime import datetime, timedelta
-from typing import assert_never, override
+from typing import TYPE_CHECKING, assert_never, override
 
 import numpy as np
 import yaml
@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 from pydantic import ValidationError
 
 from eventum.plugins.exceptions import PluginConfigurationError
+from eventum.plugins.input.adapters import IdentifiedTimestampsPluginAdapter
 from eventum.plugins.input.base.plugin import InputPlugin, InputPluginParams
 from eventum.plugins.input.exceptions import PluginGenerationError
 from eventum.plugins.input.merger import InputPluginsMerger
@@ -29,6 +30,11 @@ from eventum.plugins.input.utils.time_utils import (
     skip_periods,
     to_naive,
 )
+
+if TYPE_CHECKING:
+    from eventum.plugins.input.protocols import (
+        SupportsIdentifiedTimestampsSizedIterate,
+    )
 
 
 class TimePatternInputPlugin(
@@ -433,11 +439,17 @@ class TimePatternsInputPlugin(
         skip_past: bool = True,
     ) -> Iterator[NDArray[np.datetime64]]:
         self._logger.debug('Merging time patterns')
-        merger = InputPluginsMerger(plugins=self._time_patterns)
+
+        if len(self._time_patterns) > 1:
+            plugins: SupportsIdentifiedTimestampsSizedIterate = (
+                InputPluginsMerger(plugins=self._time_patterns)
+            )
+        else:
+            plugins = IdentifiedTimestampsPluginAdapter(self._time_patterns[0])
 
         self._logger.debug('Generating in range of merged time patterns')
 
-        for arr in merger.iterate(size, skip_past=skip_past):
+        for arr in plugins.iterate(size, skip_past=skip_past):
             yield arr['timestamp']
 
     @property
