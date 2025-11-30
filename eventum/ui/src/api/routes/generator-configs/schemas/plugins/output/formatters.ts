@@ -30,7 +30,7 @@ const TemplateFormatterConfigSchema = z.object({
   template_path: z.string().min(1).nullable().optional(),
 });
 
-export const FormatterConfigSchema = z.union([
+export const FormatterConfigSchema = z.discriminatedUnion('format', [
   SimpleFormatterConfigSchema,
   JSONFormatterConfigSchema,
   TemplateFormatterConfigSchema,

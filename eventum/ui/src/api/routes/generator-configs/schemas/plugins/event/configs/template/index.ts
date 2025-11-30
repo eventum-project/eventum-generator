@@ -35,7 +35,7 @@ const JSONSampleConfigSchema = z.object({
   source: z.string().endsWith('.json'),
 });
 
-const SampleConfigSchema = z.union([
+const SampleConfigSchema = z.discriminatedUnion('type', [
   ItemsSampleConfigSchema,
   CSVSampleConfigSchema,
   JSONSampleConfigSchema,
@@ -104,7 +104,7 @@ const TemplateEventPluginConfigForChainModeSchema =
       .min(1),
   });
 
-export const TemplateEventPluginConfigSchema = z.union([
+export const TemplateEventPluginConfigSchema = z.discriminatedUnion('mode', [
   TemplateEventPluginConfigForGeneralModesSchema,
   TemplateEventPluginConfigForChanceModeSchema,
   TemplateEventPluginConfigForFSMModeSchema,

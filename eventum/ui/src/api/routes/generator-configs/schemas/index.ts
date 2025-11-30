@@ -45,7 +45,7 @@ const FileNodeSchema: z.ZodType = z.lazy(() =>
   z.object({
     name: z.string(),
     is_dir: z.boolean(),
-    children: z.union([z.array(FileNodeSchema), z.null()]).optional(),
+    children: z.array(FileNodeSchema).nullable().optional(),
   })
 );
 export const FileNodesListSchema = z.array(FileNodeSchema);
