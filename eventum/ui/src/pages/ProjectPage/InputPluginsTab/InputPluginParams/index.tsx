@@ -7,6 +7,7 @@ import { CronInputPluginParams } from './CronInputPluginParams';
 import { HTTPInputPluginParams } from './HTTPInputPluginParams';
 import { LinspaceInputPluginParams } from './LinspaceInputPluginParams';
 import { StaticInputPluginParams } from './StaticInputPluginParams';
+import { TimePatternsInputPluginParams } from './TimePatternsInputPluginParams';
 import { TimerInputPluginParams } from './TimerInputPluginParams';
 import {
   InputPluginConfig,
@@ -31,7 +32,7 @@ const pluginNamesToParamsComponent = {
   http: HTTPInputPluginParams,
   linspace: LinspaceInputPluginParams,
   static: StaticInputPluginParams,
-  time_patterns: '',
+  time_patterns: TimePatternsInputPluginParams,
   timer: TimerInputPluginParams,
   timestamps: '',
 } as const satisfies {
