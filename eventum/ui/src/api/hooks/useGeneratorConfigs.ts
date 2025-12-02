@@ -115,9 +115,9 @@ export function useUploadGeneratorFileMutation() {
       filepath: string;
       content: string;
     }) => uploadGeneratorFile(name, filepath, content),
-    onSuccess: async () => {
+    onSuccess: async (_, { name }) => {
       await queryClient.invalidateQueries({
-        queryKey: GENERATOR_CONFIG_DIR_FILES_QUERY_KEY,
+        queryKey: [...GENERATOR_CONFIG_DIR_FILES_QUERY_KEY, name],
         exact: true,
       });
     },
@@ -152,9 +152,9 @@ export function useDeleteGeneratorFileMutation() {
   return useMutation({
     mutationFn: ({ name, filepath }: { name: string; filepath: string }) =>
       deleteGeneratorFile(name, filepath),
-    onSuccess: async () => {
+    onSuccess: async (_, { name }) => {
       await queryClient.invalidateQueries({
-        queryKey: GENERATOR_CONFIG_DIR_FILES_QUERY_KEY,
+        queryKey: [...GENERATOR_CONFIG_DIR_FILES_QUERY_KEY, name],
         exact: true,
       });
     },
@@ -174,9 +174,9 @@ export function useMoveGeneratorFileMutation() {
       source: string;
       destination: string;
     }) => moveGeneratorFile(name, source, destination),
-    onSuccess: async () => {
+    onSuccess: async (_, { name }) => {
       await queryClient.invalidateQueries({
-        queryKey: GENERATOR_CONFIG_DIR_FILES_QUERY_KEY,
+        queryKey: [...GENERATOR_CONFIG_DIR_FILES_QUERY_KEY, name],
         exact: true,
       });
     },
@@ -196,9 +196,9 @@ export function useCopyGeneratorFileMutation() {
       source: string;
       destination: string;
     }) => copyGeneratorFile(name, source, destination),
-    onSuccess: async () => {
+    onSuccess: async (_, { name }) => {
       await queryClient.invalidateQueries({
-        queryKey: GENERATOR_CONFIG_DIR_FILES_QUERY_KEY,
+        queryKey: [...GENERATOR_CONFIG_DIR_FILES_QUERY_KEY, name],
         exact: true,
       });
     },
