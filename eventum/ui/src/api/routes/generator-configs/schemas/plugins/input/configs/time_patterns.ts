@@ -43,18 +43,18 @@ const RandomizerConfigSchema = z.object({
   sampling: z.int().gte(16).optional(),
 });
 
-const BetaDistributionParametersSchema = z.object({
+export const BetaDistributionParametersSchema = z.object({
   a: z.number().gte(0),
   b: z.number().gte(0),
 });
 
-const TriangularDistributionParametersSchema = z.object({
+export const TriangularDistributionParametersSchema = z.object({
   left: z.number().gte(0).lt(1),
   mode: z.number().gte(0).lte(1),
   right: z.number().gt(0).lte(1),
 });
 
-const UniformDistributionParametersSchema = z.object({
+export const UniformDistributionParametersSchema = z.object({
   low: z.number().gte(0).lt(1),
   high: z.number().gt(0).lte(1),
 });
