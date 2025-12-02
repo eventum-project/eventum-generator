@@ -120,7 +120,7 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
         </Text>
         <Divider />
         <Stack>
-          <Group wrap="nowrap">
+          <Group wrap="nowrap" align="start">
             <NumberInput
               label={
                 <LabelWithTooltip
@@ -179,7 +179,7 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
           mt="4px"
         />
         {form.values.spreader.distribution === Distribution.BETA && (
-          <Group wrap="nowrap">
+          <Group wrap="nowrap" align="start">
             <NumberInput
               label={
                 <LabelWithTooltip
