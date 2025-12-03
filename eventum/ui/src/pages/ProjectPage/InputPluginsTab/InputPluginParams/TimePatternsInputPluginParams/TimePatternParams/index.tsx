@@ -1,11 +1,25 @@
-import { Alert, Box, Button, Divider, Skeleton, Stack } from '@mantine/core';
+import {
+  Alert,
+  Box,
+  Button,
+  Center,
+  Divider,
+  Loader,
+  Skeleton,
+  Stack,
+  Text,
+} from '@mantine/core';
 import { isNotEmpty, useForm } from '@mantine/form';
+import { notifications } from '@mantine/notifications';
 import { IconAlertSquareRounded, IconAlertTriangle } from '@tabler/icons-react';
 import { FC } from 'react';
 import YAML from 'yaml';
 
 import { TimePatternForm } from './TimePatternForm';
-import { useGeneratorFileContent } from '@/api/hooks/useGeneratorConfigs';
+import {
+  useGeneratorFileContent,
+  usePutGeneratorFileMutation,
+} from '@/api/hooks/useGeneratorConfigs';
 import {
   BetaDistributionParametersSchema,
   Distribution,
@@ -30,6 +44,7 @@ export const TimePatternParams: FC<TimePatternParamsProps> = ({ filePath }) => {
     isLoading: isFileContentLoading,
     isSuccess: isFileContentSuccess,
   } = useGeneratorFileContent(projectName, filePath);
+  const putGeneratorFile = usePutGeneratorFileMutation();
 
   const form = useForm<TimePatternConfig>({
     validate: {
@@ -95,6 +110,38 @@ export const TimePatternParams: FC<TimePatternParamsProps> = ({ filePath }) => {
     validateInputOnChange: true,
   });
 
+  function handleSaveFile(values: typeof form.values) {
+    putGeneratorFile.mutate(
+      {
+        name: projectName,
+        filepath: filePath,
+        content: YAML.stringify(values),
+      },
+      {
+        onSuccess: () => {
+          form.resetDirty();
+          notifications.show({
+            title: 'Success',
+            message: 'Time pattern is updated',
+            color: 'green',
+          });
+        },
+        onError: (error) => {
+          notifications.show({
+            title: 'Error',
+            message: (
+              <>
+                Failed to update time pattern
+                <ShowErrorDetailsAnchor error={error} prependDot />
+              </>
+            ),
+            color: 'red',
+          });
+        },
+      }
+    );
+  }
+
   if (isFileContentLoading) {
     return (
       <Stack>
@@ -144,13 +191,30 @@ export const TimePatternParams: FC<TimePatternParamsProps> = ({ filePath }) => {
     }
 
     return (
-      <Stack>
-        <TimePatternForm form={form} />
+      <form onSubmit={form.onSubmit(handleSaveFile)}>
+        <Stack>
+          <TimePatternForm form={form} />
 
-        <Divider my="sm" />
+          <Divider mt="xs" />
 
-        <Button variant="default">Save file</Button>
-      </Stack>
+          <Stack gap="xs">
+            <Button
+              variant="default"
+              type="submit"
+              disabled={putGeneratorFile.isPending || !form.isDirty()}
+            >
+              {putGeneratorFile.isPending ? <Loader size="sm" /> : 'Save file'}
+            </Button>
+            {form.isDirty() && (
+              <Center>
+                <Text size="sm" c="gray.6">
+                  There are unsaved changes
+                </Text>
+              </Center>
+            )}
+          </Stack>
+        </Stack>
+      </form>
     );
   }
 
