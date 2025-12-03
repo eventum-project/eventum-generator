@@ -43,14 +43,21 @@ const pluginNamesToParamsComponent = {
   }>;
 };
 
+type UnionToIntersection<U> = (
+  U extends unknown ? (x: U) => void : never
+) extends (x: infer I) => void
+  ? I
+  : never;
+
 export const InputPluginParams: FC<InputPluginParamsProps> = ({
   inputPluginConfig,
   onChange,
 }) => {
   const [pluginName, pluginConfig] = Object.entries(inputPluginConfig)[0] as [
     InputPluginName,
-    InputPluginConfig,
+    UnionToIntersection<InputPluginConfig>,
   ];
+
   const ParamsComponent = pluginNamesToParamsComponent[pluginName];
 
   return (
@@ -58,7 +65,7 @@ export const InputPluginParams: FC<InputPluginParamsProps> = ({
       <ParamsComponent
         initialConfig={pluginConfig}
         onChange={(newConfig) => {
-          onChange({ [pluginName]: newConfig });
+          onChange({ [pluginName]: newConfig } as InputPluginNamedConfig);
         }}
       />
       <Stack gap="4px">
