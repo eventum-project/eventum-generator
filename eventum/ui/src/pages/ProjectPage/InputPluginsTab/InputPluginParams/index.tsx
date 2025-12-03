@@ -9,6 +9,7 @@ import { LinspaceInputPluginParams } from './LinspaceInputPluginParams';
 import { StaticInputPluginParams } from './StaticInputPluginParams';
 import { TimePatternsInputPluginParams } from './TimePatternsInputPluginParams';
 import { TimerInputPluginParams } from './TimerInputPluginParams';
+import { TimestampsInputPluginParams } from './TimestampsInputPluginParams';
 import {
   InputPluginConfig,
   InputPluginNamedConfig,
@@ -34,7 +35,7 @@ const pluginNamesToParamsComponent = {
   static: StaticInputPluginParams,
   time_patterns: TimePatternsInputPluginParams,
   timer: TimerInputPluginParams,
-  timestamps: '',
+  timestamps: TimestampsInputPluginParams,
 } as const satisfies {
   [K in InputPluginName]: FC<{
     initialConfig: PluginNameToConfigType[K];
