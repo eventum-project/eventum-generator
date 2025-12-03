@@ -16,6 +16,7 @@ interface PluginsListProps<T extends PluginType> {
   selectedPlugin: number;
   onAddNewPlugin: (pluginType: T, pluginName: PluginNamesMap[T]) => void;
   onDeletePlugin: (index: number) => void;
+  maxPlugins?: number;
 }
 
 export const PluginsList = <T extends PluginType>({
@@ -25,6 +26,7 @@ export const PluginsList = <T extends PluginType>({
   selectedPlugin,
   onAddNewPlugin,
   onDeletePlugin,
+  maxPlugins,
 }: PluginsListProps<T>) => {
   function handleDeletePlugin(index: number) {
     modals.openConfirmModal({
@@ -105,6 +107,7 @@ export const PluginsList = <T extends PluginType>({
         variant="default"
         title="Add new plugin"
         onClick={handleAddPlugin}
+        disabled={maxPlugins !== undefined && plugins.length >= maxPlugins}
       >
         <IconPlus size={20} />
       </Button>
