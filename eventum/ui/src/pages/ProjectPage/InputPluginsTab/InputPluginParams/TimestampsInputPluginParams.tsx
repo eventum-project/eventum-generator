@@ -10,12 +10,16 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertSquareRounded } from '@tabler/icons-react';
+import { zodResolver } from 'mantine-form-zod-resolver';
 import { FC } from 'react';
 
 import { useProjectName } from '../../hooks/useProjectName';
 import { useGeneratorFileTree } from '@/api/hooks/useGeneratorConfigs';
 import { flattenFileTree } from '@/api/routes/generator-configs/modules/file-tree';
-import { TimestampsInputPluginConfig } from '@/api/routes/generator-configs/schemas/plugins/input/configs/timestamps';
+import {
+  TimestampsInputPluginConfig,
+  TimestampsInputPluginConfigSchema,
+} from '@/api/routes/generator-configs/schemas/plugins/input/configs/timestamps';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
@@ -28,6 +32,7 @@ export const TimestampsInputPluginParams: FC<
   TimestampsInputPluginParamsProps
 > = ({ initialConfig, onChange }) => {
   const form = useForm<TimestampsInputPluginConfig>({
+    validate: zodResolver(TimestampsInputPluginConfigSchema),
     initialValues: initialConfig,
     onValuesChange: onChange,
     onSubmitPreventDefault: 'always',
