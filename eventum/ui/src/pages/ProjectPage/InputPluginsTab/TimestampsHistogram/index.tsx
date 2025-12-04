@@ -16,7 +16,7 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { FC, useState } from 'react';
+import { FC, memo, useState } from 'react';
 
 import { useProjectName } from '../../hooks/useProjectName';
 import { useGenerateTimestampsMutation } from '@/api/hooks/usePreview';
@@ -27,7 +27,7 @@ import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 interface TimestampsHistogramProps {
   selectedPluginIndex: number;
-  inputPluginsConfig: InputPluginsNamedConfig;
+  getInputPluginsConfig: () => InputPluginsNamedConfig;
 }
 
 type HistogramVisualizationMode = 'selectedPlugin' | 'allPlugins';
@@ -70,9 +70,9 @@ type HistogramSeries = {
   color: string;
 }[];
 
-export const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
+const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
   selectedPluginIndex,
-  inputPluginsConfig,
+  getInputPluginsConfig,
 }) => {
   const { projectName } = useProjectName();
   const [visualizationMode, setVisualizationMode] =
@@ -122,12 +122,10 @@ export const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
   const [timestampsList, setTimestampsList] = useState('No timestamps');
 
   function handleGenerateTimestamp(values: typeof form.values) {
-    let pluginsConfig: InputPluginsNamedConfig;
+    let pluginsConfig = getInputPluginsConfig();
 
-    if (visualizationMode === 'allPlugins') {
-      pluginsConfig = inputPluginsConfig;
-    } else {
-      pluginsConfig = [inputPluginsConfig[selectedPluginIndex]!];
+    if (visualizationMode !== 'allPlugins') {
+      pluginsConfig = [pluginsConfig[selectedPluginIndex]!];
     }
 
     generateTimestamp.mutate(
@@ -321,3 +319,5 @@ export const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
     </Stack>
   );
 };
+
+export default memo(TimestampsHistogram);

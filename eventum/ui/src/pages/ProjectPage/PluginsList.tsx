@@ -1,6 +1,7 @@
 import { ActionIcon, Button, NavLink, Stack, Text } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { Icon, IconPlus, IconTrash } from '@tabler/icons-react';
+import { memo } from 'react';
 
 import {
   PLUGINS_INFO,
@@ -19,7 +20,7 @@ interface PluginsListProps<T extends PluginType> {
   maxPlugins?: number;
 }
 
-export const PluginsList = <T extends PluginType>({
+const PluginsList = <T extends PluginType>({
   type,
   plugins,
   onChangeSelectedPlugin,
@@ -114,3 +115,7 @@ export const PluginsList = <T extends PluginType>({
     </Stack>
   );
 };
+
+export const InputPluginsList = memo(PluginsList<'input'>);
+export const EventPluginsList = memo(PluginsList<'event'>);
+export const OutputPluginsList = memo(PluginsList<'output'>);
