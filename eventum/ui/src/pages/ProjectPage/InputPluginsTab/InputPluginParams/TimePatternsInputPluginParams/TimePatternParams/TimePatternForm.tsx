@@ -178,6 +178,21 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
           {...form.getInputProps('spreader.distribution', {
             type: 'input',
           })}
+          onChange={(value) => {
+            form.setFieldValue('spreader.distribution', value as Distribution);
+
+            if ((value as Distribution) === Distribution.BETA) {
+              form.setFieldValue('spreader.parameters.a', 15);
+              form.setFieldValue('spreader.parameters.b', 15);
+            } else if ((value as Distribution) === Distribution.TRIANGULAR) {
+              form.setFieldValue('spreader.parameters.left', 0);
+              form.setFieldValue('spreader.parameters.mode', 0.5);
+              form.setFieldValue('spreader.parameters.right', 1);
+            } else if ((value as Distribution) === Distribution.UNIFORM) {
+              form.setFieldValue('spreader.parameters.low', 0);
+              form.setFieldValue('spreader.parameters.high', 1);
+            }
+          }}
           mt="4px"
         />
         {form.values.spreader.distribution === Distribution.BETA && (
