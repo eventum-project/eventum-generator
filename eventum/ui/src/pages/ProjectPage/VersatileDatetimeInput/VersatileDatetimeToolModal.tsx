@@ -99,8 +99,8 @@ export const VersatileDatetimeToolModal: FC = () => {
         <b>versatile datetime format</b>.
       </Text>
 
-      <Text size="sm">
-        This format supports:
+      <Stack gap="0">
+        <Text size="sm">This format supports:</Text>
         <List size="sm">
           <List.Item>
             Datetime expressions (as Unix timestamp or ISO8601 string, e.g.{' '}
@@ -128,8 +128,7 @@ export const VersatileDatetimeToolModal: FC = () => {
             <Code>August 14, 2015 EST</Code>, <Code>Monday</Code>)
           </List.Item>
         </List>
-      </Text>
-
+      </Stack>
       <Text size="sm">
         Below you can test your expression and see normalized value.
       </Text>
