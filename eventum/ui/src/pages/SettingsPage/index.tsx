@@ -47,6 +47,7 @@ export default function SettingsPage() {
   const restartInstance = useRestartInstanceMutation();
 
   const form = useForm<Settings>({
+    mode: 'uncontrolled',
     validate: {
       api: {
         host: (value, values) => {
