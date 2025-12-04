@@ -228,7 +228,7 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
                 { value: 1, label: '' },
               ]}
               label={(value) =>
-                (form.values.oscillator.period * value).toFixed(2)
+                (form.values.oscillator.period * value).toFixed(2).toString()
               }
               value={[
                 form.values.spreader.parameters.left ?? 0,
@@ -247,14 +247,32 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
               step={0.01}
               minRange={0.01}
               marks={[
-                { value: 0, label: 0 },
-                { value: 0.25, label: form.values.oscillator.period * 0.25 },
-                { value: 0.5, label: form.values.oscillator.period * 0.5 },
-                { value: 0.75, label: form.values.oscillator.period * 0.75 },
-                { value: 1, label: form.values.oscillator.period },
+                { value: 0, label: '0' },
+                {
+                  value: 0.25,
+                  label: (form.values.oscillator.period * 0.25)
+                    .toFixed(2)
+                    .toString(),
+                },
+                {
+                  value: 0.5,
+                  label: (form.values.oscillator.period * 0.5)
+                    .toFixed(2)
+                    .toString(),
+                },
+                {
+                  value: 0.75,
+                  label: (form.values.oscillator.period * 0.75)
+                    .toFixed(2)
+                    .toString(),
+                },
+                {
+                  value: 1,
+                  label: form.values.oscillator.period.toFixed(2).toString(),
+                },
               ]}
               label={(value) =>
-                (form.values.oscillator.period * value).toFixed(2)
+                (form.values.oscillator.period * value).toFixed(2).toString()
               }
               value={[
                 form.values.spreader.parameters.mode ?? 0.5,
@@ -278,14 +296,32 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
               step={0.01}
               minRange={0.01}
               marks={[
-                { value: 0, label: 0 },
-                { value: 0.25, label: form.values.oscillator.period * 0.25 },
-                { value: 0.5, label: form.values.oscillator.period * 0.5 },
-                { value: 0.75, label: form.values.oscillator.period * 0.75 },
-                { value: 1, label: form.values.oscillator.period },
+                { value: 0, label: '0' },
+                {
+                  value: 0.25,
+                  label: (form.values.oscillator.period * 0.25)
+                    .toFixed(2)
+                    .toString(),
+                },
+                {
+                  value: 0.5,
+                  label: (form.values.oscillator.period * 0.5)
+                    .toFixed(2)
+                    .toString(),
+                },
+                {
+                  value: 0.75,
+                  label: (form.values.oscillator.period * 0.75)
+                    .toFixed(2)
+                    .toString(),
+                },
+                {
+                  value: 1,
+                  label: form.values.oscillator.period.toFixed(2).toString(),
+                },
               ]}
               label={(value) =>
-                (form.values.oscillator.period * value).toFixed(2)
+                (form.values.oscillator.period * value).toFixed(2).toString()
               }
               value={[
                 form.values.spreader.parameters.low ?? 0,
