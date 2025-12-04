@@ -36,6 +36,8 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
         <Textarea
           label="Label"
           description="Description of time pattern"
+          placeholder="..."
+          minRows={3}
           {...form.getInputProps('label', { type: 'input' })}
         />
       </Stack>

@@ -61,7 +61,9 @@ export const TimestampsInputPluginParams: FC<
             <Textarea
               label="Source"
               description="List of ISO8601 timestamps delimited by new line"
+              placeholder="..."
               autosize
+              minRows={3}
               value={
                 typeof form.values.source !== 'string'
                   ? form.values.source.join('\n')
