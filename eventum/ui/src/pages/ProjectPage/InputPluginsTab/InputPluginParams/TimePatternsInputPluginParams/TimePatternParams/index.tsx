@@ -47,6 +47,7 @@ export const TimePatternParams: FC<TimePatternParamsProps> = ({ filePath }) => {
   const putGeneratorFile = usePutGeneratorFileMutation();
 
   const form = useForm<TimePatternConfig>({
+    mode: 'uncontrolled',
     validate: {
       label: isNotEmpty('Label is required'),
       oscillator: {
