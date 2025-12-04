@@ -26,7 +26,7 @@ import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 interface TimestampsHistogramProps {
-  selectedPluginIndex: number;
+  getSelectedPluginIndex: () => number;
   getInputPluginsConfig: () => InputPluginsNamedConfig;
 }
 
@@ -71,7 +71,7 @@ type HistogramSeries = {
 }[];
 
 const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
-  selectedPluginIndex,
+  getSelectedPluginIndex,
   getInputPluginsConfig,
 }) => {
   const { projectName } = useProjectName();
@@ -125,7 +125,7 @@ const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
     let pluginsConfig = getInputPluginsConfig();
 
     if (visualizationMode !== 'allPlugins') {
-      pluginsConfig = [pluginsConfig[selectedPluginIndex]!];
+      pluginsConfig = [pluginsConfig[getSelectedPluginIndex()]!];
     }
 
     generateTimestamp.mutate(

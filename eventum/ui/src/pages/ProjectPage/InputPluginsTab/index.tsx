@@ -67,6 +67,13 @@ export const InputPluginsTab: FC<InputPluginsTabProps> = ({
     return pluginsConfigRef.current;
   }, []);
 
+  const selectedPluginIndexRef = useRef(selectedPluginIndex);
+  selectedPluginIndexRef.current = selectedPluginIndex;
+
+  const getSelectedPluginIndex = useCallback(() => {
+    return selectedPluginIndexRef.current;
+  }, []);
+
   return (
     <Grid gutter="lg">
       <Grid.Col span={2}>
@@ -95,7 +102,7 @@ export const InputPluginsTab: FC<InputPluginsTabProps> = ({
             </Center>
           ) : (
             <TimestampsHistogram
-              selectedPluginIndex={selectedPluginIndex}
+              getSelectedPluginIndex={getSelectedPluginIndex}
               getInputPluginsConfig={getInputPluginsConfig}
             />
           )}
