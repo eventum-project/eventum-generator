@@ -1,7 +1,4 @@
-import { BarChart } from '@mantine/charts';
-import { CodeHighlight } from '@mantine/code-highlight';
 import {
-  Box,
   Button,
   Group,
   Loader,
@@ -10,8 +7,6 @@ import {
   Select,
   Stack,
   Switch,
-  Tabs,
-  Text,
   TextInput,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
@@ -19,6 +14,7 @@ import { notifications } from '@mantine/notifications';
 import { FC, memo, useState } from 'react';
 
 import { useProjectName } from '../../hooks/useProjectName';
+import Visualization from './Visualization';
 import { useGenerateTimestampsMutation } from '@/api/hooks/usePreview';
 import { InputPluginsNamedConfig } from '@/api/routes/generator-configs/schemas';
 import { TIMEZONES } from '@/api/schemas/timezones';
@@ -60,12 +56,12 @@ const barColors = [
   '#49a07c',
 ];
 
-type HistogramData = {
+export type HistogramData = {
   timestamp: string;
   [group: string]: number | string;
 }[];
 
-type HistogramSeries = {
+export type HistogramSeries = {
   name: string;
   color: string;
 }[];
@@ -87,6 +83,7 @@ const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
       'inputPluginsConfig' | 'name'
     >
   >({
+    mode: 'uncontrolled',
     initialValues: {
       size: 100,
       span: null,
@@ -277,45 +274,12 @@ const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
         </Stack>
       </form>
 
-      <Tabs defaultValue="histogram">
-        <Tabs.List>
-          <Tabs.Tab value="histogram">Distribution histogram</Tabs.Tab>
-          <Tabs.Tab value="timestamps">Timestamps</Tabs.Tab>
-        </Tabs.List>
-
-        <Box mt="xs">
-          <Tabs.Panel value="histogram">
-            <Stack gap="0">
-              <BarChart
-                h="300px"
-                w="100%"
-                data={histogramData}
-                dataKey="timestamp"
-                type="stacked"
-                series={histogramSeries}
-                xAxisLabel="Time"
-                yAxisLabel="Count"
-                withLegend
-              />
-              <Group justify="end">
-                <Text size="sm" c="gray.6">
-                  Total count: {totalCount}
-                </Text>
-              </Group>
-            </Stack>
-          </Tabs.Panel>
-        </Box>
-        <Tabs.Panel value="timestamps">
-          <CodeHighlight
-            code={timestampsList}
-            language="json"
-            withExpandButton
-            defaultExpanded={false}
-            expandCodeLabel="Expand"
-            collapseCodeLabel="Collapse"
-          />
-        </Tabs.Panel>
-      </Tabs>
+      <Visualization
+        histogramData={histogramData}
+        histogramSeries={histogramSeries}
+        totalCount={totalCount}
+        timestampsList={timestampsList}
+      />
     </Stack>
   );
 };
