@@ -1,24 +1,9 @@
-import {
-  ActionIcon,
-  Alert,
-  Box,
-  Center,
-  Container,
-  Group,
-  Loader,
-  Table,
-  TextInput,
-} from '@mantine/core';
-import { isNotEmpty, useForm } from '@mantine/form';
-import { notifications } from '@mantine/notifications';
-import { IconAlertSquareRounded, IconDeviceFloppy } from '@tabler/icons-react';
-import { useState } from 'react';
+import { Alert, Box, Center, Container, Loader, Table } from '@mantine/core';
+import { IconAlertSquareRounded } from '@tabler/icons-react';
 
-import { TableRow } from './TableRow';
-import {
-  useSecretNames,
-  useSetSecretValueMutation,
-} from '@/api/hooks/useSecrets';
+import { NewSecretRow } from './NewSecretRow';
+import TableRow from './TableRow';
+import { useSecretNames } from '@/api/hooks/useSecrets';
 import { PageTitle } from '@/components/ui/PageTitle';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
@@ -30,53 +15,6 @@ export default function SecretsPage() {
     error: secretNamesError,
     isSuccess: isSecretNamesSuccess,
   } = useSecretNames();
-
-  const updateSecretValue = useSetSecretValueMutation();
-  const [isSettingNewSecret, setSettingNewSecret] = useState(false);
-
-  const form = useForm<{ name: string; value: string }>({
-    initialValues: {
-      name: '',
-      value: '',
-    },
-    validate: {
-      name: isNotEmpty('Name is required'),
-      value: isNotEmpty('Value is required'),
-    },
-    validateInputOnChange: true,
-    onSubmitPreventDefault: 'always',
-  });
-
-  function handleSetNewSecret(values: typeof form.values) {
-    setSettingNewSecret(true);
-    updateSecretValue.mutate(
-      { name: values.name, value: values.value },
-      {
-        onError: (error) => {
-          setSettingNewSecret(false);
-          notifications.show({
-            title: 'Error',
-            message: (
-              <>
-                Failed to add new secret.{' '}
-                <ShowErrorDetailsAnchor error={error} />
-              </>
-            ),
-            color: 'red',
-          });
-        },
-        onSuccess: () => {
-          setSettingNewSecret(false);
-          form.reset();
-          notifications.show({
-            title: 'Success',
-            message: 'New secret was added',
-            color: 'green',
-          });
-        },
-      }
-    );
-  }
 
   if (isSecretNamesLoading) {
     return (
@@ -120,35 +58,7 @@ export default function SecretsPage() {
             {secretNames.map((item) => (
               <TableRow key={item} name={item} />
             ))}
-            <Table.Tr style={{ verticalAlign: 'top' }}>
-              <Table.Td>
-                <TextInput
-                  placeholder="new secret name"
-                  {...form.getInputProps('name')}
-                  size="sm"
-                />
-              </Table.Td>
-              <Table.Td>
-                <TextInput
-                  placeholder="secret value"
-                  {...form.getInputProps('value')}
-                />
-              </Table.Td>
-
-              <Table.Td>
-                <Group gap="xs">
-                  <ActionIcon
-                    variant="transparent"
-                    title="Save"
-                    size="lg"
-                    onClick={() => handleSetNewSecret(form.values)}
-                    disabled={!form.isValid() || isSettingNewSecret}
-                  >
-                    <IconDeviceFloppy size={20} />
-                  </ActionIcon>
-                </Group>
-              </Table.Td>
-            </Table.Tr>
+            <NewSecretRow />
           </Table.Tbody>
         </Table>
       </Container>

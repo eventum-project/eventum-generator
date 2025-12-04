@@ -18,7 +18,7 @@ import {
   IconTrash,
   IconX,
 } from '@tabler/icons-react';
-import { FC, useState } from 'react';
+import React, { FC, useState } from 'react';
 
 import {
   useDeleteSecretValueMutation,
@@ -31,7 +31,7 @@ interface TableRowProps {
   name: string;
 }
 
-export const TableRow: FC<TableRowProps> = ({ name }) => {
+const TableRow: FC<TableRowProps> = ({ name }) => {
   const [isValueShown, { open: showValue, close: hideValue }] =
     useDisclosure(false);
   const [isEditMode, setEditMode] = useState(false);
@@ -245,3 +245,5 @@ export const TableRow: FC<TableRowProps> = ({ name }) => {
     </Table.Tr>
   );
 };
+
+export default React.memo(TableRow);
