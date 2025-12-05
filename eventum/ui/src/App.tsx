@@ -1,12 +1,16 @@
 // sort-imports-ignore
 import {
+  CodeHighlight,
   CodeHighlightAdapterProvider,
   createShikiAdapter,
 } from '@mantine/code-highlight';
 import {
+  MantineThemeProvider,
   MantineColorsTuple,
   MantineProvider,
+  MantineThemeOverride,
   createTheme,
+  useMantineColorScheme,
 } from '@mantine/core';
 
 import '@mantine/core/styles.css';
@@ -22,6 +26,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { BrowserRouter } from 'react-router-dom';
 
 import AppRouter from '@/routing';
+import { useMemo } from 'react';
 
 const primaryColorTuple: MantineColorsTuple = [
   '#ececff',
@@ -65,13 +70,39 @@ async function loadShiki() {
   const { createHighlighter } = await import('shiki');
   const shiki = await createHighlighter({
     langs: ['json', 'yml'],
-    themes: ['andromeeda'],
+    themes: ['dark-plus', 'light-plus'],
   });
 
   return shiki;
 }
 const shikiAdapter = createShikiAdapter(loadShiki);
 
+function InnerApp() {
+  const { colorScheme } = useMantineColorScheme();
+
+  const innerTheme = useMemo(
+    () =>
+      ({
+        components: {
+          CodeHighlight: CodeHighlight.extend({
+            defaultProps: {
+              codeColorScheme:
+                colorScheme === 'dark' ? 'dark-plus' : 'light-plus',
+            },
+          }),
+        },
+      }) as MantineThemeOverride,
+    [colorScheme]
+  );
+
+  return (
+    <MantineThemeProvider theme={innerTheme}>
+      <BrowserRouter>
+        <AppRouter />
+      </BrowserRouter>
+    </MantineThemeProvider>
+  );
+}
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -79,9 +110,7 @@ export default function App() {
         <CodeHighlightAdapterProvider adapter={shikiAdapter}>
           <Notifications />
           <ModalsProvider>
-            <BrowserRouter>
-              <AppRouter />
-            </BrowserRouter>
+            <InnerApp />
           </ModalsProvider>
         </CodeHighlightAdapterProvider>
       </MantineProvider>
