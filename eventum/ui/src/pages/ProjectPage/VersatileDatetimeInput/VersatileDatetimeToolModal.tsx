@@ -6,7 +6,6 @@ import {
   Divider,
   Group,
   List,
-  Loader,
   Radio,
   Select,
   Stack,
@@ -179,8 +178,8 @@ export const VersatileDatetimeToolModal: FC = () => {
             </Group>
           </Radio.Group>
 
-          <Button type="submit" disabled={normalizeDatetime.isPending}>
-            {normalizeDatetime.isPending ? <Loader size="sm" /> : 'Normalize'}
+          <Button type="submit" loading={normalizeDatetime.isPending}>
+            Normalize
           </Button>
         </Stack>
       </form>

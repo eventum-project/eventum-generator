@@ -1,7 +1,6 @@
 import {
   Button,
   Group,
-  Loader,
   NumberInput,
   SegmentedControl,
   Select,
@@ -262,13 +261,9 @@ const TimestampsHistogram: FC<TimestampsHistogramProps> = ({
             <Button
               variant="default"
               type="submit"
-              disabled={generateTimestamp.isPending}
+              loading={generateTimestamp.isPending}
             >
-              {generateTimestamp.isPending ? (
-                <Loader size="sm" mx="lg" />
-              ) : (
-                'Generate'
-              )}
+              Generate
             </Button>
           </Group>
         </Stack>

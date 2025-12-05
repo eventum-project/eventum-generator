@@ -4,7 +4,6 @@ import {
   Button,
   Center,
   Divider,
-  Loader,
   Skeleton,
   Stack,
   Text,
@@ -202,9 +201,10 @@ export const TimePatternParams: FC<TimePatternParamsProps> = ({ filePath }) => {
             <Button
               variant="default"
               type="submit"
-              disabled={putGeneratorFile.isPending || !form.isDirty()}
+              loading={putGeneratorFile.isPending}
+              disabled={!form.isDirty()}
             >
-              {putGeneratorFile.isPending ? <Loader size="sm" /> : 'Save file'}
+              Save file
             </Button>
             {form.isDirty() && (
               <Center>
