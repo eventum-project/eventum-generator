@@ -47,17 +47,26 @@ export const BetaDistributionParametersSchema = z.object({
   a: z.number().gte(0),
   b: z.number().gte(0),
 });
+export type BetaDistributionParameters = z.infer<
+  typeof BetaDistributionParametersSchema
+>;
 
 export const TriangularDistributionParametersSchema = z.object({
   left: z.number().gte(0).lt(1),
   mode: z.number().gte(0).lte(1),
   right: z.number().gt(0).lte(1),
 });
+export type TriangularDistributionParameters = z.infer<
+  typeof TriangularDistributionParametersSchema
+>;
 
 export const UniformDistributionParametersSchema = z.object({
   low: z.number().gte(0).lt(1),
   high: z.number().gt(0).lte(1),
 });
+export type UniformDistributionParameters = z.infer<
+  typeof UniformDistributionParametersSchema
+>;
 
 export const enum Distribution {
   UNIFORM = 'uniform',

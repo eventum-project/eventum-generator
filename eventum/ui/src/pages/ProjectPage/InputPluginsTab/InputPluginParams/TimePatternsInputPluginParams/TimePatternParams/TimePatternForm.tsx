@@ -17,6 +17,8 @@ import {
   RANDOMIZER_DIRECTION,
   TIME_UNITS,
   TimePatternConfig,
+  TriangularDistributionParameters,
+  UniformDistributionParameters,
 } from '@/api/routes/generator-configs/schemas/plugins/input/configs/time_patterns';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 import { VersatileDatetimeInput } from '@/pages/ProjectPage/VersatileDatetimeInput';
@@ -195,7 +197,7 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
           }}
           mt="4px"
         />
-        {form.values.spreader.distribution === Distribution.BETA && (
+        {form.getValues().spreader.distribution === Distribution.BETA && (
           <Group wrap="nowrap" align="start">
             <NumberInput
               label={
@@ -226,7 +228,7 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
           </Group>
         )}
 
-        {form.values.spreader.distribution === Distribution.TRIANGULAR && (
+        {form.getValues().spreader.distribution === Distribution.TRIANGULAR && (
           <Stack gap="xs">
             <Text size="sm">Increasing range</Text>
             <RangeSlider
@@ -243,11 +245,19 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
                 { value: 1, label: '' },
               ]}
               label={(value) =>
-                (form.values.oscillator.period * value).toFixed(2).toString()
+                (form.getValues().oscillator.period * value)
+                  .toFixed(2)
+                  .toString()
               }
               value={[
-                form.values.spreader.parameters.left ?? 0,
-                form.values.spreader.parameters.mode ?? 0.5,
+                (
+                  form.getValues().spreader
+                    .parameters as TriangularDistributionParameters
+                ).left ?? 0,
+                (
+                  form.getValues().spreader
+                    .parameters as TriangularDistributionParameters
+                ).mode ?? 0.5,
               ]}
               onChange={([left, mode]) => {
                 form.setFieldValue('spreader.parameters.left', left);
@@ -265,33 +275,44 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
                 { value: 0, label: '0' },
                 {
                   value: 0.25,
-                  label: (form.values.oscillator.period * 0.25)
+                  label: (form.getValues().oscillator.period * 0.25)
                     .toFixed(2)
                     .toString(),
                 },
                 {
                   value: 0.5,
-                  label: (form.values.oscillator.period * 0.5)
+                  label: (form.getValues().oscillator.period * 0.5)
                     .toFixed(2)
                     .toString(),
                 },
                 {
                   value: 0.75,
-                  label: (form.values.oscillator.period * 0.75)
+                  label: (form.getValues().oscillator.period * 0.75)
                     .toFixed(2)
                     .toString(),
                 },
                 {
                   value: 1,
-                  label: form.values.oscillator.period.toFixed(2).toString(),
+                  label: form
+                    .getValues()
+                    .oscillator.period.toFixed(2)
+                    .toString(),
                 },
               ]}
               label={(value) =>
-                (form.values.oscillator.period * value).toFixed(2).toString()
+                (form.getValues().oscillator.period * value)
+                  .toFixed(2)
+                  .toString()
               }
               value={[
-                form.values.spreader.parameters.mode ?? 0.5,
-                form.values.spreader.parameters.right ?? 1,
+                (
+                  form.getValues().spreader
+                    .parameters as TriangularDistributionParameters
+                ).mode ?? 0.5,
+                (
+                  form.getValues().spreader
+                    .parameters as TriangularDistributionParameters
+                ).right ?? 1,
               ]}
               onChange={([mode, right]) => {
                 form.setFieldValue('spreader.parameters.mode', mode);
@@ -301,7 +322,7 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
           </Stack>
         )}
 
-        {form.values.spreader.distribution === Distribution.UNIFORM && (
+        {form.getValues().spreader.distribution === Distribution.UNIFORM && (
           <Stack gap="xs">
             <Text size="sm">Range</Text>
             <RangeSlider
@@ -314,33 +335,44 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
                 { value: 0, label: '0' },
                 {
                   value: 0.25,
-                  label: (form.values.oscillator.period * 0.25)
+                  label: (form.getValues().oscillator.period * 0.25)
                     .toFixed(2)
                     .toString(),
                 },
                 {
                   value: 0.5,
-                  label: (form.values.oscillator.period * 0.5)
+                  label: (form.getValues().oscillator.period * 0.5)
                     .toFixed(2)
                     .toString(),
                 },
                 {
                   value: 0.75,
-                  label: (form.values.oscillator.period * 0.75)
+                  label: (form.getValues().oscillator.period * 0.75)
                     .toFixed(2)
                     .toString(),
                 },
                 {
                   value: 1,
-                  label: form.values.oscillator.period.toFixed(2).toString(),
+                  label: form
+                    .getValues()
+                    .oscillator.period.toFixed(2)
+                    .toString(),
                 },
               ]}
               label={(value) =>
-                (form.values.oscillator.period * value).toFixed(2).toString()
+                (form.getValues().oscillator.period * value)
+                  .toFixed(2)
+                  .toString()
               }
               value={[
-                form.values.spreader.parameters.low ?? 0,
-                form.values.spreader.parameters.high ?? 1,
+                (
+                  form.getValues().spreader
+                    .parameters as UniformDistributionParameters
+                ).low ?? 0,
+                (
+                  form.getValues().spreader
+                    .parameters as UniformDistributionParameters
+                ).high ?? 1,
               ]}
               onChange={([low, high]) => {
                 form.setFieldValue('spreader.parameters.low', low);

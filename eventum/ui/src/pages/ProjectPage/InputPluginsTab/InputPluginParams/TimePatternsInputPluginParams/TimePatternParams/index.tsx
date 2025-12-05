@@ -66,7 +66,7 @@ export const TimePatternParams: FC<TimePatternParamsProps> = ({ filePath }) => {
         parameters: {
           a: (value) => {
             if (
-              form.values.spreader.distribution === Distribution.BETA &&
+              form.getValues().spreader.distribution === Distribution.BETA &&
               (value == null || value == undefined)
             ) {
               return 'Alpha is required';
@@ -75,7 +75,7 @@ export const TimePatternParams: FC<TimePatternParamsProps> = ({ filePath }) => {
           },
           b: (value) => {
             if (
-              form.values.spreader.distribution === Distribution.BETA &&
+              form.getValues().spreader.distribution === Distribution.BETA &&
               (value == null || value == undefined)
             ) {
               return 'Beta is required';
