@@ -5,6 +5,7 @@ import {
   RangeSlider,
   SegmentedControl,
   Select,
+  Slider,
   Stack,
   Text,
   Textarea,
@@ -236,41 +237,40 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
 
         {form.getValues().spreader.distribution === Distribution.TRIANGULAR && (
           <Stack gap="xs">
-            <Text size="sm">Increasing range</Text>
-            <RangeSlider
+            <Text size="sm">Mode</Text>
+            <Slider
               domain={[-0.1, 1.1]}
-              min={0}
-              max={1}
+              min={
+                (
+                  form.getValues().spreader
+                    .parameters as TriangularDistributionParameters
+                )?.left ?? 0
+              }
+              max={
+                (
+                  form.getValues().spreader
+                    .parameters as TriangularDistributionParameters
+                )?.right ?? 1
+              }
               step={0.01}
-              minRange={0.01}
-              marks={[
-                { value: 0, label: '' },
-                { value: 0.25, label: '' },
-                { value: 0.5, label: '' },
-                { value: 0.75, label: '' },
-                { value: 1, label: '' },
-              ]}
               label={(value) =>
                 (form.getValues().oscillator.period * value)
                   .toFixed(2)
                   .toString()
               }
-              value={[
+              defaultValue={
                 (
                   form.getValues().spreader
                     .parameters as TriangularDistributionParameters
-                ).left ?? 0,
-                (
-                  form.getValues().spreader
-                    .parameters as TriangularDistributionParameters
-                ).mode ?? 0.5,
-              ]}
-              onChange={([left, mode]) => {
-                form.setFieldValue('spreader.parameters.left', left);
+                )?.mode ?? 0.5
+              }
+              onChangeEnd={(mode) => {
                 form.setFieldValue('spreader.parameters.mode', mode);
               }}
+              key={form.key('spreader.parameters.mode')}
+              styles={{ bar: { visibility: 'hidden' } }}
             />
-            <Text size="sm">Decreasing range</Text>
+            <Text size="sm">Left and right</Text>
             <RangeSlider
               domain={[-0.1, 1.1]}
               min={0}
@@ -310,19 +310,32 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
                   .toFixed(2)
                   .toString()
               }
-              value={[
+              defaultValue={[
                 (
                   form.getValues().spreader
                     .parameters as TriangularDistributionParameters
-                ).mode ?? 0.5,
+                )?.left ?? 0,
                 (
                   form.getValues().spreader
                     .parameters as TriangularDistributionParameters
-                ).right ?? 1,
+                )?.right ?? 1,
               ]}
-              onChange={([mode, right]) => {
-                form.setFieldValue('spreader.parameters.mode', mode);
+              onChangeEnd={([left, right]) => {
+                form.setFieldValue('spreader.parameters.left', left);
                 form.setFieldValue('spreader.parameters.right', right);
+
+                const mode = (
+                  form.getValues().spreader
+                    .parameters as TriangularDistributionParameters
+                )?.mode;
+
+                if (mode != undefined) {
+                  if (mode < left) {
+                    form.setFieldValue('spreader.parameters.mode', left);
+                  } else if (mode > right) {
+                    form.setFieldValue('spreader.parameters.mode', right);
+                  }
+                }
               }}
             />
           </Stack>
@@ -370,17 +383,17 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
                   .toFixed(2)
                   .toString()
               }
-              value={[
+              defaultValue={[
                 (
                   form.getValues().spreader
                     .parameters as UniformDistributionParameters
-                ).low ?? 0,
+                )?.low ?? 0,
                 (
                   form.getValues().spreader
                     .parameters as UniformDistributionParameters
-                ).high ?? 1,
+                )?.high ?? 1,
               ]}
-              onChange={([low, high]) => {
+              onChangeEnd={([low, high]) => {
                 form.setFieldValue('spreader.parameters.low', low);
                 form.setFieldValue('spreader.parameters.high', high);
               }}
