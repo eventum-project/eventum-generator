@@ -80,7 +80,13 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
               }
               placeholder="number"
               min={0.1}
-              {...form.getInputProps('oscillator.period', { type: 'input' })}
+              value={form.getValues().oscillator.period}
+              onChange={(value) =>
+                form.setFieldValue(
+                  'oscillator.period',
+                  typeof value === 'number' ? value : 0
+                )
+              }
             />
             <Select
               label={
