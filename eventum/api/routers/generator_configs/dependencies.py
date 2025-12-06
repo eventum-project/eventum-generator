@@ -1,10 +1,10 @@
 """Dependencies."""
 
 import asyncio
-from pathlib import Path
+import pathlib
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Query, status
+from fastapi import Depends, HTTPException, Path, status
 
 from eventum.api.dependencies.app import SettingsDep
 from eventum.api.utils.response_description import set_responses
@@ -52,7 +52,7 @@ GeneratorDirsDep = Annotated[list[str], Depends(list_generator_dirs)]
     },
 )
 async def check_directory_is_allowed(
-    name: Annotated[str, Query(description='Name of the generator directory')],
+    name: Annotated[str, Path(description='Name of the generator directory')],
     settings: SettingsDep,
 ) -> str:
     """Check that a generator directory is located within the
@@ -105,7 +105,7 @@ CheckDirectoryIsAllowedDep = Annotated[
     },
 )
 async def check_configuration_exists(
-    name: Annotated[str, Query(description='Name of the generator directory')],
+    name: Annotated[str, Path(description='Name of the generator directory')],
     settings: SettingsDep,
 ) -> str:
     """Check that generator configuration exist.
@@ -158,7 +158,7 @@ CheckConfigurationExistsDep = Annotated[
     },
 )
 async def check_configuration_not_exists(
-    name: Annotated[str, Query(description='Name of the generator directory')],
+    name: Annotated[str, Path(description='Name of the generator directory')],
     settings: SettingsDep,
 ) -> str:
     """Check that generator configuration does not exist.
@@ -214,8 +214,11 @@ CheckConfigurationNotExistsDep = Annotated[
     },
 )
 async def check_filepath_is_directly_relative(
-    filepath: Annotated[Path, Query(description='Relative path to the file')],
-) -> Path:
+    filepath: Annotated[
+        pathlib.Path,
+        Path(description='Relative path to the file'),
+    ],
+) -> pathlib.Path:
     """Check that filepath directly relative (i.e. not using '..').
 
     Parameters
@@ -254,6 +257,6 @@ async def check_filepath_is_directly_relative(
 
 
 CheckFilepathIsDirectlyRelativeDep = Annotated[
-    Path,
+    pathlib.Path,
     Depends(check_filepath_is_directly_relative),
 ]
