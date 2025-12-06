@@ -35,7 +35,8 @@ const MultiplierConfigSchema = z.object({
   ratio: z.int().gte(1),
 });
 
-export const RANDOMIZER_DIRECTION = ['decrease', 'increase', 'mixed'];
+export const RANDOMIZER_DIRECTION = ['decrease', 'increase', 'mixed'] as const;
+export type RandomizerDirection = (typeof RANDOMIZER_DIRECTION)[number];
 
 const RandomizerConfigSchema = z.object({
   deviation: z.number().gte(0).lte(1),
