@@ -6,6 +6,7 @@ import { InputPluginParams } from './InputPluginParams';
 import TimestampsHistogram from './TimestampsHistogram';
 import { PLUGIN_DEFAULT_CONFIGS } from '@/api/routes/generator-configs/modules/plugins/registry';
 import { InputPluginsNamedConfig } from '@/api/routes/generator-configs/schemas';
+import { InputPluginNamedConfig } from '@/api/routes/generator-configs/schemas/plugins/input';
 import { InputPluginName } from '@/api/routes/generator-configs/schemas/plugins/input/base-config';
 
 interface InputPluginsTabProps {
@@ -74,6 +75,15 @@ export const InputPluginsTab: FC<InputPluginsTabProps> = ({
     return selectedPluginIndexRef.current;
   }, []);
 
+  const handleConfigChange = useCallback(
+    (config: InputPluginNamedConfig) => {
+      const newConfig = [...pluginsConfig];
+      newConfig[selectedPluginIndex] = config;
+
+      setPluginsConfig(newConfig);
+    },
+    [pluginsConfig, selectedPluginIndex]
+  );
   return (
     <Grid gutter="lg">
       <Grid.Col span={2}>
@@ -122,14 +132,8 @@ export const InputPluginsTab: FC<InputPluginsTabProps> = ({
             </Center>
           ) : (
             <InputPluginParams
-              key={selectedPluginIndex}
               inputPluginConfig={pluginsConfig[selectedPluginIndex]!}
-              onChange={(config) => {
-                const newConfig = [...pluginsConfig];
-                newConfig[selectedPluginIndex] = config;
-
-                setPluginsConfig(newConfig);
-              }}
+              onChange={handleConfigChange}
             />
           )}
         </Stack>
