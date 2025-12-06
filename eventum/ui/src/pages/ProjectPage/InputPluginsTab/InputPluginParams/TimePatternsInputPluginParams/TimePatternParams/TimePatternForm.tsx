@@ -1,4 +1,5 @@
 import {
+  Center,
   Divider,
   Group,
   NumberInput,
@@ -11,11 +12,19 @@ import {
   Textarea,
 } from '@mantine/core';
 import { UseFormReturnType } from '@mantine/form';
-import { FC } from 'react';
+import {
+  IconArrowDown,
+  IconArrowUp,
+  IconArrowsMoveVertical,
+  IconSquare,
+  IconTilde,
+  IconTriangle,
+} from '@tabler/icons-react';
+import { FC, ReactNode } from 'react';
 
 import {
   Distribution,
-  RANDOMIZER_DIRECTION,
+  RandomizerDirection,
   TIME_UNITS,
   TimePatternConfig,
   TriangularDistributionParameters,
@@ -164,7 +173,43 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
           </Group>
           <SegmentedControl
             title="Deviation direction"
-            data={RANDOMIZER_DIRECTION}
+            data={
+              [
+                {
+                  label: (
+                    <Center>
+                      <Group gap="2px">
+                        <IconArrowDown size={14} />
+                        <span>Decrease</span>
+                      </Group>
+                    </Center>
+                  ),
+                  value: 'decrease',
+                },
+                {
+                  label: (
+                    <Center>
+                      <Group gap="2px">
+                        <IconArrowUp size={14} />
+                        <span>Increase</span>
+                      </Group>
+                    </Center>
+                  ),
+                  value: 'increase',
+                },
+                {
+                  label: (
+                    <Center>
+                      <Group gap="2px">
+                        <IconArrowsMoveVertical size={14} />
+                        <span>Mixed</span>
+                      </Group>
+                    </Center>
+                  ),
+                  value: 'mixed',
+                },
+              ] satisfies { label: ReactNode; value: RandomizerDirection }[]
+            }
             {...form.getInputProps('randomizer.direction', {
               type: 'input',
             })}
@@ -180,9 +225,39 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
         <SegmentedControl
           title="Distribution function"
           data={[
-            Distribution.BETA,
-            Distribution.TRIANGULAR,
-            Distribution.UNIFORM,
+            {
+              label: (
+                <Center>
+                  <Group gap="4px">
+                    <IconTilde size={14} />
+                    <span>Beta</span>
+                  </Group>
+                </Center>
+              ),
+              value: Distribution.BETA,
+            },
+            {
+              label: (
+                <Center>
+                  <Group gap="4px">
+                    <IconTriangle size={14} />
+                    <span>Triangular</span>
+                  </Group>
+                </Center>
+              ),
+              value: Distribution.TRIANGULAR,
+            },
+            {
+              label: (
+                <Center>
+                  <Group gap="4px">
+                    <IconSquare size={14} />
+                    <span>Uniform</span>
+                  </Group>
+                </Center>
+              ),
+              value: Distribution.UNIFORM,
+            },
           ]}
           {...form.getInputProps('spreader.distribution', {
             type: 'input',
