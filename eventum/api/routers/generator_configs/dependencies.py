@@ -91,10 +91,7 @@ async def check_directory_is_allowed(
     return name
 
 
-CheckDirectoryIsAllowedDep = Annotated[
-    str,
-    Depends(check_directory_is_allowed),
-]
+CheckDirectoryIsAllowedDep = Depends(check_directory_is_allowed)
 
 
 @set_responses(
@@ -144,10 +141,7 @@ async def check_configuration_exists(
     return name
 
 
-CheckConfigurationExistsDep = Annotated[
-    str,
-    Depends(check_configuration_exists),
-]
+CheckConfigurationExistsDep = Depends(check_configuration_exists)
 
 
 @set_responses(
