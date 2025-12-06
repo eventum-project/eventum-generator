@@ -413,7 +413,10 @@ async def get_generator_file(
         CheckDirectoryIsAllowedDep,
         CheckConfigurationExistsDep,
     ],
-    filepath: Annotated[Path, CheckFilepathIsDirectlyRelativeDep],
+    filepath: Annotated[
+        Path,
+        Annotated[Path, CheckFilepathIsDirectlyRelativeDep],
+    ],
     settings: SettingsDep,
 ) -> responses.FileResponse:
     path = (settings.path.generators_dir / name / filepath).resolve()

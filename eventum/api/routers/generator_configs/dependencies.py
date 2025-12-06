@@ -191,10 +191,7 @@ async def check_configuration_not_exists(
     return name
 
 
-CheckConfigurationNotExistsDep = Annotated[
-    str,
-    Depends(check_configuration_not_exists),
-]
+CheckConfigurationNotExistsDep = Depends(check_configuration_not_exists)
 
 
 @set_responses(
@@ -250,7 +247,6 @@ async def check_filepath_is_directly_relative(
     return filepath
 
 
-CheckFilepathIsDirectlyRelativeDep = Annotated[
-    pathlib.Path,
-    Depends(check_filepath_is_directly_relative),
-]
+CheckFilepathIsDirectlyRelativeDep = Depends(
+    check_filepath_is_directly_relative
+)

@@ -99,7 +99,7 @@ async def get_generator_from_startup(
     status_code=status.HTTP_201_CREATED,
 )
 async def add_generator_to_startup(
-    id: CheckIdInBodyMatchPathDep,
+    id: Annotated[str, CheckIdInBodyMatchPathDep],
     params: Annotated[
         GeneratorParameters,
         Body(description='Generator parameters'),
@@ -160,7 +160,7 @@ async def add_generator_to_startup(
     ),
 )
 async def update_generator_in_startup(
-    id: CheckIdInBodyMatchPathDep,  # noqa: ARG001
+    id: Annotated[str, CheckIdInBodyMatchPathDep],  # noqa: ARG001
     params: Annotated[
         GeneratorParameters,
         Body(description='Generator parameters'),

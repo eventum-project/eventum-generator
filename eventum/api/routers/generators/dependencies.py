@@ -114,7 +114,7 @@ PreparedGeneratorParamsDep = Annotated[
 )
 async def check_path_exists(
     params: PreparedGeneratorParamsDep,
-) -> PreparedGeneratorParamsDep:
+) -> GeneratorParameters:
     """Check if the path in generator parameters exists.
 
     Parameters
@@ -124,7 +124,7 @@ async def check_path_exists(
 
     Returns
     -------
-    PreparedGeneratorParamsDep
+    GeneratorParameters
         Original prepared generator parameters.
 
     Raises
@@ -142,7 +142,4 @@ async def check_path_exists(
     return params
 
 
-CheckPathExistsDep = Annotated[
-    PreparedGeneratorParamsDep,
-    Depends(check_path_exists),
-]
+CheckPathExistsDep = Depends(check_path_exists)
