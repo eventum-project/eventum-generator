@@ -27,6 +27,7 @@ export default function SignInPage() {
   const loginMutation = useLoginMutation();
 
   const form = useForm({
+    mode: 'uncontrolled',
     initialValues: {
       username: '',
       password: '',
@@ -86,7 +87,7 @@ export default function SignInPage() {
                 <Alert
                   mt="md"
                   variant="default"
-                  icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
+                  icon={<Box c="red" component={IconAlertSquareRounded} />}
                 >
                   {commonError}
                 </Alert>
