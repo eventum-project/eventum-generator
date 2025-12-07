@@ -1,6 +1,5 @@
 import { Divider, Group, NumberInput, Select, Title } from '@mantine/core';
 import { UseFormReturnType } from '@mantine/form';
-import bytes from 'bytes';
 import { FC } from 'react';
 
 import {
@@ -33,6 +32,7 @@ export const LoggingParameters: FC<LoggingParametersProps> = ({ form }) => {
         {...form.getInputProps('log.level', {
           type: 'input',
         })}
+        key={form.key('log.level')}
       />
       <Select
         label={
@@ -43,6 +43,7 @@ export const LoggingParameters: FC<LoggingParametersProps> = ({ form }) => {
         {...form.getInputProps('log.format', {
           type: 'input',
         })}
+        key={form.key('log.format')}
       />
       <Title order={3} fw={500} mt="md">
         Rotation
@@ -57,13 +58,11 @@ export const LoggingParameters: FC<LoggingParametersProps> = ({ form }) => {
           }
           min={1024}
           allowDecimal={false}
-          suffix={` (${bytes(form.values.log.max_bytes, {
-            decimalPlaces: 2,
-          })})`}
           placeholder="bytes"
           {...form.getInputProps('log.max_bytes', {
             type: 'input',
           })}
+          key={form.key('log.max_bytes')}
         />
         <NumberInput
           label={
@@ -78,6 +77,7 @@ export const LoggingParameters: FC<LoggingParametersProps> = ({ form }) => {
           {...form.getInputProps('log.backups', {
             type: 'input',
           })}
+          key={form.key('log.backups')}
         />
       </Group>
     </>

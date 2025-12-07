@@ -26,13 +26,14 @@ interface GenerationParametersProps {
 export const GenerationParameters: FC<GenerationParametersProps> = ({
   form,
 }) => {
+  const formValues = form.getValues();
   const [batchingMode, setBatchingMode] = useState<
     'size' | 'delay' | 'combined'
   >(
-    form.values.generation.batch.size !== null &&
-      form.values.generation.batch.delay !== null
+    formValues.generation.batch.size !== null &&
+      formValues.generation.batch.delay !== null
       ? 'combined'
-      : form.values.generation.batch.size == null
+      : formValues.generation.batch.size == null
         ? 'delay'
         : 'size'
   );
@@ -53,6 +54,7 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
         {...form.getInputProps('generation.keep_order', {
           type: 'checkbox',
         })}
+        key={form.key('generation.keep_order')}
       />
       <Select
         label={
@@ -180,7 +182,7 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
           {...form.getInputProps('generation.batch.size', {
             type: 'input',
           })}
-          value={form.values.generation.batch.size ?? undefined}
+          key={form.key('generation.batch.size')}
         />
         <NumberInput
           label={
@@ -197,7 +199,7 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
           {...form.getInputProps('generation.batch.delay', {
             type: 'input',
           })}
-          value={form.values.generation.batch.delay ?? undefined}
+          key={form.key('generation.batch.delay')}
         />
       </Group>
       <Alert
@@ -226,6 +228,7 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
           {...form.getInputProps('generation.queue.max_timestamp_batches', {
             type: 'input',
           })}
+          key={form.key('generation.queue.max_timestamp_batches')}
         />
         <NumberInput
           label={
@@ -240,6 +243,7 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
           {...form.getInputProps('generation.queue.max_event_batches', {
             type: 'input',
           })}
+          key={form.key('generation.queue.max_event_batches')}
         />
       </Group>
       <QueueSizeApproximation form={form} />

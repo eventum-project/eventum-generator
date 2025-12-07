@@ -15,6 +15,17 @@ export const QueueSizeApproximation: FC<QueueSizeApproximationProps> = ({
 }) => {
   const [eventSize, setEventSize] = useState<number>(1000);
 
+  const formValues = form.getValues();
+  const [batchSize, setBatchSize] = useState(formValues.generation.batch.size);
+  const [queueParams, setQueueParams] = useState(formValues.generation.queue);
+
+  form.watch('generation.batch.size', ({ value }) => {
+    setBatchSize(value);
+  });
+  form.watch('generation.queue', ({ value }) => {
+    setQueueParams(value);
+  });
+
   return (
     <Alert
       variant="default"
@@ -45,13 +56,10 @@ export const QueueSizeApproximation: FC<QueueSizeApproximationProps> = ({
         <List.Item>
           Timestamps queue ~
           <b>
-            {form.values.generation.batch.size !== null ? (
-              bytes(
-                form.values.generation.batch.size *
-                  form.values.generation.queue.max_timestamp_batches *
-                  16,
-                { decimalPlaces: 2 }
-              )
+            {batchSize !== null ? (
+              bytes(batchSize * queueParams.max_timestamp_batches * 16, {
+                decimalPlaces: 2,
+              })
             ) : (
               <b style={{ color: 'var(--mantine-color-red-text)' }}>
                 Possibly unlimited
@@ -62,13 +70,10 @@ export const QueueSizeApproximation: FC<QueueSizeApproximationProps> = ({
         <List.Item>
           Events queue ~
           <b>
-            {form.values.generation.batch.size !== null ? (
-              bytes(
-                form.values.generation.batch.size *
-                  form.values.generation.queue.max_event_batches *
-                  eventSize,
-                { decimalPlaces: 2 }
-              )
+            {batchSize !== null ? (
+              bytes(batchSize * queueParams.max_event_batches * eventSize, {
+                decimalPlaces: 2,
+              })
             ) : (
               <b style={{ color: 'var(--mantine-color-red-text)' }}>
                 Possibly unlimited

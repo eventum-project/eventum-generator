@@ -75,6 +75,7 @@ export default function SettingsPage() {
     },
     validateInputOnChange: true,
     onSubmitPreventDefault: 'always',
+    cascadeUpdates: true,
   });
 
   useEffect(() => {

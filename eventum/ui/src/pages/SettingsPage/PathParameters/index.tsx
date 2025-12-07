@@ -30,6 +30,7 @@ export const PathParameters: FC<PathParametersProps> = ({ form }) => {
         {...form.getInputProps('path.generator_config_filename', {
           type: 'input',
         })}
+        key={form.key('path.generator_config_filename')}
       />
       <TextInput
         label={
@@ -42,6 +43,7 @@ export const PathParameters: FC<PathParametersProps> = ({ form }) => {
         {...form.getInputProps('path.generators_dir', {
           type: 'input',
         })}
+        key={form.key('path.generators_dir')}
       />
       <TextInput
         label={
@@ -54,6 +56,7 @@ export const PathParameters: FC<PathParametersProps> = ({ form }) => {
         {...form.getInputProps('path.startup', {
           type: 'input',
         })}
+        key={form.key('path.startup')}
       />
       <TextInput
         label={
@@ -66,6 +69,7 @@ export const PathParameters: FC<PathParametersProps> = ({ form }) => {
         {...form.getInputProps('path.keyring_cryptfile', {
           type: 'input',
         })}
+        key={form.key('path.keyring_cryptfile')}
       />
       <TextInput
         label={
@@ -78,6 +82,7 @@ export const PathParameters: FC<PathParametersProps> = ({ form }) => {
         {...form.getInputProps('path.logs', {
           type: 'input',
         })}
+        key={form.key('path.logs')}
       />
     </>
   );
