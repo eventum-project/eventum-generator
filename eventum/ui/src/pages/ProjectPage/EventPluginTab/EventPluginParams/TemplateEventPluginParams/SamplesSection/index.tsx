@@ -18,7 +18,9 @@ export const SamplesSection: FC<SamplesSectionProps> = ({
   existingFiles,
 }) => {
   const [selectedSample, setSelectedSample] = useState<string | null>(null);
-  const [existingSamples, setExistingSamples] = useState<string[]>([]);
+  const [existingSamples, setExistingSamples] = useState<string[]>(
+    Object.keys(form.getValues().samples ?? {})
+  );
 
   form.watch('samples', ({ value }) => {
     if (!value) {
