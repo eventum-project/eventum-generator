@@ -3,7 +3,7 @@ import z from 'zod';
 import { BaseEventPluginConfigSchema } from '../../base-config';
 import { ConditionSchema } from './template-fsm-conditions';
 
-const enum SampleType {
+export const enum SampleType {
   Items = 'items',
   CSV = 'csv',
   JSON = 'json',
@@ -22,6 +22,7 @@ const ItemsSampleConfigSchema = z.object({
   type: z.literal(SampleType.Items),
   source: z.array(z.any()).min(1),
 });
+export type ItemsSampleConfig = z.infer<typeof ItemsSampleConfigSchema>;
 
 const CSVSampleConfigSchema = z.object({
   type: z.literal(SampleType.CSV),
@@ -29,17 +30,20 @@ const CSVSampleConfigSchema = z.object({
   delimiter: z.string().min(1),
   source: z.string().endsWith('.csv'),
 });
+export type CSVSampleConfig = z.infer<typeof CSVSampleConfigSchema>;
 
 const JSONSampleConfigSchema = z.object({
   type: z.literal(SampleType.JSON),
   source: z.string().endsWith('.json'),
 });
+export type JSONSampleConfig = z.infer<typeof JSONSampleConfigSchema>;
 
 const SampleConfigSchema = z.discriminatedUnion('type', [
   ItemsSampleConfigSchema,
   CSVSampleConfigSchema,
   JSONSampleConfigSchema,
 ]);
+export type SampleConfig = z.infer<typeof SampleConfigSchema>;
 
 const TemplateConfigForGeneralModesSchema = z.object({
   template: z.string().endsWith('.jinja'),
