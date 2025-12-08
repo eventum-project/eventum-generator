@@ -107,7 +107,6 @@ export const TimePatternForm: FC<TimePatternFormProps> = ({ form }) => {
               }
               data={TIME_UNITS}
               placeholder="unit"
-              withCheckIcon={false}
               clearable
               {...form.getInputProps('oscillator.unit', { type: 'input' })}
             />

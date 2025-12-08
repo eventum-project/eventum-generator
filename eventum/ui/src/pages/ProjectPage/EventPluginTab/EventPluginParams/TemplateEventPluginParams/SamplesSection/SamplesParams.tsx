@@ -141,7 +141,6 @@ export const SamplesParams: FC<SamplesParamsProps> = ({
               data={existingFiles}
               clearable
               searchable
-              withCheckIcon={false}
               value={sample.source ?? null}
               onChange={(value) => {
                 form.setFieldValue('samples', (prevValue) => {
@@ -216,7 +215,6 @@ export const SamplesParams: FC<SamplesParamsProps> = ({
             data={existingFiles}
             clearable
             searchable
-            withCheckIcon={false}
             value={sample.source ?? null}
             onChange={(value) => {
               form.setFieldValue('samples', (prevValue) => {
