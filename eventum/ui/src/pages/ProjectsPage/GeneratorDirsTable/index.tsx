@@ -187,7 +187,6 @@ export const GeneratorDirsTable: FC<GeneratorDirsTableProps> = ({
             total={table.getPageCount()}
             value={pagination.pageIndex + 1}
             onChange={(page) => {
-              console.log(page - 1);
               table.setPageIndex(page - 1);
             }}
           />
