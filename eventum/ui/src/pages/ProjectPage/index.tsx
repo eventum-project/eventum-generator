@@ -22,6 +22,7 @@ import {
 } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { EventPluginTab } from './EventPluginTab';
 import { InputPluginsTab } from './InputPluginsTab';
 import { ProjectNameProvider } from './context/ProjectNameContext';
 import { useGeneratorConfig } from '@/api/hooks/useGeneratorConfigs';
@@ -114,7 +115,9 @@ export default function ProjectPage() {
                 <Tabs.Panel value="input">
                   <InputPluginsTab inputPluginsConfig={generatorConfig.input} />
                 </Tabs.Panel>
-                <Tabs.Panel value="event">Event plugin</Tabs.Panel>
+                <Tabs.Panel value="event">
+                  <EventPluginTab eventPluginConfig={generatorConfig.event} />
+                </Tabs.Panel>
                 <Tabs.Panel value="output">Output plugins</Tabs.Panel>
                 <Tabs.Panel value="assets">Assets</Tabs.Panel>
               </Box>
