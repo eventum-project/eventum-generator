@@ -52,7 +52,7 @@ export const SamplesSection: FC<SamplesSectionProps> = ({
             clearable
           />
           <ActionIcon
-            title="Add new sample"
+            title="Adding sample"
             size="lg"
             variant="default"
             onClick={() => {
