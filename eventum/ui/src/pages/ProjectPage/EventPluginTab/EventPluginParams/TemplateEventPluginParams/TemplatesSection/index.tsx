@@ -16,6 +16,8 @@ import { AddTemplateModal } from './AddTemplateModal';
 import { TemplateParams } from './TemplateParams';
 import { useUploadGeneratorFileMutation } from '@/api/hooks/useGeneratorConfigs';
 import {
+  TemplateConfigForChanceMode,
+  TemplateConfigForFSMMode,
   TemplateConfigForGeneralModes,
   TemplateEventPluginConfig,
   TemplatePickingMode,
@@ -133,7 +135,37 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({
               value: TemplatePickingMode.FSM,
             },
           ]}
-          {...form.getInputProps('mode')}
+          value={form.getValues().mode}
+          onChange={(value) => {
+            form.setFieldValue('mode', (prevValue) => {
+              // remove not actual parameters of previous picking mode from state
+              form.setFieldValue('templates', (prevTemplatesValue) => {
+                const newValue = [...prevTemplatesValue];
+
+                for (const templateItem of newValue) {
+                  const templateName = Object.keys(templateItem)[0]!;
+                  const template = templateItem[templateName];
+
+                  if (prevValue === TemplatePickingMode.Chance) {
+                    (template as TemplateConfigForChanceMode).chance =
+                      undefined!;
+                  } else if (prevValue === TemplatePickingMode.FSM) {
+                    (template as TemplateConfigForFSMMode).initial = undefined!;
+                    (template as TemplateConfigForFSMMode).transition =
+                      undefined!;
+                  }
+                }
+
+                if (prevValue === TemplatePickingMode.Chain) {
+                  form.setFieldValue('chain', undefined!);
+                }
+
+                return newValue;
+              });
+
+              return value as TemplatePickingMode;
+            });
+          }}
         />
       </Stack>
 
