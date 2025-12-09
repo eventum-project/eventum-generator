@@ -18,22 +18,7 @@ export const SamplesSection: FC<SamplesSectionProps> = ({
   existingFiles,
 }) => {
   const [selectedSample, setSelectedSample] = useState<string | null>(null);
-  const [existingSamples, setExistingSamples] = useState<string[]>(
-    Object.keys(form.getValues().samples ?? {})
-  );
-
-  form.watch('samples', ({ value }) => {
-    if (!value) {
-      setExistingSamples([]);
-      setSelectedSample(null);
-    } else {
-      const samples = Object.keys(value);
-      setExistingSamples(samples);
-      if (selectedSample !== null && !samples.includes(selectedSample)) {
-        setSelectedSample(null);
-      }
-    }
-  });
+  const existingSamples = Object.keys(form.getValues().samples ?? {});
 
   return (
     <Stack>
@@ -68,7 +53,9 @@ export const SamplesSection: FC<SamplesSectionProps> = ({
                         ...value,
                         [sampleName]: sampleConfig,
                       }));
+
                       modals.closeAll();
+
                       setSelectedSample(sampleName);
                     }}
                   />
@@ -87,6 +74,26 @@ export const SamplesSection: FC<SamplesSectionProps> = ({
           form={form}
           selectedSample={selectedSample}
           existingFiles={existingFiles}
+          onDelete={() => {
+            modals.openConfirmModal({
+              title: 'Deleting sample',
+              children: (
+                <Text size="sm">
+                  Sample <b>{selectedSample}</b> will be deleted. Do you want to
+                  continue?
+                </Text>
+              ),
+              labels: { confirm: 'Confirm', cancel: 'Cancel' },
+              onConfirm: () => {
+                form.setFieldValue('samples', (prevValue) => {
+                  const newValue = { ...prevValue };
+                  delete newValue[selectedSample];
+                  return newValue;
+                });
+                setSelectedSample(null);
+              },
+            });
+          }}
         />
       )}
     </Stack>

@@ -9,11 +9,9 @@ import {
   Select,
   Stack,
   Switch,
-  Text,
   TextInput,
 } from '@mantine/core';
 import { UseFormReturnType } from '@mantine/form';
-import { modals } from '@mantine/modals';
 import { IconFile, IconList } from '@tabler/icons-react';
 import { FC } from 'react';
 
@@ -28,12 +26,14 @@ interface SamplesParamsProps {
   form: UseFormReturnType<TemplateEventPluginConfig>;
   selectedSample: string;
   existingFiles: string[];
+  onDelete: () => void;
 }
 
 export const SamplesParams: FC<SamplesParamsProps> = ({
   form,
   selectedSample,
   existingFiles,
+  onDelete,
 }) => {
   const samples = form.getValues().samples;
   if (samples === undefined) {
@@ -227,28 +227,7 @@ export const SamplesParams: FC<SamplesParamsProps> = ({
           />
         )}
       </Stack>
-      <Button
-        variant="default"
-        onClick={() => {
-          modals.openConfirmModal({
-            title: 'Deleting sample',
-            children: (
-              <Text size="sm">
-                Sample <b>{selectedSample}</b> will be deleted. Do you want to
-                continue?
-              </Text>
-            ),
-            labels: { confirm: 'Confirm', cancel: 'Cancel' },
-            onConfirm: () => {
-              form.setFieldValue('samples', (prevValue) => {
-                const newValue = { ...prevValue };
-                delete newValue[selectedSample];
-                return newValue;
-              });
-            },
-          });
-        }}
-      >
+      <Button variant="default" onClick={onDelete}>
         Remove
       </Button>
     </Stack>
