@@ -1,10 +1,18 @@
-import { Button, NumberInput, Select, Stack } from '@mantine/core';
+import {
+  Button,
+  NumberInput,
+  Select,
+  Stack,
+  Switch,
+  Textarea,
+} from '@mantine/core';
 import { UseFormReturnType } from '@mantine/form';
 import { FC } from 'react';
+import YAML from 'yaml';
 
-import { FSMPickingModeParameters } from './FSMPickingModeParameters';
 import {
   TemplateConfigForChanceMode,
+  TemplateConfigForFSMMode,
   TemplateEventPluginConfig,
   TemplatePickingMode,
 } from '@/api/routes/generator-configs/schemas/plugins/event/configs/template';
@@ -37,7 +45,9 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
   if (template === undefined) {
     return null;
   }
-
+  const existingTemplates = form
+    .getValues()
+    .templates.map((item) => Object.keys(item)[0]!);
   const pickingMode = form.getValues().mode;
 
   return (
@@ -96,7 +106,111 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
         />
       )}
 
-      {pickingMode === TemplatePickingMode.FSM && <FSMPickingModeParameters />}
+      {pickingMode === TemplatePickingMode.FSM && (
+        <Stack>
+          <Switch
+            label={
+              <LabelWithTooltip
+                label="Initial"
+                tooltip="Set this template as initial state"
+              />
+            }
+            checked={(template as TemplateConfigForFSMMode).initial ?? false}
+            onChange={(value) => {
+              form.setFieldValue('templates', (prevValue) => {
+                const newValue = [...prevValue];
+                const templateItem = newValue[selectedTemplateIndex]!;
+                const template = templateItem[
+                  selectedTemplate
+                ] as TemplateConfigForFSMMode;
+
+                template.initial = value.currentTarget.checked
+                  ? true
+                  : undefined;
+
+                return newValue;
+              });
+            }}
+          />
+          <Select
+            label={
+              <LabelWithTooltip
+                label="To"
+                tooltip="Name of template of next state after transition"
+              />
+            }
+            data={existingTemplates}
+            value={
+              (template as TemplateConfigForFSMMode).transition?.to ?? null
+            }
+            onChange={(value) => {
+              form.setFieldValue('templates', (prevValue) => {
+                const newValue = [...prevValue];
+                const templateItem = newValue[selectedTemplateIndex]!;
+                const template = templateItem[
+                  selectedTemplate
+                ] as TemplateConfigForFSMMode;
+
+                if (!value) {
+                  template.transition = undefined;
+                } else {
+                  template.transition = {
+                    when: template.transition?.when ?? undefined,
+                    to: value ?? '',
+                  };
+                }
+
+                return newValue;
+              });
+            }}
+            searchable
+            nothingFoundMessage="No template found"
+            placeholder="template name"
+            clearable
+          />
+          <Stack gap="2px">
+            <Textarea
+              label="When"
+              description="Condition for performing transition to next state in YAML format. See examples in documentation."
+              placeholder="..."
+              minRows={3}
+              autosize
+              defaultValue={YAML.stringify(
+                (template as TemplateConfigForFSMMode).transition?.when ??
+                  undefined
+              )}
+              onChange={(event) => {
+                let parsedValue: unknown;
+
+                if (!event.currentTarget.value) {
+                  parsedValue = undefined;
+                } else {
+                  try {
+                    parsedValue = YAML.parse(event.currentTarget.value);
+                  } catch {
+                    return;
+                  }
+                }
+
+                form.setFieldValue('templates', (prevValue) => {
+                  const newValue = [...prevValue];
+                  const templateItem = newValue[selectedTemplateIndex]!;
+                  const template = templateItem[
+                    selectedTemplate
+                  ] as TemplateConfigForFSMMode;
+
+                  template.transition = {
+                    when: parsedValue,
+                    to: template.transition?.to ?? '',
+                  };
+
+                  return newValue;
+                });
+              }}
+            />
+          </Stack>
+        </Stack>
+      )}
 
       <Button
         variant="default"
