@@ -248,5 +248,5 @@ async def check_filepath_is_directly_relative(
 
 
 CheckFilepathIsDirectlyRelativeDep = Depends(
-    check_filepath_is_directly_relative
+    check_filepath_is_directly_relative,
 )

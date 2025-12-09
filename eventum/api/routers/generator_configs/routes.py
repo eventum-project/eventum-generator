@@ -562,6 +562,12 @@ async def delete_generator_file(
             detail='File does not exist',
         )
 
+    if path == (settings.path.generators_dir / name):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Deleting entire generator directory is not allowed',
+        )
+
     try:
         if path.is_file():
             await asyncio.to_thread(path.unlink)
