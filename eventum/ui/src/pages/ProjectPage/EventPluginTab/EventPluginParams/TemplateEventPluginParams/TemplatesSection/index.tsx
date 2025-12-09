@@ -1,4 +1,11 @@
-import { ActionIcon, Group, Select, Stack, Text } from '@mantine/core';
+import {
+  ActionIcon,
+  Group,
+  MultiSelect,
+  Select,
+  Stack,
+  Text,
+} from '@mantine/core';
 import { UseFormReturnType } from '@mantine/form';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
@@ -129,6 +136,28 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({
           {...form.getInputProps('mode')}
         />
       </Stack>
+
+      {form.getValues().mode === TemplatePickingMode.Chain && (
+        <MultiSelect
+          label={
+            <LabelWithTooltip
+              label="Chain"
+              tooltip="Sequence of templates defining order of rendering"
+            />
+          }
+          data={existingTemplates}
+          clearable
+          searchable
+          hidePickedOptions
+          onChange={(value) => {
+            if (value.length === 0) {
+              form.setFieldValue('chain', undefined!);
+            } else {
+              form.setFieldValue('chain', value);
+            }
+          }}
+        />
+      )}
 
       <Group align="end" wrap="nowrap" gap="xs">
         <Select
