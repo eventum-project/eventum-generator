@@ -40,9 +40,6 @@ export const ReplayEventPluginParams: FC<ReplayEventPluginParamsProps> = ({
     validate: zod4Resolver(ReplayEventPluginConfigSchema),
     transformValues: (values) => {
       const newValues = { ...values };
-      if (values.path == null) {
-        newValues.path = '';
-      }
 
       if (!values.timestamp_pattern) {
         newValues.timestamp_pattern = undefined;
