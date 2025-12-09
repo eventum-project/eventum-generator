@@ -1,34 +1,28 @@
 import { Button, NumberInput, Select, Stack } from '@mantine/core';
 import { UseFormReturnType } from '@mantine/form';
-import { modals } from '@mantine/modals';
-import { notifications } from '@mantine/notifications';
 import { FC } from 'react';
 
-import { RemoveTemplateModal } from './RemoveTemplateModal';
-import { useDeleteGeneratorFileMutation } from '@/api/hooks/useGeneratorConfigs';
+import { FSMPickingModeParameters } from './FSMPickingModeParameters';
 import {
   TemplateConfigForChanceMode,
   TemplateEventPluginConfig,
   TemplatePickingMode,
 } from '@/api/routes/generator-configs/schemas/plugins/event/configs/template';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
-import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
-import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
 
 interface TemplateParamsProps {
   form: UseFormReturnType<TemplateEventPluginConfig>;
   selectedTemplate: string;
   existingFiles: string[];
+  onDelete: (templateName: string, templatePath: string) => void;
 }
 
 export const TemplateParams: FC<TemplateParamsProps> = ({
   form,
   selectedTemplate,
   existingFiles,
+  onDelete,
 }) => {
-  const { projectName } = useProjectName();
-  const deleteFile = useDeleteGeneratorFileMutation();
-
   const templates = form.getValues().templates;
   const selectedTemplateIndex = templates.findIndex(
     (item) => Object.keys(item)[0] === selectedTemplate
@@ -45,37 +39,6 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
   }
 
   const pickingMode = form.getValues().mode;
-
-  function handleRemoveTemplate(values: { isRemoveFile: boolean }) {
-    form.setFieldValue('templates', (prevValue) => {
-      return [
-        ...prevValue.slice(0, selectedTemplateIndex),
-        ...prevValue.slice(selectedTemplateIndex + 1),
-      ];
-    });
-
-    if (values.isRemoveFile && template?.template) {
-      deleteFile.mutate(
-        { name: projectName, filepath: template.template },
-        {
-          onError: (error) => {
-            notifications.show({
-              title: 'Error',
-              message: (
-                <>
-                  Failed to delete template file
-                  <ShowErrorDetailsAnchor error={error} prependDot />
-                </>
-              ),
-              color: 'red',
-            });
-          },
-        }
-      );
-    }
-
-    modals.closeAll();
-  }
 
   return (
     <Stack>
@@ -132,21 +95,12 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
           value={(template as TemplateConfigForChanceMode).chance}
         />
       )}
+
+      {pickingMode === TemplatePickingMode.FSM && <FSMPickingModeParameters />}
+
       <Button
         variant="default"
-        onClick={() => {
-          modals.open({
-            title: 'Removing template',
-            children: (
-              <RemoveTemplateModal
-                templateName={selectedTemplate}
-                filePath={template.template}
-                onDelete={handleRemoveTemplate}
-                isDeleting={deleteFile.isPending}
-              />
-            ),
-          });
-        }}
+        onClick={() => onDelete(selectedTemplate, template.template)}
       >
         Remove
       </Button>

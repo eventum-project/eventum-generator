@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Divider,
   Group,
   MultiSelect,
   Select,
@@ -13,8 +14,12 @@ import { IconPlus } from '@tabler/icons-react';
 import { FC, useState } from 'react';
 
 import { AddTemplateModal } from './AddTemplateModal';
+import { RemoveTemplateModal } from './RemoveTemplateModal';
 import { TemplateParams } from './TemplateParams';
-import { useUploadGeneratorFileMutation } from '@/api/hooks/useGeneratorConfigs';
+import {
+  useDeleteGeneratorFileMutation,
+  useUploadGeneratorFileMutation,
+} from '@/api/hooks/useGeneratorConfigs';
 import {
   TemplateConfigForChanceMode,
   TemplateConfigForFSMMode,
@@ -36,25 +41,12 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({
   existingFiles,
 }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [existingTemplates, setExistingTemplates] = useState<string[]>(
-    form.getValues().templates.map((item) => Object.keys(item)[0]!)
-  );
-
-  form.watch('templates', ({ value }) => {
-    if (!value) {
-      setExistingTemplates([]);
-      setSelectedTemplate(null);
-    } else {
-      const templates = value.map((item) => Object.keys(item)[0]!);
-      setExistingTemplates(templates);
-
-      if (selectedTemplate !== null && !templates.includes(selectedTemplate)) {
-        setSelectedTemplate(null);
-      }
-    }
-  });
+  const existingTemplates = form
+    .getValues()
+    .templates.map((item) => Object.keys(item)[0]!);
 
   const uploadFile = useUploadGeneratorFileMutation();
+  const deleteFile = useDeleteGeneratorFileMutation();
   const { projectName } = useProjectName();
 
   function handleAddNewTemplate(
@@ -92,6 +84,46 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({
     );
 
     modals.closeAll();
+  }
+
+  function handleDeleteTemplate(
+    templatePath: string,
+    templateName: string,
+    isRemoveFile: boolean
+  ) {
+    form.setFieldValue('templates', (prevValue) => {
+      const selectedTemplateIndex = prevValue.findIndex(
+        (item) => Object.keys(item)[0] === templateName
+      );
+
+      return [
+        ...prevValue.slice(0, selectedTemplateIndex),
+        ...prevValue.slice(selectedTemplateIndex + 1),
+      ];
+    });
+
+    if (isRemoveFile) {
+      deleteFile.mutate(
+        { name: projectName, filepath: templatePath },
+        {
+          onError: (error) => {
+            notifications.show({
+              title: 'Error',
+              message: (
+                <>
+                  Failed to delete template file
+                  <ShowErrorDetailsAnchor error={error} prependDot />
+                </>
+              ),
+              color: 'red',
+            });
+          },
+        }
+      );
+    }
+
+    modals.closeAll();
+    setSelectedTemplate(null);
   }
 
   return (
@@ -191,6 +223,8 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({
         />
       )}
 
+      <Divider />
+
       <Group align="end" wrap="nowrap" gap="xs">
         <Select
           label="Select template to edit"
@@ -230,6 +264,25 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({
           form={form}
           selectedTemplate={selectedTemplate}
           existingFiles={existingFiles}
+          onDelete={(templateName, templatePath) =>
+            modals.open({
+              title: 'Removing template',
+              children: (
+                <RemoveTemplateModal
+                  templateName={templateName}
+                  filePath={templatePath}
+                  onDelete={({ isRemoveFile }) =>
+                    handleDeleteTemplate(
+                      templatePath,
+                      selectedTemplate,
+                      isRemoveFile
+                    )
+                  }
+                  isDeleting={deleteFile.isPending}
+                />
+              ),
+            })
+          }
         />
       )}
     </Stack>
