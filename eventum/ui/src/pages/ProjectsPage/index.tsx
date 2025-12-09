@@ -93,7 +93,6 @@ export default function ProjectsPage() {
             />
             <Checkbox
               label="Any used"
-              radius="sm"
               checked={anyInstanceFilter}
               onChange={(event) =>
                 setAnyInstanceFilter(event.currentTarget.checked)

@@ -11,6 +11,7 @@ import {
   MantineThemeOverride,
   createTheme,
   useMantineColorScheme,
+  Checkbox,
 } from '@mantine/core';
 
 import '@mantine/core/styles.css';
@@ -55,6 +56,13 @@ const theme = createTheme({
     from: '#8282ef',
     to: '#69ced0',
     deg: 14,
+  },
+  components: {
+    Checkbox: Checkbox.extend({
+      defaultProps: {
+        radius: 'sm',
+      },
+    }),
   },
 });
 
