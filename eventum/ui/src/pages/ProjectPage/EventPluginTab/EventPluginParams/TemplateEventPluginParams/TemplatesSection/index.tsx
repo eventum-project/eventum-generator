@@ -174,7 +174,7 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({
           label={
             <LabelWithTooltip
               label="Chain"
-              tooltip="Sequence of templates defining order of rendering"
+              tooltip="Sequence of template names defining order of picking templates"
             />
           }
           data={existingTemplates}
