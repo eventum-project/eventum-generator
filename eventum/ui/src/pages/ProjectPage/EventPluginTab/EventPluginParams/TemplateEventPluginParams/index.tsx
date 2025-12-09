@@ -53,7 +53,7 @@ export const TemplateEventPluginParams: FC<TemplateEventPluginParamsProps> = ({
         validationError="Invalid JSON"
         minRows={4}
         autosize
-        value={JSON.stringify(form.getValues().params)}
+        defaultValue={JSON.stringify(form.getValues().params)}
         onChange={(value) => {
           if (!value) {
             form.setFieldValue('params', {});
