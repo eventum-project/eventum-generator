@@ -12,12 +12,16 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertSquareRounded } from '@tabler/icons-react';
+import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { FC, useMemo } from 'react';
 
 import { useGeneratorFileTree } from '@/api/hooks/useGeneratorConfigs';
 import { flattenFileTree } from '@/api/routes/generator-configs/modules/file-tree';
 import { ENCODINGS } from '@/api/routes/generator-configs/schemas/encodings';
-import { ReplayEventPluginConfig } from '@/api/routes/generator-configs/schemas/plugins/event/configs/replay';
+import {
+  ReplayEventPluginConfig,
+  ReplayEventPluginConfigSchema,
+} from '@/api/routes/generator-configs/schemas/plugins/event/configs/replay';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
@@ -33,6 +37,7 @@ export const ReplayEventPluginParams: FC<ReplayEventPluginParamsProps> = ({
 }) => {
   const form = useForm<ReplayEventPluginConfig>({
     initialValues: initialConfig,
+    validate: zod4Resolver(ReplayEventPluginConfigSchema),
     transformValues: (values) => {
       const newValues = { ...values };
       if (values.path == null) {
@@ -133,7 +138,16 @@ export const ReplayEventPluginParams: FC<ReplayEventPluginParamsProps> = ({
               </Group>
             }
             placeholder="regular expression"
-            {...form.getInputProps('timestamp_pattern')}
+            value={form.getValues().timestamp_pattern ?? undefined}
+            onChange={(event) => {
+              form.setFieldValue(
+                'timestamp_pattern',
+                event.currentTarget.value.length > 0
+                  ? event.currentTarget.value
+                  : undefined
+              );
+            }}
+            error={form.errors.timestamp_pattern}
           />
           <TextInput
             label={
@@ -154,7 +168,16 @@ export const ReplayEventPluginParams: FC<ReplayEventPluginParamsProps> = ({
               </Group>
             }
             placeholder="format string"
-            {...form.getInputProps('timestamp_format')}
+            value={form.getValues().timestamp_format ?? undefined}
+            onChange={(event) => {
+              form.setFieldValue(
+                'timestamp_format',
+                event.currentTarget.value.length > 0
+                  ? event.currentTarget.value
+                  : undefined
+              );
+            }}
+            error={form.errors.timestamp_format}
           />
           <Switch
             label={
@@ -178,7 +201,14 @@ export const ReplayEventPluginParams: FC<ReplayEventPluginParamsProps> = ({
             min={0}
             allowDecimal={false}
             placeholder="bytes"
-            {...form.getInputProps('chunk_size')}
+            value={form.getValues().chunk_size ?? undefined}
+            onChange={(value) => {
+              form.setFieldValue(
+                'chunk_size',
+                typeof value === 'number' ? value : undefined
+              );
+            }}
+            error={form.errors.chunk_size}
           />
           <Select
             label={
