@@ -56,6 +56,9 @@ const TemplateConfigForChanceModeSchema =
   TemplateConfigForGeneralModesSchema.extend({
     chance: z.number().gt(0),
   });
+export type TemplateConfigForChanceMode = z.infer<
+  typeof TemplateConfigForChanceModeSchema
+>;
 
 const TemplateTransitionSchema = z.object({
   to: z.string().min(1),
@@ -67,6 +70,9 @@ const TemplateConfigForFSMModeSchema =
     transition: TemplateTransitionSchema.nullable().optional(),
     initial: z.boolean().optional(),
   });
+export type TemplateConfigForFSMMode = z.infer<
+  typeof TemplateConfigForFSMModeSchema
+>;
 
 const TemplateEventPluginConfigCommonFieldsSchema =
   BaseEventPluginConfigSchema.extend({
