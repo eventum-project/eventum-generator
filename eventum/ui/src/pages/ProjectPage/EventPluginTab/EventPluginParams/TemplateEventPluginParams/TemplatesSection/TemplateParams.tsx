@@ -102,7 +102,7 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
               return newValue;
             });
           }}
-          value={(template as TemplateConfigForChanceMode).chance}
+          value={(template as TemplateConfigForChanceMode).chance ?? ''}
         />
       )}
 
