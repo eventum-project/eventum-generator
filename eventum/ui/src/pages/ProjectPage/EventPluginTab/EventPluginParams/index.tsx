@@ -3,6 +3,7 @@ import { Stack, Text } from '@mantine/core';
 import { FC } from 'react';
 import YAML from 'yaml';
 
+import { ReplayEventPluginParams } from './ReplayEventPluginParams';
 import { TemplateEventPluginParams } from './TemplateEventPluginParams';
 import {
   EventPluginConfig,
@@ -24,7 +25,7 @@ type PluginNameToConfigType = {
 
 const pluginNamesToParamsComponent = {
   template: TemplateEventPluginParams,
-  replay: '',
+  replay: ReplayEventPluginParams,
   script: '',
 } as const satisfies {
   [K in EventPluginName]: FC<{
