@@ -79,6 +79,7 @@ export const TimestampsInputPluginParams: FC<
                     : []
                 );
               }}
+              error={form.errors.source}
             />
           </Tabs.Panel>
           <Tabs.Panel value="file">
@@ -118,6 +119,7 @@ export const TimestampsInputPluginParams: FC<
                 onChange={(value) => {
                   form.setFieldValue('source', value ?? []);
                 }}
+                error={form.errors.source}
               />
             )}
           </Tabs.Panel>
