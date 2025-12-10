@@ -4,6 +4,7 @@ import { FC } from 'react';
 import YAML from 'yaml';
 
 import { ReplayEventPluginParams } from './ReplayEventPluginParams';
+import { ScriptEventPluginParams } from './ScriptEventPluginParams';
 import { TemplateEventPluginParams } from './TemplateEventPluginParams';
 import {
   EventPluginConfig,
@@ -26,7 +27,7 @@ type PluginNameToConfigType = {
 const pluginNamesToParamsComponent = {
   template: TemplateEventPluginParams,
   replay: ReplayEventPluginParams,
-  script: '',
+  script: ScriptEventPluginParams,
 } as const satisfies {
   [K in EventPluginName]: FC<{
     initialConfig: PluginNameToConfigType[K];
