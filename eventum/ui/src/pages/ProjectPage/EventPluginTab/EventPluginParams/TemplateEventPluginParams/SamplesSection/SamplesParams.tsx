@@ -132,6 +132,7 @@ export const SamplesParams: FC<SamplesParamsProps> = ({
                 return newValue;
               });
             }}
+            error={form.errors.samples}
           />
         )}
         {sample.type == SampleType.CSV && (
@@ -150,6 +151,7 @@ export const SamplesParams: FC<SamplesParamsProps> = ({
                   return newValue;
                 });
               }}
+              error={form.errors.samples}
             />
             <TextInput
               label={
@@ -224,6 +226,7 @@ export const SamplesParams: FC<SamplesParamsProps> = ({
                 return newValue;
               });
             }}
+            error={form.errors.samples}
           />
         )}
       </Stack>

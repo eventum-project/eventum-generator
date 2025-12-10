@@ -75,6 +75,11 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
         nothingFoundMessage="No files found"
         placeholder="path"
         clearable
+        error={
+          typeof form.errors.templates === 'string' &&
+          form.errors.templates.includes('jinja') &&
+          form.errors.templates
+        }
       />
 
       {pickingMode === TemplatePickingMode.Chance && (
@@ -103,6 +108,11 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
             });
           }}
           value={(template as TemplateConfigForChanceMode).chance ?? ''}
+          error={
+            typeof form.errors.templates === 'string' &&
+            form.errors.templates.includes('number') &&
+            form.errors.templates
+          }
         />
       )}
 
@@ -179,6 +189,7 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
                 (template as TemplateConfigForFSMMode).transition?.when ??
                   undefined
               )}
+              key={form.key('templates')}
               onChange={(event) => {
                 let parsedValue: unknown;
 
@@ -207,6 +218,10 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
                   return newValue;
                 });
               }}
+              error={
+                form.errors.templates === 'Invalid input' &&
+                'Invalid expression'
+              }
             />
           </Stack>
         </Stack>

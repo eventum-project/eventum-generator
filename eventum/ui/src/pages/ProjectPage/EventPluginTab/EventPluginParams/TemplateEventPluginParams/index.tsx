@@ -1,13 +1,17 @@
 import { Alert, Box, JsonInput, Skeleton, Stack } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertSquareRounded } from '@tabler/icons-react';
+import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { FC, useMemo } from 'react';
 
 import { SamplesSection } from './SamplesSection';
 import { TemplatesSection } from './TemplatesSection';
 import { useGeneratorFileTree } from '@/api/hooks/useGeneratorConfigs';
 import { flattenFileTree } from '@/api/routes/generator-configs/modules/file-tree';
-import { TemplateEventPluginConfig } from '@/api/routes/generator-configs/schemas/plugins/event/configs/template';
+import {
+  TemplateEventPluginConfig,
+  TemplateEventPluginConfigSchema,
+} from '@/api/routes/generator-configs/schemas/plugins/event/configs/template';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
 
@@ -22,6 +26,7 @@ export const TemplateEventPluginParams: FC<TemplateEventPluginParamsProps> = ({
 }) => {
   const form = useForm<TemplateEventPluginConfig>({
     initialValues: initialConfig,
+    validate: zod4Resolver(TemplateEventPluginConfigSchema),
     onValuesChange: onChange,
     onSubmitPreventDefault: 'always',
     validateInputOnChange: true,
@@ -71,6 +76,7 @@ export const TemplateEventPluginParams: FC<TemplateEventPluginParamsProps> = ({
             form.setFieldValue('params', parsed as Record<string, never>);
           }
         }}
+        error={form.errors.params}
       />
 
       {isFileTreeLoading && (

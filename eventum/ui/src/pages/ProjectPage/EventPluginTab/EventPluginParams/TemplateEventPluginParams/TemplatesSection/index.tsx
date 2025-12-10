@@ -198,6 +198,7 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({
               return value as TemplatePickingMode;
             });
           }}
+          error={form.errors.mode}
         />
       </Stack>
 
@@ -220,6 +221,7 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({
               form.setFieldValue('chain', value);
             }
           }}
+          error={form.errors.chain}
         />
       )}
 
