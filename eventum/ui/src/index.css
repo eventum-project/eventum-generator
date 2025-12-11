@@ -78,3 +78,28 @@ h2 {
 svg.tabler-icon {
   stroke-width: 1.6 !important;
 }
+
+/* ========== CodeMirror editor settings ========== */
+.cm-scroller {
+  font-size: 14px;
+}
+
+.cm-panel {
+  .cm-textfield {
+    border: 1px solid var(--mantine-color-default-border);
+    background: var(--mantine-color-default);
+    border-radius: 4px;
+    outline: none;
+  }
+
+  .cm-button {
+    cursor: pointer;
+    border: 1px solid var(--mantine-color-default-border);
+    background: var(--mantine-color-default);
+    border-radius: 4px;
+  }
+
+  input[type='checkbox'] {
+    cursor: pointer;
+  }
+}
