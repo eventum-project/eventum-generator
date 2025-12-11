@@ -3,6 +3,7 @@ import { FC, useCallback, useState } from 'react';
 
 import { EventPluginsList } from '../PluginsList';
 import { EventPluginParams } from './EventPluginParams';
+import { Workspace } from './Workspace';
 import { PLUGIN_DEFAULT_CONFIGS } from '@/api/routes/generator-configs/modules/plugins/registry';
 import { EventPluginNamedConfig } from '@/api/routes/generator-configs/schemas/plugins/event';
 import { EventPluginName } from '@/api/routes/generator-configs/schemas/plugins/event/base-config';
@@ -74,7 +75,7 @@ export const EventPluginTab: FC<EventPluginTabProps> = ({
               </Text>
             </Center>
           ) : (
-            'Nothing to show'
+            <Workspace />
           )}
         </Stack>
       </Grid.Col>
