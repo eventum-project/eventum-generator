@@ -13,6 +13,7 @@
     "@codemirror/autocomplete": "^6.20.0",
     "@codemirror/lang-jinja": "^6.0.0",
     "@codemirror/lang-python": "^6.2.1",
+    "@codemirror/view": "^6.39.4",
     "@mantine/charts": "^8.3.5",
     "@mantine/code-highlight": "^8.3.5",
     "@mantine/core": "^8.1.2",
