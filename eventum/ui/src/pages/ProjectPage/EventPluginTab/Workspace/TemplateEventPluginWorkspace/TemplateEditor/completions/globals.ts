@@ -425,7 +425,7 @@ const namespaceCompletions: NamespaceMember = {
             label: 'run',
             type: 'function',
             detail: 'Run command in a subprocess',
-            info: '(command: str, cwd: str | None = None, env: dict[str, Any] | None = None, timeout: float | None = None) -> SubprocessResult | None',
+            info: '(command: str, cwd: str | None = None, env: dict[str, Any] | None = None, timeout: float | None = None) -> SubprocessResult',
           },
         },
       },
