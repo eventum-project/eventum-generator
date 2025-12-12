@@ -64,10 +64,6 @@ export const EventPluginTab: FC<EventPluginTabProps> = ({
       </Grid.Col>
       <Grid.Col span={7}>
         <Stack>
-          <Text size="sm" fw="bold">
-            Workspace
-          </Text>
-          <Divider />
           {pluginsConfig.length === 0 ? (
             <Center>
               <Text size="sm" c="gray.6">
