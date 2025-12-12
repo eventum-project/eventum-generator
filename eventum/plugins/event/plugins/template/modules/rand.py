@@ -70,7 +70,7 @@ class number:  # noqa: N801
 
     @staticmethod
     def gauss(mu: float, sigma: float) -> float:
-        """Return random floating point number from Gaussian
+        """Return random floating point number with Gaussian
         distribution.
         """
         return random.gauss(mu, sigma)
@@ -102,7 +102,7 @@ class string:  # noqa: N801
 
     @staticmethod
     def digits(size: int) -> str:
-        """Return string of specified `size` that contains random digits
+        """Return string of specified `size` that contains random digit
         characters.
         """
         return ''.join(random.choices(digits, k=size))
