@@ -25,7 +25,7 @@ class SubprocessRunner:
         cwd: str | None = None,
         env: dict[str, Any] | None = None,
         timeout: float | None = None,
-    ) -> SubprocessResult | None:
+    ) -> SubprocessResult:
         """Run command in a subprocess.
 
         Parameters
