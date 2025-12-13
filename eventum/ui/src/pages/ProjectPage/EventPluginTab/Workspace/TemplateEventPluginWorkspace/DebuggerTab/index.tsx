@@ -3,6 +3,7 @@ import {
   Button,
   Center,
   Checkbox,
+  Code,
   Divider,
   Group,
   NumberInput,
@@ -142,6 +143,12 @@ export const DebuggerTab: FC = () => {
         onSuccess: (data) => {
           setProducedEventsInfo(data);
 
+          notifications.show({
+            title: 'Info',
+            message: 'Plugin is exhausted',
+            color: 'blue',
+          });
+
           if (produceParamsForm.getValues().autoTimestamp) {
             produceParamsForm.setFieldValue(
               'timestamp',
@@ -262,17 +269,51 @@ export const DebuggerTab: FC = () => {
             </Text>
             <Divider />
           </Stack>
-          {producedEventsInfo.events.map((event) => (
-            <CodeHighlight
-              key={nanoid()}
-              code={event}
-              language="json"
-              defaultExpanded
-              withExpandButton
-              collapseCodeLabel="Collapse"
-              expandCodeLabel="Expand"
-            />
-          ))}
+          {producedEventsInfo.events.length > 0 ? (
+            producedEventsInfo.events.map((event) => (
+              <CodeHighlight
+                key={nanoid()}
+                code={event}
+                language="json"
+                defaultExpanded
+                withExpandButton
+                collapseCodeLabel="Collapse"
+                expandCodeLabel="Expand"
+              />
+            ))
+          ) : (
+            <Center>
+              <Text size="sm" c="gray.6">
+                No events
+              </Text>
+            </Center>
+          )}
+
+          <Stack gap="4px">
+            <Text size="sm" fw="bold">
+              Errors
+            </Text>
+            <Divider />
+          </Stack>
+          {producedEventsInfo.errors.length > 0 ? (
+            producedEventsInfo.errors.map((error) => (
+              <Code block key={nanoid()}>
+                {`At event #${error.index + 1}: ${error.message} - ${error.context.reason ?? 'unknown reason'}\n\n`}
+                {error.context.traceback ?? 'No traceback info\n\n'}
+
+                {'\nAdditional context:\n'}
+                {Object.entries(error.context)
+                  .filter(([name]) => !['traceback', 'reason'].includes(name))
+                  .map(([name, value]) => `- ${name}: ${value}\n`)}
+              </Code>
+            ))
+          ) : (
+            <Center>
+              <Text size="sm" c="gray.6">
+                No errors
+              </Text>
+            </Center>
+          )}
         </Stack>
       ) : (
         <Stack>
