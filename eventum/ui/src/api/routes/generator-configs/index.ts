@@ -69,7 +69,9 @@ export async function getGeneratorFile(
 ): Promise<GeneratorFileContent> {
   return await validateResponse(
     GeneratorFileContentSchema,
-    apiClient.get(`/generator-configs/${name}/file/${filepath}`)
+    apiClient.get(`/generator-configs/${name}/file/${filepath}`, {
+      responseType: 'text',
+    })
   );
 }
 

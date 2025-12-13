@@ -428,7 +428,7 @@ async def get_generator_file(
         )
 
     try:
-        return responses.FileResponse(path=path)
+        return responses.FileResponse(path=path, media_type='text/plain')
     except OSError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
