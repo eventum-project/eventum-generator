@@ -10,6 +10,24 @@ export const AggregatedTimestampsSchema = z.object({
 });
 export type AggregatedTimestamps = z.infer<typeof AggregatedTimestampsSchema>;
 
+export const ProduceParamsSchema = z.object({
+  timestamp: z.date(),
+  tags: z.string().array(),
+});
+export type ProduceParams = z.infer<typeof ProduceParamsSchema>;
+
+const ProduceEventErrorInfoSchema = z.object({
+  index: z.int().gte(0),
+  message: z.string(),
+  context: z.record(z.string(), z.any()),
+});
+export const ProducedEventsInfoSchema = z.object({
+  events: z.string().array(),
+  errors: ProduceEventErrorInfoSchema.array(),
+  exhausted: z.boolean(),
+});
+export type ProducedEventsInfo = z.infer<typeof ProducedEventsInfoSchema>;
+
 export const VersatileDatetimeParametersBodySchema = z.object({
   value: z.string().nullable().optional(),
   timezone: z.string().min(1),

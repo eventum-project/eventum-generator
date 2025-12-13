@@ -1,11 +1,18 @@
 import { useMutation } from '@tanstack/react-query';
 
 import { InputPluginsNamedConfig } from '../routes/generator-configs/schemas';
+import { EventPluginNamedConfig } from '../routes/generator-configs/schemas/plugins/event';
 import {
   generateTimestamps,
+  initializeEventPlugin,
   normalizeVersatileDatetime,
+  produceEvents,
+  releaseEventPlugin,
 } from '../routes/preview';
-import { VersatileDatetimeParametersBody } from '../routes/preview/schemas';
+import {
+  ProduceParams,
+  VersatileDatetimeParametersBody,
+} from '../routes/preview/schemas';
 
 export function useGenerateTimestampsMutation() {
   return useMutation({
@@ -32,6 +39,36 @@ export function useGenerateTimestampsMutation() {
         span,
         inputPluginsConfig
       ),
+  });
+}
+
+export function useInitializeEventPluginMutation() {
+  return useMutation({
+    mutationFn: ({
+      name,
+      eventPluginConfig,
+    }: {
+      name: string;
+      eventPluginConfig: EventPluginNamedConfig;
+    }) => initializeEventPlugin(name, eventPluginConfig),
+  });
+}
+
+export function useReleaseEventPluginMutation() {
+  return useMutation({
+    mutationFn: ({ name }: { name: string }) => releaseEventPlugin(name),
+  });
+}
+
+export function useProduceEventsMutation() {
+  return useMutation({
+    mutationFn: ({
+      name,
+      produceParams,
+    }: {
+      name: string;
+      produceParams: ProduceParams;
+    }) => produceEvents(name, produceParams),
   });
 }
 

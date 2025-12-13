@@ -1,7 +1,11 @@
 import { InputPluginsNamedConfig } from '../generator-configs/schemas';
+import { EventPluginNamedConfig } from '../generator-configs/schemas/plugins/event';
 import {
   AggregatedTimestamps,
   AggregatedTimestampsSchema,
+  ProduceParams,
+  ProducedEventsInfo,
+  ProducedEventsInfoSchema,
   VersatileDatetimeParametersBody,
   VersatileDatetimeResponse,
   VersatileDatetimeResponseSchema,
@@ -31,6 +35,27 @@ export async function generateTimestamps(
         },
       }
     )
+  );
+}
+
+export async function initializeEventPlugin(
+  name: string,
+  eventPluginConfig: EventPluginNamedConfig
+) {
+  await apiClient.post(`/preview/${name}/event-plugin`, eventPluginConfig);
+}
+
+export async function releaseEventPlugin(name: string) {
+  await apiClient.delete(`/preview/${name}/event-plugin`);
+}
+
+export async function produceEvents(
+  name: string,
+  produceParams: ProduceParams
+): Promise<ProducedEventsInfo> {
+  return await validateResponse(
+    ProducedEventsInfoSchema,
+    apiClient.post(`/preview/${name}/event-plugin/produce`, produceParams)
   );
 }
 
