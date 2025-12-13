@@ -1,6 +1,7 @@
 import { Box, Stack, Tabs } from '@mantine/core';
 import { FC } from 'react';
 
+import { DebuggerTab } from './DebuggerTab';
 import { EditorTab } from './EditorTab';
 
 export const TemplateEventPluginWorkspace: FC = () => {
@@ -16,7 +17,9 @@ export const TemplateEventPluginWorkspace: FC = () => {
           <Tabs.Panel value="editor">
             <EditorTab />
           </Tabs.Panel>
-          <Tabs.Panel value="debugger">debugger</Tabs.Panel>
+          <Tabs.Panel value="debugger">
+            <DebuggerTab />
+          </Tabs.Panel>
         </Box>
       </Tabs>
     </Stack>
