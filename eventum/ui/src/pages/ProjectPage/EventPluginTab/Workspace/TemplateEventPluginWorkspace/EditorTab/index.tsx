@@ -68,7 +68,7 @@ export const EditorTab: FC = () => {
         </Alert>
       )}
 
-      {isFileTreeSuccess && (
+      {isFileTreeSuccess && templateFileList.length > 0 ? (
         <Stack gap="4px">
           <ScrollArea type="hover" offsetScrollbars="x" scrollbarSize="5px">
             <SegmentedControl
@@ -116,16 +116,22 @@ export const EditorTab: FC = () => {
               key={selectedTemplate}
             />
           ) : (
-            <>
+            <Stack>
               <Divider />
               <Center>
                 <Text size="sm" c="gray.6">
-                  No template
+                  No template selected
                 </Text>
               </Center>
-            </>
+            </Stack>
           )}
         </Stack>
+      ) : (
+        <Center>
+          <Text size="sm" c="gray.6">
+            No templates
+          </Text>
+        </Center>
       )}
     </Stack>
   );
