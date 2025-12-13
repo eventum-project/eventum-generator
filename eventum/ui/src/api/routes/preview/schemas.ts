@@ -11,7 +11,7 @@ export const AggregatedTimestampsSchema = z.object({
 export type AggregatedTimestamps = z.infer<typeof AggregatedTimestampsSchema>;
 
 export const ProduceParamsSchema = z.object({
-  timestamp: z.date(),
+  timestamp: z.string(),
   tags: z.string().array(),
 });
 export type ProduceParams = z.infer<typeof ProduceParamsSchema>;
