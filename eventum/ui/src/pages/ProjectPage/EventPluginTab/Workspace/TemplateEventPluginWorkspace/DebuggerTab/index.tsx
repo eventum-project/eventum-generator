@@ -49,7 +49,10 @@ export const DebuggerTab: FC = () => {
       timestamp: isNotEmpty('Timestamp is required'),
       eventsCount: isNotEmpty('Event count is required'),
     },
+    validateInputOnBlur: true,
+    onSubmitPreventDefault: 'always',
   });
+
   const { projectName } = useProjectName();
   const produceEvents = useProduceEventsMutation();
 
@@ -143,11 +146,13 @@ export const DebuggerTab: FC = () => {
         onSuccess: (data) => {
           setProducedEventsInfo(data);
 
-          notifications.show({
-            title: 'Info',
-            message: 'Plugin is exhausted',
-            color: 'blue',
-          });
+          if (data.exhausted) {
+            notifications.show({
+              title: 'Info',
+              message: 'Plugin is exhausted',
+              color: 'blue',
+            });
+          }
 
           if (produceParamsForm.getValues().autoTimestamp) {
             produceParamsForm.setFieldValue(
@@ -223,26 +228,30 @@ export const DebuggerTab: FC = () => {
           />
         </Group>
         <Group wrap="nowrap">
-          <Button
-            variant="default"
-            title="Start debugging with new instance of event plugin"
-            leftSection={<IconBug size={16} />}
-            disabled={isPluginInitialized || produceEvents.isPending}
-            loading={initializePlugin.isPending}
-            onClick={handleStart}
-          >
-            Start
-          </Button>
-          <Button
-            variant="default"
-            title="Stop debugging"
-            leftSection={<IconBugOff size={16} />}
-            disabled={!isPluginInitialized || produceEvents.isPending}
-            loading={releasePlugin.isPending}
-            onClick={handleStop}
-          >
-            Stop
-          </Button>
+          {!isPluginInitialized && (
+            <Button
+              variant="default"
+              title="Start debugging with new instance of event plugin"
+              leftSection={<IconBug size={16} />}
+              disabled={isPluginInitialized || produceEvents.isPending}
+              loading={initializePlugin.isPending}
+              onClick={handleStart}
+            >
+              Start
+            </Button>
+          )}
+          {isPluginInitialized && (
+            <Button
+              variant="default"
+              title="Stop debugging"
+              leftSection={<IconBugOff size={16} />}
+              disabled={!isPluginInitialized || produceEvents.isPending}
+              loading={releasePlugin.isPending}
+              onClick={handleStop}
+            >
+              Stop
+            </Button>
+          )}
           <Button
             variant="default"
             title="Produce event using provided parameters"
