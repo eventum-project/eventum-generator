@@ -159,12 +159,8 @@ def test_sha256():
 
 # ---- Datetime Namespace ----
 def test_timestamp():
-    start = '2022-01-01T00:00:00'
-    end = '2023-01-01T00:00:00'
+    start = dt.datetime.fromisoformat('2022-01-01T00:00:00')
+    end = dt.datetime.fromisoformat('2023-01-01T00:00:00')
     ts = rand.datetime.timestamp(start, end)
-    ts_dt = dt.datetime.fromisoformat(ts)
 
-    start_dt = dt.datetime.fromisoformat(start)
-    end_dt = dt.datetime.fromisoformat(end)
-
-    assert start_dt <= ts_dt <= end_dt
+    assert start <= ts <= end

@@ -219,13 +219,8 @@ class datetime:  # noqa: N801
     """Namespace for generating random dates."""
 
     @staticmethod
-    def timestamp(start: str, end: str) -> str:
+    def timestamp(start: dt.datetime, end: dt.datetime) -> dt.datetime:
         """Return random timestamp in range [start; end]."""
-        start_date = dt.datetime.fromisoformat(start)
-        end_date = dt.datetime.fromisoformat(end)
+        delta_seconds = (end - start).total_seconds()
 
-        delta_seconds = (end_date - start_date).total_seconds()
-
-        return (
-            start_date + dt.timedelta(seconds=random.uniform(0, delta_seconds))
-        ).isoformat()
+        return start + dt.timedelta(seconds=random.uniform(0, delta_seconds))
