@@ -75,6 +75,22 @@ const namespaceCompletions: NamespaceMember = {
     detail: 'Global',
   },
   members: {
+    timestamp: {
+      completion: {
+        label: 'timestamp',
+        type: 'variable',
+        detail: 'Timestamp of the event',
+        info: 'datetime',
+      },
+    },
+    tags: {
+      completion: {
+        label: 'tags',
+        type: 'variable',
+        detail: 'Tags of input plugin that caused event',
+        info: 'list[str]',
+      },
+    },
     params: {
       completion: {
         label: 'params',
@@ -404,7 +420,7 @@ const namespaceCompletions: NamespaceMember = {
                     label: 'timestamp',
                     type: 'function',
                     detail: 'Return random timestamp in range [start; end].',
-                    info: '(start: str, end: str) -> str',
+                    info: '(start: datetime, end: datetime) -> datetime',
                   },
                 },
               },
