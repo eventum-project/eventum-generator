@@ -10,7 +10,7 @@ import {
   releaseEventPlugin,
 } from '../routes/preview';
 import {
-  ProduceParams,
+  ProduceParamsBody,
   VersatileDatetimeParametersBody,
 } from '../routes/preview/schemas';
 
@@ -67,7 +67,7 @@ export function useProduceEventsMutation() {
       produceParams,
     }: {
       name: string;
-      produceParams: ProduceParams;
+      produceParams: ProduceParamsBody;
     }) => produceEvents(name, produceParams),
   });
 }

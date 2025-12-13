@@ -3,7 +3,7 @@ import { EventPluginNamedConfig } from '../generator-configs/schemas/plugins/eve
 import {
   AggregatedTimestamps,
   AggregatedTimestampsSchema,
-  ProduceParams,
+  ProduceParamsBody,
   ProducedEventsInfo,
   ProducedEventsInfoSchema,
   VersatileDatetimeParametersBody,
@@ -51,7 +51,7 @@ export async function releaseEventPlugin(name: string) {
 
 export async function produceEvents(
   name: string,
-  produceParams: ProduceParams
+  produceParams: ProduceParamsBody
 ): Promise<ProducedEventsInfo> {
   return await validateResponse(
     ProducedEventsInfoSchema,

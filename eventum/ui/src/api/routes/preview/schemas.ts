@@ -15,6 +15,8 @@ export const ProduceParamsSchema = z.object({
   tags: z.string().array(),
 });
 export type ProduceParams = z.infer<typeof ProduceParamsSchema>;
+export const ProduceParamsBodySchema = ProduceParamsSchema.array();
+export type ProduceParamsBody = z.infer<typeof ProduceParamsBodySchema>;
 
 const ProduceEventErrorInfoSchema = z.object({
   index: z.int().gte(0),
