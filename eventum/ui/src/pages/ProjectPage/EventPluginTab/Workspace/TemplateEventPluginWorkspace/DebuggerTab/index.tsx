@@ -7,6 +7,7 @@ import {
   Divider,
   Group,
   NumberInput,
+  Select,
   Stack,
   TagsInput,
   Text,
@@ -64,6 +65,10 @@ export const DebuggerTab: FC = () => {
 
   const [producedEventsInfo, setProducedEventsInfo] =
     useState<ProducedEventsInfo>();
+
+  const [syntaxHighlighting, setSyntaxHighlighting] = useState<string | null>(
+    null
+  );
 
   function handleStart() {
     const pluginConfig = getPluginConfig();
@@ -278,12 +283,29 @@ export const DebuggerTab: FC = () => {
             </Text>
             <Divider />
           </Stack>
+          <Select
+            data={[
+              'csv',
+              'json',
+              'log',
+              'markdown',
+              'toml',
+              'tsv',
+              'xml',
+              'yaml',
+            ]}
+            value={syntaxHighlighting}
+            onChange={setSyntaxHighlighting}
+            label="Syntax highlighting"
+            maw="200px"
+            clearable
+          />
           {producedEventsInfo.events.length > 0 ? (
             producedEventsInfo.events.map((event) => (
               <CodeHighlight
                 key={nanoid()}
                 code={event}
-                language="json"
+                language={syntaxHighlighting ?? undefined}
                 defaultExpanded
                 withExpandButton
                 collapseCodeLabel="Collapse"
