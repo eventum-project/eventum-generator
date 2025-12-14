@@ -1,8 +1,8 @@
 import { Box, Stack, Tabs } from '@mantine/core';
 import { FC } from 'react';
 
-import { DebuggerTab } from './DebuggerTab';
-import { EditorTab } from './EditorTab';
+import { DebuggerTab } from '../DebuggerTab';
+import { EditorTab } from '../EditorTab';
 
 export const TemplateEventPluginWorkspace: FC = () => {
   return (

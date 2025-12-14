@@ -19,7 +19,7 @@ import { IconBug, IconBugOff, IconPlayerPlay } from '@tabler/icons-react';
 import { nanoid } from 'nanoid';
 import { FC, useState } from 'react';
 
-import { useGetPluginConfig } from '../../../hooks/useGetPluginConfig';
+import { useGetPluginConfig } from '../../hooks/useGetPluginConfig';
 import {
   useInitializeEventPluginMutation,
   useProduceEventsMutation,
