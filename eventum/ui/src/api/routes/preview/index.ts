@@ -6,6 +6,8 @@ import {
   ProduceParamsBody,
   ProducedEventsInfo,
   ProducedEventsInfoSchema,
+  TemplateEventPluginState,
+  TemplateEventPluginStateSchema,
   VersatileDatetimeParametersBody,
   VersatileDatetimeResponse,
   VersatileDatetimeResponseSchema,
@@ -57,6 +59,84 @@ export async function produceEvents(
     ProducedEventsInfoSchema,
     apiClient.post(`/preview/${name}/event-plugin/produce`, produceParams)
   );
+}
+
+export async function getTemplateEventPluginLocalState(
+  name: string,
+  templateAlias: string
+): Promise<TemplateEventPluginState> {
+  return await validateResponse(
+    TemplateEventPluginStateSchema,
+    apiClient.get(
+      `/preview/${name}/event-plugin/template/state/local/${templateAlias}`
+    )
+  );
+}
+
+export async function updateTemplateEventPluginLocalState(
+  name: string,
+  templateAlias: string,
+  state: TemplateEventPluginState
+) {
+  await apiClient.patch(
+    `/preview/${name}/event-plugin/template/state/local/${templateAlias}`,
+    state
+  );
+}
+
+export async function clearTemplateEventPluginLocalState(
+  name: string,
+  templateAlias: string
+) {
+  await apiClient.delete(
+    `/preview/${name}/event-plugin/template/state/local/${templateAlias}`
+  );
+}
+
+export async function getTemplateEventPluginSharedState(
+  name: string
+): Promise<TemplateEventPluginState> {
+  return await validateResponse(
+    TemplateEventPluginStateSchema,
+    apiClient.get(`/preview/${name}/event-plugin/template/state/shared`)
+  );
+}
+
+export async function updateTemplateEventPluginSharedState(
+  name: string,
+  state: TemplateEventPluginState
+) {
+  await apiClient.patch(
+    `/preview/${name}/event-plugin/template/state/shared`,
+    state
+  );
+}
+
+export async function clearTemplateEventPluginSharedState(name: string) {
+  await apiClient.delete(`/preview/${name}/event-plugin/template/state/shared`);
+}
+
+export async function getTemplateEventPluginGlobalState(
+  name: string
+): Promise<TemplateEventPluginState> {
+  return await validateResponse(
+    TemplateEventPluginStateSchema,
+    apiClient.get(`/preview/${name}/event-plugin/template/state/global`)
+  );
+}
+
+export async function updateTemplateEventPluginGlobalState(
+  name: string,
+  state: TemplateEventPluginState
+) {
+  await apiClient.patch(
+    `/preview/${name}/event-plugin/template/state/global`,
+    state
+  );
+}
+
+export async function clearTemplateEventPluginGlobalState(name: string) {
+  await apiClient.delete(`/preview/${name}/event-plugin/template/state/global`);
 }
 
 export async function normalizeVersatileDatetime(

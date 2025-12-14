@@ -30,6 +30,11 @@ export const ProducedEventsInfoSchema = z.object({
 });
 export type ProducedEventsInfo = z.infer<typeof ProducedEventsInfoSchema>;
 
+export const TemplateEventPluginStateSchema = z.object();
+export type TemplateEventPluginState = z.infer<
+  typeof TemplateEventPluginStateSchema
+>;
+
 export const VersatileDatetimeParametersBodySchema = z.object({
   value: z.string().nullable().optional(),
   timezone: z.string().min(1),
