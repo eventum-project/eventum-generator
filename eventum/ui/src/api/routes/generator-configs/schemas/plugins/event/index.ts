@@ -10,11 +10,11 @@ import {
 } from './configs/script';
 import {
   TemplateEventPluginConfigSchema,
-  TemplateEventPluginNamedConfig,
+  TemplateEventPluginNamedConfigSchema,
 } from './configs/template';
 
 export const EventPluginNamedConfigSchema = z.union([
-  TemplateEventPluginNamedConfig,
+  TemplateEventPluginNamedConfigSchema,
   ReplayEventPluginNamedConfigSchema,
   ScriptEventPluginNamedConfigSchema,
 ]);

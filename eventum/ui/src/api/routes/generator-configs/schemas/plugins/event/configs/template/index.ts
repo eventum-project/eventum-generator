@@ -126,6 +126,6 @@ export const TemplateEventPluginConfigSchema = z.discriminatedUnion('mode', [
 export type TemplateEventPluginConfig = z.infer<
   typeof TemplateEventPluginConfigSchema
 >;
-export const TemplateEventPluginNamedConfig = z.object({
+export const TemplateEventPluginNamedConfigSchema = z.object({
   template: TemplateEventPluginConfigSchema,
 });
