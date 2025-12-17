@@ -78,7 +78,7 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
         error={
           typeof form.errors.templates === 'string' &&
           form.errors.templates.includes('jinja') &&
-          form.errors.templates
+          `${form.errors.templates.replace('Invalid string', 'Invalid for some of the templates')}`
         }
       />
 
@@ -111,7 +111,7 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
           error={
             typeof form.errors.templates === 'string' &&
             form.errors.templates.includes('number') &&
-            form.errors.templates
+            `${form.errors.templates.replace('Invalid input', 'Invalid input for some of the templates')}`
           }
         />
       )}
@@ -220,7 +220,7 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
               }}
               error={
                 form.errors.templates === 'Invalid input' &&
-                'Invalid expression'
+                'Invalid input for some of the templates: Invalid expression'
               }
             />
           </Stack>
