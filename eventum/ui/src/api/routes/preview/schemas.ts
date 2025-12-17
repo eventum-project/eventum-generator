@@ -30,7 +30,7 @@ export const ProducedEventsInfoSchema = z.object({
 });
 export type ProducedEventsInfo = z.infer<typeof ProducedEventsInfoSchema>;
 
-export const TemplateEventPluginStateSchema = z.object();
+export const TemplateEventPluginStateSchema = z.record(z.string(), z.any());
 export type TemplateEventPluginState = z.infer<
   typeof TemplateEventPluginStateSchema
 >;
