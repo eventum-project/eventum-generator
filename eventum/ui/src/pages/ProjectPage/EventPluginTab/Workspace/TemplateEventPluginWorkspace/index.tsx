@@ -17,7 +17,7 @@ export const TemplateEventPluginWorkspace: FC = () => {
 
         <Box mt="md">
           <Tabs.Panel value="editor">
-            <EditorTab />
+            <EditorTab fileType="jinja" />
           </Tabs.Panel>
           <Tabs.Panel value="debugger">
             <DebuggerTab />

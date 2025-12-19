@@ -15,7 +15,7 @@ export const ScriptEventPluginWorkspace: FC = () => {
 
         <Box mt="md">
           <Tabs.Panel value="editor">
-            <EditorTab />
+            <EditorTab fileType="python" />
           </Tabs.Panel>
           <Tabs.Panel value="debugger">
             <DebuggerTab />
