@@ -18,7 +18,6 @@ import {
   IconArrowsSplit2,
   IconClockPlay,
   IconCube,
-  IconFiles,
 } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -106,9 +105,6 @@ export default function ProjectPage() {
                 >
                   Output plugins
                 </Tabs.Tab>
-                <Tabs.Tab value="assets" leftSection={<IconFiles size={14} />}>
-                  Assets
-                </Tabs.Tab>
               </Tabs.List>
 
               <Box mt="md">
@@ -119,7 +115,6 @@ export default function ProjectPage() {
                   <EventPluginTab eventPluginConfig={generatorConfig.event} />
                 </Tabs.Panel>
                 <Tabs.Panel value="output">Output plugins</Tabs.Panel>
-                <Tabs.Panel value="assets">Assets</Tabs.Panel>
               </Box>
             </Tabs>
           </Stack>
