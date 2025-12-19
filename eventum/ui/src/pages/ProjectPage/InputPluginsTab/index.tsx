@@ -1,6 +1,7 @@
 import { Center, Divider, Grid, Stack, Text } from '@mantine/core';
 import { FC, useCallback, useRef, useState } from 'react';
 
+import { FileTree } from '../FileTree';
 import { InputPluginsList } from '../PluginsList';
 import { InputPluginParams } from './InputPluginParams';
 import TimestampsHistogram from './TimestampsHistogram';
@@ -88,6 +89,10 @@ export const InputPluginsTab: FC<InputPluginsTabProps> = ({
     <Grid gutter="lg">
       <Grid.Col span={2}>
         <Stack>
+          <Text size="sm" fw="bold">
+            Plugin list
+          </Text>
+          <Divider />
           <InputPluginsList
             type="input"
             plugins={pluginNames}
@@ -96,6 +101,11 @@ export const InputPluginsTab: FC<InputPluginsTabProps> = ({
             onAddNewPlugin={handleAddNewPlugin}
             onDeletePlugin={handleDeletePlugin}
           />
+          <Text size="sm" fw="bold">
+            File tree
+          </Text>
+          <Divider />
+          <FileTree />
         </Stack>
       </Grid.Col>
       <Grid.Col span={7}>
