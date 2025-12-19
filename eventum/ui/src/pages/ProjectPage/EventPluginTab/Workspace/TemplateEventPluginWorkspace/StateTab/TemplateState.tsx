@@ -18,21 +18,46 @@ import {
 import { FC, useEffect } from 'react';
 
 import {
+  useClearTemplateEventPluginGlobalStateMutation,
   useClearTemplateEventPluginLocalStateMutation,
+  useClearTemplateEventPluginSharedStateMutation,
+  useTemplateEventPluginGlobalState,
   useTemplateEventPluginLocalState,
+  useTemplateEventPluginSharedState,
+  useUpdateTemplateEventPluginGlobalStateMutation,
   useUpdateTemplateEventPluginLocalStateMutation,
+  useUpdateTemplateEventPluginSharedStateMutation,
 } from '@/api/hooks/usePreview';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
 
-interface LocalStateProps {
-  template: string;
+interface TemplateStateProps {
+  stateName: string;
+  templateAlias: string;
+  useTemplateEventPluginState:
+    | typeof useTemplateEventPluginLocalState
+    | typeof useTemplateEventPluginSharedState
+    | typeof useTemplateEventPluginGlobalState;
+  useUpdateTemplateEventPluginStateMutation:
+    | typeof useUpdateTemplateEventPluginLocalStateMutation
+    | typeof useUpdateTemplateEventPluginSharedStateMutation
+    | typeof useUpdateTemplateEventPluginGlobalStateMutation;
+  useClearTemplateEventPluginStateMutation:
+    | typeof useClearTemplateEventPluginLocalStateMutation
+    | typeof useClearTemplateEventPluginSharedStateMutation
+    | typeof useClearTemplateEventPluginGlobalStateMutation;
 }
 
-export const LocalState: FC<LocalStateProps> = ({ template }) => {
+export const TemplateState: FC<TemplateStateProps> = ({
+  stateName,
+  templateAlias,
+  useTemplateEventPluginState,
+  useUpdateTemplateEventPluginStateMutation,
+  useClearTemplateEventPluginStateMutation,
+}) => {
   const { projectName } = useProjectName();
   const { data, isLoading, isError, error, isSuccess, refetch } =
-    useTemplateEventPluginLocalState(projectName, template);
+    useTemplateEventPluginState(projectName, templateAlias);
 
   const field = useField<string | undefined>({
     initialValue: undefined,
@@ -54,14 +79,14 @@ export const LocalState: FC<LocalStateProps> = ({ template }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, isSuccess]);
 
-  const updateState = useUpdateTemplateEventPluginLocalStateMutation();
-  const clearState = useClearTemplateEventPluginLocalStateMutation();
+  const updateState = useUpdateTemplateEventPluginStateMutation();
+  const clearState = useClearTemplateEventPluginStateMutation();
 
   function handleUpdate() {
     const state = JSON.parse(field.getValue() ?? '{}') as Record<string, never>;
 
     updateState.mutate(
-      { name: projectName, templateAlias: template, state: state },
+      { name: projectName, templateAlias: templateAlias, state: state },
       {
         onSuccess: () => {
           notifications.show({
@@ -88,7 +113,7 @@ export const LocalState: FC<LocalStateProps> = ({ template }) => {
 
   function handleClear() {
     clearState.mutate(
-      { name: projectName, templateAlias: template },
+      { name: projectName, templateAlias: templateAlias },
       {
         onSuccess: () => {
           notifications.show({
@@ -130,7 +155,7 @@ export const LocalState: FC<LocalStateProps> = ({ template }) => {
 
       {isSuccess && (
         <JsonInput
-          label="Local state"
+          label={stateName}
           placeholder="{ ... }"
           validationError="Invalid JSON"
           minRows={4}
