@@ -1,4 +1,11 @@
-import { ActionIcon, Button, NavLink, Stack, Text } from '@mantine/core';
+import {
+  ActionIcon,
+  Button,
+  Center,
+  NavLink,
+  Stack,
+  Text,
+} from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { Icon, IconPlus, IconTrash } from '@tabler/icons-react';
 import { memo } from 'react';
@@ -79,6 +86,13 @@ const PluginsList = <T extends PluginType>({
   return (
     <Stack>
       <Stack gap="xs">
+        {plugins.length === 0 && (
+          <Center>
+            <Text size="sm" c="gray.6">
+              No plugins added
+            </Text>
+          </Center>
+        )}
         {plugins.map((item, idx) => (
           <NavLink
             key={idx}
