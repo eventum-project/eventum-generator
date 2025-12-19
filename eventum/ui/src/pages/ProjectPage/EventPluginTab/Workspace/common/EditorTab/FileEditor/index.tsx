@@ -1,5 +1,6 @@
 import { autocompletion } from '@codemirror/autocomplete';
 import { jinja } from '@codemirror/lang-jinja';
+import { python } from '@codemirror/lang-python';
 import { keymap } from '@codemirror/view';
 import {
   Alert,
@@ -22,24 +23,26 @@ import {
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
 
-interface TemplateEditorProps {
-  templatePath: string;
+export interface FileEditorProps {
+  fileType: 'jinja' | 'python';
+  filePath: string;
   setSaved: (saved: boolean) => void;
 }
 
-export const TemplateEditor: FC<TemplateEditorProps> = ({
-  templatePath,
+export const FileEditor: FC<FileEditorProps> = ({
+  fileType,
+  filePath,
   setSaved,
 }) => {
   const { colorScheme } = useMantineColorScheme();
   const { projectName } = useProjectName();
   const {
-    data: templateContent,
+    data: fileContent,
     isLoading: isContentLoading,
     isError: isContentError,
     error: contentError,
     isSuccess: isContentSuccess,
-  } = useGeneratorFileContent(projectName, templatePath);
+  } = useGeneratorFileContent(projectName, filePath);
   const updateFile = usePutGeneratorFileMutation();
 
   const [content, setContent] = useState<string>('');
@@ -47,11 +50,11 @@ export const TemplateEditor: FC<TemplateEditorProps> = ({
 
   useEffect(() => {
     if (isContentSuccess) {
-      setContent(templateContent);
+      setContent(fileContent);
       setTouched(false);
       setSaved(true);
     }
-  }, [setSaved, templateContent, isContentSuccess]);
+  }, [setSaved, fileContent, isContentSuccess]);
 
   useEffect(() => {
     if (isTouched) {
@@ -61,7 +64,7 @@ export const TemplateEditor: FC<TemplateEditorProps> = ({
 
   function handleSave() {
     updateFile.mutate(
-      { name: projectName, filepath: templatePath, content: content },
+      { name: projectName, filepath: filePath, content: content },
       {
         onSuccess: () => {
           setSaved(true);
@@ -94,6 +97,21 @@ export const TemplateEditor: FC<TemplateEditorProps> = ({
     },
   ]);
 
+  const extensions = [];
+
+  if (fileType === 'jinja') {
+    extensions.push(
+      jinja(),
+      autocompletion({
+        override: [jinjaCompletion],
+      })
+    );
+  } else if (fileType === 'python') {
+    extensions.push(python());
+  }
+
+  extensions.push(saveKeymap);
+
   if (isContentLoading) {
     return <Skeleton h="60vh" />;
   }
@@ -103,7 +121,7 @@ export const TemplateEditor: FC<TemplateEditorProps> = ({
       <Alert
         variant="default"
         icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
-        title="Failed to load template content"
+        title="Failed to load file content"
       >
         {contentError.message}
         <ShowErrorDetailsAnchor error={contentError} prependDot />
@@ -124,13 +142,7 @@ export const TemplateEditor: FC<TemplateEditorProps> = ({
             }
           }}
           height="65vh"
-          extensions={[
-            jinja(),
-            autocompletion({
-              override: [jinjaCompletion],
-            }),
-            saveKeymap,
-          ]}
+          extensions={extensions}
           theme={colorScheme === 'dark' ? vscodeDark : vscodeLight}
         />
       </Stack>

@@ -11,16 +11,25 @@ import {
   Text,
 } from '@mantine/core';
 import { modals } from '@mantine/modals';
-import { IconAlertSquareRounded, IconPointFilled } from '@tabler/icons-react';
+import {
+  IconAlertSquareRounded,
+  IconBrandPython,
+  IconPointFilled,
+} from '@tabler/icons-react';
 import { FC, useMemo, useState } from 'react';
 
-import { TemplateEditor } from './TemplateEditor';
+import { FileEditor, FileEditorProps } from './FileEditor';
 import { useGeneratorFileTree } from '@/api/hooks/useGeneratorConfigs';
 import { flattenFileTree } from '@/api/routes/generator-configs/modules/file-tree';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
+import { IconJinja } from '@/components/ui/icons/IconJinja';
 import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
 
-export const EditorTab: FC = () => {
+interface EditorTabProps {
+  fileType: FileEditorProps['fileType'];
+}
+
+export const EditorTab: FC<EditorTabProps> = ({ fileType }) => {
   const { projectName } = useProjectName();
   const {
     data: fileTree,
@@ -30,24 +39,22 @@ export const EditorTab: FC = () => {
     isSuccess: isFileTreeSuccess,
   } = useGeneratorFileTree(projectName);
 
-  const [selectedTemplate, setSelectedTemplate] = useState<
-    string | undefined
-  >();
+  const [selectedFile, setSelectedFile] = useState<string | undefined>();
 
-  const templateFileList = useMemo(() => {
+  const fileList = useMemo(() => {
     if (isFileTreeSuccess) {
       const files = flattenFileTree(fileTree, true).filter((item) =>
-        item.endsWith('.jinja')
+        item.endsWith(fileType === 'jinja' ? '.jinja' : '.py')
       );
 
-      setSelectedTemplate((prevValue) => prevValue ?? files[0]);
+      setSelectedFile((prevValue) => prevValue ?? files[0]);
 
       return files;
     } else {
       return [];
     }
-  }, [fileTree, isFileTreeSuccess, setSelectedTemplate]);
-  const [isSelectedTemplateSaved, setSelectedTemplateSaved] = useState(true);
+  }, [fileType, fileTree, isFileTreeSuccess, setSelectedFile]);
+  const [isSelectedFileSaved, setSelectedFileSaved] = useState(true);
 
   return (
     <Stack>
@@ -68,59 +75,61 @@ export const EditorTab: FC = () => {
         </Alert>
       )}
 
-      {isFileTreeSuccess && templateFileList.length > 0 ? (
+      {isFileTreeSuccess && fileList.length > 0 ? (
         <Stack gap="4px">
           <ScrollArea type="hover" offsetScrollbars="x" scrollbarSize="5px">
             <SegmentedControl
-              data={templateFileList.map((item) => ({
+              data={fileList.map((item) => ({
                 label: (
                   <Center>
                     <Group gap="4px" wrap="nowrap">
+                      {fileType === 'jinja' && <IconJinja size={14} />}
+                      {fileType === 'python' && <IconBrandPython size={14} />}
                       <span>{item}</span>
-                      {!isSelectedTemplateSaved &&
-                        item === selectedTemplate && (
-                          <IconPointFilled size={20} />
-                        )}
+                      {!isSelectedFileSaved && item === selectedFile && (
+                        <IconPointFilled size={20} />
+                      )}
                     </Group>
                   </Center>
                 ),
                 value: item,
               }))}
-              value={selectedTemplate}
+              value={selectedFile}
               onChange={(value) => {
-                if (!isSelectedTemplateSaved) {
+                if (!isSelectedFileSaved) {
                   modals.openConfirmModal({
                     title: 'Unsaved changes',
                     children: (
                       <Text size="sm">
-                        All unsaved changes in <b>{selectedTemplate}</b> will be
+                        All unsaved changes in <b>{selectedFile}</b> will be
                         lost. Do you want to continue?
                       </Text>
                     ),
                     labels: { confirm: 'Confirm', cancel: 'Cancel' },
                     onConfirm: () => {
-                      setSelectedTemplateSaved(true);
-                      setSelectedTemplate(value);
+                      setSelectedFileSaved(true);
+                      setSelectedFile(value);
                     },
                   });
                 } else {
-                  setSelectedTemplate(value);
+                  setSelectedFile(value);
                 }
               }}
             />
           </ScrollArea>
-          {selectedTemplate !== undefined ? (
-            <TemplateEditor
-              templatePath={selectedTemplate}
-              setSaved={setSelectedTemplateSaved}
-              key={selectedTemplate}
+          {selectedFile !== undefined ? (
+            <FileEditor
+              fileType={fileType}
+              filePath={selectedFile}
+              setSaved={setSelectedFileSaved}
+              key={selectedFile}
             />
           ) : (
             <Stack>
               <Divider />
               <Center>
                 <Text size="sm" c="gray.6">
-                  No template selected
+                  No file selected
                 </Text>
               </Center>
             </Stack>
@@ -129,7 +138,7 @@ export const EditorTab: FC = () => {
       ) : (
         <Center>
           <Text size="sm" c="gray.6">
-            No templates
+            No files
           </Text>
         </Center>
       )}
