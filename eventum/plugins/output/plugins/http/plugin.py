@@ -102,7 +102,7 @@ class HttpOutputPlugin(
                 msg,
                 context={
                     'reason': str(e),
-                    'url': self._config.url,
+                    'url': str(self._config.url),
                 },
             ) from e
 
@@ -115,7 +115,7 @@ class HttpOutputPlugin(
                 context={
                     'http_status': response.status_code,
                     'reason': text,
-                    'url': self._config.url,
+                    'url': str(self._config.url),
                 },
             )
 

@@ -206,7 +206,7 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
             msg = 'Missing required parameter'
             raise PluginConfigurationError(
                 msg,
-                context=dict(**context, reason=str(e)),
+                context=dict(context, reason=str(e)),
             ) from None
 
     def __str__(self) -> str:

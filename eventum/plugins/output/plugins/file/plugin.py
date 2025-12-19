@@ -163,7 +163,7 @@ class FileOutputPlugin(
                 msg,
                 context={
                     'reason': str(e),
-                    'file_path': self._filepath,
+                    'file_path': str(self._filepath),
                 },
             ) from e
 
@@ -172,7 +172,7 @@ class FileOutputPlugin(
             raise PluginOpenError(
                 msg,
                 context={
-                    'file_path': self._filepath,
+                    'file_path': str(self._filepath),
                 },
             )
 
@@ -201,7 +201,7 @@ class FileOutputPlugin(
                         msg,
                         context={
                             'reason': str(e),
-                            'file_path': self._filepath,
+                            'file_path': str(self._filepath),
                         },
                     ) from e
 
@@ -218,7 +218,7 @@ class FileOutputPlugin(
                     msg,
                     context={
                         'reason': str(e),
-                        'file_path': self._filepath,
+                        'file_path': str(self._filepath),
                     },
                 ) from e
             finally:

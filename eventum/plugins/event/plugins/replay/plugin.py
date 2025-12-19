@@ -54,7 +54,7 @@ class ReplayEventPlugin(
             msg = 'File does not exist'
             raise PluginConfigurationError(
                 msg,
-                context={'file_path': self._filepath},
+                context={'file_path': str(self._filepath)},
             )
 
     def _initialize_pattern(self) -> re.Pattern | None:
@@ -117,7 +117,7 @@ class ReplayEventPlugin(
                 msg,
                 context={
                     'reason': str(e),
-                    'file_path': self._filepath,
+                    'file_path': str(self._filepath),
                 },
             ) from None
 

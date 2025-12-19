@@ -183,7 +183,7 @@ class App:
             raise AppError(
                 msg,
                 context={
-                    'file_path': self._settings.path.startup,
+                    'file_path': str(self._settings.path.startup),
                     'reason': str(e),
                 },
             ) from None
@@ -196,7 +196,7 @@ class App:
             raise AppError(
                 msg,
                 context={
-                    'file_path': self._settings.path.startup,
+                    'file_path': str(self._settings.path.startup),
                     'reason': str(e),
                 },
             ) from None

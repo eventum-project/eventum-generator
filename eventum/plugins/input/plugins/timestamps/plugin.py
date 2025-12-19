@@ -47,9 +47,14 @@ class TimestampsInputPlugin(
 
         if not timestamps:
             msg = 'Timestamps sequence is empty'
+            if isinstance(config.source, list):
+                context = {}
+            else:
+                context = {'file_path': str(config.source)}
+
             raise PluginConfigurationError(
                 msg,
-                context={'file_path': config.source},
+                context=context,
             )
 
         self._timestamps: NDArray[datetime64] = array(
@@ -90,7 +95,7 @@ class TimestampsInputPlugin(
             raise PluginConfigurationError(
                 msg,
                 context={
-                    'file_path': filename,
+                    'file_path': str(filename),
                     'reason': str(e),
                 },
             ) from None
