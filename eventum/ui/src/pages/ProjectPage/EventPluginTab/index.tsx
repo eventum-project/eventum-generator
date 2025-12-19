@@ -73,7 +73,11 @@ export const EventPluginTab: FC<EventPluginTabProps> = ({
             </Center>
           ) : (
             <GetPluginConfigProvider getPluginConfig={() => pluginsConfig[0]!}>
-              <Workspace />
+              <Workspace
+                pluginName={
+                  Object.keys(pluginsConfig[0]!)[0] as EventPluginName
+                }
+              />
             </GetPluginConfigProvider>
           )}
         </Stack>
