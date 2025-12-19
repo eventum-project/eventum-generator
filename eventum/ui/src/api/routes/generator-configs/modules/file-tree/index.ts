@@ -1,10 +1,4 @@
-import { FileNodesList } from '../../schemas';
-
-interface FileNode {
-  name: string;
-  is_dir: boolean;
-  children: object[];
-}
+import { FileNode, FileNodesList } from '../../schemas';
 
 export function flattenFileTree(
   fileTree: FileNodesList,
@@ -18,7 +12,7 @@ export function flattenFileTree(
     if (node.is_dir) {
       if (node.children) {
         for (const child of node.children) {
-          traverse(child as FileNode, currentPath);
+          traverse(child, currentPath);
         }
       } else if (!filesOnly) {
         result.push(currentPath);
@@ -33,4 +27,39 @@ export function flattenFileTree(
   }
 
   return result;
+}
+
+export function createFileTreeLookup(fileTree: FileNode[]) {
+  const items = new Map<string, FileNode>();
+  const children = new Map<string, string[]>();
+
+  children.set('.', []);
+
+  function traverse(node: FileNode, parentPath: string) {
+    const currentPath = `${parentPath}/${node.name}`;
+
+    items.set(currentPath, node);
+
+    if (!children.has(parentPath)) {
+      children.set(parentPath, []);
+    }
+
+    children.get(parentPath)!.push(currentPath);
+
+    if (node.is_dir) {
+      children.set(currentPath, []);
+
+      if (node.children) {
+        for (const child of node.children) {
+          traverse(child, currentPath);
+        }
+      }
+    }
+  }
+
+  for (const node of fileTree) {
+    traverse(node, '.');
+  }
+
+  return { items, children };
 }

@@ -48,6 +48,12 @@ const FileNodeSchema: z.ZodType = z.lazy(() =>
     children: z.array(FileNodeSchema).nullable().optional(),
   })
 );
+export interface FileNode {
+  name: string;
+  is_dir: boolean;
+  children: FileNode[] | null;
+}
+
 export const FileNodesListSchema = z.array(FileNodeSchema);
 export type FileNodesList = z.infer<typeof FileNodesListSchema>;
 
