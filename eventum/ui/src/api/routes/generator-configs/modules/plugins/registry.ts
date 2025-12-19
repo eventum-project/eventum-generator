@@ -14,18 +14,12 @@ import {
   IconTimeDuration45,
 } from '@tabler/icons-react';
 
-import {
-  EventPluginConfig,
-  EventPluginName,
-} from '../../schemas/plugins/event';
-import {
-  InputPluginConfig,
-  InputPluginName,
-} from '../../schemas/plugins/input';
-import {
-  OutputPluginConfig,
-  OutputPluginName,
-} from '../../schemas/plugins/output';
+import { EventPluginConfig } from '../../schemas/plugins/event';
+import { EventPluginName } from '../../schemas/plugins/event/base-config';
+import { InputPluginConfig } from '../../schemas/plugins/input';
+import { InputPluginName } from '../../schemas/plugins/input/base-config';
+import { OutputPluginConfig } from '../../schemas/plugins/output';
+import { OutputPluginName } from '../../schemas/plugins/output/base-config';
 import { ReplayEventPluginDefaultConfig } from './default-configs/event/replay';
 import { ScriptEventPluginDefaultConfig } from './default-configs/event/script';
 import { TemplateEventPluginDefaultConfig } from './default-configs/event/template';
