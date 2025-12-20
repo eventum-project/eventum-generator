@@ -1,12 +1,12 @@
 import {
+  dragAndDropFeature,
   hotkeysCoreFeature,
   selectionFeature,
   syncDataLoaderFeature,
 } from '@headless-tree/core';
 import { useTree } from '@headless-tree/react';
-import { Box, Group, Stack, Text } from '@mantine/core';
+import { Box, Group, NavLink, Stack, Text } from '@mantine/core';
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
-import clsx from 'clsx';
 import { FC } from 'react';
 
 import { FileNodeItemIcon } from './FileNodeItemIcon';
@@ -25,6 +25,8 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
     rootItemId: '.',
     getItemName: (item) => item.getItemData().name,
     isItemFolder: (item) => item.getItemData().is_dir,
+    canReorder: true,
+    openOnDropDelay: 500,
     dataLoader: {
       getItem: (itemId) =>
         fileTreeLookup.items.get(itemId) ?? {
@@ -35,11 +37,16 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
       getChildren: (itemId) => fileTreeLookup.children.get(itemId) ?? [],
     },
     indent: 20,
-    features: [syncDataLoaderFeature, selectionFeature, hotkeysCoreFeature],
+    features: [
+      syncDataLoaderFeature,
+      selectionFeature,
+      hotkeysCoreFeature,
+      dragAndDropFeature,
+    ],
   });
 
   return (
-    <Stack {...tree.getContainerProps()} className="tree" gap="xs">
+    <Stack {...tree.getContainerProps()} className="tree" gap="0">
       {tree.getItems().map((item) => (
         <Box
           {...item.getProps()}
@@ -47,33 +54,31 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
           ml={`${item.getItemMeta().level * 10}px`}
           style={{ cursor: 'pointer' }}
         >
-          <Box
-            className={clsx('treeitem', {
-              focused: item.isFocused(),
-              expanded: item.isExpanded(),
-              selected: item.isSelected(),
-              folder: item.isFolder(),
-            })}
-          >
-            <Group wrap="nowrap" gap="6px" align="center">
-              {item.isFolder() ? (
-                <Group wrap="nowrap" gap="2px">
-                  {item.isExpanded() ? (
-                    <IconChevronDown size={15} />
-                  ) : (
-                    <IconChevronRight size={15} />
-                  )}
+          <NavLink
+            active={item.isSelected() || item.isDragTarget()}
+            style={{ borderRadius: '6px' }}
+            p="4px"
+            label={
+              <Group wrap="nowrap" gap="6px" align="center">
+                {item.isFolder() ? (
+                  <Group wrap="nowrap" gap="2px">
+                    {item.isExpanded() ? (
+                      <IconChevronDown size={15} />
+                    ) : (
+                      <IconChevronRight size={15} />
+                    )}
 
-                  <FileNodeItemIcon item={item} />
-                </Group>
-              ) : (
-                <Box ml="16px">
-                  <FileNodeItemIcon item={item} />
-                </Box>
-              )}
-              <Text size="sm">{item.getItemName()}</Text>
-            </Group>
-          </Box>
+                    <FileNodeItemIcon item={item} />
+                  </Group>
+                ) : (
+                  <Box ml="16px">
+                    <FileNodeItemIcon item={item} />
+                  </Box>
+                )}
+                <Text size="sm">{item.getItemName()}</Text>
+              </Group>
+            }
+          />
         </Box>
       ))}
     </Stack>
