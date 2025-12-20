@@ -1,98 +1,21 @@
 import {
-  ItemInstance,
   hotkeysCoreFeature,
   selectionFeature,
   syncDataLoaderFeature,
 } from '@headless-tree/core';
 import { useTree } from '@headless-tree/react';
-import { Box, Flex, Group, Stack, Text } from '@mantine/core';
-import {
-  IconBraces,
-  IconBrandPython,
-  IconChevronDown,
-  IconChevronRight,
-  IconCube,
-  IconFileInvoice,
-  IconFileSpreadsheet,
-  IconFileText,
-  IconFolder,
-} from '@tabler/icons-react';
+import { Box, Group, Stack, Text } from '@mantine/core';
+import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import clsx from 'clsx';
 import { FC } from 'react';
 
+import { FileNodeItemIcon } from './FileNodeItemIcon';
 import { createFileTreeLookup } from '@/api/routes/generator-configs/modules/file-tree';
 import { FileNode } from '@/api/routes/generator-configs/schemas';
-import { IconJinja } from '@/components/ui/icons/IconJinja';
 
 interface TreeProps {
   fileTreeLookup: ReturnType<typeof createFileTreeLookup>;
 }
-
-interface FileNodeItemIconProps {
-  item: ItemInstance<FileNode>;
-}
-
-const FileNodeItemIcon: FC<FileNodeItemIconProps> = ({ item }) => {
-  const size = 15;
-
-  if (item.isFolder()) {
-    return (
-      <Flex align="center">
-        <IconFolder size={size} />
-      </Flex>
-    );
-  }
-
-  const fileName = item.getItemName();
-  if (/^generator\.ya?ml$/.test(fileName)) {
-    return (
-      <Flex c="primary" align="center">
-        <IconCube size={size} />
-      </Flex>
-    );
-  }
-  if (fileName.endsWith('.py')) {
-    return (
-      <Flex c="blue" align="center">
-        <IconBrandPython size={size} />
-      </Flex>
-    );
-  }
-  if (fileName.endsWith('.jinja')) {
-    return (
-      <Flex c="gray.6">
-        <IconJinja size={size} />
-      </Flex>
-    );
-  }
-  if (fileName.endsWith('.csv') || fileName.endsWith('.tsv')) {
-    return (
-      <Flex c="green" align="center">
-        <IconFileSpreadsheet size={size} />
-      </Flex>
-    );
-  }
-  if (fileName.endsWith('.json')) {
-    return (
-      <Flex c="orange" align="center">
-        <IconBraces size={size} />
-      </Flex>
-    );
-  }
-  if (fileName.endsWith('.yml') || fileName.endsWith('.yaml')) {
-    return (
-      <Flex c="red" align="center">
-        <IconFileInvoice size={size} />
-      </Flex>
-    );
-  }
-
-  return (
-    <Flex align="center">
-      <IconFileText size={size} />
-    </Flex>
-  );
-};
 
 export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
   'use no memo';
