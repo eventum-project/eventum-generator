@@ -1,5 +1,5 @@
 import {
-  FileNodesList,
+  FileNode,
   FileNodesListSchema,
   GeneratorConfig,
   GeneratorConfigPathSchema,
@@ -54,13 +54,11 @@ export async function getGeneratorConfigPath(name: string): Promise<string> {
   );
 }
 
-export async function getGeneratorFileTree(
-  name: string
-): Promise<FileNodesList> {
-  return await validateResponse(
+export async function getGeneratorFileTree(name: string): Promise<FileNode[]> {
+  return (await validateResponse(
     FileNodesListSchema,
     apiClient.get(`/generator-configs/${name}/file-tree`)
-  );
+  )) as FileNode[];
 }
 
 export async function getGeneratorFile(
