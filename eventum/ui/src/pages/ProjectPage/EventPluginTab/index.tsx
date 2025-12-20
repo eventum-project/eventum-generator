@@ -1,6 +1,7 @@
 import { Center, Divider, Grid, Stack, Text } from '@mantine/core';
 import { FC, useCallback, useState } from 'react';
 
+import { FileTree } from '../FileTree';
 import { EventPluginsList } from '../PluginsList';
 import { EventPluginParams } from './EventPluginParams';
 import { Workspace } from './Workspace';
@@ -61,6 +62,11 @@ export const EventPluginTab: FC<EventPluginTabProps> = ({
             onDeletePlugin={handleDeletePlugin}
             maxPlugins={1}
           />
+          <Text size="sm" fw="bold">
+            File tree
+          </Text>
+          <Divider />
+          <FileTree />
         </Stack>
       </Grid.Col>
       <Grid.Col span={7}>
