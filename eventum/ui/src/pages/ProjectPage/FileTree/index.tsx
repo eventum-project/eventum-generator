@@ -6,7 +6,6 @@ import { useProjectName } from '../hooks/useProjectName';
 import { Tree } from './Tree';
 import { useGeneratorFileTree } from '@/api/hooks/useGeneratorConfigs';
 import { createFileTreeLookup } from '@/api/routes/generator-configs/modules/file-tree';
-import { FileNode } from '@/api/routes/generator-configs/schemas';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 export const FileTree: FC = () => {
@@ -22,7 +21,7 @@ export const FileTree: FC = () => {
   const fileTreeLookup: ReturnType<typeof createFileTreeLookup> | null =
     useMemo(() => {
       if (isFileTreeSuccess) {
-        return createFileTreeLookup(fileTree as FileNode[]);
+        return createFileTreeLookup(fileTree);
       } else {
         return null;
       }
