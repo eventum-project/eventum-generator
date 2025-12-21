@@ -24,16 +24,11 @@ import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
 
 export interface FileEditorProps {
-  fileType: 'jinja' | 'python';
   filePath: string;
   setSaved: (saved: boolean) => void;
 }
 
-export const FileEditor: FC<FileEditorProps> = ({
-  fileType,
-  filePath,
-  setSaved,
-}) => {
+export const FileEditor: FC<FileEditorProps> = ({ filePath, setSaved }) => {
   const { colorScheme } = useMantineColorScheme();
   const { projectName } = useProjectName();
   const {
@@ -52,15 +47,15 @@ export const FileEditor: FC<FileEditorProps> = ({
     if (isContentSuccess) {
       setContent(fileContent);
       setTouched(false);
-      setSaved(true);
     }
-  }, [setSaved, fileContent, isContentSuccess]);
+  }, [fileContent, isContentSuccess]);
 
   useEffect(() => {
     if (isTouched) {
       setSaved(false);
     }
-  }, [setSaved, isTouched]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTouched]);
 
   function handleSave() {
     updateFile.mutate(
@@ -99,14 +94,14 @@ export const FileEditor: FC<FileEditorProps> = ({
 
   const extensions = [];
 
-  if (fileType === 'jinja') {
+  if (filePath.endsWith('.jinja')) {
     extensions.push(
       jinja(),
       autocompletion({
         override: [jinjaCompletion],
       })
     );
-  } else if (fileType === 'python') {
+  } else if (filePath.endsWith('.py')) {
     extensions.push(python());
   }
 

@@ -23,6 +23,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { EventPluginTab } from './EventPluginTab';
 import { InputPluginsTab } from './InputPluginsTab';
+import { FileTreeProvider } from './context/FileTreeContext';
 import { ProjectNameProvider } from './context/ProjectNameContext';
 import { useGeneratorConfig } from '@/api/hooks/useGeneratorConfigs';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
@@ -71,54 +72,58 @@ export default function ProjectPage() {
   if (isGeneratorConfigSuccess) {
     return (
       <ProjectNameProvider initialProjectName={projectName}>
-        <Container size="100%" mt="xs">
-          <Stack>
-            <Group justify="space-between">
-              <Title order={3} fw="normal">
-                {projectName}
-              </Title>
-              <Group>
-                <Button
-                  variant="default"
-                  leftSection={<IconArrowLeft size={16} />}
-                  onClick={() => void navigate(ROUTE_PATHS.PROJECTS)}
-                >
-                  Back
-                </Button>
-                <Button>Save</Button>
+        <FileTreeProvider>
+          <Container size="100%" mt="xs">
+            <Stack>
+              <Group justify="space-between">
+                <Title order={3} fw="normal">
+                  {projectName}
+                </Title>
+                <Group>
+                  <Button
+                    variant="default"
+                    leftSection={<IconArrowLeft size={16} />}
+                    onClick={() => void navigate(ROUTE_PATHS.PROJECTS)}
+                  >
+                    Back
+                  </Button>
+                  <Button>Save</Button>
+                </Group>
               </Group>
-            </Group>
-            <Tabs defaultValue="input" mt="lg">
-              <Tabs.List>
-                <Tabs.Tab
-                  value="input"
-                  leftSection={<IconClockPlay size={14} />}
-                >
-                  Input plugins
-                </Tabs.Tab>
-                <Tabs.Tab value="event" leftSection={<IconCube size={14} />}>
-                  Event plugin
-                </Tabs.Tab>
-                <Tabs.Tab
-                  value="output"
-                  leftSection={<IconArrowsSplit2 size={14} />}
-                >
-                  Output plugins
-                </Tabs.Tab>
-              </Tabs.List>
+              <Tabs defaultValue="input" mt="lg">
+                <Tabs.List>
+                  <Tabs.Tab
+                    value="input"
+                    leftSection={<IconClockPlay size={14} />}
+                  >
+                    Input plugins
+                  </Tabs.Tab>
+                  <Tabs.Tab value="event" leftSection={<IconCube size={14} />}>
+                    Event plugin
+                  </Tabs.Tab>
+                  <Tabs.Tab
+                    value="output"
+                    leftSection={<IconArrowsSplit2 size={14} />}
+                  >
+                    Output plugins
+                  </Tabs.Tab>
+                </Tabs.List>
 
-              <Box mt="md">
-                <Tabs.Panel value="input">
-                  <InputPluginsTab inputPluginsConfig={generatorConfig.input} />
-                </Tabs.Panel>
-                <Tabs.Panel value="event">
-                  <EventPluginTab eventPluginConfig={generatorConfig.event} />
-                </Tabs.Panel>
-                <Tabs.Panel value="output">Output plugins</Tabs.Panel>
-              </Box>
-            </Tabs>
-          </Stack>
-        </Container>
+                <Box mt="md">
+                  <Tabs.Panel value="input">
+                    <InputPluginsTab
+                      inputPluginsConfig={generatorConfig.input}
+                    />
+                  </Tabs.Panel>
+                  <Tabs.Panel value="event">
+                    <EventPluginTab eventPluginConfig={generatorConfig.event} />
+                  </Tabs.Panel>
+                  <Tabs.Panel value="output">Output plugins</Tabs.Panel>
+                </Box>
+              </Tabs>
+            </Stack>
+          </Container>
+        </FileTreeProvider>
       </ProjectNameProvider>
     );
   }

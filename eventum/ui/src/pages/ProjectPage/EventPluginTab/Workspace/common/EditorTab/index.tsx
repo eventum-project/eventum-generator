@@ -1,129 +1,166 @@
+import { ItemInstance } from '@headless-tree/core';
 import {
-  Alert,
+  ActionIcon,
   Box,
   Center,
   Divider,
+  Flex,
   Group,
   ScrollArea,
   SegmentedControl,
-  Skeleton,
   Stack,
   Text,
 } from '@mantine/core';
 import { modals } from '@mantine/modals';
-import {
-  IconAlertSquareRounded,
-  IconBrandPython,
-  IconPointFilled,
-} from '@tabler/icons-react';
-import { FC, useMemo, useState } from 'react';
+import { IconPointFilled, IconX } from '@tabler/icons-react';
+import { FC, useEffect, useState } from 'react';
 
-import { FileEditor, FileEditorProps } from './FileEditor';
-import { useGeneratorFileTree } from '@/api/hooks/useGeneratorConfigs';
-import { flattenFileTree } from '@/api/routes/generator-configs/modules/file-tree';
-import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
-import { IconJinja } from '@/components/ui/icons/IconJinja';
-import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
+import { FileEditor } from './FileEditor';
+import { FileNode } from '@/api/routes/generator-configs/schemas';
+import { FileNodeItemIcon } from '@/pages/ProjectPage/FileTree/Tree/FileNodeItemIcon';
+import { useFileTree } from '@/pages/ProjectPage/hooks/useFileTree';
 
-interface EditorTabProps {
-  fileType: FileEditorProps['fileType'];
-}
+export const EditorTab: FC = () => {
+  const [openedItems, setOpenedItems] = useState<ItemInstance<FileNode>[]>([]);
+  const { selectedItem, setSelectedItem } = useFileTree();
 
-export const EditorTab: FC<EditorTabProps> = ({ fileType }) => {
-  const { projectName } = useProjectName();
-  const {
-    data: fileTree,
-    isLoading: isFileTreeLoading,
-    isError: isFileTreeError,
-    error: fileTreeError,
-    isSuccess: isFileTreeSuccess,
-  } = useGeneratorFileTree(projectName);
+  useEffect(() => {
+    if (selectedItem !== undefined && !selectedItem.isFolder()) {
+      // check if file is not already opened
+      for (const item of openedItems) {
+        if (item.getId() === selectedItem.getId()) {
+          return;
+        }
+      }
 
-  const [selectedFile, setSelectedFile] = useState<string | undefined>();
-
-  const fileList = useMemo(() => {
-    if (isFileTreeSuccess) {
-      const files = flattenFileTree(fileTree, true).filter((item) =>
-        item.endsWith(fileType === 'jinja' ? '.jinja' : '.py')
-      );
-
-      setSelectedFile((prevValue) => prevValue ?? files[0]);
-
-      return files;
-    } else {
-      return [];
+      setOpenedItems((prev) => [...prev, selectedItem]);
     }
-  }, [fileType, fileTree, isFileTreeSuccess, setSelectedFile]);
-  const [isSelectedFileSaved, setSelectedFileSaved] = useState(true);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedItem]);
+
+  const [savedStatuses, setSavedStatuses] = useState<Record<string, boolean>>(
+    {}
+  );
+
+  function handleOnChangeSelectedItem(newItemId: string) {
+    let item: ItemInstance<FileNode> | undefined;
+    if (selectedItem !== undefined) {
+      item = selectedItem.getTree().getItemInstance(newItemId);
+    } else if (openedItems.length > 0) {
+      item = openedItems[0]!.getTree().getItemInstance(newItemId);
+    }
+
+    if (item === undefined || item.getId() === selectedItem?.getId()) {
+      return;
+    }
+
+    setSelectedItem(item);
+  }
+
+  function handleCloseFile(item: ItemInstance<FileNode>) {
+    const itemId = item.getId();
+
+    const index = openedItems.findIndex(
+      (openedItem) => openedItem.getId() === itemId
+    );
+
+    if (index === -1) {
+      return;
+    }
+
+    setOpenedItems((prev) => {
+      return [...prev.slice(0, index), ...prev.slice(index + 1)];
+    });
+
+    if (itemId === selectedItem?.getId()) {
+      if (index === 0) {
+        setSelectedItem(openedItems[1]);
+      } else {
+        setSelectedItem(openedItems[index - 1]);
+      }
+    }
+
+    setSavedStatuses((prev) => {
+      const newStatuses = { ...prev };
+      delete newStatuses[itemId];
+      return newStatuses;
+    });
+  }
 
   return (
     <Stack>
-      {isFileTreeLoading && (
-        <Stack>
-          <Skeleton h="250px" animate visible />
-        </Stack>
-      )}
-
-      {isFileTreeError && (
-        <Alert
-          variant="default"
-          icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
-          title="Failed to load list of project files"
-        >
-          {fileTreeError.message}
-          <ShowErrorDetailsAnchor error={fileTreeError} prependDot />
-        </Alert>
-      )}
-
-      {isFileTreeSuccess && fileList.length > 0 ? (
+      {openedItems.length > 0 ? (
         <Stack gap="4px">
           <ScrollArea type="hover" offsetScrollbars="x" scrollbarSize="5px">
             <SegmentedControl
-              data={fileList.map((item) => ({
+              data={openedItems.map((item) => ({
                 label: (
                   <Center>
                     <Group gap="4px" wrap="nowrap">
-                      {fileType === 'jinja' && <IconJinja size={14} />}
-                      {fileType === 'python' && <IconBrandPython size={14} />}
-                      <span>{item}</span>
-                      {!isSelectedFileSaved && item === selectedFile && (
-                        <IconPointFilled size={20} />
-                      )}
+                      <FileNodeItemIcon item={item} />
+                      <span>{item.getId()}</span>
+                      {item.getId() in savedStatuses &&
+                        !savedStatuses[item.getId()] && (
+                          <Flex title="Unsaved" align="center">
+                            <IconPointFilled size={20} />
+                          </Flex>
+                        )}
+                      <ActionIcon
+                        variant="subtle"
+                        size="sm"
+                        bdrs="sm"
+                        onClick={() => {
+                          if (
+                            item.getId() in savedStatuses &&
+                            !savedStatuses[item.getId()]
+                          ) {
+                            modals.openConfirmModal({
+                              title: 'Unsaved changes',
+                              children: (
+                                <Text size="sm">
+                                  All unsaved changes in <b>{item.getId()}</b>{' '}
+                                  will be lost. Do you want to continue?
+                                </Text>
+                              ),
+                              labels: { confirm: 'Confirm', cancel: 'Cancel' },
+                              onConfirm: () => {
+                                handleCloseFile(item);
+                              },
+                            });
+                          } else {
+                            handleCloseFile(item);
+                          }
+                        }}
+                      >
+                        <IconX size={16} />
+                      </ActionIcon>
                     </Group>
                   </Center>
                 ),
-                value: item,
+                value: item.getId(),
               }))}
-              value={selectedFile}
-              onChange={(value) => {
-                if (!isSelectedFileSaved) {
-                  modals.openConfirmModal({
-                    title: 'Unsaved changes',
-                    children: (
-                      <Text size="sm">
-                        All unsaved changes in <b>{selectedFile}</b> will be
-                        lost. Do you want to continue?
-                      </Text>
-                    ),
-                    labels: { confirm: 'Confirm', cancel: 'Cancel' },
-                    onConfirm: () => {
-                      setSelectedFileSaved(true);
-                      setSelectedFile(value);
-                    },
-                  });
-                } else {
-                  setSelectedFile(value);
-                }
-              }}
+              value={selectedItem?.getId()}
+              onChange={handleOnChangeSelectedItem}
             />
           </ScrollArea>
-          {selectedFile !== undefined ? (
-            <FileEditor
-              fileType={fileType}
-              filePath={selectedFile}
-              setSaved={setSelectedFileSaved}
-              key={selectedFile}
-            />
+          {selectedItem !== undefined && !selectedItem.isFolder() ? (
+            openedItems.map((item) => (
+              <Box
+                key={item.getId()}
+                hidden={item.getId() !== selectedItem.getId()}
+              >
+                <FileEditor
+                  filePath={item.getId()}
+                  setSaved={(status) => {
+                    setSavedStatuses((prev) => {
+                      const id = item.getId();
+                      return { ...prev, [id]: status };
+                    });
+                  }}
+                />
+              </Box>
+            ))
           ) : (
             <Stack>
               <Divider />
