@@ -7,8 +7,9 @@ import {
 import { useTree } from '@headless-tree/react';
 import { Box, Group, NavLink, Stack, Text } from '@mantine/core';
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
-import { FC } from 'react';
+import { FC, useEffect } from 'react';
 
+import { useFileTree } from '../../hooks/useFileTree';
 import { FileNodeItemIcon } from './FileNodeItemIcon';
 import { createFileTreeLookup } from '@/api/routes/generator-configs/modules/file-tree';
 import { FileNode } from '@/api/routes/generator-configs/schemas';
@@ -20,11 +21,16 @@ interface TreeProps {
 export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
   'use no memo';
 
+  const { selectedItem, setSelectedItem } = useFileTree();
+
   const tree = useTree<FileNode>({
     initialState: {},
     rootItemId: '.',
     getItemName: (item) => item.getItemData().name,
     isItemFolder: (item) => item.getItemData().is_dir,
+    onPrimaryAction: (item) => {
+      setSelectedItem(item);
+    },
     canReorder: true,
     openOnDropDelay: 500,
     dataLoader: {
@@ -44,6 +50,23 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
       dragAndDropFeature,
     ],
   });
+
+  useEffect(() => {
+    if (selectedItem === undefined) {
+      return;
+    }
+
+    const pathSegments = selectedItem.getId().split('/').slice(1);
+    let currentPath = '.';
+
+    for (const segment of pathSegments.slice(0, -1)) {
+      currentPath += '/' + segment;
+      const parentItem = tree.getItemInstance(currentPath);
+      parentItem.expand();
+    }
+
+    tree.setSelectedItems([selectedItem.getId()]);
+  }, [tree, selectedItem]);
 
   return (
     <Stack {...tree.getContainerProps()} className="tree" gap="0">
