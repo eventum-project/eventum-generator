@@ -146,7 +146,7 @@ export const TemplateState: FC<TemplateStateProps> = ({
         <Alert
           variant="default"
           icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
-          title="Failed to load state"
+          title="Failed to load state, ensure debugger is started"
         >
           {error.message}
           <ShowErrorDetailsAnchor error={error} prependDot />
