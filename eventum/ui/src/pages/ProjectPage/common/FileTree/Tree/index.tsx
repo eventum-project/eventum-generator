@@ -142,7 +142,15 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
                 {item.isRenaming() ? (
                   <TextInput
                     {...item.getRenameInputProps()}
-                    size="xs"
+                    size="sm"
+                    styles={{
+                      input: {
+                        minHeight: 'unset',
+                        height: '20px',
+                        padding: '0',
+                        borderRadius: '4px',
+                      },
+                    }}
                     disabled={moveFile.isPending}
                   />
                 ) : (
