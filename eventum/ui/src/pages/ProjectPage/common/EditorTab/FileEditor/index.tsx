@@ -1,6 +1,8 @@
 import { autocompletion } from '@codemirror/autocomplete';
 import { jinja } from '@codemirror/lang-jinja';
+import { json } from '@codemirror/lang-json';
 import { python } from '@codemirror/lang-python';
+import { yaml } from '@codemirror/lang-yaml';
 import { keymap } from '@codemirror/view';
 import {
   Alert,
@@ -103,6 +105,10 @@ export const FileEditor: FC<FileEditorProps> = ({ filePath, setSaved }) => {
     );
   } else if (filePath.endsWith('.py')) {
     extensions.push(python());
+  } else if (filePath.endsWith('.json')) {
+    extensions.push(json());
+  } else if (/\.ya?ml$/.test(filePath)) {
+    extensions.push(yaml());
   }
 
   extensions.push(saveKeymap);
