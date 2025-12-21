@@ -1,7 +1,8 @@
-import { Center, Divider, Grid, Stack, Text } from '@mantine/core';
+import { Box, Center, Divider, Grid, Stack, Tabs, Text } from '@mantine/core';
 import { FC, useCallback, useRef, useState } from 'react';
 
 import { InputPluginsList } from '../PluginsList';
+import { EditorTab } from '../common/EditorTab';
 import { FileTree } from '../common/FileTree';
 import { InputPluginParams } from './InputPluginParams';
 import TimestampsHistogram from './TimestampsHistogram';
@@ -110,10 +111,6 @@ export const InputPluginsTab: FC<InputPluginsTabProps> = ({
       </Grid.Col>
       <Grid.Col span={7}>
         <Stack>
-          <Text size="sm" fw="bold">
-            Timestamps preview
-          </Text>
-          <Divider />
           {pluginsConfig.length === 0 ? (
             <Center>
               <Text size="sm" c="gray.6">
@@ -121,10 +118,24 @@ export const InputPluginsTab: FC<InputPluginsTabProps> = ({
               </Text>
             </Center>
           ) : (
-            <TimestampsHistogram
-              getSelectedPluginIndex={getSelectedPluginIndex}
-              getInputPluginsConfig={getInputPluginsConfig}
-            />
+            <Tabs defaultValue="preview">
+              <Tabs.List>
+                <Tabs.Tab value="preview">Preview</Tabs.Tab>
+                <Tabs.Tab value="editor">Editor</Tabs.Tab>
+              </Tabs.List>
+
+              <Box mt="md">
+                <Tabs.Panel value="preview">
+                  <TimestampsHistogram
+                    getSelectedPluginIndex={getSelectedPluginIndex}
+                    getInputPluginsConfig={getInputPluginsConfig}
+                  />
+                </Tabs.Panel>
+                <Tabs.Panel value="editor">
+                  <EditorTab />
+                </Tabs.Panel>
+              </Box>
+            </Tabs>
           )}
         </Stack>
       </Grid.Col>
