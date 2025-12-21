@@ -1,5 +1,5 @@
 import { AppShell, Center, Loader } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { useLocalStorage } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { Outlet, useNavigate } from 'react-router-dom';
 
@@ -16,8 +16,10 @@ export default function AppLayout() {
     isSuccess: isUserSuccess,
   } = useCurrentUser();
   const logout = useLogoutMutation();
-
-  const [isNavbarOpened, { toggle: onMenuClick }] = useDisclosure(true);
+  const [isNavbarOpened, setLocalStorage] = useLocalStorage({
+    key: 'navbar-opened',
+    defaultValue: true,
+  });
 
   if (isUserLoading) {
     return (
@@ -56,7 +58,7 @@ export default function AppLayout() {
                 }),
             })
           }
-          onMenuClick={onMenuClick}
+          onMenuClick={() => setLocalStorage((prev) => !prev)}
         />
       </AppShell.Header>
 
