@@ -1,18 +1,23 @@
 import {
   dragAndDropFeature,
   hotkeysCoreFeature,
+  renamingFeature,
   selectionFeature,
   syncDataLoaderFeature,
 } from '@headless-tree/core';
 import { useTree } from '@headless-tree/react';
-import { Box, Group, NavLink, Stack, Text } from '@mantine/core';
+import { Box, Group, NavLink, Stack, Text, TextInput } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import { FC, useEffect } from 'react';
 
 import { FileNodeItemIcon } from './FileNodeItemIcon';
+import { useMoveGeneratorFileMutation } from '@/api/hooks/useGeneratorConfigs';
 import { createFileTreeLookup } from '@/api/routes/generator-configs/modules/file-tree';
 import { FileNode } from '@/api/routes/generator-configs/schemas';
+import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 import { useFileTree } from '@/pages/ProjectPage/hooks/useFileTree';
+import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
 
 interface TreeProps {
   fileTreeLookup: ReturnType<typeof createFileTreeLookup>;
@@ -22,6 +27,8 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
   'use no memo';
 
   const { selectedItem, setSelectedItem } = useFileTree();
+  const { projectName } = useProjectName();
+  const moveFile = useMoveGeneratorFileMutation();
 
   const tree = useTree<FileNode>({
     initialState: {},
@@ -30,6 +37,35 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
     isItemFolder: (item) => item.getItemData().is_dir,
     onPrimaryAction: (item) => {
       setSelectedItem(item);
+    },
+    onRename: (item, newName) => {
+      const oldName = item.getItemName();
+      const directory = item.getId().split('/').slice(0, -1).join('/');
+
+      const source = `${directory}/${oldName}`;
+      const destination = `${directory}/${newName}`;
+
+      moveFile.mutate(
+        {
+          name: projectName,
+          source: source,
+          destination: destination,
+        },
+        {
+          onError: (error) => {
+            notifications.show({
+              title: 'Error',
+              message: (
+                <>
+                  Failed to rename file
+                  <ShowErrorDetailsAnchor error={error} prependDot />
+                </>
+              ),
+              color: 'red',
+            });
+          },
+        }
+      );
     },
     canReorder: true,
     openOnDropDelay: 500,
@@ -48,6 +84,7 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
       selectionFeature,
       hotkeysCoreFeature,
       dragAndDropFeature,
+      renamingFeature,
     ],
   });
 
@@ -67,6 +104,10 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
 
     tree.setSelectedItems([selectedItem.getId()]);
   }, [tree, selectedItem]);
+
+  useEffect(() => {
+    tree.rebuildTree();
+  }, [tree, fileTreeLookup]);
 
   return (
     <Stack {...tree.getContainerProps()} className="tree" gap="0">
@@ -98,7 +139,15 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
                     <FileNodeItemIcon item={item} />
                   </Box>
                 )}
-                <Text size="sm">{item.getItemName()}</Text>
+                {item.isRenaming() ? (
+                  <TextInput
+                    {...item.getRenameInputProps()}
+                    size="xs"
+                    disabled={moveFile.isPending}
+                  />
+                ) : (
+                  <Text size="sm">{item.getItemName()}</Text>
+                )}
               </Group>
             }
           />
