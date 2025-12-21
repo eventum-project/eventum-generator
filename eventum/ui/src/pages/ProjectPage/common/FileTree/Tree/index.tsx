@@ -9,10 +9,10 @@ import { Box, Group, NavLink, Stack, Text } from '@mantine/core';
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import { FC, useEffect } from 'react';
 
-import { useFileTree } from '../../hooks/useFileTree';
 import { FileNodeItemIcon } from './FileNodeItemIcon';
 import { createFileTreeLookup } from '@/api/routes/generator-configs/modules/file-tree';
 import { FileNode } from '@/api/routes/generator-configs/schemas';
+import { useFileTree } from '@/pages/ProjectPage/hooks/useFileTree';
 
 interface TreeProps {
   fileTreeLookup: ReturnType<typeof createFileTreeLookup>;

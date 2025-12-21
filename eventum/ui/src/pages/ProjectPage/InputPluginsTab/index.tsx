@@ -1,8 +1,8 @@
 import { Center, Divider, Grid, Stack, Text } from '@mantine/core';
 import { FC, useCallback, useRef, useState } from 'react';
 
-import { FileTree } from '../FileTree';
 import { InputPluginsList } from '../PluginsList';
+import { FileTree } from '../common/FileTree';
 import { InputPluginParams } from './InputPluginParams';
 import TimestampsHistogram from './TimestampsHistogram';
 import { PLUGIN_DEFAULT_CONFIGS } from '@/api/routes/generator-configs/modules/plugins/registry';

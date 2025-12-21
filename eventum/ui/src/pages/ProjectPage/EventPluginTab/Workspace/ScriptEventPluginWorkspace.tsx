@@ -1,8 +1,8 @@
 import { Box, Stack, Tabs } from '@mantine/core';
 import { FC } from 'react';
 
+import { EditorTab } from '../../common/EditorTab';
 import { DebuggerTab } from './common/DebuggerTab';
-import { EditorTab } from './common/EditorTab';
 
 export const ScriptEventPluginWorkspace: FC = () => {
   return (

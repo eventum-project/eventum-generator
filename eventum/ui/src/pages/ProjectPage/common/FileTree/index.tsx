@@ -2,7 +2,7 @@ import { Alert, Box, Skeleton, Stack } from '@mantine/core';
 import { IconAlertSquareRounded } from '@tabler/icons-react';
 import { FC, useMemo } from 'react';
 
-import { useProjectName } from '../hooks/useProjectName';
+import { useProjectName } from '../../hooks/useProjectName';
 import { Tree } from './Tree';
 import { useGeneratorFileTree } from '@/api/hooks/useGeneratorConfigs';
 import { createFileTreeLookup } from '@/api/routes/generator-configs/modules/file-tree';

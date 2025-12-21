@@ -1,8 +1,8 @@
 import { Center, Divider, Grid, Stack, Text } from '@mantine/core';
 import { FC, useCallback, useState } from 'react';
 
-import { FileTree } from '../FileTree';
 import { EventPluginsList } from '../PluginsList';
+import { FileTree } from '../common/FileTree';
 import { EventPluginParams } from './EventPluginParams';
 import { Workspace } from './Workspace';
 import { GetPluginConfigProvider } from './context/GetPluginConfigContext';

@@ -15,9 +15,9 @@ import { modals } from '@mantine/modals';
 import { IconPointFilled, IconX } from '@tabler/icons-react';
 import { FC, useEffect, useState } from 'react';
 
+import { FileNodeItemIcon } from '../FileTree/Tree/FileNodeItemIcon';
 import { FileEditor } from './FileEditor';
 import { FileNode } from '@/api/routes/generator-configs/schemas';
-import { FileNodeItemIcon } from '@/pages/ProjectPage/FileTree/Tree/FileNodeItemIcon';
 import { useFileTree } from '@/pages/ProjectPage/hooks/useFileTree';
 
 export const EditorTab: FC = () => {

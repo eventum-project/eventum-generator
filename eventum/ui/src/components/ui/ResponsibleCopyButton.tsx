@@ -12,7 +12,6 @@ interface ResponsibleCopyButtonProps {
   content: string;
   label: string;
   tooltipPosition?: FloatingPosition;
-  // eslint-disable-next-line sonarjs/no-useless-intersection
   size?: number | (string & {}) | MantineSize;
 }
 
