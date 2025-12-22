@@ -6,7 +6,8 @@ import {
   syncDataLoaderFeature,
 } from '@headless-tree/core';
 import { useTree } from '@headless-tree/react';
-import { Box, Stack } from '@mantine/core';
+import { Box, Stack, Text } from '@mantine/core';
+import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { dirname, join } from 'pathe';
 import { FC, useEffect } from 'react';
@@ -182,6 +183,29 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
         const filepath = join(targetDir, file.name);
         handleUploadFile(filepath, file);
       }
+    },
+    hotkeys: {
+      customDelete: {
+        hotkey: 'Delete',
+        handler: (_, tree) => {
+          const items = tree.getSelectedItems();
+
+          if (items.length > 0) {
+            const item = items[0]!;
+            modals.openConfirmModal({
+              title: 'Deleting file',
+              children: (
+                <Text size="sm">
+                  File &quot;<b>{item.getId()}</b>&quot; will be deleted. Do you
+                  want to continue?
+                </Text>
+              ),
+              labels: { confirm: 'Confirm', cancel: 'Cancel' },
+              onConfirm: () => handleDeleteFile(item.getId()),
+            });
+          }
+        },
+      },
     },
   });
 
