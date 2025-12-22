@@ -13,7 +13,10 @@ import { dirname, join } from 'pathe';
 import { FC, useEffect } from 'react';
 
 import { FileNodeItemIcon } from './FileNodeItemIcon';
-import { useMoveGeneratorFileMutation } from '@/api/hooks/useGeneratorConfigs';
+import {
+  useMoveGeneratorFileMutation,
+  useUploadGeneratorFileMutation,
+} from '@/api/hooks/useGeneratorConfigs';
 import { createFileTreeLookup } from '@/api/routes/generator-configs/modules/file-tree';
 import { FileNode } from '@/api/routes/generator-configs/schemas';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
@@ -30,6 +33,7 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
   const { selectedItem, setSelectedItem } = useFileTree();
   const { projectName } = useProjectName();
   const moveFile = useMoveGeneratorFileMutation();
+  const uploadFile = useUploadGeneratorFileMutation();
 
   const tree = useTree<FileNode>({
     features: [
@@ -43,7 +47,6 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
     rootItemId: '.',
     getItemName: (item) => item.getItemData().name,
     isItemFolder: (item) => item.getItemData().is_dir,
-    canReorder: true,
     openOnDropDelay: 500,
     indent: 20,
     dataLoader: {
@@ -111,6 +114,38 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
                 message: (
                   <>
                     Failed to move file &quot;{source}&quot;
+                    <ShowErrorDetailsAnchor error={error} prependDot />
+                  </>
+                ),
+                color: 'red',
+              });
+            },
+          }
+        );
+      }
+    },
+    canDropForeignDragObject: (dataTransfer, target) => {
+      return dataTransfer.types.includes('Files') && target.item.isFolder();
+    },
+    onDropForeignDragObject: (dataTransfer, target) => {
+      const targetDir = target.item.getId();
+
+      for (const file of dataTransfer.files) {
+        const filepath = join(targetDir, file.name);
+
+        uploadFile.mutate(
+          {
+            name: projectName,
+            filepath: filepath,
+            content: file,
+          },
+          {
+            onError: (error) => {
+              notifications.show({
+                title: 'Error',
+                message: (
+                  <>
+                    Failed to upload file &quot;{file.name}&quot;
                     <ShowErrorDetailsAnchor error={error} prependDot />
                   </>
                 ),
