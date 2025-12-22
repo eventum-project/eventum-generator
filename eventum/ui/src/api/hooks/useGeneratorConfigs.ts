@@ -113,7 +113,7 @@ export function useUploadGeneratorFileMutation() {
     }: {
       name: string;
       filepath: string;
-      content: string;
+      content: string | File;
     }) => uploadGeneratorFile(name, filepath, content),
     onSuccess: async (_, { name }) => {
       await queryClient.invalidateQueries({

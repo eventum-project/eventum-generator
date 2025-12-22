@@ -1,3 +1,5 @@
+import { basename } from 'pathe';
+
 import {
   FileNode,
   FileNodesListSchema,
@@ -76,13 +78,24 @@ export async function getGeneratorFile(
 export async function uploadGeneratorFile(
   name: string,
   filepath: string,
-  content: string
+  content: string | File
 ) {
   const form = new FormData();
-  form.append('content', new Blob([content], { type: 'text/plain' }));
+  if (typeof content === 'string') {
+    const filename = basename(filepath);
+    form.append(
+      'content',
+      new Blob([content], { type: 'text/plain' }),
+      filename
+    );
+  } else {
+    form.append('content', content, content.name);
+  }
 
   await apiClient.post(`/generator-configs/${name}/file/${filepath}`, form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+    headers: {
+      'Content-Type': undefined,
+    },
   });
 }
 
@@ -92,10 +105,13 @@ export async function putGeneratorFile(
   content: string
 ) {
   const form = new FormData();
-  form.append('content', new Blob([content], { type: 'text/plain' }));
+  const filename = basename(filepath);
+  form.append('content', new Blob([content], { type: 'text/plain' }), filename);
 
   await apiClient.put(`/generator-configs/${name}/file/${filepath}`, form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+    headers: {
+      'Content-Type': undefined,
+    },
   });
 }
 
