@@ -99,6 +99,10 @@ export async function uploadGeneratorFile(
   });
 }
 
+export async function createGeneratorDirectory(name: string, dirpath: string) {
+  await apiClient.post(`/generator-configs/${name}/file-makedir/${dirpath}`);
+}
+
 export async function putGeneratorFile(
   name: string,
   filepath: string,

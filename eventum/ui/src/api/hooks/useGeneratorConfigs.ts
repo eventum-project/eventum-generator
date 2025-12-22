@@ -4,6 +4,7 @@ import { GeneratorConfig } from '../routes/generator-configs/schemas';
 import {
   copyGeneratorFile,
   createGeneratorConfig,
+  createGeneratorDirectory,
   deleteGeneratorConfig,
   deleteGeneratorFile,
   getGeneratorConfig,
@@ -115,6 +116,21 @@ export function useUploadGeneratorFileMutation() {
       filepath: string;
       content: string | File;
     }) => uploadGeneratorFile(name, filepath, content),
+    onSuccess: async (_, { name }) => {
+      await queryClient.invalidateQueries({
+        queryKey: [...GENERATOR_CONFIG_DIR_FILES_QUERY_KEY, name],
+        exact: true,
+      });
+    },
+  });
+}
+
+export function useCreateGeneratorDirectoryMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ name, dirpath }: { name: string; dirpath: string }) =>
+      createGeneratorDirectory(name, dirpath),
     onSuccess: async (_, { name }) => {
       await queryClient.invalidateQueries({
         queryKey: [...GENERATOR_CONFIG_DIR_FILES_QUERY_KEY, name],
