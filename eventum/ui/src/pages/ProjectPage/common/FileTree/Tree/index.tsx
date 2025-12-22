@@ -9,6 +9,7 @@ import { useTree } from '@headless-tree/react';
 import { Box, Group, NavLink, Stack, Text, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
+import { dirname, join } from 'pathe';
 import { FC, useEffect } from 'react';
 
 import { FileNodeItemIcon } from './FileNodeItemIcon';
@@ -31,19 +32,38 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
   const moveFile = useMoveGeneratorFileMutation();
 
   const tree = useTree<FileNode>({
+    features: [
+      syncDataLoaderFeature,
+      selectionFeature,
+      hotkeysCoreFeature,
+      dragAndDropFeature,
+      renamingFeature,
+    ],
     initialState: {},
     rootItemId: '.',
     getItemName: (item) => item.getItemData().name,
     isItemFolder: (item) => item.getItemData().is_dir,
+    canReorder: true,
+    openOnDropDelay: 500,
+    indent: 20,
+    dataLoader: {
+      getItem: (itemId) =>
+        fileTreeLookup.items.get(itemId) ?? {
+          name: '',
+          is_dir: false,
+          children: [],
+        },
+      getChildren: (itemId) => fileTreeLookup.children.get(itemId) ?? [],
+    },
     onPrimaryAction: (item) => {
       setSelectedItem(item);
     },
     onRename: (item, newName) => {
       const oldName = item.getItemName();
-      const directory = item.getId().split('/').slice(0, -1).join('/');
+      const directory = dirname(item.getId());
 
-      const source = `${directory}/${oldName}`;
-      const destination = `${directory}/${newName}`;
+      const source = join(directory, oldName);
+      const destination = join(directory, newName);
 
       moveFile.mutate(
         {
@@ -67,25 +87,40 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
         }
       );
     },
-    canReorder: true,
-    openOnDropDelay: 500,
-    dataLoader: {
-      getItem: (itemId) =>
-        fileTreeLookup.items.get(itemId) ?? {
-          name: '',
-          is_dir: false,
-          children: [],
-        },
-      getChildren: (itemId) => fileTreeLookup.children.get(itemId) ?? [],
+    onDrop: (items, target) => {
+      const destination = target.item.getId();
+
+      for (const item of items) {
+        const source = item.getId();
+        const sourceDirectory = dirname(source);
+
+        if (sourceDirectory === destination) {
+          continue;
+        }
+
+        moveFile.mutate(
+          {
+            name: projectName,
+            source: source,
+            destination: destination,
+          },
+          {
+            onError: (error) => {
+              notifications.show({
+                title: 'Error',
+                message: (
+                  <>
+                    Failed to move file &quot;{source}&quot;
+                    <ShowErrorDetailsAnchor error={error} prependDot />
+                  </>
+                ),
+                color: 'red',
+              });
+            },
+          }
+        );
+      }
     },
-    indent: 20,
-    features: [
-      syncDataLoaderFeature,
-      selectionFeature,
-      hotkeysCoreFeature,
-      dragAndDropFeature,
-      renamingFeature,
-    ],
   });
 
   useEffect(() => {
