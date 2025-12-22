@@ -6,14 +6,15 @@ import {
   syncDataLoaderFeature,
 } from '@headless-tree/core';
 import { useTree } from '@headless-tree/react';
-import { Box, Group, NavLink, Stack, Text, TextInput } from '@mantine/core';
+import { Box, Stack } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import { dirname, join } from 'pathe';
 import { FC, useEffect } from 'react';
 
-import { FileNodeItemIcon } from './FileNodeItemIcon';
+import { TreeItem } from './TreeItem';
 import {
+  useCreateGeneratorDirectoryMutation,
+  useDeleteGeneratorFileMutation,
   useMoveGeneratorFileMutation,
   useUploadGeneratorFileMutation,
 } from '@/api/hooks/useGeneratorConfigs';
@@ -34,6 +35,94 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
   const { projectName } = useProjectName();
   const moveFile = useMoveGeneratorFileMutation();
   const uploadFile = useUploadGeneratorFileMutation();
+  const createDir = useCreateGeneratorDirectoryMutation();
+  const deleteFile = useDeleteGeneratorFileMutation();
+
+  function showError(error: unknown, message: string) {
+    notifications.show({
+      title: 'Error',
+      message: (
+        <>
+          {message}
+          <ShowErrorDetailsAnchor error={error} prependDot />
+        </>
+      ),
+      color: 'red',
+    });
+  }
+
+  function handleCreateDir(dirpath: string) {
+    createDir.mutate(
+      {
+        name: projectName,
+        dirpath: dirpath,
+      },
+      {
+        onError: (error) => {
+          showError(error, `Failed to create directory "${dirpath}"`);
+        },
+      }
+    );
+  }
+
+  function handleUploadFile(filepath: string, file: File) {
+    uploadFile.mutate(
+      {
+        name: projectName,
+        filepath: filepath,
+        content: file,
+      },
+      {
+        onError: (error) => {
+          showError(error, `Failed to upload file "${file.name}"`);
+        },
+      }
+    );
+  }
+
+  function handleCreateEmptyFile(filepath: string) {
+    uploadFile.mutate(
+      {
+        name: projectName,
+        filepath: filepath,
+        content: '',
+      },
+      {
+        onError: (error) => {
+          showError(error, `Failed to create file "${filepath}"`);
+        },
+      }
+    );
+  }
+
+  function handleMoveFile(source: string, destination: string) {
+    moveFile.mutate(
+      {
+        name: projectName,
+        source: source,
+        destination: destination,
+      },
+      {
+        onError: (error) => {
+          showError(error, `Failed to rename file "${source}"`);
+        },
+      }
+    );
+  }
+
+  function handleDeleteFile(filepath: string) {
+    deleteFile.mutate(
+      {
+        name: projectName,
+        filepath: filepath,
+      },
+      {
+        onError: (error) => {
+          showError(error, `Failed to delete file "${filepath}"`);
+        },
+      }
+    );
+  }
 
   const tree = useTree<FileNode>({
     features: [
@@ -67,28 +156,7 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
 
       const source = join(directory, oldName);
       const destination = join(directory, newName);
-
-      moveFile.mutate(
-        {
-          name: projectName,
-          source: source,
-          destination: destination,
-        },
-        {
-          onError: (error) => {
-            notifications.show({
-              title: 'Error',
-              message: (
-                <>
-                  Failed to rename file
-                  <ShowErrorDetailsAnchor error={error} prependDot />
-                </>
-              ),
-              color: 'red',
-            });
-          },
-        }
-      );
+      handleMoveFile(source, destination);
     },
     onDrop: (items, target) => {
       const destination = target.item.getId();
@@ -101,27 +169,7 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
           continue;
         }
 
-        moveFile.mutate(
-          {
-            name: projectName,
-            source: source,
-            destination: destination,
-          },
-          {
-            onError: (error) => {
-              notifications.show({
-                title: 'Error',
-                message: (
-                  <>
-                    Failed to move file &quot;{source}&quot;
-                    <ShowErrorDetailsAnchor error={error} prependDot />
-                  </>
-                ),
-                color: 'red',
-              });
-            },
-          }
-        );
+        handleMoveFile(source, destination);
       }
     },
     canDropForeignDragObject: (dataTransfer, target) => {
@@ -132,28 +180,7 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
 
       for (const file of dataTransfer.files) {
         const filepath = join(targetDir, file.name);
-
-        uploadFile.mutate(
-          {
-            name: projectName,
-            filepath: filepath,
-            content: file,
-          },
-          {
-            onError: (error) => {
-              notifications.show({
-                title: 'Error',
-                message: (
-                  <>
-                    Failed to upload file &quot;{file.name}&quot;
-                    <ShowErrorDetailsAnchor error={error} prependDot />
-                  </>
-                ),
-                color: 'red',
-              });
-            },
-          }
-        );
+        handleUploadFile(filepath, file);
       }
     },
   });
@@ -186,48 +213,12 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
           {...item.getProps()}
           key={item.getId()}
           ml={`${item.getItemMeta().level * 10}px`}
-          style={{ cursor: 'pointer' }}
         >
-          <NavLink
-            active={item.isSelected() || item.isDragTarget()}
-            style={{ borderRadius: '6px' }}
-            p="4px"
-            label={
-              <Group wrap="nowrap" gap="6px" align="center">
-                {item.isFolder() ? (
-                  <Group wrap="nowrap" gap="2px">
-                    {item.isExpanded() ? (
-                      <IconChevronDown size={15} />
-                    ) : (
-                      <IconChevronRight size={15} />
-                    )}
-
-                    <FileNodeItemIcon item={item} />
-                  </Group>
-                ) : (
-                  <Box ml="16px">
-                    <FileNodeItemIcon item={item} />
-                  </Box>
-                )}
-                {item.isRenaming() ? (
-                  <TextInput
-                    {...item.getRenameInputProps()}
-                    size="sm"
-                    styles={{
-                      input: {
-                        minHeight: 'unset',
-                        height: '20px',
-                        padding: '0',
-                        borderRadius: '4px',
-                      },
-                    }}
-                    disabled={moveFile.isPending}
-                  />
-                ) : (
-                  <Text size="sm">{item.getItemName()}</Text>
-                )}
-              </Group>
-            }
+          <TreeItem
+            item={item}
+            onCreateDir={handleCreateDir}
+            onCreateFile={handleCreateEmptyFile}
+            onDeleteFile={handleDeleteFile}
           />
         </Box>
       ))}
