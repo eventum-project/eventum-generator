@@ -104,7 +104,7 @@ export const Tree: FC<TreeProps> = ({ fileTreeLookup }) => {
       },
       {
         onError: (error) => {
-          showError(error, `Failed to rename file "${source}"`);
+          showError(error, `Failed to move file "${source}"`);
         },
       }
     );
