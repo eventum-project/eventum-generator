@@ -633,7 +633,7 @@ async def move_generator_file(
             detail='Source file does not exist',
         )
 
-    if destination.exists():
+    if destination.exists() and not destination.is_dir():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail='Destination file already exists',
