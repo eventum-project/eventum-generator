@@ -13,11 +13,13 @@ import {
   useMantineColorScheme,
   Checkbox,
 } from '@mantine/core';
+import { ContextMenuProvider } from 'mantine-contextmenu';
 
 import '@mantine/core/styles.css';
 import '@mantine/code-highlight/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/charts/styles.css';
+import 'mantine-contextmenu/styles.layer.css';
 import '@/index.css';
 
 import { ModalsProvider } from '@mantine/modals';
@@ -118,7 +120,9 @@ export default function App() {
         <CodeHighlightAdapterProvider adapter={shikiAdapter}>
           <Notifications />
           <ModalsProvider>
-            <InnerApp />
+            <ContextMenuProvider>
+              <InnerApp />
+            </ContextMenuProvider>
           </ModalsProvider>
         </CodeHighlightAdapterProvider>
       </MantineProvider>
