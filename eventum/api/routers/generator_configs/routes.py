@@ -484,6 +484,50 @@ async def upload_generator_file(
         ) from None
 
 
+@router.post(
+    '/{name}/file-makedir/{filepath:path}',
+    description=(
+        'Create directory inside generator directory in specified path.'
+    ),
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        check_filepath_is_directly_relative.responses,
+        {
+            409: {'description': 'File already exists'},
+            500: {
+                'description': 'Directory cannot be created due to OS error',
+            },
+        },
+    ),
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_generator_directory(
+    name: Annotated[
+        str,
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
+    ],
+    filepath: Annotated[Path, CheckFilepathIsDirectlyRelativeDep],
+    settings: SettingsDep,
+) -> None:
+    path = (settings.path.generators_dir / name / filepath).resolve()
+
+    if path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail='File already exists',
+        )
+
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f'Directory cannot be created due to OS error: {e}',
+        ) from None
+
+
 @router.put(
     '/{name}/file/{filepath:path}',
     description=(
