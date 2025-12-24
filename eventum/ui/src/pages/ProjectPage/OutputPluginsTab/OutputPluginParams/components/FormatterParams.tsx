@@ -10,7 +10,7 @@ import {
 import { IconBraces, IconFile } from '@tabler/icons-react';
 import { FC, ReactNode, useState } from 'react';
 
-import { TemplateFilesSelect } from './TemplateFilesSelect';
+import { FilesSelect } from '../../../components/FileSelect';
 import {
   Format,
   FormatterConfig,
@@ -141,7 +141,7 @@ export const FormatterParams: FC<FormatterParamsProps> = ({
             />
           )}
           {templateSourceType === 'template-path' && (
-            <TemplateFilesSelect
+            <FilesSelect
               value={value?.template_path ?? null}
               onChange={(val) => {
                 onChange({
@@ -149,6 +149,7 @@ export const FormatterParams: FC<FormatterParamsProps> = ({
                   template_path: val ?? undefined,
                 });
               }}
+              extension=".jinja"
             />
           )}
         </Stack>

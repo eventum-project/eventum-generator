@@ -8,14 +8,16 @@ import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
 
-interface TemplateFilesSelectProps {
+interface FilesSelectProps {
   value: string | null;
   onChange: (value: string | null) => void;
+  extension?: string;
 }
 
-export const TemplateFilesSelect: FC<TemplateFilesSelectProps> = ({
+export const FilesSelect: FC<FilesSelectProps> = ({
   value,
   onChange,
+  extension,
 }) => {
   const { projectName } = useProjectName();
   const {
@@ -29,11 +31,12 @@ export const TemplateFilesSelect: FC<TemplateFilesSelectProps> = ({
   const filesList = useMemo(() => {
     if (isFileTreeSuccess) {
       return flattenFileTree(fileTree, true).filter((file) =>
-        file.endsWith('.jinja')
+        extension ? file.endsWith(extension) : true
       );
     } else {
       return [];
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileTree, isFileTreeSuccess]);
 
   return (
