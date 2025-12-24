@@ -10,7 +10,7 @@ import {
 import { IconBraces, IconFile } from '@tabler/icons-react';
 import { FC, ReactNode, useState } from 'react';
 
-import { FileSelect } from '../../../components/FileSelect';
+import { ProjectFileSelect } from '../../../components/ProjectFileSelect';
 import {
   Format,
   FormatterConfig,
@@ -141,7 +141,7 @@ export const FormatterParams: FC<FormatterParamsProps> = ({
             />
           )}
           {templateSourceType === 'template-path' && (
-            <FileSelect
+            <ProjectFileSelect
               label={
                 <LabelWithTooltip
                   label="Template path"

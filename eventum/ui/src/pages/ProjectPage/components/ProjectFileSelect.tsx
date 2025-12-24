@@ -14,11 +14,11 @@ import { flattenFileTree } from '@/api/routes/generator-configs/modules/file-tre
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
 
-interface FileSelectProps {
+interface ProjectFileSelectProps {
   extension?: string;
 }
 
-export const FileSelect: FC<SelectProps & FileSelectProps> = ({
+export const ProjectFileSelect: FC<SelectProps & ProjectFileSelectProps> = ({
   extension,
   ...props
 }) => {
