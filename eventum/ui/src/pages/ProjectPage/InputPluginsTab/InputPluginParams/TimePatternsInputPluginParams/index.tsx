@@ -1,28 +1,16 @@
-import {
-  ActionIcon,
-  Alert,
-  Box,
-  Group,
-  MultiSelect,
-  Select,
-  Skeleton,
-  Stack,
-  TagsInput,
-  Text,
-} from '@mantine/core';
+import { ActionIcon, Group, Stack, TagsInput, Text } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
-import { IconAlertSquareRounded, IconPlus } from '@tabler/icons-react';
+import { IconPlus } from '@tabler/icons-react';
 import { FC, useState } from 'react';
 
 import { useProjectName } from '../../../hooks/useProjectName';
 import { AddNewPatternModal } from './AddNewPatternModal';
 import { TimePatternParams } from './TimePatternParams';
-import { useGeneratorFileTree } from '@/api/hooks/useGeneratorConfigs';
-import { flattenFileTree } from '@/api/routes/generator-configs/modules/file-tree';
 import { TimePatternsInputPluginConfig } from '@/api/routes/generator-configs/schemas/plugins/input/configs/time_patterns';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
-import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
+import { ProjectFileMultiSelect } from '@/pages/ProjectPage/components/ProjectFileMultiSelect';
+import { ProjectFileSelect } from '@/pages/ProjectPage/components/ProjectFileSelect';
 import { ProjectNameProvider } from '@/pages/ProjectPage/context/ProjectNameContext';
 
 interface TimePatternsInputPluginParamsProps {
@@ -33,6 +21,8 @@ interface TimePatternsInputPluginParamsProps {
 export const TimePatternsInputPluginParams: FC<
   TimePatternsInputPluginParamsProps
 > = ({ initialConfig, onChange }) => {
+  const { projectName } = useProjectName();
+
   const form = useForm<TimePatternsInputPluginConfig>({
     initialValues: initialConfig,
     onValuesChange: (values) => {
@@ -51,123 +41,84 @@ export const TimePatternsInputPluginParams: FC<
     validateInputOnChange: true,
   });
 
-  const { projectName } = useProjectName();
-  const {
-    data: fileTree,
-    isLoading: isFileTreeLoading,
-    isError: isFileTreeError,
-    error: fileTreeError,
-    isSuccess: isFileTreeSuccess,
-  } = useGeneratorFileTree(projectName);
-
   const [selectedTimePattern, setSelectedTimePattern] = useState<string | null>(
     null
   );
 
-  if (isFileTreeLoading) {
-    return (
-      <Stack>
-        <Skeleton h="xl" animate visible />
-        <Skeleton h="xl" animate visible />
-        <Skeleton h="200px" animate visible mt="xs" />
-      </Stack>
-    );
-  }
+  return (
+    <Stack>
+      <ProjectFileMultiSelect
+        label={
+          <LabelWithTooltip
+            label="Patterns"
+            tooltip="File paths to time pattern configurations."
+          />
+        }
+        extensions={['.yml', '.yaml']}
+        clearable
+        searchable
+        hidePickedOptions
+        {...form.getInputProps('patterns', { type: 'input' })}
+      />
+      <TagsInput
+        label={
+          <LabelWithTooltip
+            label="Tags"
+            tooltip="Tags list attached to an input plugin"
+          />
+        }
+        placeholder="Press Enter to submit a tag"
+        {...form.getInputProps('tags', { type: 'input' })}
+      />
 
-  if (isFileTreeError) {
-    return (
-      <Alert
-        variant="default"
-        icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
-        title="Failed to load list of project files"
-      >
-        {fileTreeError.message}
-        <ShowErrorDetailsAnchor error={fileTreeError} prependDot />
-      </Alert>
-    );
-  }
-
-  if (isFileTreeSuccess) {
-    const filesList = flattenFileTree(fileTree, true);
-
-    return (
-      <Stack>
-        <MultiSelect
-          label={
-            <LabelWithTooltip
-              label="Patterns"
-              tooltip="File paths to time pattern configurations."
+      <Stack gap="4px">
+        <Text size="sm" fw="bold">
+          Time patterns
+        </Text>
+        <Stack>
+          <Group align="end" wrap="nowrap" gap="xs">
+            <ProjectFileSelect
+              label="Select pattern to edit"
+              searchable
+              nothingFoundMessage="No files found"
+              placeholder="time pattern file"
+              extensions={['.yaml', '.yml']}
+              w="100%"
+              value={selectedTimePattern}
+              onChange={setSelectedTimePattern}
+              clearable
             />
-          }
-          data={filesList}
-          clearable
-          searchable
-          hidePickedOptions
-          {...form.getInputProps('patterns', { type: 'input' })}
-        />
-        <TagsInput
-          label={
-            <LabelWithTooltip
-              label="Tags"
-              tooltip="Tags list attached to an input plugin"
-            />
-          }
-          placeholder="Press Enter to submit a tag"
-          {...form.getInputProps('tags', { type: 'input' })}
-        />
-
-        <Stack gap="4px">
-          <Text size="sm" fw="bold">
-            Time patterns
-          </Text>
-          <Stack>
-            <Group align="end" wrap="nowrap" gap="xs">
-              <Select
-                label="Select pattern to edit"
-                data={filesList}
-                searchable
-                nothingFoundMessage="No files found"
-                placeholder="time pattern file"
-                w="100%"
-                value={selectedTimePattern}
-                onChange={setSelectedTimePattern}
-                clearable
-              />
-              <ActionIcon
-                title="Add new pattern"
-                size="lg"
-                variant="default"
-                onClick={() => {
-                  modals.open({
-                    title: 'Add new time pattern',
-                    children: (
-                      <ProjectNameProvider initialProjectName={projectName}>
-                        <AddNewPatternModal
-                          existingFiles={filesList}
-                          onAddNewPattern={(filePath) => {
-                            const normalizedPath = filePath.startsWith('./')
-                              ? filePath
-                              : `./${filePath}`;
-                            setSelectedTimePattern(normalizedPath);
-                          }}
-                        />
-                      </ProjectNameProvider>
-                    ),
-                    size: 'md',
-                  });
-                }}
-              >
-                <IconPlus size={20} />
-              </ActionIcon>
-            </Group>
-            {selectedTimePattern && (
-              <TimePatternParams filePath={selectedTimePattern} />
-            )}
-          </Stack>
+            <ActionIcon
+              title="Add new pattern"
+              size="lg"
+              variant="default"
+              onClick={() => {
+                modals.open({
+                  title: 'Add new time pattern',
+                  children: (
+                    <ProjectNameProvider initialProjectName={projectName}>
+                      <AddNewPatternModal
+                        onAddNewPattern={(filePath) => {
+                          const normalizedPath = filePath.startsWith('./')
+                            ? filePath
+                            : `./${filePath}`;
+                          setSelectedTimePattern(normalizedPath);
+                        }}
+                      />
+                    </ProjectNameProvider>
+                  ),
+                  size: 'md',
+                });
+              }}
+            >
+              <IconPlus size={20} />
+            </ActionIcon>
+          </Group>
+          {selectedTimePattern && (
+            <TimePatternParams filePath={selectedTimePattern} />
+          )}
         </Stack>
       </Stack>
-    );
-  }
-
-  return <></>;
+    </Stack>
+  );
 };

@@ -1,27 +1,14 @@
-import {
-  Alert,
-  Box,
-  Select,
-  Skeleton,
-  Stack,
-  Tabs,
-  TagsInput,
-  Textarea,
-} from '@mantine/core';
+import { Box, Stack, Tabs, TagsInput, Textarea } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconAlertSquareRounded } from '@tabler/icons-react';
 import { zodResolver } from 'mantine-form-zod-resolver';
 import { FC } from 'react';
 
-import { useProjectName } from '../../hooks/useProjectName';
-import { useGeneratorFileTree } from '@/api/hooks/useGeneratorConfigs';
-import { flattenFileTree } from '@/api/routes/generator-configs/modules/file-tree';
+import { ProjectFileSelect } from '../../components/ProjectFileSelect';
 import {
   TimestampsInputPluginConfig,
   TimestampsInputPluginConfigSchema,
 } from '@/api/routes/generator-configs/schemas/plugins/input/configs/timestamps';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
-import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 interface TimestampsInputPluginParamsProps {
   initialConfig: TimestampsInputPluginConfig;
@@ -38,15 +25,6 @@ export const TimestampsInputPluginParams: FC<
     onSubmitPreventDefault: 'always',
     validateInputOnChange: true,
   });
-
-  const { projectName } = useProjectName();
-  const {
-    data: fileTree,
-    isLoading: isFileTreeLoading,
-    isError: isFileTreeError,
-    error: fileTreeError,
-    isSuccess: isFileTreeSuccess,
-  } = useGeneratorFileTree(projectName);
 
   return (
     <Stack>
@@ -83,45 +61,27 @@ export const TimestampsInputPluginParams: FC<
             />
           </Tabs.Panel>
           <Tabs.Panel value="file">
-            {isFileTreeLoading && (
-              <Stack>
-                <Skeleton h="xl" animate visible />
-              </Stack>
-            )}
-
-            {isFileTreeError && (
-              <Alert
-                variant="default"
-                icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
-                title="Failed to load list of project files"
-              >
-                {fileTreeError.message}
-                <ShowErrorDetailsAnchor error={fileTreeError} prependDot />
-              </Alert>
-            )}
-
-            {isFileTreeSuccess && (
-              <Select
-                label={
-                  <LabelWithTooltip
-                    label="Timestamps file"
-                    tooltip="File with new line separated timestamps in ISO8601 format"
-                  />
-                }
-                data={flattenFileTree(fileTree, true)}
-                clearable
-                searchable
-                value={
-                  typeof form.values.source === 'string'
-                    ? form.values.source
-                    : null
-                }
-                onChange={(value) => {
-                  form.setFieldValue('source', value ?? []);
-                }}
-                error={form.errors.source}
-              />
-            )}
+            <ProjectFileSelect
+              label={
+                <LabelWithTooltip
+                  label="Timestamps file"
+                  tooltip="File with new line separated timestamps in ISO8601 format"
+                />
+              }
+              placeholder=".csv .txt"
+              extensions={['.csv', '.txt', 'timestamps']}
+              clearable
+              searchable
+              value={
+                typeof form.values.source === 'string'
+                  ? form.values.source
+                  : null
+              }
+              onChange={(value) => {
+                form.setFieldValue('source', value ?? []);
+              }}
+              error={form.errors.source}
+            />
           </Tabs.Panel>
         </Box>
       </Tabs>

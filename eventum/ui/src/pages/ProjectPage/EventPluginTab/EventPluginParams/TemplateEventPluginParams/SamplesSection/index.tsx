@@ -7,17 +7,17 @@ import { FC, useState } from 'react';
 import { AddSampleModal } from './AddSampleModal';
 import { SamplesParams } from './SamplesParams';
 import { TemplateEventPluginConfig } from '@/api/routes/generator-configs/schemas/plugins/event/configs/template';
+import { ProjectNameProvider } from '@/pages/ProjectPage/context/ProjectNameContext';
+import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
 
 interface SamplesSectionProps {
   form: UseFormReturnType<TemplateEventPluginConfig>;
-  existingFiles: string[];
 }
 
-export const SamplesSection: FC<SamplesSectionProps> = ({
-  form,
-  existingFiles,
-}) => {
+export const SamplesSection: FC<SamplesSectionProps> = ({ form }) => {
   const [selectedSample, setSelectedSample] = useState<string | null>(null);
+  const { projectName } = useProjectName();
+
   const existingSamples = Object.keys(form.getValues().samples ?? {});
 
   return (
@@ -46,19 +46,21 @@ export const SamplesSection: FC<SamplesSectionProps> = ({
               modals.open({
                 title: 'Add new sample',
                 children: (
-                  <AddSampleModal
-                    existingSamples={existingSamples}
-                    onAdd={(sampleName, sampleConfig) => {
-                      form.setFieldValue('samples', (value) => ({
-                        ...value,
-                        [sampleName]: sampleConfig,
-                      }));
+                  <ProjectNameProvider initialProjectName={projectName}>
+                    <AddSampleModal
+                      existingSamples={existingSamples}
+                      onAdd={(sampleName, sampleConfig) => {
+                        form.setFieldValue('samples', (value) => ({
+                          ...value,
+                          [sampleName]: sampleConfig,
+                        }));
 
-                      modals.closeAll();
+                        modals.closeAll();
 
-                      setSelectedSample(sampleName);
-                    }}
-                  />
+                        setSelectedSample(sampleName);
+                      }}
+                    />
+                  </ProjectNameProvider>
                 ),
                 size: 'md',
               });
@@ -73,7 +75,6 @@ export const SamplesSection: FC<SamplesSectionProps> = ({
         <SamplesParams
           form={form}
           selectedSample={selectedSample}
-          existingFiles={existingFiles}
           onDelete={() => {
             modals.openConfirmModal({
               title: 'Deleting sample',

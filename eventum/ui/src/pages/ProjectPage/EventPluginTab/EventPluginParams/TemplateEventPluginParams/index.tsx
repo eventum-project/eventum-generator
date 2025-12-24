@@ -1,19 +1,14 @@
-import { Alert, Box, JsonInput, Skeleton, Stack } from '@mantine/core';
+import { JsonInput, Stack } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconAlertSquareRounded } from '@tabler/icons-react';
 import { zod4Resolver } from 'mantine-form-zod-resolver';
-import { FC, useMemo } from 'react';
+import { FC } from 'react';
 
 import { SamplesSection } from './SamplesSection';
 import { TemplatesSection } from './TemplatesSection';
-import { useGeneratorFileTree } from '@/api/hooks/useGeneratorConfigs';
-import { flattenFileTree } from '@/api/routes/generator-configs/modules/file-tree';
 import {
   TemplateEventPluginConfig,
   TemplateEventPluginConfigSchema,
 } from '@/api/routes/generator-configs/schemas/plugins/event/configs/template';
-import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
-import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
 
 interface TemplateEventPluginParamsProps {
   initialConfig: TemplateEventPluginConfig;
@@ -31,23 +26,6 @@ export const TemplateEventPluginParams: FC<TemplateEventPluginParamsProps> = ({
     onSubmitPreventDefault: 'always',
     validateInputOnChange: true,
   });
-
-  const { projectName } = useProjectName();
-  const {
-    data: fileTree,
-    isLoading: isFileTreeLoading,
-    isError: isFileTreeError,
-    error: fileTreeError,
-    isSuccess: isFileTreeSuccess,
-  } = useGeneratorFileTree(projectName);
-
-  const filesList = useMemo(() => {
-    if (isFileTreeSuccess) {
-      return flattenFileTree(fileTree, true);
-    } else {
-      return [];
-    }
-  }, [fileTree, isFileTreeSuccess]);
 
   return (
     <Stack>
@@ -79,29 +57,10 @@ export const TemplateEventPluginParams: FC<TemplateEventPluginParamsProps> = ({
         error={form.errors.params}
       />
 
-      {isFileTreeLoading && (
-        <Stack>
-          <Skeleton h="250px" animate visible />
-        </Stack>
-      )}
-
-      {isFileTreeError && (
-        <Alert
-          variant="default"
-          icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
-          title="Failed to load list of project files"
-        >
-          {fileTreeError.message}
-          <ShowErrorDetailsAnchor error={fileTreeError} prependDot />
-        </Alert>
-      )}
-
-      {isFileTreeSuccess && (
-        <Stack>
-          <SamplesSection form={form} existingFiles={filesList} />
-          <TemplatesSection form={form} existingFiles={filesList} />
-        </Stack>
-      )}
+      <Stack>
+        <SamplesSection form={form} />
+        <TemplatesSection form={form} />
+      </Stack>
     </Stack>
   );
 };

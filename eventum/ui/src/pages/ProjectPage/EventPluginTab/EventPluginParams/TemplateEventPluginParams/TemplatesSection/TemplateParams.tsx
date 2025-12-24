@@ -17,18 +17,17 @@ import {
   TemplatePickingMode,
 } from '@/api/routes/generator-configs/schemas/plugins/event/configs/template';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
+import { ProjectFileSelect } from '@/pages/ProjectPage/components/ProjectFileSelect';
 
 interface TemplateParamsProps {
   form: UseFormReturnType<TemplateEventPluginConfig>;
   selectedTemplate: string;
-  existingFiles: string[];
   onDelete: (templateName: string, templatePath: string) => void;
 }
 
 export const TemplateParams: FC<TemplateParamsProps> = ({
   form,
   selectedTemplate,
-  existingFiles,
   onDelete,
 }) => {
   const templates = form.getValues().templates;
@@ -52,11 +51,10 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
 
   return (
     <Stack>
-      <Select
+      <ProjectFileSelect
         label={
           <LabelWithTooltip label="Template" tooltip="Path to template file" />
         }
-        data={existingFiles}
         value={
           template.template.startsWith('./')
             ? template.template
@@ -73,7 +71,8 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
         }}
         searchable
         nothingFoundMessage="No files found"
-        placeholder="path"
+        placeholder=".jinja"
+        extensions={['.jinja']}
         clearable
         error={
           typeof form.errors.templates === 'string' &&

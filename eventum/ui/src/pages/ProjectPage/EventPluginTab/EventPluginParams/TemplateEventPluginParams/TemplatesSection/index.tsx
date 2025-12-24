@@ -29,17 +29,14 @@ import {
 } from '@/api/routes/generator-configs/schemas/plugins/event/configs/template';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
+import { ProjectNameProvider } from '@/pages/ProjectPage/context/ProjectNameContext';
 import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
 
 interface TemplatesSectionProps {
   form: UseFormReturnType<TemplateEventPluginConfig>;
-  existingFiles: string[];
 }
 
-export const TemplatesSection: FC<TemplatesSectionProps> = ({
-  form,
-  existingFiles,
-}) => {
+export const TemplatesSection: FC<TemplatesSectionProps> = ({ form }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const existingTemplates = form
     .getValues()
@@ -247,11 +244,12 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({
             modals.open({
               title: 'Adding template',
               children: (
-                <AddTemplateModal
-                  existingTemplates={existingTemplates}
-                  existingFiles={existingFiles}
-                  onAdd={handleAddNewTemplate}
-                />
+                <ProjectNameProvider initialProjectName={projectName}>
+                  <AddTemplateModal
+                    existingTemplates={existingTemplates}
+                    onAdd={handleAddNewTemplate}
+                  />
+                </ProjectNameProvider>
               ),
               size: 'md',
             });
@@ -265,7 +263,6 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({
         <TemplateParams
           form={form}
           selectedTemplate={selectedTemplate}
-          existingFiles={existingFiles}
           onDelete={(templateName, templatePath) =>
             modals.open({
               title: 'Removing template',

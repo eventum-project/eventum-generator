@@ -6,7 +6,6 @@ import {
   JsonInput,
   Kbd,
   SegmentedControl,
-  Select,
   Stack,
   Switch,
   TextInput,
@@ -21,18 +20,17 @@ import {
   TemplateEventPluginConfig,
 } from '@/api/routes/generator-configs/schemas/plugins/event/configs/template';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
+import { ProjectFileSelect } from '@/pages/ProjectPage/components/ProjectFileSelect';
 
 interface SamplesParamsProps {
   form: UseFormReturnType<TemplateEventPluginConfig>;
   selectedSample: string;
-  existingFiles: string[];
   onDelete: () => void;
 }
 
 export const SamplesParams: FC<SamplesParamsProps> = ({
   form,
   selectedSample,
-  existingFiles,
   onDelete,
 }) => {
   const samples = form.getValues().samples;
@@ -137,9 +135,9 @@ export const SamplesParams: FC<SamplesParamsProps> = ({
         )}
         {sample.type == SampleType.CSV && (
           <Stack>
-            <Select
+            <ProjectFileSelect
               label={<LabelWithTooltip label="Source" tooltip="CSV file" />}
-              data={existingFiles}
+              placeholder=".csv .tsv"
               clearable
               searchable
               value={sample.source ?? null}
@@ -152,6 +150,7 @@ export const SamplesParams: FC<SamplesParamsProps> = ({
                 });
               }}
               error={form.errors.samples}
+              extensions={['.csv', '.tsv']}
             />
             <TextInput
               label={
@@ -212,9 +211,9 @@ export const SamplesParams: FC<SamplesParamsProps> = ({
         )}
 
         {sample.type == SampleType.JSON && (
-          <Select
+          <ProjectFileSelect
             label={<LabelWithTooltip label="Source" tooltip="JSON file" />}
-            data={existingFiles}
+            placeholder=".json"
             clearable
             searchable
             value={sample.source ?? null}
@@ -227,6 +226,7 @@ export const SamplesParams: FC<SamplesParamsProps> = ({
               });
             }}
             error={form.errors.samples}
+            extensions={['.json']}
           />
         )}
       </Stack>

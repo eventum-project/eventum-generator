@@ -1,18 +1,14 @@
-import { Alert, Box, Select, Skeleton, Stack } from '@mantine/core';
+import { Stack } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconAlertSquareRounded } from '@tabler/icons-react';
 import { zod4Resolver } from 'mantine-form-zod-resolver';
-import { FC, useMemo } from 'react';
+import { FC } from 'react';
 
-import { useGeneratorFileTree } from '@/api/hooks/useGeneratorConfigs';
-import { flattenFileTree } from '@/api/routes/generator-configs/modules/file-tree';
 import {
   ScriptEventPluginConfig,
   ScriptEventPluginConfigSchema,
 } from '@/api/routes/generator-configs/schemas/plugins/event/configs/script';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
-import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
-import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
+import { ProjectFileSelect } from '@/pages/ProjectPage/components/ProjectFileSelect';
 
 interface ScriptEventPluginParamsProps {
   initialConfig: ScriptEventPluginConfig;
@@ -38,56 +34,16 @@ export const ScriptEventPluginParams: FC<ScriptEventPluginParamsProps> = ({
     validateInputOnChange: true,
   });
 
-  const { projectName } = useProjectName();
-  const {
-    data: fileTree,
-    isLoading: isFileTreeLoading,
-    isError: isFileTreeError,
-    error: fileTreeError,
-    isSuccess: isFileTreeSuccess,
-  } = useGeneratorFileTree(projectName);
-
-  const filesList = useMemo(() => {
-    if (isFileTreeSuccess) {
-      return flattenFileTree(fileTree, true);
-    } else {
-      return [];
-    }
-  }, [fileTree, isFileTreeSuccess]);
-
   return (
     <Stack>
-      {isFileTreeLoading && (
-        <Stack>
-          <Skeleton h="250px" animate visible />
-        </Stack>
-      )}
-
-      {isFileTreeError && (
-        <Alert
-          variant="default"
-          icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
-          title="Failed to load list of project files"
-        >
-          {fileTreeError.message}
-          <ShowErrorDetailsAnchor error={fileTreeError} prependDot />
-        </Alert>
-      )}
-
-      {isFileTreeSuccess && (
-        <Stack>
-          <Select
-            label={
-              <LabelWithTooltip label="Path" tooltip="Path to script file" />
-            }
-            placeholder="path"
-            data={filesList}
-            clearable
-            searchable
-            {...form.getInputProps('path')}
-          />
-        </Stack>
-      )}
+      <ProjectFileSelect
+        label={<LabelWithTooltip label="Path" tooltip="Path to script file" />}
+        placeholder="path"
+        clearable
+        searchable
+        extensions={['.py']}
+        {...form.getInputProps('path')}
+      />
     </Stack>
   );
 };

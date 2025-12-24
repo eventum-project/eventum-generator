@@ -158,7 +158,7 @@ export const FormatterParams: FC<FormatterParamsProps> = ({
                   template_path: val ?? undefined,
                 });
               }}
-              extension=".jinja"
+              extensions={['.jinja']}
             />
           )}
         </Stack>
