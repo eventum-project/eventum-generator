@@ -1,6 +1,6 @@
 import z from 'zod';
 
-const enum Format {
+export const enum Format {
   Plain = 'plain',
   JSON = 'json',
   JSONBatch = 'json-batch',
@@ -35,3 +35,4 @@ export const FormatterConfigSchema = z.discriminatedUnion('format', [
   JSONFormatterConfigSchema,
   TemplateFormatterConfigSchema,
 ]);
+export type FormatterConfig = z.infer<typeof FormatterConfigSchema>;
