@@ -214,7 +214,7 @@ export const ReplayEventPluginParams: FC<ReplayEventPluginParamsProps> = ({
                 tooltip="Encoding of the log file. Default is UTF-8."
               />
             }
-            placeholder="path"
+            placeholder="encoding"
             data={ENCODINGS}
             clearable
             searchable
