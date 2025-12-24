@@ -10,7 +10,7 @@ import {
 import { IconBraces, IconFile } from '@tabler/icons-react';
 import { FC, ReactNode, useState } from 'react';
 
-import { FilesSelect } from '../../../components/FileSelect';
+import { FileSelect } from '../../../components/FileSelect';
 import {
   Format,
   FormatterConfig,
@@ -141,7 +141,16 @@ export const FormatterParams: FC<FormatterParamsProps> = ({
             />
           )}
           {templateSourceType === 'template-path' && (
-            <FilesSelect
+            <FileSelect
+              label={
+                <LabelWithTooltip
+                  label="Template path"
+                  tooltip="Path to file with template content"
+                />
+              }
+              clearable
+              searchable
+              error={!value?.template_path ? 'Template path is required' : null}
               value={value?.template_path ?? null}
               onChange={(val) => {
                 onChange({

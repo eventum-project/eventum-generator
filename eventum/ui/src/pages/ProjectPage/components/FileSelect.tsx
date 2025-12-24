@@ -1,23 +1,26 @@
-import { Alert, Box, Select, Skeleton, Stack } from '@mantine/core';
+import {
+  Alert,
+  Box,
+  Select,
+  SelectProps,
+  Skeleton,
+  Stack,
+} from '@mantine/core';
 import { IconAlertSquareRounded } from '@tabler/icons-react';
 import { FC, useMemo } from 'react';
 
 import { useGeneratorFileTree } from '@/api/hooks/useGeneratorConfigs';
 import { flattenFileTree } from '@/api/routes/generator-configs/modules/file-tree';
-import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
 
-interface FilesSelectProps {
-  value: string | null;
-  onChange: (value: string | null) => void;
+interface FileSelectProps {
   extension?: string;
 }
 
-export const FilesSelect: FC<FilesSelectProps> = ({
-  value,
-  onChange,
+export const FileSelect: FC<SelectProps & FileSelectProps> = ({
   extension,
+  ...props
 }) => {
   const { projectName } = useProjectName();
   const {
@@ -58,22 +61,7 @@ export const FilesSelect: FC<FilesSelectProps> = ({
         </Alert>
       )}
 
-      {isFileTreeSuccess && (
-        <Select
-          label={
-            <LabelWithTooltip
-              label="Template path"
-              tooltip="Path to file with template content"
-            />
-          }
-          data={filesList}
-          clearable
-          searchable
-          value={value}
-          onChange={onChange}
-          error={!value ? 'Template path is required' : null}
-        />
-      )}
+      {isFileTreeSuccess && <Select {...props} data={filesList} />}
     </>
   );
 };
