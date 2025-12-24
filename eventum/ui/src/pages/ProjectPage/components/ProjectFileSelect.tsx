@@ -15,11 +15,11 @@ import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 import { useProjectName } from '@/pages/ProjectPage/hooks/useProjectName';
 
 interface ProjectFileSelectProps {
-  extension?: string;
+  extensions?: string[];
 }
 
 export const ProjectFileSelect: FC<SelectProps & ProjectFileSelectProps> = ({
-  extension,
+  extensions,
   ...props
 }) => {
   const { projectName } = useProjectName();
@@ -34,7 +34,9 @@ export const ProjectFileSelect: FC<SelectProps & ProjectFileSelectProps> = ({
   const filesList = useMemo(() => {
     if (isFileTreeSuccess) {
       return flattenFileTree(fileTree, true).filter((file) =>
-        extension ? file.endsWith(extension) : true
+        extensions
+          ? extensions.some((extension) => file.endsWith(extension))
+          : true
       );
     } else {
       return [];
