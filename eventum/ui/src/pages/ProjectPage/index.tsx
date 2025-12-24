@@ -23,6 +23,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { EventPluginTab } from './EventPluginTab';
 import { InputPluginsTab } from './InputPluginsTab';
+import { OutputPluginsTab } from './OutputPluginsTab';
 import { FileTreeProvider } from './context/FileTreeContext';
 import { ProjectNameProvider } from './context/ProjectNameContext';
 import { useGeneratorConfig } from '@/api/hooks/useGeneratorConfigs';
@@ -118,7 +119,11 @@ export default function ProjectPage() {
                   <Tabs.Panel value="event">
                     <EventPluginTab eventPluginConfig={generatorConfig.event} />
                   </Tabs.Panel>
-                  <Tabs.Panel value="output">Output plugins</Tabs.Panel>
+                  <Tabs.Panel value="output">
+                    <OutputPluginsTab
+                      outputPluginsConfig={generatorConfig.output}
+                    />
+                  </Tabs.Panel>
                 </Box>
               </Tabs>
             </Stack>
