@@ -3,6 +3,7 @@ import { Stack, Text } from '@mantine/core';
 import { FC } from 'react';
 import YAML from 'yaml';
 
+import { ClickhouseOutputPluginParams } from './ClickhouseOutputPluginParams';
 import { FileOutputPluginParams } from './FileOutputPluginParams';
 import {
   OutputPluginConfig,
@@ -23,7 +24,7 @@ type PluginNameToConfigType = {
 };
 
 const pluginNamesToParamsComponent = {
-  clickhouse: '',
+  clickhouse: ClickhouseOutputPluginParams,
   file: FileOutputPluginParams,
   http: '',
   opensearch: '',
