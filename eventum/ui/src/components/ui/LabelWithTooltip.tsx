@@ -17,7 +17,7 @@ export const LabelWithTooltip: FC<LabelWithTooltipProps> = ({
   openDelay = 200,
   maw = 300,
 }) => (
-  <Group gap={4} align="center" wrap="nowrap">
+  <Group gap={4} align="center" wrap="nowrap" display="inline-flex">
     {label}
     <Tooltip
       label={tooltip}
