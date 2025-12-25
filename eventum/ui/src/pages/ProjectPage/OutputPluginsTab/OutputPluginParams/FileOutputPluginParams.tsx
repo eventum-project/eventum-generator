@@ -33,8 +33,33 @@ export const FileOutputPluginParams: FC<FileOutputPluginParamsProps> = ({
       onChange(form.getTransformedValues());
     },
     transformValues: (values) => {
-      return values;
+      const transformedValues = { ...values };
+
+      if (
+        typeof values.cleanup_interval === 'string' &&
+        values.cleanup_interval === ''
+      ) {
+        transformedValues.cleanup_interval = undefined;
+      }
+      if (values.encoding == null) {
+        transformedValues.encoding = undefined;
+      }
+      if (typeof values.file_mode === 'string' && values.file_mode === '') {
+        transformedValues.file_mode = undefined;
+      }
+      if (
+        typeof values.flush_interval === 'string' &&
+        values.flush_interval === ''
+      ) {
+        transformedValues.flush_interval = undefined;
+      }
+      if (values.write_mode == null) {
+        transformedValues.write_mode = undefined;
+      }
+
+      return transformedValues;
     },
+    validateInputOnChange: true,
   });
 
   return (
