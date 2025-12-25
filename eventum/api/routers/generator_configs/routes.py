@@ -123,6 +123,7 @@ async def list_generator_dirs(
         'Get generator configuration in the directory with specified name.'
     ),
     response_description='Generator configuration',
+    response_model_exclude_unset=True,
     responses=merge_responses(
         check_directory_is_allowed.responses,
         check_configuration_exists.responses,
