@@ -80,7 +80,7 @@ class ClickhouseOutputPluginConfig(OutputPluginConfig, frozen=True):
         key, `mutual` assumes ClickHouse mutual TLS auth with a client
         certificate, default behavior is `mutual`.
 
-    proxy_url : HttpUrl
+    proxy_url : HttpUrl | None, default=None
         HTTP(S) proxy address.
 
     input_format : ClickhouseInputFormat, default='JSONEachRow'
