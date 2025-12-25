@@ -74,6 +74,7 @@ export const ClickhouseOutputPluginParams: FC<
           step={1}
           allowDecimal={false}
           {...form.getInputProps('port')}
+          value={form.getValues().port ?? ''}
           onChange={(value) =>
             form.setFieldValue(
               'port',
@@ -216,6 +217,7 @@ export const ClickhouseOutputPluginParams: FC<
           step={1}
           allowDecimal={false}
           {...form.getInputProps('connect_timeout')}
+          value={form.getValues().connect_timeout ?? ''}
           onChange={(value) =>
             form.setFieldValue(
               'connect_timeout',
@@ -236,6 +238,7 @@ export const ClickhouseOutputPluginParams: FC<
           step={1}
           allowDecimal={false}
           {...form.getInputProps('request_timeout')}
+          value={form.getValues().request_timeout ?? ''}
           onChange={(value) =>
             form.setFieldValue(
               'request_timeout',
