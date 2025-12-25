@@ -9,7 +9,6 @@ import {
   IconList,
   IconNumber100Small,
   IconRepeat,
-  IconTallymark4,
   IconTerminal2,
   IconTimeDuration45,
 } from '@tabler/icons-react';
@@ -35,6 +34,7 @@ import { FileOutputPluginDefaultConfig } from './default-configs/output/file';
 import { HTTPOutputPluginDefaultConfig } from './default-configs/output/http';
 import { OpensearchOutputPluginDefaultConfig } from './default-configs/output/opensearch';
 import { StdoutOutputPluginDefaultConfig } from './default-configs/output/stdout';
+import { IconClickHouse } from '@/components/ui/icons/IconClickHouse';
 import { IconOpenSearch } from '@/components/ui/icons/IconOpenSearch';
 
 export type PluginType = 'input' | 'event' | 'output';
@@ -105,7 +105,7 @@ export const EVENT_PLUGINS_INFO = {
 export const OUTPUT_PLUGINS_INFO = {
   clickhouse: {
     label: 'ClickHouse',
-    icon: IconTallymark4,
+    icon: IconClickHouse,
     description: 'Index events to ClickHouse',
   },
   file: {
