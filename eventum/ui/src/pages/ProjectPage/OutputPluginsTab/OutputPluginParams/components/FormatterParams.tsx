@@ -36,7 +36,7 @@ export const FormatterParams: FC<FormatterParamsProps> = ({
         label={
           <LabelWithTooltip label="Format" tooltip="Target format of content" />
         }
-        placeholder="mode"
+        placeholder="format"
         data={[
           Format.EventumHTTPInput,
           Format.JSON,
