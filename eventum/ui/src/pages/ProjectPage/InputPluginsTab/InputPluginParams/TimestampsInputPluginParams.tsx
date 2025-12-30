@@ -1,6 +1,6 @@
 import { Box, Stack, Tabs, TagsInput, Textarea } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { zodResolver } from 'mantine-form-zod-resolver';
+import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { FC } from 'react';
 
 import { ProjectFileSelect } from '../../components/ProjectFileSelect';
@@ -19,7 +19,7 @@ export const TimestampsInputPluginParams: FC<
   TimestampsInputPluginParamsProps
 > = ({ initialConfig, onChange }) => {
   const form = useForm<TimestampsInputPluginConfig>({
-    validate: zodResolver(TimestampsInputPluginConfigSchema),
+    validate: zod4Resolver(TimestampsInputPluginConfigSchema),
     initialValues: initialConfig,
     onValuesChange: onChange,
     onSubmitPreventDefault: 'always',
@@ -42,10 +42,11 @@ export const TimestampsInputPluginParams: FC<
               placeholder="..."
               autosize
               minRows={3}
+              required
               value={
-                typeof form.values.source !== 'string'
+                Array.isArray(form.values.source)
                   ? form.values.source.join('\n')
-                  : undefined
+                  : ''
               }
               onChange={(event) => {
                 form.setFieldValue(
@@ -72,13 +73,14 @@ export const TimestampsInputPluginParams: FC<
               extensions={['.csv', '.txt', 'timestamps']}
               clearable
               searchable
+              required
               value={
                 typeof form.values.source === 'string'
                   ? form.values.source
                   : null
               }
               onChange={(value) => {
-                form.setFieldValue('source', value ?? []);
+                form.setFieldValue('source', value ?? undefined!);
               }}
               error={form.errors.source}
             />
@@ -93,7 +95,11 @@ export const TimestampsInputPluginParams: FC<
           />
         }
         placeholder="Press Enter to submit a tag"
-        {...form.getInputProps('tags', { type: 'input' })}
+        {...form.getInputProps('tags')}
+        value={form.getValues().tags ?? []}
+        onChange={(value) =>
+          form.setFieldValue('tags', value.length > 0 ? value : undefined)
+        }
       />
     </Stack>
   );

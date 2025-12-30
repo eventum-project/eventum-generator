@@ -2,12 +2,16 @@ import { ActionIcon, Group, Stack, TagsInput, Text } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
 import { IconPlus } from '@tabler/icons-react';
+import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { FC, useState } from 'react';
 
 import { useProjectName } from '../../../hooks/useProjectName';
 import { AddNewPatternModal } from './AddNewPatternModal';
 import { TimePatternParams } from './TimePatternParams';
-import { TimePatternsInputPluginConfig } from '@/api/routes/generator-configs/schemas/plugins/input/configs/time_patterns';
+import {
+  TimePatternsInputPluginConfig,
+  TimePatternsInputPluginConfigSchema,
+} from '@/api/routes/generator-configs/schemas/plugins/input/configs/time_patterns';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 import { ProjectFileMultiSelect } from '@/pages/ProjectPage/components/ProjectFileMultiSelect';
 import { ProjectFileSelect } from '@/pages/ProjectPage/components/ProjectFileSelect';
@@ -25,18 +29,8 @@ export const TimePatternsInputPluginParams: FC<
 
   const form = useForm<TimePatternsInputPluginConfig>({
     initialValues: initialConfig,
-    onValuesChange: (values) => {
-      onChange(values);
-    },
-    validate: {
-      patterns: (value) => {
-        if (value.length === 0) {
-          return 'At least one pattern is required';
-        }
-
-        return null;
-      },
-    },
+    onValuesChange: onChange,
+    validate: zod4Resolver(TimePatternsInputPluginConfigSchema),
     onSubmitPreventDefault: 'always',
     validateInputOnChange: true,
   });
@@ -58,7 +52,12 @@ export const TimePatternsInputPluginParams: FC<
         clearable
         searchable
         hidePickedOptions
-        {...form.getInputProps('patterns', { type: 'input' })}
+        required
+        {...form.getInputProps('patterns')}
+        value={form.getValues().patterns ?? []}
+        onChange={(value) =>
+          form.setFieldValue('patterns', value.length > 0 ? value : undefined!)
+        }
       />
       <TagsInput
         label={
@@ -68,7 +67,11 @@ export const TimePatternsInputPluginParams: FC<
           />
         }
         placeholder="Press Enter to submit a tag"
-        {...form.getInputProps('tags', { type: 'input' })}
+        {...form.getInputProps('tags')}
+        value={form.getValues().tags ?? []}
+        onChange={(value) =>
+          form.setFieldValue('tags', value.length > 0 ? value : undefined)
+        }
       />
 
       <Stack gap="4px">

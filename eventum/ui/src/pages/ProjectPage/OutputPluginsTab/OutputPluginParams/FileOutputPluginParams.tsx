@@ -32,9 +32,7 @@ export const FileOutputPluginParams: FC<FileOutputPluginParamsProps> = ({
   const form = useForm<FileOutputPluginConfig>({
     initialValues: initialConfig,
     validate: zod4Resolver(FileOutputPluginConfigSchema),
-    onValuesChange: () => {
-      onChange(form.getValues());
-    },
+    onValuesChange: onChange,
     validateInputOnChange: true,
   });
 

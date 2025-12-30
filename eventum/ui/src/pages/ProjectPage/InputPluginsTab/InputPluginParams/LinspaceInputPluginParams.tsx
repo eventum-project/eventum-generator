@@ -1,9 +1,13 @@
 import { Group, NumberInput, Stack, Switch, TagsInput } from '@mantine/core';
-import { isNotEmpty, useForm } from '@mantine/form';
+import { useForm } from '@mantine/form';
+import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { FC } from 'react';
 
 import { VersatileDatetimeInput } from '../../VersatileDatetimeInput';
-import { LinspaceInputPluginConfig } from '@/api/routes/generator-configs/schemas/plugins/input/configs/linspace';
+import {
+  LinspaceInputPluginConfig,
+  LinspaceInputPluginConfigSchema,
+} from '@/api/routes/generator-configs/schemas/plugins/input/configs/linspace';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 
 interface LinspaceInputPluginParamsProps {
@@ -17,13 +21,8 @@ export const LinspaceInputPluginParams: FC<LinspaceInputPluginParamsProps> = ({
 }) => {
   const form = useForm<LinspaceInputPluginConfig>({
     initialValues: initialConfig,
-    onValuesChange: (values) => {
-      onChange(values);
-    },
-    validate: {
-      start: isNotEmpty('Start time is required'),
-      end: isNotEmpty('End time is required'),
-    },
+    onValuesChange: onChange,
+    validate: zod4Resolver(LinspaceInputPluginConfigSchema),
     onSubmitPreventDefault: 'always',
     validateInputOnChange: true,
   });
@@ -39,7 +38,17 @@ export const LinspaceInputPluginParams: FC<LinspaceInputPluginParamsProps> = ({
             />
           }
           placeholder="time expression"
-          {...form.getInputProps('start', { type: 'input' })}
+          required
+          {...form.getInputProps('start')}
+          value={form.getValues().start ?? ''}
+          onChange={(value) =>
+            form.setFieldValue(
+              'start',
+              value.currentTarget.value !== ''
+                ? value.currentTarget.value
+                : undefined!
+            )
+          }
         />
         <VersatileDatetimeInput
           label={
@@ -49,7 +58,17 @@ export const LinspaceInputPluginParams: FC<LinspaceInputPluginParamsProps> = ({
             />
           }
           placeholder="time expression"
-          {...form.getInputProps('end', { type: 'input' })}
+          required
+          {...form.getInputProps('end')}
+          value={form.getValues().end ?? ''}
+          onChange={(value) =>
+            form.setFieldValue(
+              'end',
+              value.currentTarget.value !== ''
+                ? value.currentTarget.value
+                : undefined!
+            )
+          }
         />
       </Group>
 
@@ -63,7 +82,15 @@ export const LinspaceInputPluginParams: FC<LinspaceInputPluginParamsProps> = ({
         min={1}
         step={1}
         allowDecimal={false}
-        {...form.getInputProps('count', { type: 'input' })}
+        required
+        {...form.getInputProps('count')}
+        value={form.getValues().count ?? ''}
+        onChange={(value) =>
+          form.setFieldValue(
+            'count',
+            typeof value === 'number' ? value : undefined!
+          )
+        }
       />
 
       <Switch
@@ -84,7 +111,11 @@ export const LinspaceInputPluginParams: FC<LinspaceInputPluginParamsProps> = ({
           />
         }
         placeholder="Press Enter to submit a tag"
-        {...form.getInputProps('tags', { type: 'input' })}
+        {...form.getInputProps('tags')}
+        value={form.getValues().tags ?? []}
+        onChange={(value) =>
+          form.setFieldValue('tags', value.length > 0 ? value : undefined)
+        }
       />
     </Stack>
   );

@@ -42,9 +42,7 @@ export const ClickhouseOutputPluginParams: FC<
   const form = useForm<ClickhouseOutputPluginConfig>({
     initialValues: initialConfig,
     validate: zod4Resolver(ClickhouseOutputPluginConfigSchema),
-    onValuesChange: () => {
-      onChange(form.getValues());
-    },
+    onValuesChange: onChange,
     validateInputOnChange: true,
   });
 

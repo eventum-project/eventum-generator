@@ -1,8 +1,12 @@
 import { Group, NumberInput, Stack, TagsInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { FC } from 'react';
 
-import { TimerInputPluginConfig } from '@/api/routes/generator-configs/schemas/plugins/input/configs/timer';
+import {
+  TimerInputPluginConfig,
+  TimerInputPluginConfigSchema,
+} from '@/api/routes/generator-configs/schemas/plugins/input/configs/timer';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 import { VersatileDatetimeInput } from '@/pages/ProjectPage/VersatileDatetimeInput';
 
@@ -17,21 +21,10 @@ export const TimerInputPluginParams: FC<TimerInputPluginParamsProps> = ({
 }) => {
   const form = useForm<TimerInputPluginConfig>({
     initialValues: initialConfig,
-    onValuesChange: () => {
-      onChange(form.getTransformedValues());
-    },
-    transformValues: (values) => {
-      if (values.start === '') {
-        values.start = undefined;
-      }
-
-      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-      if (!values.repeat) {
-        values.repeat = undefined;
-      }
-
-      return values;
-    },
+    onValuesChange: onChange,
+    validate: zod4Resolver(TimerInputPluginConfigSchema),
+    validateInputOnChange: true,
+    onSubmitPreventDefault: 'always',
   });
 
   return (
@@ -47,7 +40,15 @@ export const TimerInputPluginParams: FC<TimerInputPluginParamsProps> = ({
           suffix=" s."
           min={0.1}
           step={1}
-          {...form.getInputProps('seconds', { type: 'input' })}
+          required
+          {...form.getInputProps('seconds')}
+          value={form.getValues().seconds ?? ''}
+          onChange={(value) =>
+            form.setFieldValue(
+              'seconds',
+              typeof value === 'number' ? value : undefined!
+            )
+          }
         />
         <NumberInput
           label={
@@ -59,7 +60,15 @@ export const TimerInputPluginParams: FC<TimerInputPluginParamsProps> = ({
           min={1}
           step={1}
           allowDecimal={false}
-          {...form.getInputProps('count', { type: 'input' })}
+          required
+          {...form.getInputProps('count')}
+          value={form.getValues().count ?? ''}
+          onChange={(value) =>
+            form.setFieldValue(
+              'count',
+              typeof value === 'number' ? value : undefined!
+            )
+          }
         />
         <NumberInput
           min={1}
@@ -72,7 +81,14 @@ export const TimerInputPluginParams: FC<TimerInputPluginParamsProps> = ({
           }
           placeholder="infinitely"
           suffix=" times"
-          {...form.getInputProps('repeat', { type: 'input' })}
+          {...form.getInputProps('repeat')}
+          value={form.getValues().count ?? ''}
+          onChange={(value) =>
+            form.setFieldValue(
+              'repeat',
+              typeof value === 'number' ? value : undefined
+            )
+          }
         />
       </Group>
 
@@ -84,7 +100,16 @@ export const TimerInputPluginParams: FC<TimerInputPluginParamsProps> = ({
           />
         }
         placeholder="time expression"
-        {...form.getInputProps('start', { type: 'input' })}
+        {...form.getInputProps('start')}
+        value={form.getValues().start ?? ''}
+        onChange={(value) =>
+          form.setFieldValue(
+            'start',
+            value.currentTarget.value !== ''
+              ? value.currentTarget.value
+              : undefined
+          )
+        }
       />
       <TagsInput
         label={
@@ -94,7 +119,11 @@ export const TimerInputPluginParams: FC<TimerInputPluginParamsProps> = ({
           />
         }
         placeholder="Press Enter to submit a tag"
-        {...form.getInputProps('tags', { type: 'input' })}
+        {...form.getInputProps('tags')}
+        value={form.getValues().tags ?? []}
+        onChange={(value) =>
+          form.setFieldValue('tags', value.length > 0 ? value : undefined)
+        }
       />
     </Stack>
   );

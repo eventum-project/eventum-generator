@@ -8,10 +8,15 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import cronstrue from 'cronstrue';
+import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { FC } from 'react';
+import z from 'zod';
 
 import { VersatileDatetimeInput } from '../../VersatileDatetimeInput';
-import { CronInputPluginConfig } from '@/api/routes/generator-configs/schemas/plugins/input/configs/cron';
+import {
+  CronInputPluginConfig,
+  CronInputPluginConfigSchema,
+} from '@/api/routes/generator-configs/schemas/plugins/input/configs/cron';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 
 interface CronInputPluginParamsProps {
@@ -19,35 +24,30 @@ interface CronInputPluginParamsProps {
   onChange: (config: CronInputPluginConfig) => void;
 }
 
+const CronExpressionSchema = z.string().refine(
+  (value) => {
+    try {
+      cronstrue.toString(value);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  { message: 'Invalid cron expression' }
+);
+
+const ExtendedCronInputPluginConfigSchema = CronInputPluginConfigSchema.extend({
+  expression: CronExpressionSchema,
+});
+
 export const CronInputPluginParams: FC<CronInputPluginParamsProps> = ({
   initialConfig,
   onChange,
 }) => {
   const form = useForm<CronInputPluginConfig>({
     initialValues: initialConfig,
-    onValuesChange: () => {
-      onChange(form.getTransformedValues());
-    },
-    transformValues: (values) => {
-      if (values.start === '') {
-        values.start = undefined;
-      }
-      if (values.end === '') {
-        values.end = undefined;
-      }
-
-      return values;
-    },
-    validate: {
-      expression: (value) => {
-        try {
-          cronstrue.toString(value);
-        } catch {
-          return 'Invalid expression';
-        }
-        return null;
-      },
-    },
+    onValuesChange: onChange,
+    validate: zod4Resolver(ExtendedCronInputPluginConfigSchema),
     onSubmitPreventDefault: 'always',
     validateInputOnChange: true,
   });
@@ -71,8 +71,9 @@ export const CronInputPluginParams: FC<CronInputPluginParamsProps> = ({
         values and keywords)"
               />
             }
+            required
             placeholder="cron expression"
-            {...form.getInputProps('expression', { type: 'input' })}
+            {...form.getInputProps('expression')}
           />
           <Text size="xs" c="gray.6">
             {cronDescription}
@@ -85,10 +86,18 @@ export const CronInputPluginParams: FC<CronInputPluginParamsProps> = ({
               tooltip="Number of timestamps to generate for every cron interval"
             />
           }
+          required
           min={1}
           step={1}
           allowDecimal={false}
-          {...form.getInputProps('count', { type: 'input' })}
+          {...form.getInputProps('count')}
+          value={form.getValues().count ?? ''}
+          onChange={(value) =>
+            form.setFieldValue(
+              'count',
+              typeof value === 'number' ? value : undefined!
+            )
+          }
         />
       </Group>
       <Group grow align="start">
@@ -100,7 +109,15 @@ export const CronInputPluginParams: FC<CronInputPluginParamsProps> = ({
             />
           }
           placeholder="time expression"
-          {...form.getInputProps('start', { type: 'input' })}
+          {...form.getInputProps('start')}
+          onChange={(value) =>
+            form.setFieldValue(
+              'start',
+              value.currentTarget.value !== ''
+                ? value.currentTarget.value
+                : undefined
+            )
+          }
         />
         <VersatileDatetimeInput
           label={
@@ -110,7 +127,15 @@ export const CronInputPluginParams: FC<CronInputPluginParamsProps> = ({
             />
           }
           placeholder="time expression"
-          {...form.getInputProps('end', { type: 'input' })}
+          {...form.getInputProps('end')}
+          onChange={(value) =>
+            form.setFieldValue(
+              'end',
+              value.currentTarget.value !== ''
+                ? value.currentTarget.value
+                : undefined
+            )
+          }
         />
       </Group>
       <TagsInput
@@ -121,7 +146,11 @@ export const CronInputPluginParams: FC<CronInputPluginParamsProps> = ({
           />
         }
         placeholder="Press Enter to submit a tag"
-        {...form.getInputProps('tags', { type: 'input' })}
+        {...form.getInputProps('tags')}
+        value={form.getValues().tags ?? []}
+        onChange={(value) =>
+          form.setFieldValue('tags', value.length > 0 ? value : undefined)
+        }
       />
     </Stack>
   );

@@ -1,9 +1,14 @@
 import { Group, NumberInput, Stack, TagsInput, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { FC } from 'react';
 import validator from 'validator';
+import z from 'zod';
 
-import { HTTPInputPluginConfig } from '@/api/routes/generator-configs/schemas/plugins/input/configs/http';
+import {
+  HTTPInputPluginConfig,
+  HTTPInputPluginConfigSchema,
+} from '@/api/routes/generator-configs/schemas/plugins/input/configs/http';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 
 interface HTTPInputPluginParamsProps {
@@ -11,46 +16,38 @@ interface HTTPInputPluginParamsProps {
   onChange: (config: HTTPInputPluginConfig) => void;
 }
 
+const HostSchema = z
+  .string()
+  .optional()
+  .refine(
+    (value) => {
+      if (!value) {
+        return true;
+      }
+
+      return (
+        validator.isIP(value) ||
+        validator.isFQDN(value, {
+          require_tld: false,
+          allow_underscores: true,
+        })
+      );
+    },
+    { message: 'Invalid IP or hostname' }
+  );
+
+const ExtendedHTTPInputPluginConfigSchema = HTTPInputPluginConfigSchema.extend({
+  host: HostSchema,
+});
+
 export const HTTPInputPluginParams: FC<HTTPInputPluginParamsProps> = ({
   initialConfig,
   onChange,
 }) => {
   const form = useForm<HTTPInputPluginConfig>({
     initialValues: initialConfig,
-    onValuesChange: () => {
-      onChange(form.getTransformedValues());
-    },
-    transformValues: (values) => {
-      if (values.host === '') {
-        values.host = undefined;
-      }
-
-      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-      if (!values.max_pending_requests) {
-        values.max_pending_requests = undefined;
-      }
-
-      return values;
-    },
-    validate: {
-      host: (value) => {
-        if (value && value !== '') {
-          if (
-            validator.isIP(value) ||
-            validator.isFQDN(value, {
-              require_tld: false,
-              allow_underscores: true,
-            })
-          ) {
-            return null;
-          } else {
-            return 'Invalid IP or hostname';
-          }
-        }
-
-        return null;
-      },
-    },
+    onValuesChange: onChange,
+    validate: zod4Resolver(ExtendedHTTPInputPluginConfigSchema),
     onSubmitPreventDefault: 'always',
     validateInputOnChange: true,
   });
@@ -66,7 +63,15 @@ export const HTTPInputPluginParams: FC<HTTPInputPluginParamsProps> = ({
             />
           }
           placeholder="ip or hostname"
-          {...form.getInputProps('host', { type: 'input' })}
+          {...form.getInputProps('host')}
+          onChange={(value) =>
+            form.setFieldValue(
+              'host',
+              value.currentTarget.value !== ''
+                ? value.currentTarget.value
+                : undefined
+            )
+          }
         />
         <NumberInput
           label={<LabelWithTooltip label="Port" tooltip="Bind port" />}
@@ -74,7 +79,15 @@ export const HTTPInputPluginParams: FC<HTTPInputPluginParamsProps> = ({
           max={65_535}
           step={1}
           allowDecimal={false}
-          {...form.getInputProps('port', { type: 'input' })}
+          required
+          {...form.getInputProps('port')}
+          value={form.getValues().port ?? ''}
+          onChange={(value) =>
+            form.setFieldValue(
+              'port',
+              typeof value === 'number' ? value : undefined!
+            )
+          }
         />
       </Group>
       <NumberInput
@@ -87,7 +100,14 @@ export const HTTPInputPluginParams: FC<HTTPInputPluginParamsProps> = ({
         min={1}
         step={1}
         allowDecimal={false}
-        {...form.getInputProps('max_pending_requests', { type: 'input' })}
+        {...form.getInputProps('max_pending_requests')}
+        value={form.getValues().max_pending_requests ?? ''}
+        onChange={(value) =>
+          form.setFieldValue(
+            'max_pending_requests',
+            typeof value === 'number' ? value : undefined
+          )
+        }
       />
       <TagsInput
         label={
@@ -97,7 +117,11 @@ export const HTTPInputPluginParams: FC<HTTPInputPluginParamsProps> = ({
           />
         }
         placeholder="Press Enter to submit a tag"
-        {...form.getInputProps('tags', { type: 'input' })}
+        {...form.getInputProps('tags')}
+        value={form.getValues().tags ?? []}
+        onChange={(value) =>
+          form.setFieldValue('tags', value.length > 0 ? value : undefined)
+        }
       />
     </Stack>
   );
