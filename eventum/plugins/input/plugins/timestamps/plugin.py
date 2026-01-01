@@ -37,7 +37,9 @@ class TimestampsInputPlugin(
             )
             timestamps: list[datetime] = [
                 to_naive(ts, self._timezone)
-                for ts in self._read_timestamps_from_file(config.source)
+                for ts in self._read_timestamps_from_file(
+                    self.resolve_path(config.source),
+                )
             ]
         else:
             self._logger.debug('Reading timestamps from configuration')
@@ -45,9 +47,14 @@ class TimestampsInputPlugin(
 
         if not timestamps:
             msg = 'Timestamps sequence is empty'
+            if isinstance(config.source, list):
+                context = {}
+            else:
+                context = {'file_path': str(config.source)}
+
             raise PluginConfigurationError(
                 msg,
-                context={'file_path': config.source},
+                context=context,
             )
 
         self._timestamps: NDArray[datetime64] = array(
@@ -60,7 +67,7 @@ class TimestampsInputPlugin(
 
         Parameters
         ----------
-        filename : str
+        filename : Path
             Path to file with timestamps that are delimited with new
             line.
 
@@ -88,7 +95,7 @@ class TimestampsInputPlugin(
             raise PluginConfigurationError(
                 msg,
                 context={
-                    'file_path': filename,
+                    'file_path': str(filename),
                     'reason': str(e),
                 },
             ) from None

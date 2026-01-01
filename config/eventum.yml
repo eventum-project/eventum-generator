@@ -21,6 +21,13 @@ api.port: 9474
 # Optional, default is true
 api.ssl.enabled: true
 
+# Verification mode of SSL connections. The default null value
+# is the same as "none", but null value can also be used as
+# meaningful value of "not provided" when SSL is disabled.
+# Available values are null, "none", "optional", "required"
+# Optional, default is null
+api.ssl.verify_mode: null
+
 # Absolute path to CA certificate
 # Optional, default is null
 api.ssl.ca_cert: null
@@ -71,12 +78,12 @@ generation.queue.max_timestamp_batches: 10
 generation.queue.max_event_batches: 10
 
 
-# Whether to keep chronological order of timestamps by disabling output plugins
-# concurrency
+# Whether to keep chronological order of event using their timestamps
+# by disabling output plugins concurrency
 # Optional, default is false
 generation.keep_order: false
 
-# Maximum number of concurrent write operations performed by output plugins
+# Maximum number of write operations performed by output plugins concurrently
 # Optional, default is 100
 generation.max_concurrency: 100
 
@@ -87,15 +94,23 @@ generation.write_timeout : 10
 
 # =============================== Log Parameters ==============================
 
-# Log level
-# Available value are "debug", "info", "warning", "error", "critical"
+# Logging level
+# Available values are "debug", "info", "warning", "error", "critical"
 # Optional, default is "info"
 log.level: info
 
-# Format format
+# Logging format
 # Available options are "plain" and "json"
 # Optional, default is "plain"
 log.format: plain
+
+# Max bytes for log file before rotation.
+# Optional, default is 10485760 (10MiB)
+log.max_bytes: 10485760
+
+# Number of rotated log files to keep.
+# Optional, default is 5
+log.backups: 5
 
 # ============================== Path Parameters ==============================
 
@@ -122,4 +137,3 @@ path.keyring_cryptfile: /app/eventum/config/cryptfile.cfg
 # endpoints.
 # Optional, default is "generator.yml"
 generator_config_filename: generator.yml
-        

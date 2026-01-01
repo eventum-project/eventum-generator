@@ -31,5 +31,5 @@ class HttpInputPluginConfig(
         min_length=1,
         validate_default=True,
     )
-    port: int = Field(ge=1)
+    port: int = Field(ge=1, le=65535)
     max_pending_requests: int = Field(default=100, ge=1)

@@ -34,6 +34,8 @@ class FileOutputPlugin(
         self._cleaned_up = False
         self._cleanup_lock = asyncio.Lock()
 
+        self._filepath = self.resolve_path(self._config.path)
+
     async def _is_operable(self) -> bool:
         """Check if file is operable (not closed and not deleted).
 
@@ -82,7 +84,7 @@ class FileOutputPlugin(
 
         await self._logger.adebug(
             'File is closed',
-            file_path=str(self._config.path),
+            file_path=str(self._filepath),
         )
 
     def _create_descriptor(self, path: str, flags: int) -> int:
@@ -119,14 +121,14 @@ class FileOutputPlugin(
 
         """
         f = await aiofiles.open(
-            file=self._config.path,
+            file=self._filepath,
             mode='a' if self._config.write_mode == 'append' else 'w',
             encoding=self._config.encoding,
             opener=self._create_descriptor,
         )
         await self._logger.adebug(
             'File is opened',
-            file_path=str(self._config.path),
+            file_path=str(self._filepath),
         )
         return f
 
@@ -140,14 +142,14 @@ class FileOutputPlugin(
 
         """
         f = await aiofiles.open(
-            file=self._config.path,
+            file=self._filepath,
             mode='a',
             encoding=self._config.encoding,
             opener=self._create_descriptor,
         )
         await self._logger.adebug(
             'File is reopened',
-            file_path=str(self._config.path),
+            file_path=str(self._filepath),
         )
         return f
 
@@ -161,7 +163,7 @@ class FileOutputPlugin(
                 msg,
                 context={
                     'reason': str(e),
-                    'file_path': self._config.path,
+                    'file_path': str(self._filepath),
                 },
             ) from e
 
@@ -170,7 +172,7 @@ class FileOutputPlugin(
             raise PluginOpenError(
                 msg,
                 context={
-                    'file_path': self._config.path,
+                    'file_path': str(self._filepath),
                 },
             )
 
@@ -199,7 +201,7 @@ class FileOutputPlugin(
                         msg,
                         context={
                             'reason': str(e),
-                            'file_path': self._config.path,
+                            'file_path': str(self._filepath),
                         },
                     ) from e
 
@@ -216,7 +218,7 @@ class FileOutputPlugin(
                     msg,
                     context={
                         'reason': str(e),
-                        'file_path': self._config.path,
+                        'file_path': str(self._filepath),
                     },
                 ) from e
             finally:

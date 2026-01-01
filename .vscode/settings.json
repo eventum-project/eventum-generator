@@ -1,0 +1,30 @@
+{
+    "conventionalCommits.scopes": [
+        "app",
+        "api",
+        "cli",
+        "core",
+        "logging",
+        "plugins",
+        "security",
+        "ui",
+        "utils",
+    ],
+    "cSpell.words": [
+        "Ugbemugbem",
+        "unminimize"
+    ],
+    "cssVariables.lookupFiles": [
+        "**/*.css",
+        "**/*.scss",
+        "**/*.sass",
+        "**/*.less",
+        "node_modules/@mantine/core/styles.css"
+    ],
+    "markdownlint.config": {
+        "no-inline-html": false
+    },
+    "python-envs.pythonProjects": [],
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.typeCheckingMode": "standard"
+}

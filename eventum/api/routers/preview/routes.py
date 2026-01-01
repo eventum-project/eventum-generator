@@ -1,9 +1,10 @@
 """Routes."""
 
 import asyncio  # noqa: I001
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 from fastapi import APIRouter, Body, HTTPException, Query, status
+from pytz import timezone
 
 from eventum.api.dependencies.app import SettingsDep
 from eventum.api.routers.generator_configs.dependencies import (
@@ -16,23 +17,23 @@ from eventum.api.routers.preview.dependencies import (
     EventPluginDep,
     EventPluginFromStorageDep,
     InputPluginsDep,
-    JinjaEventPluginGlobalStateDep,
-    JinjaEventPluginLocalStateDep,
-    JinjaEventPluginSharedStateDep,
     SpanDep,
+    TemplateEventPluginGlobalStateDep,
+    TemplateEventPluginLocalStateDep,
+    TemplateEventPluginSharedStateDep,
     get_event_plugin_from_storage,
-)
-from eventum.api.routers.preview.dependencies import (
-    get_jinja_event_plugin_global_state as get_jinja_global_state,
-)
-from eventum.api.routers.preview.dependencies import (
-    get_jinja_event_plugin_local_state as get_jinja_local_state,
-)
-from eventum.api.routers.preview.dependencies import (
-    get_jinja_event_plugin_shared_state as get_jinja_shared_state,
-)
-from eventum.api.routers.preview.dependencies import (
     get_span,
+)
+from eventum.api.routers.preview.dependencies import (
+    get_template_event_plugin_global_state as get_template_plugin_global_state,
+)
+from eventum.api.routers.preview.dependencies import (
+    get_template_event_plugin_local_state as get_template_plugin_local_state,
+)
+from eventum.api.routers.preview.dependencies import (
+    get_template_event_plugin_shared_state as get_template_plugin_shared_state,
+)
+from eventum.api.routers.preview.dependencies import (
     load_event_plugin,
     load_input_plugins,
 )
@@ -43,6 +44,7 @@ from eventum.api.routers.preview.models import (
     FormattingResult,
     ProducedEventsInfo,
     ProduceEventErrorInfo,
+    VersatileDatetimeParametersBody,
 )
 from eventum.api.routers.preview.plugins_storage import EVENT_PLUGINS
 from eventum.api.routers.preview.timestamps_aggregation import (
@@ -54,10 +56,19 @@ from eventum.plugins.event.exceptions import (
     PluginExhaustedError,
     PluginProduceError,
 )
+from eventum.plugins.input.adapters import IdentifiedTimestampsPluginAdapter
 from eventum.plugins.input.exceptions import PluginGenerationError
 from eventum.plugins.input.merger import InputPluginsMerger
+from eventum.plugins.input.normalizers import (
+    normalize_versatile_datetime as norm_versatile_datetime,
+)
 from eventum.plugins.output.formatters import get_formatter_class
 from eventum.utils.json_utils import normalize_types
+
+if TYPE_CHECKING:
+    from eventum.plugins.input.protocols import (
+        SupportsIdentifiedTimestampsSizedIterate,
+    )
 
 router = APIRouter()
 
@@ -89,9 +100,23 @@ async def generate_timestamps(
     )
 
     if not non_interactive_plugins:
-        return AggregatedTimestamps(span_edges=[], span_counts={})
+        return AggregatedTimestamps(
+            span_edges=[],
+            span_counts={},
+            total=0,
+            first_timestamps=None,
+            last_timestamps=None,
+            timestamps=[],
+        )
 
-    merged_plugins = InputPluginsMerger(plugins=non_interactive_plugins)
+    if len(non_interactive_plugins) == 1:
+        merged_plugins: SupportsIdentifiedTimestampsSizedIterate = (
+            IdentifiedTimestampsPluginAdapter(
+                plugin=non_interactive_plugins[0],
+            )
+        )
+    else:
+        merged_plugins = InputPluginsMerger(plugins=non_interactive_plugins)
     iterator = merged_plugins.iterate(size=size, skip_past=skip_past)
 
     try:
@@ -179,18 +204,18 @@ async def release_event_plugin(plugin: EventPluginFromStorageDep) -> None:
 
 
 @router.get(
-    '/{name}/event-plugin/jinja/state/local/{alias}',
+    '/{name}/event-plugin/template/state/local/{alias}',
     description=(
-        'Get local state of jinja event plugin for the specified template '
+        'Get local state of template event plugin for the specified template '
         'by its alias'
     ),
     responses=merge_responses(
-        get_jinja_local_state.responses,
+        get_template_plugin_local_state.responses,
         {500: {'description': 'Failed to serialize plugin state'}},
     ),
 )
-async def get_jinja_event_plugin_local_state(
-    state: JinjaEventPluginLocalStateDep,
+async def get_template_event_plugin_local_state(
+    state: TemplateEventPluginLocalStateDep,
 ) -> dict[str, Any]:
     try:
         return await asyncio.to_thread(
@@ -204,15 +229,15 @@ async def get_jinja_event_plugin_local_state(
 
 
 @router.patch(
-    '/{name}/event-plugin/jinja/state/local/{alias}',
+    '/{name}/event-plugin/template/state/local/{alias}',
     description=(
-        'Patch local state of jinja event plugin for the specified template '
-        'by its alias'
+        'Patch local state of template event plugin for the specified '
+        'template by its alias'
     ),
-    responses=get_jinja_local_state.responses,
+    responses=get_template_plugin_local_state.responses,
 )
-async def update_jinja_event_plugin_local_state(
-    state: JinjaEventPluginLocalStateDep,
+async def update_template_event_plugin_local_state(
+    state: TemplateEventPluginLocalStateDep,
     content: Annotated[
         dict[str, Any],
         Body(description='Content to patch in state'),
@@ -222,29 +247,29 @@ async def update_jinja_event_plugin_local_state(
 
 
 @router.delete(
-    '/{name}/event-plugin/jinja/state/local/{alias}',
+    '/{name}/event-plugin/template/state/local/{alias}',
     description=(
-        'Clear local state of jinja event plugin for the specified template '
-        'by its alias'
+        'Clear local state of template event plugin for the specified '
+        'template by its alias'
     ),
-    responses=get_jinja_local_state.responses,
+    responses=get_template_plugin_local_state.responses,
 )
-async def clear_jinja_event_plugin_local_state(
-    state: JinjaEventPluginLocalStateDep,
+async def clear_template_event_plugin_local_state(
+    state: TemplateEventPluginLocalStateDep,
 ) -> None:
     state.clear()
 
 
 @router.get(
-    '/{name}/event-plugin/jinja/state/shared',
-    description='Get shared state of jinja event plugin',
+    '/{name}/event-plugin/template/state/shared',
+    description='Get shared state of template event plugin',
     responses=merge_responses(
-        get_jinja_shared_state.responses,
+        get_template_plugin_shared_state.responses,
         {500: {'description': 'Failed to serialize plugin state'}},
     ),
 )
-async def get_jinja_event_plugin_shared_state(
-    state: JinjaEventPluginSharedStateDep,
+async def get_template_event_plugin_shared_state(
+    state: TemplateEventPluginSharedStateDep,
 ) -> dict[str, Any]:
     try:
         return await asyncio.to_thread(
@@ -258,12 +283,12 @@ async def get_jinja_event_plugin_shared_state(
 
 
 @router.patch(
-    '/{name}/event-plugin/jinja/state/shared',
-    description='Patch shared state of jinja event plugin',
-    responses=get_jinja_shared_state.responses,
+    '/{name}/event-plugin/template/state/shared',
+    description='Patch shared state of template event plugin',
+    responses=get_template_plugin_shared_state.responses,
 )
-async def update_jinja_event_plugin_shared_state(
-    state: JinjaEventPluginSharedStateDep,
+async def update_template_event_plugin_shared_state(
+    state: TemplateEventPluginSharedStateDep,
     content: Annotated[
         dict[str, Any],
         Body(description='Content to patch in state'),
@@ -273,26 +298,26 @@ async def update_jinja_event_plugin_shared_state(
 
 
 @router.delete(
-    '/{name}/event-plugin/jinja/state/shared',
-    description='Clear shared state of jinja event plugin',
-    responses=get_jinja_shared_state.responses,
+    '/{name}/event-plugin/template/state/shared',
+    description='Clear shared state of template event plugin',
+    responses=get_template_plugin_shared_state.responses,
 )
-async def clear_jinja_event_plugin_shared_state(
-    state: JinjaEventPluginSharedStateDep,
+async def clear_template_event_plugin_shared_state(
+    state: TemplateEventPluginSharedStateDep,
 ) -> None:
     state.clear()
 
 
 @router.get(
-    '/{name}/event-plugin/jinja/state/global',
-    description='Get global state of jinja event plugin',
+    '/{name}/event-plugin/template/state/global',
+    description='Get global state of template event plugin',
     responses=merge_responses(
-        get_jinja_global_state.responses,
+        get_template_plugin_global_state.responses,
         {500: {'description': 'Failed to serialize plugin state'}},
     ),
 )
-async def get_jinja_event_plugin_global_state(
-    state: JinjaEventPluginGlobalStateDep,
+async def get_template_event_plugin_global_state(
+    state: TemplateEventPluginGlobalStateDep,
 ) -> dict[str, Any]:
     try:
         return await asyncio.to_thread(
@@ -306,12 +331,12 @@ async def get_jinja_event_plugin_global_state(
 
 
 @router.patch(
-    '/{name}/event-plugin/jinja/state/global',
-    description='Patch global state of jinja event plugin',
-    responses=get_jinja_global_state.responses,
+    '/{name}/event-plugin/template/state/global',
+    description='Patch global state of template event plugin',
+    responses=get_template_plugin_global_state.responses,
 )
-async def update_jinja_event_plugin_global_state(
-    state: JinjaEventPluginGlobalStateDep,
+async def update_template_event_plugin_global_state(
+    state: TemplateEventPluginGlobalStateDep,
     content: Annotated[
         dict[str, Any],
         Body(description='Content to patch in state'),
@@ -321,12 +346,12 @@ async def update_jinja_event_plugin_global_state(
 
 
 @router.delete(
-    '/{name}/event-plugin/jinja/state/global',
-    description='Clear global state of jinja event plugin',
-    responses=get_jinja_global_state.responses,
+    '/{name}/event-plugin/template/state/global',
+    description='Clear global state of template event plugin',
+    responses=get_template_plugin_global_state.responses,
 )
-async def clear_jinja_event_plugin_global_state(
-    state: JinjaEventPluginGlobalStateDep,
+async def clear_template_event_plugin_global_state(
+    state: TemplateEventPluginGlobalStateDep,
 ) -> None:
     state.clear()
 
@@ -371,3 +396,34 @@ async def format_events(
             for error in result.errors
         ],
     )
+
+
+@router.post(
+    '/{name}/versatile-datetime/normalize',
+    description='Normalize versatile date time expression',
+    response_description='Normalized datetime string in ISO8601 format',
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+    ),
+)
+async def normalize_versatile_datetime(
+    name: Annotated[  # noqa: ARG001
+        str,
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
+    ],
+    body: Annotated[VersatileDatetimeParametersBody, Body()],
+) -> str:
+    try:
+        return norm_versatile_datetime(
+            value=body.value,
+            timezone=timezone(body.timezone),
+            relative_base=body.relative_base,
+            none_point=body.none_point,
+        ).isoformat()
+    except (ValueError, OverflowError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from None

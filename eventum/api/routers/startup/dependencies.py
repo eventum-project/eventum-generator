@@ -139,7 +139,9 @@ TargetStartupParamsIndexDep = Annotated[
 @set_responses(
     {
         400: {
-            'description': 'ID field in the body does not match ID path parameter',
+            'description': (
+                'ID field in the body does not match ID path parameter'
+            ),
         },
     },
 )
@@ -180,7 +182,4 @@ async def check_id_in_body_match_path(
     return id
 
 
-CheckIdInBodyMatchPathDep = Annotated[
-    str,
-    Depends(check_id_in_body_match_path),
-]
+CheckIdInBodyMatchPathDep = Depends(check_id_in_body_match_path)

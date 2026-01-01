@@ -3,13 +3,7 @@
 from pathlib import Path
 from typing import Any, Self
 
-from pydantic import (
-    BaseModel,
-    Field,
-    field_serializer,
-    field_validator,
-    model_validator,
-)
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pytz import all_timezones_set
 
 
@@ -75,12 +69,12 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
         Queue parameters.
 
     keep_order : bool, default=False
-        Whether to keep chronological order of timestamps by disabling
-        output plugins concurrency.
+        Whether to keep chronological order of events using their
+        timestamps by disabling output plugins concurrency.
 
     max_concurrency : int, default=100
-        Maximum number of concurrent write operations performed by
-        output plugins.
+        Maximum number of write operations performed by output plugins
+        concurrently.
 
     write_timeout : int, default=10
         Timeout (in seconds) before canceling single write task.
@@ -91,7 +85,7 @@ class GenerationParameters(BaseModel, extra='forbid', frozen=True):
     batch: BatchParameters = Field(default_factory=BatchParameters)
     queue: QueueParameters = Field(default_factory=QueueParameters)
     keep_order: bool = Field(default=False)
-    max_concurrency: int = Field(default=100)
+    max_concurrency: int = Field(default=100, ge=1)
     write_timeout: int = Field(default=10, ge=1)
 
     @field_validator('timezone')
@@ -134,10 +128,6 @@ class GeneratorParameters(GenerationParameters, frozen=True):
     live_mode: bool = True
     skip_past: bool = Field(default=True)
     params: dict[str, Any] = Field(default_factory=dict)
-
-    @field_serializer('path')
-    def serialize_paths(self, value: Path, _) -> str:  # noqa: ANN001, D102
-        return str(value)
 
     def as_absolute(self, base_dir: Path) -> 'GeneratorParameters':
         """Get instance with absolute path to generator.

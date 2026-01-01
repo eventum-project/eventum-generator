@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import Field
 
 from eventum.plugins.event.base.config import EventPluginConfig
 from eventum.plugins.fields import Encoding
@@ -14,7 +14,7 @@ class ReplayEventPluginConfig(EventPluginConfig, frozen=True):
     Attributes
     ----------
     path : Path
-        Absolute path to log file.
+        Path to log file.
 
     timestamp_pattern : str | None, default=None
         Regular expression pattern to identify the timestamp
@@ -52,12 +52,3 @@ class ReplayEventPluginConfig(EventPluginConfig, frozen=True):
     repeat: bool = False
     chunk_size: int = Field(default=1_048_576, ge=0)
     encoding: Encoding = Field(default='utf_8')
-
-    @field_validator('path')
-    @classmethod
-    def validate_path(cls, v: Path) -> Path:  # noqa: D102
-        if v.is_absolute():
-            return v
-
-        msg = 'Path must be absolute'
-        raise ValueError(msg)

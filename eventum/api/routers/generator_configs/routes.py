@@ -18,12 +18,13 @@ from fastapi import (
 )
 from pydantic import ValidationError
 
-from eventum.api.dependencies.app import SettingsDep
+from eventum.api.dependencies.app import GeneratorManagerDep, SettingsDep
 from eventum.api.routers.generator_configs.dependencies import (
     CheckConfigurationExistsDep,
     CheckConfigurationNotExistsDep,
     CheckDirectoryIsAllowedDep,
     CheckFilepathIsDirectlyRelativeDep,
+    GeneratorDirsDep,
     check_configuration_exists,
     check_configuration_not_exists,
     check_directory_is_allowed,
@@ -33,8 +34,15 @@ from eventum.api.routers.generator_configs.file_tree import (
     FileNode,
     build_file_tree,
 )
+from eventum.api.routers.generator_configs.models import (
+    GeneratorDirExtendedInfo,
+)
 from eventum.api.routers.generator_configs.runtime_types import GeneratorConfig
 from eventum.api.utils.response_description import merge_responses
+from eventum.utils.fs_utils import (
+    calculate_dir_size,
+    get_dir_last_modification_time,
+)
 from eventum.utils.validation_prettier import prettify_validation_errors
 
 router = APIRouter()
@@ -46,20 +54,67 @@ router = APIRouter()
         'List all generator directory names inside `path.generators_dir` '
         'with generator configs.'
     ),
-    response_description=('Directory names with generator configs'),
+    response_description=(
+        'List of directory names or objects with extended directory info'
+    ),
 )
-async def list_generator_dirs(settings: SettingsDep) -> list[str]:
-    if not settings.path.generators_dir.exists():
-        return []
+async def list_generator_dirs(
+    dir_names: GeneratorDirsDep,
+    manager: GeneratorManagerDep,
+    settings: SettingsDep,
+    extended: Annotated[  # noqa: FBT002
+        bool,
+        Query(
+            description='Whether to include extended info about directories',
+        ),
+    ] = False,
+) -> list[GeneratorDirExtendedInfo] | list[str]:
+    if not extended:
+        return dir_names
 
-    return await asyncio.to_thread(
-        lambda: [
-            path.parent.name
-            for path in settings.path.generators_dir.glob(
-                f'*/{settings.path.generator_config_filename}',
+    result: list[GeneratorDirExtendedInfo] = []
+    dir_names_to_ids: dict[str, list[str]] = {}
+
+    for generator in manager.iter_generators():
+        params = generator.params
+        generator_dir_name = params.path.parent.name
+        generator_id = params.id
+
+        if generator_dir_name not in dir_names_to_ids:
+            dir_names_to_ids[generator_dir_name] = [generator_id]
+        else:
+            dir_names_to_ids[generator_dir_name].append(generator_id)
+
+    generators_dir = settings.path.generators_dir
+    for dir_name in dir_names:
+        dir_path = generators_dir / dir_name
+
+        try:
+            dir_size: int | None = await asyncio.to_thread(
+                lambda dir_path=dir_path: calculate_dir_size(dir_path),  # type: ignore[misc]
             )
-        ],
-    )
+        except OSError:
+            dir_size = None
+
+        try:
+            dir_modification_time: float | None = await asyncio.to_thread(
+                lambda dir_path=dir_path: get_dir_last_modification_time(  # type: ignore[misc]
+                    dir_path,
+                ),
+            )
+        except OSError:
+            dir_modification_time = None
+
+        result.append(
+            GeneratorDirExtendedInfo(
+                name=dir_name,
+                size_in_bytes=dir_size,
+                last_modified=dir_modification_time,
+                generator_ids=dir_names_to_ids.get(dir_name, []),
+            ),
+        )
+
+    return result
 
 
 @router.get(
@@ -68,6 +123,7 @@ async def list_generator_dirs(settings: SettingsDep) -> list[str]:
         'Get generator configuration in the directory with specified name.'
     ),
     response_description='Generator configuration',
+    response_model_exclude_unset=True,
     responses=merge_responses(
         check_directory_is_allowed.responses,
         check_configuration_exists.responses,
@@ -168,7 +224,10 @@ async def create_generator_config(
 
         async with aiofiles.open(generator_config_path, 'w') as f:
             await f.write(
-                yaml.dump(data=config.model_dump(), sort_keys=False),
+                yaml.dump(
+                    data=config.model_dump(mode='json', exclude_unset=True),
+                    sort_keys=False,
+                ),
             )
     except OSError as e:
         raise HTTPException(
@@ -215,7 +274,10 @@ async def update_generator_config(
     try:
         async with aiofiles.open(generator_config_path, 'w') as f:
             await f.write(
-                yaml.dump(data=config.model_dump(), sort_keys=False),
+                yaml.dump(
+                    data=config.model_dump(mode='json', exclude_unset=True),
+                    sort_keys=False,
+                ),
             )
     except OSError as e:
         raise HTTPException(
@@ -352,7 +414,10 @@ async def get_generator_file(
         CheckDirectoryIsAllowedDep,
         CheckConfigurationExistsDep,
     ],
-    filepath: Annotated[Path, CheckFilepathIsDirectlyRelativeDep],
+    filepath: Annotated[
+        Path,
+        Annotated[Path, CheckFilepathIsDirectlyRelativeDep],
+    ],
     settings: SettingsDep,
 ) -> responses.FileResponse:
     path = (settings.path.generators_dir / name / filepath).resolve()
@@ -364,7 +429,7 @@ async def get_generator_file(
         )
 
     try:
-        return responses.FileResponse(path=path)
+        return responses.FileResponse(path=path, media_type='text/plain')
     except OSError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -417,6 +482,50 @@ async def upload_generator_file(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f'File cannot be uploaded due to OS error: {e}',
+        ) from None
+
+
+@router.post(
+    '/{name}/file-makedir/{filepath:path}',
+    description=(
+        'Create directory inside generator directory in specified path.'
+    ),
+    responses=merge_responses(
+        check_directory_is_allowed.responses,
+        check_configuration_exists.responses,
+        check_filepath_is_directly_relative.responses,
+        {
+            409: {'description': 'File already exists'},
+            500: {
+                'description': 'Directory cannot be created due to OS error',
+            },
+        },
+    ),
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_generator_directory(
+    name: Annotated[
+        str,
+        CheckDirectoryIsAllowedDep,
+        CheckConfigurationExistsDep,
+    ],
+    filepath: Annotated[Path, CheckFilepathIsDirectlyRelativeDep],
+    settings: SettingsDep,
+) -> None:
+    path = (settings.path.generators_dir / name / filepath).resolve()
+
+    if path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail='File already exists',
+        )
+
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f'Directory cannot be created due to OS error: {e}',
         ) from None
 
 
@@ -498,6 +607,12 @@ async def delete_generator_file(
             detail='File does not exist',
         )
 
+    if path == (settings.path.generators_dir / name):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Deleting entire generator directory is not allowed',
+        )
+
     try:
         if path.is_file():
             await asyncio.to_thread(path.unlink)
@@ -563,7 +678,7 @@ async def move_generator_file(
             detail='Source file does not exist',
         )
 
-    if destination.exists():
+    if destination.exists() and not destination.is_dir():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail='Destination file already exists',

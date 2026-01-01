@@ -59,14 +59,14 @@ class ScriptEventPlugin(
             other error occurred during module execution.
 
         """
-        script_path = self._config.path
+        script_path = self.resolve_path(self._config.path)
         spec = util.spec_from_file_location('user_module', script_path)
 
         if spec is None:
             msg = 'Cannot get spec of script module'
             raise PluginConfigurationError(
                 msg,
-                context={'file_path': script_path},
+                context={'file_path': str(script_path)},
             )
 
         try:
@@ -77,7 +77,7 @@ class ScriptEventPlugin(
                 msg,
                 context={
                     'reason': str(e),
-                    'file_path': script_path,
+                    'file_path': str(script_path),
                 },
             ) from e
 
@@ -85,7 +85,7 @@ class ScriptEventPlugin(
             msg = 'Script cannot be executed due to loader problem'
             raise PluginConfigurationError(
                 msg,
-                context={'file_path': script_path},
+                context={'file_path': str(script_path)},
             )
 
         try:
@@ -96,7 +96,7 @@ class ScriptEventPlugin(
                 msg,
                 context={
                     'reason': str(e),
-                    'file_path': script_path,
+                    'file_path': str(script_path),
                 },
             ) from e
 
@@ -109,7 +109,7 @@ class ScriptEventPlugin(
             )
             raise PluginConfigurationError(
                 msg,
-                context={'file_path': script_path},
+                context={'file_path': str(script_path)},
             ) from None
 
         return function

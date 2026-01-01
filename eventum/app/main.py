@@ -1,5 +1,6 @@
 """Main application definition."""
 
+import ssl
 from threading import Thread
 from typing import TYPE_CHECKING
 
@@ -47,15 +48,12 @@ class App:
         """
         logger.debug(
             'Initializing app with provided settings',
-            parameters=settings.model_dump(),
+            parameters=settings.model_dump(mode='json', exclude_unset=True),
         )
         self._settings = settings
         self._instance_hooks = instance_hooks
 
-        logger.debug(
-            'Setting up security parameters',
-            parameters=settings.model_dump(),
-        )
+        logger.debug('Setting up security parameters')
         SECURITY_SETTINGS['cryptfile_location'] = (
             settings.path.keyring_cryptfile
         )
@@ -135,7 +133,7 @@ class App:
 
         logger.debug(
             'Next base generation parameters will be used for generators',
-            parameters=self._settings.generation.model_dump(),
+            parameters=self._settings.generation.model_dump(mode='json'),
         )
 
         normalized_params_list: list[GeneratorParameters] = []
@@ -185,7 +183,7 @@ class App:
             raise AppError(
                 msg,
                 context={
-                    'file_path': self._settings.path.startup,
+                    'file_path': str(self._settings.path.startup),
                     'reason': str(e),
                 },
             ) from None
@@ -198,7 +196,7 @@ class App:
             raise AppError(
                 msg,
                 context={
-                    'file_path': self._settings.path.startup,
+                    'file_path': str(self._settings.path.startup),
                     'reason': str(e),
                 },
             ) from None
@@ -308,6 +306,12 @@ class App:
                 'ssl_ca_certs': self._settings.api.ssl.ca_cert,
                 'ssl_certfile': self._settings.api.ssl.cert,
                 'ssl_keyfile': self._settings.api.ssl.cert_key,
+                'ssl_cert_reqs': {
+                    None: ssl.CERT_NONE,
+                    'none': ssl.CERT_NONE,
+                    'optional': ssl.CERT_OPTIONAL,
+                    'required': ssl.CERT_REQUIRED,
+                }[self._settings.api.ssl.verify_mode],
             }
         else:
             ssl_settings = {}

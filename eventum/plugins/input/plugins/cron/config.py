@@ -31,7 +31,7 @@ class CronInputPluginConfig(
         https://pypi.org/project/croniter/#about-second-repeats)
 
     count : int
-        Number of events to generate for every interval.
+        Number of timestamps to generate for every interval.
 
     """
 

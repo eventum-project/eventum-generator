@@ -83,7 +83,7 @@ class HttpInputPlugin(
                 log_config=None,
             ),
         )
-        self._request_queue: Queue[int] = Queue(
+        self._request_queue: Queue[int | None] = Queue(
             maxsize=config.max_pending_requests,
         )
         self._is_stopping = False
@@ -125,11 +125,15 @@ class HttpInputPlugin(
                 status_code=429,
                 detail='Too Many Requests',
             )
+
         await self._logger.adebug(
             'Generate request is received',
             count=data.count,
         )
         self._request_queue.put_nowait(data.count)
+
+        if self._interaction_callback is not None:
+            self._interaction_callback()
 
     async def _handle_stop(self) -> None:
         """Handle incoming stop request."""
@@ -157,6 +161,8 @@ class HttpInputPlugin(
                 msg,
                 context={'reason': str(e)},
             ) from e
+        finally:
+            self._request_queue.put(None)
 
     @override
     def _generate(
@@ -181,14 +187,32 @@ class HttpInputPlugin(
             future.add_done_callback(self._watch_server)
 
             self._logger.debug('Waiting for incoming generation requests')
-            while not (future.done() and self._request_queue.empty()):
+            while True:
                 try:
-                    count = self._request_queue.get(timeout=0.1)
+                    count = self._request_queue.get()
                 except Empty:
                     continue
+
+                if count is None:
+                    break
 
                 self._buffer.m_push(
                     timestamp=now64(self._timezone),
                     multiply=count,
                 )
                 yield from self._buffer.read(size, partial=True)
+
+    @property
+    @override
+    def has_interaction(self) -> bool:
+        return not self._request_queue.empty()
+
+    @property
+    @override
+    def can_interact(self) -> bool:
+        return self._server.started and not self._is_stopping
+
+    @override
+    def stop_interacting(self) -> None:
+        self._is_stopping = True
+        self._server.should_exit = True

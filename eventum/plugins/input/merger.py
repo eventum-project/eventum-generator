@@ -3,6 +3,7 @@ single source.
 """
 
 from collections.abc import Iterable, Iterator
+from threading import Event
 from typing import override
 
 import numpy as np
@@ -36,27 +37,36 @@ class InputPluginsMerger(
         Raises
         ------
         ValueError
-            If no plugins provided in sequence or some of the plugin is
-            interactive.
+            If one or less plugins provided in sequence.
 
         """
         self._plugins: dict[str, InputPlugin] = {}
 
         for plugin in plugins:
             if plugin.is_interactive:
-                msg = (
-                    f'"{plugin.name}" input plugin is interactive '
-                    'and cannot be merged'
+                logger.warning(
+                    'Interactive input plugin detected in list of merged '
+                    'plugins. Note that order of timestamps may be '
+                    'unpredictable.',
+                    plugin_name=plugin.name,
+                    plugin_id=plugin.id,
                 )
-                raise ValueError(msg)
 
             self._plugins[plugin.guid] = plugin
 
-        if not self._plugins:
-            msg = 'At least one plugin must be provided'
+        if len(self._plugins) < 2:  # noqa: PLR2004
+            msg = 'At least two plugin must be provided'
             raise ValueError(msg)
 
-    def _slice(  # noqa: C901, PLR0912
+        self._interaction_event = Event()
+
+        for plugin in self._plugins.values():
+            if plugin.is_interactive:
+                plugin.set_interaction_callback(
+                    lambda: self._interaction_event.set(),
+                )
+
+    def _slice(  # noqa: C901, PLR0912, PLR0915
         self,
         size: int,
         *,
@@ -98,9 +108,16 @@ class InputPluginsMerger(
         In the above example for 3 independent generators `_slice`
         method will yield 5 times.
 
+        Slices of timestamps of interactive generators will be missing
+        in returned object if no interactive timestamps is available
+        at moment of slicing.
+
         """
         active_generators = {
-            guid: plugin.generate(size, skip_past=skip_past)
+            guid: {
+                'generate': plugin.generate(size, skip_past=skip_past),
+                'plugin': plugin,
+            }
             for guid, plugin in self._plugins.items()
         }
 
@@ -110,18 +127,29 @@ class InputPluginsMerger(
         while True:
             # get next arrays from generators if required
             if next_required_guids:
+                postponed_interactive_plugin_guids: list[str] = []
+                self._interaction_event.clear()
+
                 for guid in next_required_guids:
+                    plugin: InputPlugin = active_generators[guid]['plugin']  # type: ignore[assignment]
+                    if (
+                        plugin.is_interactive
+                        and plugin.can_interact
+                        and not plugin.has_interaction
+                    ):
+                        postponed_interactive_plugin_guids.append(guid)
+                        continue
+
                     try:
-                        array = next(active_generators[guid])
+                        array = next(active_generators[guid]['generate'])  # type: ignore[call-overload]
                         next_arrays[guid] = array
                     except StopIteration:
                         del active_generators[guid]
                     except PluginGenerationError as e:
-                        plugin = self._plugins[guid]
                         logger.error(
                             (
                                 'One of the input plugins finished execution '
-                                ' with error'
+                                'with error'
                             ),
                             plugin_id=plugin.id,
                             plugin_type=plugin.type,
@@ -130,11 +158,10 @@ class InputPluginsMerger(
                         )
                         del active_generators[guid]
                     except Exception as e:
-                        plugin = self._plugins[guid]
                         logger.exception(
                             (
                                 'One of the input plugins finished execution '
-                                ' with unexpected error'
+                                'with unexpected error'
                             ),
                             plugin_id=plugin.id,
                             plugin_type=plugin.type,
@@ -142,10 +169,25 @@ class InputPluginsMerger(
                             reason=str(e),
                         )
 
+                # if all remaining plugins are interactive
+                # and there are no timestamps from all of them
+                # we are waiting for event that should be set via
+                # interactive plugins callback to avoid busy waiting
+                if postponed_interactive_plugin_guids and set(
+                    postponed_interactive_plugin_guids,
+                ) == set(
+                    next_required_guids,
+                ):
+                    self._interaction_event.wait()
+
                 next_required_guids.clear()
+                next_required_guids.extend(postponed_interactive_plugin_guids)
+
+            if not active_generators and not next_arrays:
+                break
 
             if not next_arrays:
-                break
+                continue
 
             # find cutoff timestamp
             cutoff_timestamp = min(

@@ -1,12 +1,44 @@
 """Dependencies."""
 
-from pathlib import Path
+import asyncio
+import pathlib
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Query, status
+from fastapi import Depends, HTTPException, Path, status
 
 from eventum.api.dependencies.app import SettingsDep
 from eventum.api.utils.response_description import set_responses
+
+
+async def list_generator_dirs(settings: SettingsDep) -> list[str]:
+    """List all generator directory names inside `path.generators_dir` '
+    with generator configs.
+
+    Parameters
+    ----------
+    settings : SettingsDep
+        Application settings dependency.
+
+    Returns
+    -------
+    list[str]
+        List of directory names.
+
+    """
+    if not settings.path.generators_dir.exists():
+        return []
+
+    return await asyncio.to_thread(
+        lambda: [
+            path.parent.name
+            for path in settings.path.generators_dir.glob(
+                f'*/{settings.path.generator_config_filename}',
+            )
+        ],
+    )
+
+
+GeneratorDirsDep = Annotated[list[str], Depends(list_generator_dirs)]
 
 
 @set_responses(
@@ -20,7 +52,7 @@ from eventum.api.utils.response_description import set_responses
     },
 )
 async def check_directory_is_allowed(
-    name: Annotated[str, Query(description='Name of the generator directory')],
+    name: Annotated[str, Path(description='Name of the generator directory')],
     settings: SettingsDep,
 ) -> str:
     """Check that a generator directory is located within the
@@ -59,10 +91,7 @@ async def check_directory_is_allowed(
     return name
 
 
-CheckDirectoryIsAllowedDep = Annotated[
-    str,
-    Depends(check_directory_is_allowed),
-]
+CheckDirectoryIsAllowedDep = Depends(check_directory_is_allowed)
 
 
 @set_responses(
@@ -73,7 +102,7 @@ CheckDirectoryIsAllowedDep = Annotated[
     },
 )
 async def check_configuration_exists(
-    name: Annotated[str, Query(description='Name of the generator directory')],
+    name: Annotated[str, Path(description='Name of the generator directory')],
     settings: SettingsDep,
 ) -> str:
     """Check that generator configuration exist.
@@ -112,10 +141,7 @@ async def check_configuration_exists(
     return name
 
 
-CheckConfigurationExistsDep = Annotated[
-    str,
-    Depends(check_configuration_exists),
-]
+CheckConfigurationExistsDep = Depends(check_configuration_exists)
 
 
 @set_responses(
@@ -126,7 +152,7 @@ CheckConfigurationExistsDep = Annotated[
     },
 )
 async def check_configuration_not_exists(
-    name: Annotated[str, Query(description='Name of the generator directory')],
+    name: Annotated[str, Path(description='Name of the generator directory')],
     settings: SettingsDep,
 ) -> str:
     """Check that generator configuration does not exist.
@@ -165,10 +191,7 @@ async def check_configuration_not_exists(
     return name
 
 
-CheckConfigurationNotExistsDep = Annotated[
-    str,
-    Depends(check_configuration_not_exists),
-]
+CheckConfigurationNotExistsDep = Depends(check_configuration_not_exists)
 
 
 @set_responses(
@@ -182,8 +205,11 @@ CheckConfigurationNotExistsDep = Annotated[
     },
 )
 async def check_filepath_is_directly_relative(
-    filepath: Annotated[Path, Query(description='Relative path to the file')],
-) -> Path:
+    filepath: Annotated[
+        pathlib.Path,
+        Path(description='Relative path to the file'),
+    ],
+) -> pathlib.Path:
     """Check that filepath directly relative (i.e. not using '..').
 
     Parameters
@@ -221,7 +247,6 @@ async def check_filepath_is_directly_relative(
     return filepath
 
 
-CheckFilepathIsDirectlyRelativeDep = Annotated[
-    Path,
-    Depends(check_filepath_is_directly_relative),
-]
+CheckFilepathIsDirectlyRelativeDep = Depends(
+    check_filepath_is_directly_relative,
+)

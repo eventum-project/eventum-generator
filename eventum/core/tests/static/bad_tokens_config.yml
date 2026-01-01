@@ -1,17 +1,17 @@
 input:
-  - cron: 
+  - cron:
       expression: "*/5 * * * *"
       count: 1
 
 event:
-  jinja:
-    params: { } 
+  template:
+    params: { }
     samples: { }
-    mode: all   
-    templates:  
+    mode: all
+    templates:
       - test:
           template: "test.jinja"
 
-output:       
+output:
   - stdout:
       stream: "${params.stream"

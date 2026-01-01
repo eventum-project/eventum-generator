@@ -20,7 +20,7 @@ class TimerInputPluginConfig(InputPluginConfig, frozen=True):
     count : int
         Number of timestamps to generate.
 
-    repeat : bool
+    repeat : int | None
         Number of cycles to repeat, if value is not set, then repeat
         infinitely.
 

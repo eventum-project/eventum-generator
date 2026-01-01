@@ -74,7 +74,7 @@ async def update_settings(
 
     content = await asyncio.to_thread(
         lambda: yaml.dump(
-            settings.model_dump(),
+            settings.model_dump(mode='json', exclude_unset=True),
             sort_keys=False,
         ),
     )

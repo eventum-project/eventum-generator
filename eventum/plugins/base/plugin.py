@@ -206,7 +206,7 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
             msg = 'Missing required parameter'
             raise PluginConfigurationError(
                 msg,
-                context=dict(**context, reason=str(e)),
+                context=dict(context, reason=str(e)),
             ) from None
 
     def __str__(self) -> str:
@@ -288,6 +288,29 @@ class Plugin(ABC, Generic[ConfigT, ParamsT]):
             plugin_name=registration_info.name,
             plugin_config_class=config_cls.__name__,
         )
+
+    def resolve_path(self, path: Path) -> Path:
+        """Resolve path using plugin base path.
+
+        Parameters
+        ----------
+        path : Path
+            Path to resolve.
+
+        Returns
+        -------
+        Path
+            Resolved path.
+
+        Notes
+        -----
+        If path is already absolute it is returned as is.
+
+        """
+        if path.is_absolute():
+            return path
+
+        return self._base_path / path
 
     @property
     def id(self) -> int:
