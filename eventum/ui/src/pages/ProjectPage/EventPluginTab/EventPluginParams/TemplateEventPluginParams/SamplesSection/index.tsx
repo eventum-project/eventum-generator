@@ -71,10 +71,15 @@ export const SamplesSection: FC<SamplesSectionProps> = ({ form }) => {
         </Group>
       </Stack>
 
-      {selectedSample !== null && (
+      {selectedSample !== null && existingSamples.includes(selectedSample) && (
         <SamplesParams
-          form={form}
-          selectedSample={selectedSample}
+          key={selectedSample}
+          value={form.values.samples![selectedSample]!}
+          onChange={(value) =>
+            form.setFieldValue('samples', (prevValue) => {
+              return { ...prevValue, [selectedSample]: value };
+            })
+          }
           onDelete={() => {
             modals.openConfirmModal({
               title: 'Deleting sample',
@@ -89,6 +94,10 @@ export const SamplesSection: FC<SamplesSectionProps> = ({ form }) => {
                 form.setFieldValue('samples', (prevValue) => {
                   const newValue = { ...prevValue };
                   delete newValue[selectedSample];
+
+                  if (Object.keys(newValue).length === 0) {
+                    return;
+                  }
                   return newValue;
                 });
                 setSelectedSample(null);

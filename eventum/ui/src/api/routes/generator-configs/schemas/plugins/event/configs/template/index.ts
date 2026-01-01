@@ -27,7 +27,7 @@ export type ItemsSampleConfig = z.infer<typeof ItemsSampleConfigSchema>;
 const CSVSampleConfigSchema = z.object({
   type: z.literal(SampleType.CSV),
   header: z.boolean().optional(),
-  delimiter: z.string().min(1),
+  delimiter: z.string().min(1).optional(),
   source: z.string().endsWith('.csv'),
 });
 export type CSVSampleConfig = z.infer<typeof CSVSampleConfigSchema>;
@@ -38,7 +38,7 @@ const JSONSampleConfigSchema = z.object({
 });
 export type JSONSampleConfig = z.infer<typeof JSONSampleConfigSchema>;
 
-const SampleConfigSchema = z.discriminatedUnion('type', [
+export const SampleConfigSchema = z.discriminatedUnion('type', [
   ItemsSampleConfigSchema,
   CSVSampleConfigSchema,
   JSONSampleConfigSchema,
@@ -116,6 +116,9 @@ const TemplateEventPluginConfigForChainModeSchema =
       .array(z.record(z.string().min(1), TemplateConfigForGeneralModesSchema))
       .min(1),
   });
+export type TemplateEventPluginConfigForChainMode = z.infer<
+  typeof TemplateEventPluginConfigForChainModeSchema
+>;
 
 export const TemplateEventPluginConfigSchema = z.discriminatedUnion('mode', [
   TemplateEventPluginConfigForGeneralModesSchema,

@@ -39,7 +39,7 @@ export const TemplateEventPluginParams: FC<TemplateEventPluginParamsProps> = ({
         defaultValue={JSON.stringify(form.getValues().params)}
         onChange={(value) => {
           if (!value) {
-            form.setFieldValue('params', {});
+            form.setFieldValue('params', undefined);
             return;
           }
 
