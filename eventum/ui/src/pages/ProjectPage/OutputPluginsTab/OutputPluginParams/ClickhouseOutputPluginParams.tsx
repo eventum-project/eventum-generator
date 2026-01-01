@@ -319,7 +319,7 @@ export const ClickhouseOutputPluginParams: FC<
           label={
             <LabelWithTooltip
               label="Client certificate key"
-              tooltip="Key for th client certificate"
+              tooltip="Key for the client certificate"
             />
           }
           placeholder=".crt .cer .pem .key"
@@ -338,7 +338,7 @@ export const ClickhouseOutputPluginParams: FC<
         label={
           <LabelWithTooltip
             label="TLS mode"
-            tooltip=" Mode of TLS behavior, `proxy` and `strict` do not invoke
+            tooltip="Mode of TLS behavior, `proxy` and `strict` do not invoke
                   ClickHouse mutual TLS connection, but do send client cert and
                   key, `mutual` assumes ClickHouse mutual TLS auth with a client
                   certificate, default behavior is `mutual`."
