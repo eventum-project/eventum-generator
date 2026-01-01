@@ -6,48 +6,57 @@ import {
   Switch,
   Textarea,
 } from '@mantine/core';
-import { UseFormReturnType } from '@mantine/form';
+import { useForm } from '@mantine/form';
+import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { FC } from 'react';
 import YAML from 'yaml';
+import { z } from 'zod';
 
 import {
+  TemplateConfig,
   TemplateConfigForChanceMode,
+  TemplateConfigForChanceModeSchema,
   TemplateConfigForFSMMode,
-  TemplateEventPluginConfig,
+  TemplateConfigForFSMModeSchema,
+  TemplateConfigForGeneralModesSchema,
   TemplatePickingMode,
 } from '@/api/routes/generator-configs/schemas/plugins/event/configs/template';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 import { ProjectFileSelect } from '@/pages/ProjectPage/components/ProjectFileSelect';
 
 interface TemplateParamsProps {
-  form: UseFormReturnType<TemplateEventPluginConfig>;
-  selectedTemplate: string;
-  onDelete: (templateName: string, templatePath: string) => void;
+  pickingMode: TemplatePickingMode;
+  value: TemplateConfig;
+  onChange: (value: TemplateConfig) => void;
+  onDelete: (templatePath: string | undefined) => void;
+  existingTemplates: string[];
 }
 
+const modeToSchema = {
+  all: TemplateConfigForGeneralModesSchema,
+  any: TemplateConfigForGeneralModesSchema,
+  chain: TemplateConfigForGeneralModesSchema,
+  chance: TemplateConfigForChanceModeSchema,
+  fsm: TemplateConfigForFSMModeSchema,
+  spin: TemplateConfigForGeneralModesSchema,
+} as const satisfies Record<TemplatePickingMode, z.ZodType>;
+
 export const TemplateParams: FC<TemplateParamsProps> = ({
-  form,
-  selectedTemplate,
+  pickingMode,
+  value,
+  onChange,
   onDelete,
+  existingTemplates,
 }) => {
-  const templates = form.getValues().templates;
-  const selectedTemplateIndex = templates.findIndex(
-    (item) => Object.keys(item)[0] === selectedTemplate
-  );
-  const templateItem = templates[selectedTemplateIndex];
+  const form = useForm<TemplateConfig>({
+    initialValues: value,
+    validate: zod4Resolver(modeToSchema[pickingMode]),
+    onValuesChange: onChange,
+    validateInputOnChange: true,
+    cascadeUpdates: true,
+  });
 
-  if (templateItem === undefined) {
-    return null;
-  }
-
-  const template = Object.values(templateItem)[0];
-  if (template === undefined) {
-    return null;
-  }
-  const existingTemplates = form
-    .getValues()
-    .templates.map((item) => Object.keys(item)[0]!);
-  const pickingMode = form.getValues().mode;
+  console.log(form.errors);
 
   return (
     <Stack>
@@ -55,30 +64,23 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
         label={
           <LabelWithTooltip label="Template" tooltip="Path to template file" />
         }
+        {...form.getInputProps('template')}
         value={
-          template.template.startsWith('./')
-            ? template.template
-            : './' + template.template
+          form.values.template != undefined
+            ? form.values.template.startsWith('./')
+              ? form.values.template
+              : './' + form.values.template
+            : null
         }
         onChange={(value) => {
-          form.setFieldValue('templates', (prevValue) => {
-            const newValue = [...prevValue];
-            const templateItem = newValue[selectedTemplateIndex]!;
-            const template = templateItem[selectedTemplate]!;
-            template.template = value ?? '';
-            return newValue;
-          });
+          form.setFieldValue('template', value ?? undefined!);
         }}
         searchable
         nothingFoundMessage="No files found"
         placeholder=".jinja"
         extensions={['.jinja']}
         clearable
-        error={
-          typeof form.errors.templates === 'string' &&
-          form.errors.templates.includes('jinja') &&
-          `${form.errors.templates.replace('Invalid string', 'Invalid for some of the templates')}`
-        }
+        required
       />
 
       {pickingMode === TemplatePickingMode.Chance && (
@@ -90,28 +92,15 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
             />
           }
           min={0}
+          required
+          {...form.getInputProps('chance')}
+          value={(form.values as TemplateConfigForChanceMode).chance ?? ''}
           onChange={(value) => {
-            form.setFieldValue('templates', (prevValue) => {
-              const newValue = [...prevValue];
-              const templateItem = newValue[selectedTemplateIndex]!;
-              const template = templateItem[
-                selectedTemplate
-              ] as TemplateConfigForChanceMode;
-              if (typeof value === 'string') {
-                template.chance = undefined!;
-              } else {
-                template.chance = value;
-              }
-
-              return newValue;
-            });
+            form.setFieldValue(
+              'chance',
+              typeof value === 'number' ? value : undefined!
+            );
           }}
-          value={(template as TemplateConfigForChanceMode).chance ?? ''}
-          error={
-            typeof form.errors.templates === 'string' &&
-            form.errors.templates.includes('number') &&
-            `${form.errors.templates.replace('Invalid input', 'Invalid input for some of the templates')}`
-          }
         />
       )}
 
@@ -124,22 +113,8 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
                 tooltip="Set this template as initial state"
               />
             }
-            checked={(template as TemplateConfigForFSMMode).initial ?? false}
-            onChange={(value) => {
-              form.setFieldValue('templates', (prevValue) => {
-                const newValue = [...prevValue];
-                const templateItem = newValue[selectedTemplateIndex]!;
-                const template = templateItem[
-                  selectedTemplate
-                ] as TemplateConfigForFSMMode;
-
-                template.initial = value.currentTarget.checked
-                  ? true
-                  : undefined;
-
-                return newValue;
-              });
-            }}
+            {...form.getInputProps('initial', { type: 'checkbox' })}
+            checked={(form.values as TemplateConfigForFSMMode).initial ?? false}
           />
           <Select
             label={
@@ -149,33 +124,33 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
               />
             }
             data={existingTemplates}
-            value={
-              (template as TemplateConfigForFSMMode).transition?.to ?? null
-            }
-            onChange={(value) => {
-              form.setFieldValue('templates', (prevValue) => {
-                const newValue = [...prevValue];
-                const templateItem = newValue[selectedTemplateIndex]!;
-                const template = templateItem[
-                  selectedTemplate
-                ] as TemplateConfigForFSMMode;
-
-                if (!value) {
-                  template.transition = undefined;
-                } else {
-                  template.transition = {
-                    when: template.transition?.when ?? undefined,
-                    to: value ?? '',
-                  };
-                }
-
-                return newValue;
-              });
-            }}
             searchable
             nothingFoundMessage="No template found"
             placeholder="template name"
             clearable
+            {...form.getInputProps('transition.to')}
+            value={
+              (form.values as TemplateConfigForFSMMode).transition?.to ?? null
+            }
+            onChange={(value) => {
+              form.setFieldValue('transition', (prevValue) => {
+                if (value === null) {
+                  return;
+                }
+
+                if (prevValue) {
+                  return {
+                    when: prevValue.when ?? undefined,
+                    to: value ?? undefined!,
+                  };
+                }
+
+                return {
+                  when: undefined,
+                  to: value ?? undefined!,
+                };
+              });
+            }}
           />
           <Stack gap="2px">
             <Textarea
@@ -184,11 +159,13 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
               placeholder="..."
               minRows={3}
               autosize
+              disabled={
+                (form.values as TemplateConfigForFSMMode).transition?.to ===
+                undefined
+              }
               defaultValue={YAML.stringify(
-                (template as TemplateConfigForFSMMode).transition?.when ??
-                  undefined
+                (form.values as TemplateConfigForFSMMode).transition?.when
               )}
-              key={form.key('templates')}
               onChange={(event) => {
                 let parsedValue: unknown;
 
@@ -202,34 +179,15 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
                   }
                 }
 
-                form.setFieldValue('templates', (prevValue) => {
-                  const newValue = [...prevValue];
-                  const templateItem = newValue[selectedTemplateIndex]!;
-                  const template = templateItem[
-                    selectedTemplate
-                  ] as TemplateConfigForFSMMode;
-
-                  template.transition = {
-                    when: parsedValue,
-                    to: template.transition?.to ?? '',
-                  };
-
-                  return newValue;
-                });
+                form.setFieldValue('transition.when', parsedValue);
               }}
-              error={
-                form.errors.templates === 'Invalid input' &&
-                'Invalid input for some of the templates: Invalid expression'
-              }
+              error={form.errors['transition.when']}
             />
           </Stack>
         </Stack>
       )}
 
-      <Button
-        variant="default"
-        onClick={() => onDelete(selectedTemplate, template.template)}
-      >
+      <Button variant="default" onClick={() => onDelete(form.values.template)}>
         Remove
       </Button>
     </Stack>

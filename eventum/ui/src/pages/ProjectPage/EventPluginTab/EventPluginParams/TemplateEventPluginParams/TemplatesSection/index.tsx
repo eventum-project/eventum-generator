@@ -25,6 +25,7 @@ import {
   TemplateConfigForFSMMode,
   TemplateConfigForGeneralModes,
   TemplateEventPluginConfig,
+  TemplateEventPluginConfigForChainMode,
   TemplatePickingMode,
 } from '@/api/routes/generator-configs/schemas/plugins/event/configs/template';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
@@ -84,7 +85,7 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({ form }) => {
   }
 
   function handleDeleteTemplate(
-    templatePath: string,
+    templatePath: string | undefined,
     templateName: string,
     isRemoveFile: boolean
   ) {
@@ -99,7 +100,7 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({ form }) => {
       ];
     });
 
-    if (isRemoveFile) {
+    if (isRemoveFile && templatePath !== undefined) {
       deleteFile.mutate(
         { name: projectName, filepath: templatePath },
         {
@@ -138,6 +139,7 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({ form }) => {
           }
           clearable
           searchable
+          required
           data={[
             {
               label: 'All',
@@ -164,7 +166,7 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({ form }) => {
               value: TemplatePickingMode.FSM,
             },
           ]}
-          value={form.getValues().mode}
+          value={form.getValues().mode ?? null}
           onChange={(value) => {
             form.setFieldValue('mode', (prevValue) => {
               // remove not actual parameters of previous picking mode from state
@@ -192,7 +194,7 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({ form }) => {
                 return newValue;
               });
 
-              return value as TemplatePickingMode;
+              return (value as TemplatePickingMode) ?? undefined;
             });
           }}
           error={form.errors.mode}
@@ -211,14 +213,14 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({ form }) => {
           clearable
           searchable
           hidePickedOptions
+          required
+          {...form.getInputProps('chain')}
+          value={
+            (form.values as TemplateEventPluginConfigForChainMode).chain ?? []
+          }
           onChange={(value) => {
-            if (value.length === 0) {
-              form.setFieldValue('chain', undefined!);
-            } else {
-              form.setFieldValue('chain', value);
-            }
+            form.setFieldValue('chain', value.length > 0 ? value : undefined!);
           }}
-          error={form.errors.chain}
         />
       )}
 
@@ -259,31 +261,54 @@ export const TemplatesSection: FC<TemplatesSectionProps> = ({ form }) => {
         </ActionIcon>
       </Group>
 
-      {selectedTemplate !== null && (
-        <TemplateParams
-          form={form}
-          selectedTemplate={selectedTemplate}
-          onDelete={(templateName, templatePath) =>
-            modals.open({
-              title: 'Removing template',
-              children: (
-                <RemoveTemplateModal
-                  templateName={templateName}
-                  filePath={templatePath}
-                  onDelete={({ isRemoveFile }) =>
-                    handleDeleteTemplate(
-                      templatePath,
-                      selectedTemplate,
-                      isRemoveFile
-                    )
-                  }
-                  isDeleting={deleteFile.isPending}
-                />
-              ),
-            })
-          }
-        />
-      )}
+      {selectedTemplate !== null &&
+        existingTemplates.includes(selectedTemplate) &&
+        form.values.mode && (
+          <TemplateParams
+            key={selectedTemplate}
+            pickingMode={form.values.mode}
+            value={
+              form.values.templates.find(
+                (item) => Object.keys(item)[0] === selectedTemplate
+              )![selectedTemplate]!
+            }
+            onChange={(value) => {
+              form.setFieldValue('templates', (prevValue) => {
+                const selectedTemplateIndex = form.values.templates.findIndex(
+                  (item) => Object.keys(item)[0] === selectedTemplate
+                );
+
+                return [
+                  ...prevValue.slice(0, selectedTemplateIndex),
+                  {
+                    [selectedTemplate]: value,
+                  },
+                  ...prevValue.slice(selectedTemplateIndex + 1),
+                ];
+              });
+            }}
+            onDelete={(templatePath) =>
+              modals.open({
+                title: 'Removing template',
+                children: (
+                  <RemoveTemplateModal
+                    templateName={selectedTemplate}
+                    filePath={templatePath}
+                    onDelete={({ isRemoveFile }) =>
+                      handleDeleteTemplate(
+                        templatePath,
+                        selectedTemplate,
+                        isRemoveFile
+                      )
+                    }
+                    isDeleting={deleteFile.isPending}
+                  />
+                ),
+              })
+            }
+            existingTemplates={existingTemplates}
+          />
+        )}
     </Stack>
   );
 };

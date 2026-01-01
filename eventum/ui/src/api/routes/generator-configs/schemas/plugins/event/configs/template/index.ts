@@ -45,14 +45,14 @@ export const SampleConfigSchema = z.discriminatedUnion('type', [
 ]);
 export type SampleConfig = z.infer<typeof SampleConfigSchema>;
 
-const TemplateConfigForGeneralModesSchema = z.object({
+export const TemplateConfigForGeneralModesSchema = z.object({
   template: z.string().endsWith('.jinja'),
 });
 export type TemplateConfigForGeneralModes = z.infer<
   typeof TemplateConfigForGeneralModesSchema
 >;
 
-const TemplateConfigForChanceModeSchema =
+export const TemplateConfigForChanceModeSchema =
   TemplateConfigForGeneralModesSchema.extend({
     chance: z.number().gt(0),
   });
@@ -65,7 +65,7 @@ const TemplateTransitionSchema = z.object({
   when: ConditionSchema,
 });
 
-const TemplateConfigForFSMModeSchema =
+export const TemplateConfigForFSMModeSchema =
   TemplateConfigForGeneralModesSchema.extend({
     transition: TemplateTransitionSchema.nullable().optional(),
     initial: z.boolean().optional(),
@@ -73,6 +73,13 @@ const TemplateConfigForFSMModeSchema =
 export type TemplateConfigForFSMMode = z.infer<
   typeof TemplateConfigForFSMModeSchema
 >;
+
+export const TemplateConfigSchema = z.union([
+  TemplateConfigForGeneralModesSchema,
+  TemplateConfigForChanceModeSchema,
+  TemplateConfigForFSMModeSchema,
+]);
+export type TemplateConfig = z.infer<typeof TemplateConfigSchema>;
 
 const TemplateEventPluginConfigCommonFieldsSchema =
   BaseEventPluginConfigSchema.extend({
