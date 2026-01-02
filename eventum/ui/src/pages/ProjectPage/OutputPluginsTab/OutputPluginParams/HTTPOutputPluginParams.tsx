@@ -204,10 +204,12 @@ export const HTTPOutputPluginParams: FC<HTTPOutputPluginParamsProps> = ({
         />
       </Group>
 
-      <Text size="sm" fw="bold">
-        SSL
-      </Text>
-      <Divider />
+      <Stack gap="4px">
+        <Text size="sm" fw="bold">
+          SSL
+        </Text>
+        <Divider />
+      </Stack>
 
       <Switch
         label={

@@ -266,10 +266,12 @@ export const ClickhouseOutputPluginParams: FC<
         }
       />
 
-      <Text size="sm" fw="bold">
-        SSL
-      </Text>
-      <Divider />
+      <Stack gap="4px">
+        <Text size="sm" fw="bold">
+          SSL
+        </Text>
+        <Divider />
+      </Stack>
 
       <Switch
         label={
@@ -358,10 +360,12 @@ export const ClickhouseOutputPluginParams: FC<
         }
       />
 
-      <Text size="sm" fw="bold">
-        Proxy
-      </Text>
-      <Divider />
+      <Stack gap="4px">
+        <Text size="sm" fw="bold">
+          Proxy
+        </Text>
+        <Divider />
+      </Stack>
 
       <TextInput
         label={
@@ -399,10 +403,12 @@ export const ClickhouseOutputPluginParams: FC<
         }
       />
 
-      <Text size="sm" fw="bold">
-        Format
-      </Text>
-      <Divider />
+      <Stack gap="4px">
+        <Text size="sm" fw="bold">
+          Format
+        </Text>
+        <Divider />
+      </Stack>
 
       <Select
         label={
