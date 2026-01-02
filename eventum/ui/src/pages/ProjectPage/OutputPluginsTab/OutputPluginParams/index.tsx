@@ -7,6 +7,7 @@ import { ClickhouseOutputPluginParams } from './ClickhouseOutputPluginParams';
 import { FileOutputPluginParams } from './FileOutputPluginParams';
 import { HTTPOutputPluginParams } from './HTTPOutputPluginParams';
 import { OpensearchOutputPluginParams } from './OpensearchOutputPluginParams';
+import { StdoutOutputPluginParams } from './StdoutOutputPluginParams';
 import {
   OutputPluginConfig,
   OutputPluginNamedConfig,
@@ -30,7 +31,7 @@ const pluginNamesToParamsComponent = {
   file: FileOutputPluginParams,
   http: HTTPOutputPluginParams,
   opensearch: OpensearchOutputPluginParams,
-  stdout: '',
+  stdout: StdoutOutputPluginParams,
 } as const satisfies {
   [K in OutputPluginName]: FC<{
     initialConfig: PluginNameToConfigType[K];
