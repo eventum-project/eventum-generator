@@ -7,6 +7,7 @@ import {
   Select,
   Stack,
   Switch,
+  Text,
   TextInput,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
@@ -121,8 +122,6 @@ export const HTTPOutputPluginParams: FC<HTTPOutputPluginParamsProps> = ({
         error={form.errors.headers}
       />
 
-      <Divider />
-
       <Group align="start" wrap="nowrap" grow>
         <TextInput
           label={
@@ -205,6 +204,9 @@ export const HTTPOutputPluginParams: FC<HTTPOutputPluginParamsProps> = ({
         />
       </Group>
 
+      <Text size="sm" fw="bold">
+        SSL
+      </Text>
       <Divider />
 
       <Switch

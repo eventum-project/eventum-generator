@@ -363,46 +363,41 @@ export const ClickhouseOutputPluginParams: FC<
       </Text>
       <Divider />
 
-      <Group align="start" wrap="nowrap">
-        <TextInput
-          label={
-            <LabelWithTooltip
-              label="Server host name"
-              tooltip="The ClickHouse server hostname as identified by the CN or SNI
+      <TextInput
+        label={
+          <LabelWithTooltip
+            label="Server host name"
+            tooltip="The ClickHouse server hostname as identified by the CN or SNI
             of its TLS certificate, set this to avoid SSL errors when
             connecting through a proxy or tunnel with a different hostname."
-            />
-          }
-          placeholder="ip or hostname"
-          {...form.getInputProps('server_host_name')}
-          onChange={(value) =>
-            form.setFieldValue(
-              'server_host_name',
-              value.currentTarget.value !== ''
-                ? value.currentTarget.value
-                : undefined
-            )
-          }
-        />
-        <TextInput
-          label={
-            <LabelWithTooltip
-              label="Proxy URL"
-              tooltip="HTTP(S) proxy address"
-            />
-          }
-          placeholder="URL"
-          {...form.getInputProps('proxy_url')}
-          onChange={(value) =>
-            form.setFieldValue(
-              'proxy_url',
-              value.currentTarget.value !== ''
-                ? value.currentTarget.value
-                : undefined
-            )
-          }
-        />
-      </Group>
+          />
+        }
+        placeholder="ip or hostname"
+        {...form.getInputProps('server_host_name')}
+        onChange={(value) =>
+          form.setFieldValue(
+            'server_host_name',
+            value.currentTarget.value !== ''
+              ? value.currentTarget.value
+              : undefined
+          )
+        }
+      />
+      <TextInput
+        label={
+          <LabelWithTooltip label="Proxy URL" tooltip="HTTP(S) proxy address" />
+        }
+        placeholder="URL"
+        {...form.getInputProps('proxy_url')}
+        onChange={(value) =>
+          form.setFieldValue(
+            'proxy_url',
+            value.currentTarget.value !== ''
+              ? value.currentTarget.value
+              : undefined
+          )
+        }
+      />
 
       <Text size="sm" fw="bold">
         Format
