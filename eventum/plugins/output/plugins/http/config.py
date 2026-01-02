@@ -58,7 +58,7 @@ class HttpOutputPluginConfig(OutputPluginConfig, frozen=True):
     client_cert_key: str | None, default=None
         Path to client certificate key.
 
-    proxy_url : HttpUrl
+    proxy_url : HttpUrl | None, default=None
         HTTP(S) proxy address.
 
     Notes
