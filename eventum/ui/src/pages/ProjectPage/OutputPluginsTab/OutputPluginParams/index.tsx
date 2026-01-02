@@ -6,6 +6,7 @@ import YAML from 'yaml';
 import { ClickhouseOutputPluginParams } from './ClickhouseOutputPluginParams';
 import { FileOutputPluginParams } from './FileOutputPluginParams';
 import { HTTPOutputPluginParams } from './HTTPOutputPluginParams';
+import { OpensearchOutputPluginParams } from './OpensearchOutputPluginParams';
 import {
   OutputPluginConfig,
   OutputPluginNamedConfig,
@@ -28,7 +29,7 @@ const pluginNamesToParamsComponent = {
   clickhouse: ClickhouseOutputPluginParams,
   file: FileOutputPluginParams,
   http: HTTPOutputPluginParams,
-  opensearch: '',
+  opensearch: OpensearchOutputPluginParams,
   stdout: '',
 } as const satisfies {
   [K in OutputPluginName]: FC<{
