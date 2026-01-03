@@ -56,8 +56,6 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
     cascadeUpdates: true,
   });
 
-  console.log(form.errors);
-
   return (
     <Stack>
       <ProjectFileSelect
