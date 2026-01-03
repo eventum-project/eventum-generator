@@ -77,7 +77,6 @@ export default function ProjectPage() {
       { name: projectName, config: config },
       {
         onSuccess: () => {
-          void navigate(ROUTE_PATHS.PROJECTS);
           notifications.show({
             title: 'Success',
             message: 'Project is saved',
