@@ -4,6 +4,7 @@ import { FC, useCallback, useRef, useState } from 'react';
 import { OutputPluginsList } from '../PluginsList';
 import { EditorTab } from '../common/EditorTab';
 import { FileTree } from '../common/FileTree';
+import { FormatterTab } from './FormatterTab';
 import { OutputPluginParams } from './OutputPluginParams';
 import { PLUGIN_DEFAULT_CONFIGS } from '@/api/routes/generator-configs/modules/plugins/registry';
 import { OutputPluginsNamedConfig } from '@/api/routes/generator-configs/schemas';
@@ -107,12 +108,16 @@ export const OutputPluginsTab: FC<OutputPluginsTabProps> = ({
               </Text>
             </Center>
           ) : (
-            <Tabs defaultValue="editor">
+            <Tabs defaultValue="formatter">
               <Tabs.List>
+                <Tabs.Tab value="formatter">Formatter</Tabs.Tab>
                 <Tabs.Tab value="editor">Editor</Tabs.Tab>
               </Tabs.List>
 
               <Box mt="md">
+                <Tabs.Panel value="formatter">
+                  <FormatterTab />
+                </Tabs.Panel>
                 <Tabs.Panel value="editor">
                   <EditorTab />
                 </Tabs.Panel>
