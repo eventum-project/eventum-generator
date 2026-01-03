@@ -1,5 +1,5 @@
 import { Box, Center, Divider, Grid, Stack, Tabs, Text } from '@mantine/core';
-import { FC, useCallback, useRef, useState } from 'react';
+import { FC, useCallback, useEffect, useRef, useState } from 'react';
 
 import { OutputPluginsList } from '../PluginsList';
 import { EditorTab } from '../common/EditorTab';
@@ -12,18 +12,26 @@ import { OutputPluginNamedConfig } from '@/api/routes/generator-configs/schemas/
 import { OutputPluginName } from '@/api/routes/generator-configs/schemas/plugins/output/base-config';
 
 interface OutputPluginsTabProps {
-  outputPluginsConfig: OutputPluginsNamedConfig;
+  initialOutputPluginsConfig: OutputPluginsNamedConfig;
+  onOutputPluginsConfigChange: (config: OutputPluginsNamedConfig) => void;
 }
 
 export const OutputPluginsTab: FC<OutputPluginsTabProps> = ({
-  outputPluginsConfig,
+  initialOutputPluginsConfig,
+  onOutputPluginsConfigChange,
 }) => {
   const [selectedPluginIndex, setSelectedPluginIndex] = useState(0);
-  const [pluginsConfig, setPluginsConfig] =
-    useState<OutputPluginsNamedConfig>(outputPluginsConfig);
+  const [pluginsConfig, setPluginsConfig] = useState<OutputPluginsNamedConfig>(
+    initialOutputPluginsConfig
+  );
   const [pluginNames, setPluginNames] = useState<string[]>(
     pluginsConfig.map((plugin) => Object.keys(plugin)[0]!)
   );
+
+  useEffect(() => {
+    onOutputPluginsConfigChange(pluginsConfig);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pluginsConfig]);
 
   const handleAddNewPlugin = useCallback(
     (pluginType: 'output', pluginName: OutputPluginName) => {

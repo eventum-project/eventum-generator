@@ -1,5 +1,5 @@
 import { Center, Divider, Grid, Stack, Text } from '@mantine/core';
-import { FC, useCallback, useState } from 'react';
+import { FC, useCallback, useEffect, useState } from 'react';
 
 import { EventPluginsList } from '../PluginsList';
 import { FileTree } from '../common/FileTree';
@@ -11,19 +11,26 @@ import { EventPluginNamedConfig } from '@/api/routes/generator-configs/schemas/p
 import { EventPluginName } from '@/api/routes/generator-configs/schemas/plugins/event/base-config';
 
 interface EventPluginTabProps {
-  eventPluginConfig: EventPluginNamedConfig;
+  initialEventPluginConfig: EventPluginNamedConfig;
+  onEventPluginConfigChange: (config: EventPluginNamedConfig) => void;
 }
 
 export const EventPluginTab: FC<EventPluginTabProps> = ({
-  eventPluginConfig,
+  initialEventPluginConfig,
+  onEventPluginConfigChange,
 }) => {
   const [selectedPluginIndex, setSelectedPluginIndex] = useState(0);
   const [pluginsConfig, setPluginsConfig] = useState<EventPluginNamedConfig[]>([
-    eventPluginConfig,
+    initialEventPluginConfig,
   ]);
   const [pluginNames, setPluginNames] = useState<string[]>(
     pluginsConfig.map((plugin) => Object.keys(plugin)[0]!)
   );
+
+  useEffect(() => {
+    onEventPluginConfigChange(pluginsConfig[0]!);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pluginsConfig]);
 
   const handleAddNewPlugin = useCallback(
     (pluginType: 'event', pluginName: EventPluginName) => {
