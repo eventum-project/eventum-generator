@@ -28,6 +28,7 @@ from eventum.api.routers.generators.dependencies import (
 from eventum.api.routers.generators.models import (
     BulkStartResponse,
     EventPluginStats,
+    GeneratorInfo,
     GeneratorStats,
     GeneratorStatus,
     InputPluginStats,
@@ -53,8 +54,33 @@ ws_router = APIRouter()
     description='List ids of all generators',
     response_description='Generators ids',
 )
-async def list_generators(generator_manager: GeneratorManagerDep) -> list[str]:
-    return generator_manager.generator_ids
+async def list_generators(
+    generator_manager: GeneratorManagerDep,
+    settings: SettingsDep,
+) -> list[GeneratorInfo]:
+    generators_info: list[GeneratorInfo] = []
+    for generator_id in generator_manager.generator_ids:
+        try:
+            generator = generator_manager.get_generator(generator_id)
+            generators_info.append(
+                GeneratorInfo(
+                    id=generator_id,
+                    path=generator.params.as_relative(
+                        base_dir=settings.path.generators_dir,
+                    ).path,
+                    status=GeneratorStatus(
+                        is_initializing=generator.is_initializing,
+                        is_running=generator.is_running,
+                        is_ended_up=generator.is_ended_up,
+                        is_ended_up_successfully=generator.is_ended_up_successfully,
+                    ),
+                    start_time=generator.start_time,
+                ),
+            )
+        except ManagingError:
+            continue
+
+    return generators_info
 
 
 @router.get(
@@ -217,7 +243,7 @@ async def delete_generator(
     responses=_get_generator.responses,
 )
 async def get_generator_stats(generator: GeneratorDep) -> GeneratorStats:
-    if generator.is_running:
+    if generator.is_running and generator.start_time is not None:
         plugins = generator.get_plugins_info()
     else:
         raise HTTPException(

@@ -2,6 +2,7 @@
 
 from abc import ABC
 from datetime import datetime
+from pathlib import Path
 
 from pydantic import BaseModel, Field, computed_field
 from pytz import timezone
@@ -21,6 +22,19 @@ class GeneratorStatus(BaseModel, frozen=True, extra='forbid'):
     )
     is_ended_up_successfully: bool = Field(
         description='Whether the generator has ended execution successfully.',
+    )
+
+
+class GeneratorInfo(BaseModel, frozen=True, extra='forbid'):
+    """Info about generator."""
+
+    id: str = Field(min_length=1, description='ID of the generator')
+    path: Path = Field(description='Path to the generator project')
+    status: GeneratorStatus = Field(
+        description='Execution status of the generator',
+    )
+    start_time: datetime | None = Field(
+        description='Start time of the generator',
     )
 
 
