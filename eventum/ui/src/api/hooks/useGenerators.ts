@@ -1,0 +1,169 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import {
+  addGenerator,
+  bulkRemoveGenerators,
+  bulkStartGenerators,
+  bulkStopGenerators,
+  deleteGenerator,
+  getGenerator,
+  getGeneratorStats,
+  getGeneratorStatus,
+  listGenerators,
+  startGenerator,
+  stopGenerator,
+  updateGenerator,
+} from '../routes/generators';
+import { GeneratorParameters } from '../routes/generators/schemas';
+
+const GENERATORS_QUERY_KEY = ['generators'];
+
+export function useGenerators() {
+  return useQuery({
+    queryKey: GENERATORS_QUERY_KEY,
+    queryFn: listGenerators,
+  });
+}
+
+export function useGenerator(id: string) {
+  return useQuery({
+    queryKey: [...GENERATORS_QUERY_KEY, id],
+    queryFn: () => getGenerator(id),
+  });
+}
+
+export function useAddGeneratorMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, params }: { id: string; params: GeneratorParameters }) =>
+      addGenerator(id, params),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: GENERATORS_QUERY_KEY,
+        exact: true,
+      });
+    },
+  });
+}
+
+export function useUpdateGeneratorMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, params }: { id: string; params: GeneratorParameters }) =>
+      updateGenerator(id, params),
+    onSuccess: async (_, { id }) => {
+      await queryClient.invalidateQueries({
+        queryKey: [...GENERATORS_QUERY_KEY, id],
+        exact: true,
+      });
+    },
+  });
+}
+
+export function useDeleteGeneratorMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id }: { id: string }) => deleteGenerator(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: GENERATORS_QUERY_KEY,
+        exact: true,
+      });
+    },
+  });
+}
+
+export function useGeneratorStatus(id: string) {
+  return useQuery({
+    queryKey: [...GENERATORS_QUERY_KEY, id, 'status'],
+    queryFn: () => getGeneratorStatus(id),
+  });
+}
+
+export function useGeneratorStats(id: string) {
+  return useQuery({
+    queryKey: [...GENERATORS_QUERY_KEY, id, 'stats'],
+    queryFn: () => getGeneratorStats(id),
+  });
+}
+
+export function useStartGeneratorMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id }: { id: string }) => startGenerator(id),
+    onSuccess: async (_, { id }) => {
+      await queryClient.invalidateQueries({
+        queryKey: [...GENERATORS_QUERY_KEY, id],
+        exact: false,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: GENERATORS_QUERY_KEY,
+        exact: true,
+      });
+    },
+  });
+}
+
+export function useStopGeneratorMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id }: { id: string }) => stopGenerator(id),
+    onSuccess: async (_, { id }) => {
+      await queryClient.invalidateQueries({
+        queryKey: [...GENERATORS_QUERY_KEY, id],
+        exact: false,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: GENERATORS_QUERY_KEY,
+        exact: true,
+      });
+    },
+  });
+}
+
+export function useBulkStartGeneratorMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ids }: { ids: string[] }) => bulkStartGenerators(ids),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: GENERATORS_QUERY_KEY,
+        exact: false,
+      });
+    },
+  });
+}
+
+export function useBulkStopGeneratorMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ids }: { ids: string[] }) => bulkStopGenerators(ids),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: GENERATORS_QUERY_KEY,
+        exact: false,
+      });
+    },
+  });
+}
+
+export function useBulkRemoveGeneratorMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ids }: { ids: string[] }) => bulkRemoveGenerators(ids),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: GENERATORS_QUERY_KEY,
+        exact: false,
+      });
+    },
+  });
+}
