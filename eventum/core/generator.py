@@ -301,17 +301,6 @@ class Generator:
         return self.is_ended_up and not self._successfully_done_event.is_set()
 
     @property
-    def start_time(self) -> datetime:
-        """Start time of the generator.
-
-        Notes
-        -----
-        Note that accessing this property before initialization of
-        generator raises `RuntimeError`
-
-        """
-        if self._start_time is None:
-            msg = 'Generator is not yet started'
-            raise RuntimeError(msg)
-
+    def start_time(self) -> datetime | None:
+        """Start time of the generator."""
         return self._start_time
