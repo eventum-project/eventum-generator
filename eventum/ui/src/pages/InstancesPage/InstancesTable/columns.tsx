@@ -12,7 +12,10 @@ import { formatDistanceToNow } from 'date-fns';
 import { dirname } from 'pathe';
 
 import { RowActions } from './RowActions';
-import { GeneratorsInfo } from '@/api/routes/generators/schemas';
+import {
+  GeneratorStatus,
+  GeneratorsInfo,
+} from '@/api/routes/generators/schemas';
 
 const columnHelper = createColumnHelper<GeneratorsInfo[number]>();
 
@@ -47,11 +50,26 @@ export const columns = [
     id: 'path',
     enableSorting: true,
     enableColumnFilter: true,
+    filterFn: (row, columnId, filterValue: string) => {
+      const rowValue: string = row.getValue(columnId);
+      const projectName = dirname(rowValue);
+      return projectName.includes(filterValue);
+    },
     cell: (info) => dirname(info.getValue()),
   }),
   columnHelper.accessor('status', {
     header: 'Status',
     id: 'status',
+    enableColumnFilter: true,
+    filterFn: (row, columnId, filterValue: boolean) => {
+      const rowValue: GeneratorStatus = row.getValue(columnId);
+
+      if (!filterValue) {
+        return true;
+      }
+
+      return rowValue.is_running;
+    },
     cell: (info) => {
       const status = info.getValue();
 
