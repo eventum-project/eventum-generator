@@ -1,6 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  UseQueryResult,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 
-import { GeneratorConfig } from '../routes/generator-configs/schemas';
+import {
+  GeneratorConfig,
+  GeneratorDirsExtendedInfo,
+} from '../routes/generator-configs/schemas';
 import {
   copyGeneratorFile,
   createGeneratorConfig,
@@ -20,10 +28,22 @@ import {
 
 const GENERATOR_CONFIG_DIRS_QUERY_KEY = ['generator-config-dirs'];
 
-export function useGeneratorDirs() {
+export function useGeneratorDirs(
+  extended: false
+): UseQueryResult<string[], Error>;
+
+export function useGeneratorDirs(
+  extended: true
+): UseQueryResult<GeneratorDirsExtendedInfo, Error>;
+
+export function useGeneratorDirs(
+  extended: boolean
+): UseQueryResult<GeneratorDirsExtendedInfo | string[], Error>;
+
+export function useGeneratorDirs(extended: boolean) {
   return useQuery({
     queryKey: GENERATOR_CONFIG_DIRS_QUERY_KEY,
-    queryFn: listGeneratorDirs,
+    queryFn: () => listGeneratorDirs(extended),
   });
 }
 

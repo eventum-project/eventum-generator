@@ -32,7 +32,7 @@ export default function ProjectsPage() {
     isError: isGeneratorDirsError,
     error: generatorDirsError,
     isSuccess: isGeneratorDirsSuccess,
-  } = useGeneratorDirs();
+  } = useGeneratorDirs(true);
 
   if (isGeneratorDirsLoading) {
     return (
