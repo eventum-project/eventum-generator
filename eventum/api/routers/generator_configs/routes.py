@@ -627,7 +627,7 @@ async def delete_generator_file(
 
 
 @router.post(
-    '/{name}/file-move/',
+    '/{name}/file-move',
     description=(
         'Move file from source to destination location inside '
         'generator directory with specified name.'
@@ -699,7 +699,7 @@ async def move_generator_file(
 
 
 @router.post(
-    '/{name}/file-copy/',
+    '/{name}/file-copy',
     description=(
         'Copy file from source to destination location inside '
         'generator directory with specified name.'

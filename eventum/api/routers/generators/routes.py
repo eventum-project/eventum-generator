@@ -85,7 +85,7 @@ async def list_generators(
 
 
 @router.get(
-    '/{id}/',
+    '/{id}',
     description='Get generator parameters',
     responses=_get_generator.responses,
 )
@@ -102,7 +102,7 @@ async def get_generator(
 
 
 @router.get(
-    '/{id}/status/',
+    '/{id}/status',
     description='Get generator status',
     responses=_get_generator.responses,
 )
@@ -117,7 +117,7 @@ async def get_generator_status(generator: GeneratorDep) -> GeneratorStatus:
 
 
 @router.post(
-    '/{id}/',
+    '/{id}',
     description=(
         'Add generator. Note that `id` path parameter takes precedence '
         'over `id` field in the body.'
@@ -145,7 +145,7 @@ async def add_generator(
 
 
 @router.put(
-    '/{id}/',
+    '/{id}',
     description=(
         'Update generator with provided parameters. Note that `id` path '
         'parameter takes precedence over `id` field in the body.'
@@ -179,7 +179,7 @@ async def update_generator(
 
 
 @router.post(
-    '/{id}/start/',
+    '/{id}/start',
     description='Start generator by its id',
     response_description='Working status of generator after start',
     responses={
@@ -200,7 +200,7 @@ async def start_generator(
 
 
 @router.post(
-    '/{id}/stop/',
+    '/{id}/stop',
     description='Stop generator by its id',
     responses={
         404: {'description': 'Generator with provided id is not found'},
@@ -220,7 +220,7 @@ async def stop_generator(
 
 
 @router.delete(
-    '/{id}/',
+    '/{id}',
     description='Remove generator by its id. Stop it in case it is running.',
     responses={
         404: {'description': 'Generator with provided id is not found'},
@@ -240,7 +240,7 @@ async def delete_generator(
 
 
 @router.get(
-    '/{id}/stats/',
+    '/{id}/stats',
     description='Get stats of running generator',
     responses=_get_generator.responses,
 )
@@ -283,7 +283,7 @@ async def get_generator_stats(generator: GeneratorDep) -> GeneratorStats:
 
 
 @router.post(
-    '/group-actions/bulk-start/',
+    '/group-actions/bulk-start',
     description='Bulk start several generators',
     response_description=(
         'Ids of running and non running generators after start. '
@@ -308,7 +308,7 @@ async def bulk_start_generators(
 
 
 @router.post(
-    '/group-actions/bulk-stop/',
+    '/group-actions/bulk-stop',
     description='Bulk stop several generators',
 )
 async def bulk_stop_generators(
@@ -322,7 +322,7 @@ async def bulk_stop_generators(
 
 
 @router.post(
-    '/group-actions/bulk-remove/',
+    '/group-actions/bulk-remove',
     description='Bulk remove several generators',
 )
 async def bulk_remove_generators(

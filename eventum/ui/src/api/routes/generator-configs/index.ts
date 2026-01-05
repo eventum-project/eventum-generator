@@ -128,7 +128,7 @@ export async function moveGeneratorFile(
   source: string,
   destination: string
 ) {
-  await apiClient.post(`/generator-configs/${name}/file-move/`, undefined, {
+  await apiClient.post(`/generator-configs/${name}/file-move`, undefined, {
     params: {
       source,
       destination,

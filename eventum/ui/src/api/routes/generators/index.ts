@@ -42,23 +42,23 @@ export async function deleteGenerator(id: string) {
 export async function getGeneratorStatus(id: string): Promise<GeneratorStatus> {
   return await validateResponse(
     GeneratorStatusSchema,
-    apiClient.get(`/generators/${id}/status/`)
+    apiClient.get(`/generators/${id}/status`)
   );
 }
 
 export async function getGeneratorStats(id: string): Promise<GeneratorStats> {
   return await validateResponse(
     GeneratorStatsSchema,
-    apiClient.get(`/generators/${id}/stats/`)
+    apiClient.get(`/generators/${id}/stats`)
   );
 }
 
 export async function startGenerator(id: string) {
-  await apiClient.post(`/generators/${id}/start/`);
+  await apiClient.post(`/generators/${id}/start`);
 }
 
 export async function stopGenerator(id: string) {
-  await apiClient.post(`/generators/${id}/stop/`);
+  await apiClient.post(`/generators/${id}/stop`);
 }
 
 export async function bulkStartGenerators(
