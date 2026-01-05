@@ -1,22 +1,22 @@
 import {
   BulkStartResponse,
   BulkStartResponseSchema,
-  GeneratorInfo,
-  GeneratorInfoSchema,
   GeneratorParameters,
   GeneratorParametersSchema,
   GeneratorStats,
   GeneratorStatsSchema,
   GeneratorStatus,
   GeneratorStatusSchema,
+  GeneratorsInfo,
+  GeneratorsInfoSchema,
 } from './schemas';
 import { apiClient } from '@/api/client';
 import { validateResponse } from '@/api/wrappers';
 
-export async function listGenerators(): Promise<GeneratorInfo> {
+export async function listGenerators(): Promise<GeneratorsInfo> {
   return await validateResponse(
-    GeneratorInfoSchema,
-    apiClient.get('/generator')
+    GeneratorsInfoSchema,
+    apiClient.get('/generators/')
   );
 }
 
@@ -49,7 +49,7 @@ export async function getGeneratorStatus(id: string): Promise<GeneratorStatus> {
 export async function getGeneratorStats(id: string): Promise<GeneratorStats> {
   return await validateResponse(
     GeneratorStatsSchema,
-    apiClient.get(`/generators/${id}/stats`)
+    apiClient.get(`/generators/${id}/stats/`)
   );
 }
 

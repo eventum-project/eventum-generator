@@ -10,13 +10,15 @@ export const GeneratorStatusSchema = z.object({
 });
 export type GeneratorStatus = z.infer<typeof GeneratorStatusSchema>;
 
-export const GeneratorInfoSchema = z.object({
-  id: z.string().min(1),
-  path: z.string(),
-  status: GeneratorStatusSchema,
-  start_time: z.string().nullable(),
-});
-export type GeneratorInfo = z.infer<typeof GeneratorInfoSchema>;
+export const GeneratorsInfoSchema = z.array(
+  z.object({
+    id: z.string().min(1),
+    path: z.string(),
+    status: GeneratorStatusSchema,
+    start_time: z.string().nullable(),
+  })
+);
+export type GeneratorsInfo = z.infer<typeof GeneratorsInfoSchema>;
 
 export const PluginStatsSchema = z.object({
   plugin_name: z.string().min(1),
@@ -46,6 +48,11 @@ export const GeneratorStatsSchema = z.object({
   input: z.array(InputPluginStatsSchema),
   event: EventPluginStatsSchema,
   output: z.array(OutputPluginStatsSchema),
+  total_generated: z.int(),
+  total_written: z.int(),
+  uptime: z.number(),
+  input_eps: z.number(),
+  output_eps: z.number(),
 });
 export type GeneratorStats = z.infer<typeof GeneratorStatsSchema>;
 
