@@ -57,13 +57,14 @@ export const GeneratorStatsSchema = z.object({
 });
 export type GeneratorStats = z.infer<typeof GeneratorStatsSchema>;
 
-export const GeneratorParametersSchema = GenerationParametersSchema.extend({
-  id: z.string().min(1),
-  path: z.string(),
-  live_mode: z.boolean().optional(),
-  skip_past: z.boolean().optional(),
-  params: z.record(z.string(), z.any()).optional(),
-});
+export const GeneratorParametersSchema =
+  GenerationParametersSchema.partial().extend({
+    id: z.string().min(1),
+    path: z.string(),
+    live_mode: z.boolean().optional(),
+    skip_past: z.boolean().optional(),
+    params: z.record(z.string(), z.any()).optional(),
+  });
 export type GeneratorParameters = z.infer<typeof GeneratorParametersSchema>;
 
 export const BulkStartResponseSchema = z.object({
