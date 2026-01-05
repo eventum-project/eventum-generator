@@ -36,7 +36,7 @@ export async function listGeneratorDirs(
   return await validateResponse(
     ValidationSchema,
     apiClient.get('/generator-configs/', {
-      params: { extended: extended ?? false },
+      params: { extended: extended },
     })
   );
 }

@@ -42,7 +42,7 @@ export function useGeneratorDirs(
 
 export function useGeneratorDirs(extended: boolean) {
   return useQuery({
-    queryKey: GENERATOR_CONFIG_DIRS_QUERY_KEY,
+    queryKey: [...GENERATOR_CONFIG_DIRS_QUERY_KEY, `extended-${extended}`],
     queryFn: () => listGeneratorDirs(extended),
   });
 }
@@ -98,12 +98,9 @@ export function useDeleteGeneratorConfigMutation() {
   });
 }
 
-const GENERATOR_CONFIG_PATH_QUERY_KEY = ['generator-config-path'];
-
-export function useGeneratorConfigPath(name: string) {
-  return useQuery({
-    queryKey: [...GENERATOR_CONFIG_PATH_QUERY_KEY, name],
-    queryFn: () => getGeneratorConfigPath(name),
+export function useGeneratorConfigPathMutation() {
+  return useMutation({
+    mutationFn: ({ name }: { name: string }) => getGeneratorConfigPath(name),
   });
 }
 
