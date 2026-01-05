@@ -64,6 +64,9 @@ export const columns = [
       } else if (status.is_running) {
         text = 'Running';
         color = 'green.6';
+      } else if (status.is_stopping) {
+        text = 'Stopping';
+        color = 'yellow.7';
       } else if (status.is_ended_up) {
         text = 'Finished';
 
@@ -83,7 +86,7 @@ export const columns = [
     },
   }),
   columnHelper.accessor('start_time', {
-    header: 'Start time',
+    header: 'Last start time',
     id: 'start_time',
     enableSorting: true,
     cell: (info) => {
@@ -102,6 +105,9 @@ export const columns = [
         </>
       );
     },
+    meta: {
+      style: { width: '20%' },
+    },
   }),
   columnHelper.display({
     id: 'actions',
@@ -115,6 +121,7 @@ export const columns = [
             </ActionIcon>
           }
           instanceId={original.id}
+          instanceStatus={original.status}
         />
       );
     },
