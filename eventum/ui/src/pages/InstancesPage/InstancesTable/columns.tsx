@@ -18,7 +18,7 @@ const columnHelper = createColumnHelper<GeneratorsInfo[number]>();
 
 export const columns = [
   columnHelper.display({
-    id: 'actions',
+    id: 'select',
     cell: ({ row }) => {
       return (
         <Checkbox
