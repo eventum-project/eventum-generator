@@ -7,6 +7,7 @@ export const GeneratorStatusSchema = z.object({
   is_running: z.boolean(),
   is_ended_up: z.boolean(),
   is_ended_up_successfully: z.boolean(),
+  is_stopping: z.boolean(),
 });
 export type GeneratorStatus = z.infer<typeof GeneratorStatusSchema>;
 

@@ -21,7 +21,10 @@ class GeneratorStatus(BaseModel, frozen=True, extra='forbid'):
         ),
     )
     is_ended_up_successfully: bool = Field(
-        description='Whether the generator has ended execution successfully.',
+        description='Whether the generator has ended execution successfully',
+    )
+    is_stopping: bool = Field(
+        description='Whether the generator is stopping',
     )
 
 
