@@ -57,16 +57,19 @@ export const columns = [
 
       let text = 'Not started';
       let color: DefaultMantineColor = 'gray.6';
+      let processing = false;
 
       if (status.is_initializing) {
         text = 'Starting';
         color = 'yellow.7';
+        processing = true;
       } else if (status.is_running) {
         text = 'Running';
         color = 'green.6';
       } else if (status.is_stopping) {
         text = 'Stopping';
         color = 'yellow.7';
+        processing = true;
       } else if (status.is_ended_up) {
         text = 'Finished';
 
@@ -79,7 +82,12 @@ export const columns = [
 
       return (
         <Group gap="sm" align="center">
-          <Indicator color={color} size={8} />
+          <Indicator
+            color={color}
+            size={8}
+            position="middle-center"
+            processing={processing}
+          />
           <Text size="sm">{text}</Text>
         </Group>
       );
