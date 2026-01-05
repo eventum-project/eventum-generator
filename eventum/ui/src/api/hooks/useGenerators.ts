@@ -14,7 +14,11 @@ import {
   stopGenerator,
   updateGenerator,
 } from '../routes/generators';
-import { GeneratorParameters } from '../routes/generators/schemas';
+import {
+  GeneratorParameters,
+  GeneratorStatus,
+  GeneratorsInfo,
+} from '../routes/generators/schemas';
 
 const GENERATORS_QUERY_KEY = ['generators'];
 
@@ -164,6 +168,26 @@ export function useBulkRemoveGeneratorMutation() {
         queryKey: GENERATORS_QUERY_KEY,
         exact: false,
       });
+    },
+  });
+}
+
+export function useUpdateGeneratorStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      status,
+    }: {
+      id: string;
+      status: GeneratorStatus;
+    }) => {
+      await queryClient.setQueryData(
+        GENERATORS_QUERY_KEY,
+        (oldValue: GeneratorsInfo) =>
+          oldValue.map((item) => (item.id === id ? { ...item, status } : item))
+      );
     },
   });
 }
