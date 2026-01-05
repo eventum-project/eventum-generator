@@ -25,6 +25,12 @@ const InstancesPage = lazy(
       default: React.ComponentType;
     }>
 );
+const InstancePage = lazy(
+  () =>
+    import('@/pages/InstancePage') as Promise<{
+      default: React.ComponentType;
+    }>
+);
 const ProjectsPage = lazy(
   () =>
     import('@/pages/ProjectsPage') as Promise<{
@@ -89,6 +95,7 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <MainPage /> },
       { path: ROUTE_PATHS.INSTANCES, element: <InstancesPage /> },
+      { path: ROUTE_PATHS.INSTANCE, element: <InstancePage /> },
       { path: ROUTE_PATHS.PROJECTS, element: <ProjectsPage /> },
       { path: ROUTE_PATHS.PROJECT, element: <ProjectPage /> },
       { path: ROUTE_PATHS.STARTUP, element: <StartupPage /> },

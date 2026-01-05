@@ -2,6 +2,7 @@ export const ROUTE_PATHS = {
   SIGNIN: '/signin',
   ROOT: '/',
   INSTANCES: '/instances',
+  INSTANCE: '/instances/:instanceId',
   PROJECTS: '/projects',
   PROJECT: '/projects/:projectName',
   STARTUP: '/startup',
