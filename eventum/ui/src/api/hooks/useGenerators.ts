@@ -26,6 +26,7 @@ export function useGenerators() {
   return useQuery({
     queryKey: GENERATORS_QUERY_KEY,
     queryFn: listGenerators,
+    structuralSharing: false,
   });
 }
 
