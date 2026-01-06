@@ -198,6 +198,7 @@ class Generator:
         with self._lock:
             if not self.is_running:
                 self._logger.debug('Generator is not running')
+                self._is_stopping = False
                 return
 
             self._logger.debug('Requesting executor to stop')
