@@ -27,7 +27,7 @@ import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 interface MetricsSectionProps {
   sectionName: string;
-  SectionIcon: React.ForwardRefExoticComponent<
+  SectionIcon?: React.ForwardRefExoticComponent<
     IconProps & React.RefAttributes<Icon>
   >;
   sectionGroups: { label: string; value: ReactNode }[][];
@@ -39,9 +39,9 @@ const MetricsSection: FC<MetricsSectionProps> = ({
   sectionGroups,
 }) => {
   return (
-    <Stack gap="4px" mb="xs">
+    <Stack gap="4px">
       <Group gap="xs">
-        <SectionIcon size="19px" />
+        {SectionIcon && <SectionIcon size="19px" />}
         <Title order={6} fw={600}>
           {sectionName}
         </Title>
@@ -143,14 +143,46 @@ export const MetricsModal: FC<MetricsModalProps> = ({ instanceId }) => {
             ]}
           />
 
+          <Stack gap="4px">
+            <Grid columns={3}>
+              <Grid.Col span={1}>
+                <Group gap="xs">
+                  <IconClockPlay size="19px" />
+                  <Title order={6} fw={600}>
+                    Input plugins
+                  </Title>
+                </Group>
+              </Grid.Col>
+
+              <Grid.Col span={1}>
+                <Group gap="xs">
+                  <IconCube size="19px" />
+                  <Title order={6} fw={600}>
+                    Event plugin
+                  </Title>
+                </Group>
+              </Grid.Col>
+
+              <Grid.Col span={1}>
+                <Group gap="xs">
+                  <IconArrowsSplit2 size="19px" />
+                  <Title order={6} fw={600}>
+                    Output plugins
+                  </Title>
+                </Group>
+              </Grid.Col>
+            </Grid>
+
+            <Divider />
+          </Stack>
+
           <Group wrap="nowrap" align="start" grow>
             <Stack gap="xs">
               {...stats.input.map((inputPlugin) => {
                 return (
                   <MetricsSection
                     key={`${inputPlugin.plugin_name} #${inputPlugin.plugin_id}`}
-                    sectionName={`Input plugin (${inputPlugin.plugin_name} #${inputPlugin.plugin_id})`}
-                    SectionIcon={IconClockPlay}
+                    sectionName={`${inputPlugin.plugin_name} #${inputPlugin.plugin_id}`}
                     sectionGroups={[
                       [{ label: 'Generated', value: inputPlugin.generated }],
                     ]}
@@ -160,8 +192,7 @@ export const MetricsModal: FC<MetricsModalProps> = ({ instanceId }) => {
             </Stack>
 
             <MetricsSection
-              sectionName={`Event plugin (${stats.event.plugin_name} #${stats.event.plugin_id})`}
-              SectionIcon={IconCube}
+              sectionName={`${stats.event.plugin_name} #${stats.event.plugin_id}`}
               sectionGroups={[
                 [
                   {
@@ -183,8 +214,7 @@ export const MetricsModal: FC<MetricsModalProps> = ({ instanceId }) => {
                 return (
                   <MetricsSection
                     key={`${outputPlugin.plugin_name} #${outputPlugin.plugin_id}`}
-                    sectionName={`Output plugin (${outputPlugin.plugin_name} #${outputPlugin.plugin_id})`}
-                    SectionIcon={IconArrowsSplit2}
+                    sectionName={`${outputPlugin.plugin_name} #${outputPlugin.plugin_id}`}
                     sectionGroups={[
                       [{ label: 'Written', value: outputPlugin.written }],
                       [
