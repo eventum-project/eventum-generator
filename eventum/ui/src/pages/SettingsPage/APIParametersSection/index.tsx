@@ -13,29 +13,18 @@ import {
 } from '@mantine/core';
 import { UseFormReturnType } from '@mantine/form';
 import { IconAlertTriangle, IconLockExclamation } from '@tabler/icons-react';
-import { FC, useState } from 'react';
+import { FC } from 'react';
 
-import { Settings } from '@/api/routes/instance/schemas';
+import { APIParameters } from '@/api/routes/instance/schemas';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 
-interface APIParametersProps {
-  form: UseFormReturnType<Settings>;
+interface APIParametersSectionProps {
+  form: UseFormReturnType<APIParameters>;
 }
 
-export const APIParameters: FC<APIParametersProps> = ({ form }) => {
-  const formValues = form.getValues();
-  const [APIEnabled, setAPIEnabled] = useState<boolean>(formValues.api.enabled);
-  const [SSLEnabled, setSSLEnabled] = useState<boolean>(
-    formValues.api.ssl.enabled
-  );
-
-  form.watch('api.enabled', ({ value }) => {
-    setAPIEnabled(value);
-  });
-  form.watch('api.ssl.enabled', ({ value }) => {
-    setSSLEnabled(value);
-  });
-
+export const APIParametersSection: FC<APIParametersSectionProps> = ({
+  form,
+}) => {
   return (
     <>
       <Title order={2} fw={500}>
@@ -49,14 +38,14 @@ export const APIParameters: FC<APIParametersProps> = ({ form }) => {
             tooltip="Eventum API is used for external app control and for serving web interface"
           />
         }
-        {...form.getInputProps('api.enabled', { type: 'checkbox' })}
-        key={form.key('api.enabled')}
+        {...form.getInputProps('enabled', { type: 'checkbox' })}
+        key={form.key('enabled')}
       />
       <Alert
         variant="default"
         icon={<Box c="orange" component={IconAlertTriangle}></Box>}
         title="Disabling API"
-        hidden={APIEnabled}
+        hidden={form.getValues().enabled}
       >
         Web interface will be unavailable after disabling API.
       </Alert>
@@ -69,9 +58,9 @@ export const APIParameters: FC<APIParametersProps> = ({ form }) => {
             />
           }
           placeholder="hostname or IP"
-          disabled={!APIEnabled}
-          {...form.getInputProps('api.host', { type: 'input' })}
-          key={form.key('api.host')}
+          disabled={!form.getValues().enabled}
+          {...form.getInputProps('host')}
+          key={form.key('host')}
         />
         <NumberInput
           label={
@@ -84,9 +73,9 @@ export const APIParameters: FC<APIParametersProps> = ({ form }) => {
           allowDecimal={false}
           min={1}
           max={65_535}
-          disabled={!APIEnabled}
-          {...form.getInputProps('api.port', { type: 'input' })}
-          key={form.key('api.port')}
+          disabled={!form.getValues().enabled}
+          {...form.getInputProps('port')}
+          key={form.key('port')}
         />
       </Group>
       <Title order={3} fw={500} mt="md">
@@ -94,20 +83,18 @@ export const APIParameters: FC<APIParametersProps> = ({ form }) => {
       </Title>
       <Switch
         label="Enable SSL"
-        disabled={!APIEnabled}
-        {...form.getInputProps('api.ssl.enabled', {
+        disabled={!form.getValues().enabled}
+        {...form.getInputProps('ssl.enabled', {
           type: 'checkbox',
         })}
-        key={form.key('api.ssl.enabled')}
+        key={form.key('ssl.enabled')}
       />
       <Radio.Group
         name="verifyMode"
         label="Client certificate verification mode"
         description="Select how the server verifies client certificates during TLS handshake"
-        {...form.getInputProps('api.ssl.verify_mode', {
-          type: 'input',
-        })}
-        key={form.key('api.ssl.verify_mode')}
+        {...form.getInputProps('ssl.verify_mode')}
+        key={form.key('ssl.verify_mode')}
       >
         <Group mt="xs">
           <Tooltip
@@ -119,7 +106,9 @@ export const APIParameters: FC<APIParametersProps> = ({ form }) => {
           >
             <Box>
               <Radio
-                disabled={!APIEnabled || !SSLEnabled}
+                disabled={
+                  !form.getValues().enabled || !form.getValues().ssl.enabled
+                }
                 value="none"
                 label="None"
               />
@@ -134,7 +123,9 @@ export const APIParameters: FC<APIParametersProps> = ({ form }) => {
           >
             <Box>
               <Radio
-                disabled={!APIEnabled || !SSLEnabled}
+                disabled={
+                  !form.getValues().enabled || !form.getValues().ssl.enabled
+                }
                 value="optional"
                 label="Optional"
               />
@@ -149,7 +140,9 @@ export const APIParameters: FC<APIParametersProps> = ({ form }) => {
           >
             <Box>
               <Radio
-                disabled={!APIEnabled || !SSLEnabled}
+                disabled={
+                  !form.getValues().enabled || !form.getValues().ssl.enabled
+                }
                 value="required"
                 label="Required"
               />
@@ -165,11 +158,9 @@ export const APIParameters: FC<APIParametersProps> = ({ form }) => {
           />
         }
         placeholder="/path/to/ca-cert.pem"
-        disabled={!APIEnabled || !SSLEnabled}
-        {...form.getInputProps('api.ssl.ca_cert', {
-          type: 'input',
-        })}
-        key={form.key('api.ssl.ca_cert')}
+        disabled={!form.getValues().enabled || !form.getValues().ssl.enabled}
+        {...form.getInputProps('ssl.ca_cert')}
+        key={form.key('ssl.ca_cert')}
       />
       <TextInput
         label={
@@ -179,9 +170,9 @@ export const APIParameters: FC<APIParametersProps> = ({ form }) => {
           />
         }
         placeholder="/path/to/cert.pem"
-        disabled={!APIEnabled || !SSLEnabled}
-        {...form.getInputProps('api.ssl.cert', { type: 'input' })}
-        key={form.key('api.ssl.cert')}
+        disabled={!form.getValues().enabled || !form.getValues().ssl.enabled}
+        {...form.getInputProps('ssl.cert')}
+        key={form.key('ssl.cert')}
       />
       <TextInput
         label={
@@ -191,11 +182,9 @@ export const APIParameters: FC<APIParametersProps> = ({ form }) => {
           />
         }
         placeholder="/path/to/key.pem"
-        disabled={!APIEnabled || !SSLEnabled}
-        {...form.getInputProps('api.ssl.cert_key', {
-          type: 'input',
-        })}
-        key={form.key('api.ssl.cert_key')}
+        disabled={!form.getValues().enabled || !form.getValues().ssl.enabled}
+        {...form.getInputProps('ssl.cert_key')}
+        key={form.key('ssl.cert_key')}
       />
       <Title order={3} fw={500} mt="md">
         Authentication
@@ -208,11 +197,9 @@ export const APIParameters: FC<APIParametersProps> = ({ form }) => {
               tooltip="Username for basic authentication of API requests"
             />
           }
-          disabled={!APIEnabled}
-          {...form.getInputProps('api.auth.user', {
-            type: 'input',
-          })}
-          key={form.key('api.auth.user')}
+          disabled={!form.getValues().enabled}
+          {...form.getInputProps('auth.user')}
+          key={form.key('auth.user')}
         />
         <PasswordInput
           label={
@@ -221,11 +208,9 @@ export const APIParameters: FC<APIParametersProps> = ({ form }) => {
               tooltip="Password for username for basic authentication of API requests"
             />
           }
-          disabled={!APIEnabled}
-          {...form.getInputProps('api.auth.password', {
-            type: 'input',
-          })}
-          key={form.key('api.auth.password')}
+          disabled={!form.getValues().enabled}
+          {...form.getInputProps('auth.password')}
+          key={form.key('auth.password')}
         />
       </Group>
       <Alert

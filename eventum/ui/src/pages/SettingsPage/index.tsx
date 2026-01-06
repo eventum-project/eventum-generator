@@ -12,30 +12,57 @@ import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { IconAlertSquareRounded } from '@tabler/icons-react';
+import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { useEffect } from 'react';
-import validator from 'validator';
 
-import { APIParameters } from './APIParameters';
-import { GenerationParameters } from './GenerationParameters';
-import { LoggingParameters } from './LoggingParameters';
-import { PathParameters } from './PathParameters';
+import { APIParametersSection } from './APIParametersSection';
+import { GenerationParametersSection } from './GenerationParametersSection';
+import { LoggingParametersSection } from './LoggingParametersSection';
+import { PathParametersSection } from './PathParametersSection';
 import { SavePanel } from './SavePanelContent';
-import { APIError } from '@/api/errors';
 import {
   useInstanceSettings,
   useRestartInstanceMutation,
   useUpdateInstanceSettingsMutation,
 } from '@/api/hooks/useInstance';
-import { Settings } from '@/api/routes/instance/schemas';
 import {
-  ValidationErrorDetails,
-  ValidationErrorDetailsSchema,
-} from '@/api/schemas';
+  APIParameters,
+  APIParametersSchema,
+  GenerationParameters,
+  GenerationParametersSchema,
+  LogParameters,
+  LogParametersSchema,
+  PathParameters,
+  PathParametersSchema,
+  Settings,
+} from '@/api/routes/instance/schemas';
 import { FloatingPanel } from '@/components/ui/FloatingPanel';
 import { FloatingTableOfContents } from '@/components/ui/FloatingTableOfContents';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 export default function SettingsPage() {
+  const APIParamsForm = useForm<APIParameters>({
+    mode: 'uncontrolled',
+    validate: zod4Resolver(APIParametersSchema),
+    validateInputOnChange: true,
+  });
+  const generationParamsForm = useForm<GenerationParameters>({
+    mode: 'uncontrolled',
+    validate: zod4Resolver(GenerationParametersSchema),
+    validateInputOnChange: true,
+    cascadeUpdates: true,
+  });
+  const logParamsForm = useForm<LogParameters>({
+    mode: 'uncontrolled',
+    validate: zod4Resolver(LogParametersSchema),
+    validateInputOnChange: true,
+  });
+  const pathParamsForm = useForm<PathParameters>({
+    mode: 'uncontrolled',
+    validate: zod4Resolver(PathParametersSchema),
+    validateInputOnChange: true,
+  });
+
   const {
     data: instanceSettings,
     isLoading: isLoadingSettings,
@@ -46,45 +73,15 @@ export default function SettingsPage() {
   const updateInstanceSettings = useUpdateInstanceSettingsMutation();
   const restartInstance = useRestartInstanceMutation();
 
-  const form = useForm<Settings>({
-    mode: 'uncontrolled',
-    validate: {
-      api: {
-        host: (value, values) => {
-          if (value.length === 0) {
-            return null;
-          }
-
-          if (values.api.enabled) {
-            if (
-              validator.isIP(value) ||
-              validator.isFQDN(value, {
-                require_tld: false,
-                allow_underscores: true,
-              })
-            ) {
-              return null;
-            } else {
-              return 'Invalid hostname or IP address';
-            }
-          } else {
-            return null;
-          }
-        },
-      },
-    },
-    validateInputOnChange: true,
-    onSubmitPreventDefault: 'always',
-    cascadeUpdates: true,
-  });
-
   useEffect(() => {
-    if (isSettingsSuccess) {
-      form.initialize(instanceSettings);
-      form.resetDirty();
+    if (isSettingsSuccess && !APIParamsForm.initialized) {
+      APIParamsForm.initialize(instanceSettings.api);
+      generationParamsForm.initialize(instanceSettings.generation);
+      logParamsForm.initialize(instanceSettings.log);
+      pathParamsForm.initialize(instanceSettings.path);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSettingsSuccess]);
+  }, [instanceSettings, isSettingsSuccess]);
 
   if (isLoadingSettings) {
     return (
@@ -109,9 +106,16 @@ export default function SettingsPage() {
     );
   }
 
-  function handleSubmit(values: typeof form.values) {
+  function handleSubmit() {
+    const settings: Settings = {
+      api: APIParamsForm.getValues(),
+      generation: generationParamsForm.getValues(),
+      log: logParamsForm.getValues(),
+      path: pathParamsForm.getValues(),
+    };
+
     updateInstanceSettings.mutate(
-      { settings: values },
+      { settings: settings },
       {
         onSuccess: () => {
           notifications.show({
@@ -139,57 +143,28 @@ export default function SettingsPage() {
               });
             },
           });
-          form.resetDirty();
+          APIParamsForm.resetDirty();
+          generationParamsForm.resetDirty();
+          logParamsForm.resetDirty();
+          pathParamsForm.resetDirty();
         },
         onError: (error: unknown) => {
-          if (error instanceof APIError && error?.response?.status === 422) {
-            let validationDetails: ValidationErrorDetails;
-
-            try {
-              validationDetails = ValidationErrorDetailsSchema.parse(
-                error.response.data
-              );
-            } catch (error: unknown) {
-              notifications.show({
-                title: 'Error',
-                message: (
-                  <>
-                    Failed to parse server validation errors{' '}
-                    <ShowErrorDetailsAnchor error={error} />
-                  </>
-                ),
-                color: 'red',
-              });
-              return;
-            }
-
-            for (const validationError of validationDetails.detail) {
-              const fieldPath = validationError.loc.slice(1).join('.');
-              form.setFieldError(fieldPath, validationError.msg);
-            }
-            notifications.show({
-              title: 'Error',
-              message: 'Failed to update settings. See form errors',
-              color: 'red',
-            });
-          } else {
-            notifications.show({
-              title: 'Error',
-              message: (
-                <>
-                  Failed to update settings.{' '}
-                  <ShowErrorDetailsAnchor error={error} />
-                </>
-              ),
-              color: 'red',
-            });
-          }
+          notifications.show({
+            title: 'Error',
+            message: (
+              <>
+                Failed to update settings
+                <ShowErrorDetailsAnchor error={error} prependDot />
+              </>
+            ),
+            color: 'red',
+          });
         },
       }
     );
   }
 
-  if (isSettingsSuccess && form.initialized) {
+  if (isSettingsSuccess && APIParamsForm.initialized) {
     return (
       <>
         <Container size="xl" mb="510px">
@@ -197,14 +172,20 @@ export default function SettingsPage() {
             <Grid.Col span="auto">
               <form>
                 <Stack>
-                  <APIParameters form={form} />
-                  <GenerationParameters form={form} />
-                  <PathParameters form={form} />
-                  <LoggingParameters form={form} />
+                  <APIParametersSection form={APIParamsForm} />
+                  <GenerationParametersSection form={generationParamsForm} />
+                  <PathParametersSection form={pathParamsForm} />
+                  <LoggingParametersSection form={logParamsForm} />
                 </Stack>
-                <FloatingPanel mounted={form.isDirty()}>
+                <FloatingPanel
+                  mounted={
+                    APIParamsForm.isDirty() ||
+                    generationParamsForm.isDirty() ||
+                    pathParamsForm.isDirty() ||
+                    logParamsForm.isDirty()
+                  }
+                >
                   <SavePanel
-                    form={form}
                     onSave={() =>
                       modals.openConfirmModal({
                         title: 'Settings update',
@@ -213,7 +194,7 @@ export default function SettingsPage() {
                             Instance will be restarted. Do you want to continue?
                           </Text>
                         ),
-                        onConfirm: () => handleSubmit(form.getValues()),
+                        onConfirm: handleSubmit,
                         labels: { cancel: 'Cancel', confirm: 'Confirm' },
                       })
                     }
@@ -231,5 +212,5 @@ export default function SettingsPage() {
     );
   }
 
-  return <></>;
+  return null;
 }

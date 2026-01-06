@@ -48,6 +48,7 @@ export const APIParametersSchema = z.object({
   ssl: SSLParametersSchema,
   auth: AuthParametersSchema,
 });
+export type APIParameters = z.infer<typeof APIParametersSchema>;
 
 export const BatchParametersSchema = z.object({
   size: z.number().gte(1).int().nullable(),
@@ -58,6 +59,7 @@ const QueueParametersSchema = z.object({
   max_timestamp_batches: z.number().int().gte(1),
   max_event_batches: z.number().int().gte(1),
 });
+export type QueueParameters = z.infer<typeof QueueParametersSchema>;
 
 export const GenerationParametersSchema = z.object({
   timezone: z.enum(TIMEZONES),
@@ -67,6 +69,7 @@ export const GenerationParametersSchema = z.object({
   max_concurrency: z.number().int().gte(1),
   write_timeout: z.number().int().gte(1),
 });
+export type GenerationParameters = z.infer<typeof GenerationParametersSchema>;
 
 export const LOG_LEVELS = ['debug', 'info', 'warning', 'error', 'critical'];
 export const LOG_FORMATS = ['plain', 'json'];
@@ -77,6 +80,7 @@ export const LogParametersSchema = z.object({
   max_bytes: z.number().int().gte(1024),
   backups: z.number().int().gte(1),
 });
+export type LogParameters = z.infer<typeof LogParametersSchema>;
 
 export const PathParametersSchema = z.object({
   logs: z.string().min(1),
@@ -85,6 +89,7 @@ export const PathParametersSchema = z.object({
   keyring_cryptfile: z.string().min(1),
   generator_config_filename: z.string().min(1),
 });
+export type PathParameters = z.infer<typeof PathParametersSchema>;
 
 export const SettingsSchema = z.object({
   api: APIParametersSchema,

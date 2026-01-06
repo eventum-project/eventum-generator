@@ -15,28 +15,37 @@ import { IconInfoCircle } from '@tabler/icons-react';
 import { FC, useState } from 'react';
 
 import { QueueSizeApproximation } from './QueueSizeApproximation';
-import { Settings } from '@/api/routes/instance/schemas';
+import { GenerationParameters } from '@/api/routes/instance/schemas';
 import { TIMEZONES } from '@/api/schemas/timezones';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 
-interface GenerationParametersProps {
-  form: UseFormReturnType<Settings>;
+interface GenerationParametersSectionProps {
+  form: UseFormReturnType<GenerationParameters>;
 }
 
-export const GenerationParameters: FC<GenerationParametersProps> = ({
-  form,
-}) => {
+export const GenerationParametersSection: FC<
+  GenerationParametersSectionProps
+> = ({ form }) => {
   const formValues = form.getValues();
   const [batchingMode, setBatchingMode] = useState<
     'size' | 'delay' | 'combined'
   >(
-    formValues.generation.batch.size !== null &&
-      formValues.generation.batch.delay !== null
+    formValues.batch.size !== null && formValues.batch.delay !== null
       ? 'combined'
-      : formValues.generation.batch.size == null
+      : formValues.batch.size == null
         ? 'delay'
         : 'size'
   );
+
+  const [batchSize, setBatchSize] = useState(formValues.batch.size);
+  const [queueParams, setQueueParams] = useState(formValues.queue);
+
+  form.watch('batch.size', ({ value }) => {
+    setBatchSize(value);
+  });
+  form.watch('queue', ({ value }) => {
+    setQueueParams(value);
+  });
 
   return (
     <>
@@ -51,10 +60,10 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
             tooltip="Whether to keep chronological order of events using their timestamps by disabling output plugins concurrency"
           />
         }
-        {...form.getInputProps('generation.keep_order', {
+        {...form.getInputProps('keep_order', {
           type: 'checkbox',
         })}
-        key={form.key('generation.keep_order')}
+        key={form.key('keep_order')}
       />
       <Select
         label={
@@ -67,9 +76,8 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
         searchable
         nothingFoundMessage="No timezones matched"
         placeholder="zone name"
-        {...form.getInputProps('generation.timezone', {
-          type: 'input',
-        })}
+        {...form.getInputProps('timezone')}
+        key={form.key('timezone')}
       />
       <NumberInput
         label={
@@ -81,9 +89,8 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
         placeholder="number"
         min={1}
         allowDecimal={false}
-        {...form.getInputProps('generation.max_concurrency', {
-          type: 'input',
-        })}
+        {...form.getInputProps('max_concurrency')}
+        key={form.key('max_concurrency')}
       />
       <NumberInput
         label={
@@ -96,9 +103,8 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
         suffix=" s."
         min={0.1}
         step={0.1}
-        {...form.getInputProps('generation.write_timeout', {
-          type: 'input',
-        })}
+        {...form.getInputProps('write_timeout')}
+        key={form.key('write_timeout')}
       />
       <Title order={3} fw={500} mt="md">
         Batching
@@ -123,7 +129,7 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
                 label="Size"
                 onClick={() => {
                   setBatchingMode('size');
-                  form.setFieldValue('generation.batch.delay', null);
+                  form.setFieldValue('batch.delay', null);
                 }}
               />
             </Box>
@@ -141,7 +147,7 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
                 label="Delay"
                 onClick={() => {
                   setBatchingMode('delay');
-                  form.setFieldValue('generation.batch.size', null);
+                  form.setFieldValue('batch.size', null);
                 }}
               />
             </Box>
@@ -179,10 +185,8 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
           min={1}
           allowDecimal={false}
           disabled={batchingMode === 'delay'}
-          {...form.getInputProps('generation.batch.size', {
-            type: 'input',
-          })}
-          key={form.key('generation.batch.size')}
+          {...form.getInputProps('batch.size')}
+          key={form.key('batch.size')}
         />
         <NumberInput
           label={
@@ -196,10 +200,8 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
           min={0.1}
           step={0.1}
           disabled={batchingMode === 'size'}
-          {...form.getInputProps('generation.batch.delay', {
-            type: 'input',
-          })}
-          key={form.key('generation.batch.delay')}
+          {...form.getInputProps('batch.delay')}
+          key={form.key('batch.delay')}
         />
       </Group>
       <Alert
@@ -225,10 +227,8 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
           placeholder="size"
           min={1}
           allowDecimal={false}
-          {...form.getInputProps('generation.queue.max_timestamp_batches', {
-            type: 'input',
-          })}
-          key={form.key('generation.queue.max_timestamp_batches')}
+          {...form.getInputProps('queue.max_timestamp_batches')}
+          key={form.key('queue.max_timestamp_batches')}
         />
         <NumberInput
           label={
@@ -240,13 +240,11 @@ export const GenerationParameters: FC<GenerationParametersProps> = ({
           placeholder="size"
           min={1}
           allowDecimal={false}
-          {...form.getInputProps('generation.queue.max_event_batches', {
-            type: 'input',
-          })}
-          key={form.key('generation.queue.max_event_batches')}
+          {...form.getInputProps('queue.max_event_batches')}
+          key={form.key('queue.max_event_batches')}
         />
       </Group>
-      <QueueSizeApproximation form={form} />
+      <QueueSizeApproximation batchSize={batchSize} queueParams={queueParams} />
     </>
   );
 };

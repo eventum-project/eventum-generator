@@ -2,14 +2,16 @@ import { Divider, TextInput, Title } from '@mantine/core';
 import { UseFormReturnType } from '@mantine/form';
 import { FC } from 'react';
 
-import { Settings } from '@/api/routes/instance/schemas';
+import { PathParameters } from '@/api/routes/instance/schemas';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 
-interface PathParametersProps {
-  form: UseFormReturnType<Settings>;
+interface PathParametersSectionProps {
+  form: UseFormReturnType<PathParameters>;
 }
 
-export const PathParameters: FC<PathParametersProps> = ({ form }) => {
+export const PathParametersSection: FC<PathParametersSectionProps> = ({
+  form,
+}) => {
   return (
     <>
       <Title order={2} fw={500} mt="xl">
@@ -27,10 +29,8 @@ export const PathParameters: FC<PathParametersProps> = ({ form }) => {
           />
         }
         placeholder="file name (e.g. generator.yml)"
-        {...form.getInputProps('path.generator_config_filename', {
-          type: 'input',
-        })}
-        key={form.key('path.generator_config_filename')}
+        {...form.getInputProps('generator_config_filename')}
+        key={form.key('generator_config_filename')}
       />
       <TextInput
         label={
@@ -40,10 +40,8 @@ export const PathParameters: FC<PathParametersProps> = ({ form }) => {
           />
         }
         placeholder="/path/to/generators/"
-        {...form.getInputProps('path.generators_dir', {
-          type: 'input',
-        })}
-        key={form.key('path.generators_dir')}
+        {...form.getInputProps('generators_dir')}
+        key={form.key('generators_dir')}
       />
       <TextInput
         label={
@@ -53,10 +51,8 @@ export const PathParameters: FC<PathParametersProps> = ({ form }) => {
           />
         }
         placeholder="/path/to/startup.yml"
-        {...form.getInputProps('path.startup', {
-          type: 'input',
-        })}
-        key={form.key('path.startup')}
+        {...form.getInputProps('startup')}
+        key={form.key('startup')}
       />
       <TextInput
         label={
@@ -66,10 +62,8 @@ export const PathParameters: FC<PathParametersProps> = ({ form }) => {
           />
         }
         placeholder="/path/to/cryptfile_pass.cfg"
-        {...form.getInputProps('path.keyring_cryptfile', {
-          type: 'input',
-        })}
-        key={form.key('path.keyring_cryptfile')}
+        {...form.getInputProps('keyring_cryptfile')}
+        key={form.key('keyring_cryptfile')}
       />
       <TextInput
         label={
@@ -79,10 +73,8 @@ export const PathParameters: FC<PathParametersProps> = ({ form }) => {
           />
         }
         placeholder="/path/to/logs/"
-        {...form.getInputProps('path.logs', {
-          type: 'input',
-        })}
-        key={form.key('path.logs')}
+        {...form.getInputProps('logs')}
+        key={form.key('logs')}
       />
     </>
   );

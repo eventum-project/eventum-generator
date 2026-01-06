@@ -5,15 +5,17 @@ import { FC } from 'react';
 import {
   LOG_FORMATS,
   LOG_LEVELS,
-  Settings,
+  LogParameters,
 } from '@/api/routes/instance/schemas';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 
-interface LoggingParametersProps {
-  form: UseFormReturnType<Settings>;
+interface LoggingParametersSectionProps {
+  form: UseFormReturnType<LogParameters>;
 }
 
-export const LoggingParameters: FC<LoggingParametersProps> = ({ form }) => {
+export const LoggingParametersSection: FC<LoggingParametersSectionProps> = ({
+  form,
+}) => {
   return (
     <>
       <Title order={2} fw={500} mt="xl">
@@ -29,10 +31,8 @@ export const LoggingParameters: FC<LoggingParametersProps> = ({ form }) => {
         }
         data={LOG_LEVELS}
         placeholder="level"
-        {...form.getInputProps('log.level', {
-          type: 'input',
-        })}
-        key={form.key('log.level')}
+        {...form.getInputProps('level')}
+        key={form.key('level')}
       />
       <Select
         label={
@@ -40,10 +40,8 @@ export const LoggingParameters: FC<LoggingParametersProps> = ({ form }) => {
         }
         data={LOG_FORMATS}
         placeholder="format"
-        {...form.getInputProps('log.format', {
-          type: 'input',
-        })}
-        key={form.key('log.format')}
+        {...form.getInputProps('format')}
+        key={form.key('format')}
       />
       <Title order={3} fw={500} mt="md">
         Rotation
@@ -59,10 +57,8 @@ export const LoggingParameters: FC<LoggingParametersProps> = ({ form }) => {
           min={1024}
           allowDecimal={false}
           placeholder="bytes"
-          {...form.getInputProps('log.max_bytes', {
-            type: 'input',
-          })}
-          key={form.key('log.max_bytes')}
+          {...form.getInputProps('max_bytes')}
+          key={form.key('max_bytes')}
         />
         <NumberInput
           label={
@@ -74,10 +70,8 @@ export const LoggingParameters: FC<LoggingParametersProps> = ({ form }) => {
           min={1}
           allowDecimal={false}
           placeholder="number"
-          {...form.getInputProps('log.backups', {
-            type: 'input',
-          })}
-          key={form.key('log.backups')}
+          {...form.getInputProps('backups')}
+          key={form.key('backups')}
         />
       </Group>
     </>
