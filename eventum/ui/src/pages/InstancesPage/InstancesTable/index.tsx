@@ -16,6 +16,7 @@ import {
 import {
   ColumnFiltersState,
   PaginationState,
+  RowSelectionState,
   SortingState,
   flexRender,
   getCoreRowModel,
@@ -34,6 +35,8 @@ interface InstancesTableProps {
   instancesFilter?: string;
   projectNameFilter?: string;
   runningOnlyFilter?: boolean;
+  rowSelection: RowSelectionState;
+  onRowSelectionChange: React.Dispatch<React.SetStateAction<RowSelectionState>>;
 }
 
 export const InstancesTable: FC<InstancesTableProps> = ({
@@ -41,6 +44,8 @@ export const InstancesTable: FC<InstancesTableProps> = ({
   projectNameFilter = '',
   instancesFilter = '',
   runningOnlyFilter = false,
+  rowSelection,
+  onRowSelectionChange,
 }) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -52,7 +57,7 @@ export const InstancesTable: FC<InstancesTableProps> = ({
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnFilters, pagination },
+    state: { sorting, columnFilters, pagination, rowSelection },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onPaginationChange: setPagination,
@@ -60,6 +65,8 @@ export const InstancesTable: FC<InstancesTableProps> = ({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    enableRowSelection: true,
+    onRowSelectionChange: onRowSelectionChange,
   });
 
   useEffect(() => {

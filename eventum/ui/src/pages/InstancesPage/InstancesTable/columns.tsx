@@ -22,10 +22,20 @@ const columnHelper = createColumnHelper<GeneratorsInfo[number]>();
 export const columns = [
   columnHelper.display({
     id: 'select',
+    header: ({ table }) => (
+      <Checkbox
+        size="xs"
+        title="Select all"
+        checked={table.getIsAllPageRowsSelected()}
+        indeterminate={table.getIsSomePageRowsSelected()}
+        onChange={(e) =>
+          table.toggleAllPageRowsSelected(e.currentTarget.checked)
+        }
+      />
+    ),
     cell: ({ row }) => {
       return (
         <Checkbox
-          title="Select instance"
           size="xs"
           checked={row.getIsSelected()}
           onChange={(e) => {
@@ -81,13 +91,13 @@ export const columns = [
         text = 'Starting';
         color = 'yellow.7';
         processing = true;
-      } else if (status.is_running) {
-        text = 'Running';
-        color = 'green.6';
       } else if (status.is_stopping) {
         text = 'Stopping';
         color = 'yellow.7';
         processing = true;
+      } else if (status.is_running) {
+        text = 'Running';
+        color = 'green.6';
       } else if (status.is_ended_up) {
         text = 'Finished';
 
