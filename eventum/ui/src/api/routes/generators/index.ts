@@ -75,5 +75,5 @@ export async function bulkStopGenerators(ids: string[]) {
 }
 
 export async function bulkRemoveGenerators(ids: string[]) {
-  await apiClient.post('/generators/group-actions/bulk-remove', ids);
+  await apiClient.post('/generators/group-actions/bulk-delete', ids);
 }

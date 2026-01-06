@@ -322,13 +322,13 @@ async def bulk_stop_generators(
 
 
 @router.post(
-    '/group-actions/bulk-remove',
-    description='Bulk remove several generators',
+    '/group-actions/bulk-delete',
+    description='Bulk delete several generators',
 )
-async def bulk_remove_generators(
+async def bulk_delete_generators(
     ids: Annotated[
         list[str],
-        Body(description='Generator IDs to remove', min_length=1),
+        Body(description='Generator IDs to delete', min_length=1),
     ],
     generator_manager: GeneratorManagerDep,
 ) -> None:

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   addGenerator,
-  bulkRemoveGenerators,
+  bulkRemoveGenerators as bulkDeleteGenerators,
   bulkStartGenerators,
   bulkStopGenerators,
   deleteGenerator,
@@ -159,11 +159,11 @@ export function useBulkStopGeneratorMutation() {
   });
 }
 
-export function useBulkRemoveGeneratorMutation() {
+export function useBulkDeleteGeneratorMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ ids }: { ids: string[] }) => bulkRemoveGenerators(ids),
+    mutationFn: ({ ids }: { ids: string[] }) => bulkDeleteGenerators(ids),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: GENERATORS_QUERY_KEY,
