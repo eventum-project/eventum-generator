@@ -107,7 +107,7 @@ export const APIParametersSection: FC<APIParametersSectionProps> = ({
             <Box>
               <Radio
                 disabled={
-                  !form.getValues().enabled || !form.getValues().ssl.enabled
+                  !form.getValues().enabled || !form.getValues().ssl?.enabled
                 }
                 value="none"
                 label="None"
@@ -124,7 +124,7 @@ export const APIParametersSection: FC<APIParametersSectionProps> = ({
             <Box>
               <Radio
                 disabled={
-                  !form.getValues().enabled || !form.getValues().ssl.enabled
+                  !form.getValues().enabled || !form.getValues().ssl?.enabled
                 }
                 value="optional"
                 label="Optional"
@@ -141,7 +141,7 @@ export const APIParametersSection: FC<APIParametersSectionProps> = ({
             <Box>
               <Radio
                 disabled={
-                  !form.getValues().enabled || !form.getValues().ssl.enabled
+                  !form.getValues().enabled || !form.getValues().ssl?.enabled
                 }
                 value="required"
                 label="Required"
@@ -158,7 +158,7 @@ export const APIParametersSection: FC<APIParametersSectionProps> = ({
           />
         }
         placeholder="/path/to/ca-cert.pem"
-        disabled={!form.getValues().enabled || !form.getValues().ssl.enabled}
+        disabled={!form.getValues().enabled || !form.getValues().ssl?.enabled}
         {...form.getInputProps('ssl.ca_cert')}
         key={form.key('ssl.ca_cert')}
       />
@@ -170,7 +170,7 @@ export const APIParametersSection: FC<APIParametersSectionProps> = ({
           />
         }
         placeholder="/path/to/cert.pem"
-        disabled={!form.getValues().enabled || !form.getValues().ssl.enabled}
+        disabled={!form.getValues().enabled || !form.getValues().ssl?.enabled}
         {...form.getInputProps('ssl.cert')}
         key={form.key('ssl.cert')}
       />
@@ -182,7 +182,7 @@ export const APIParametersSection: FC<APIParametersSectionProps> = ({
           />
         }
         placeholder="/path/to/key.pem"
-        disabled={!form.getValues().enabled || !form.getValues().ssl.enabled}
+        disabled={!form.getValues().enabled || !form.getValues().ssl?.enabled}
         {...form.getInputProps('ssl.cert_key')}
         key={form.key('ssl.cert_key')}
       />

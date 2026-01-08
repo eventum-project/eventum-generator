@@ -6,8 +6,8 @@ import { FC, useState } from 'react';
 import { QueueParameters } from '@/api/routes/instance/schemas';
 
 interface QueueSizeApproximationProps {
-  batchSize: number | null;
-  queueParams: QueueParameters;
+  batchSize: number | null | undefined;
+  queueParams: QueueParameters | undefined;
 }
 
 export const QueueSizeApproximation: FC<QueueSizeApproximationProps> = ({
@@ -48,21 +48,21 @@ export const QueueSizeApproximation: FC<QueueSizeApproximationProps> = ({
         <List.Item>
           Timestamps queue ~
           <b>
-            {batchSize !== null
+            {batchSize && queueParams?.max_timestamp_batches
               ? bytes(batchSize * queueParams.max_timestamp_batches * 16, {
                   decimalPlaces: 2,
                 })
-              : ' possibly unlimited'}
+              : ' unknown'}
           </b>
         </List.Item>
         <List.Item>
           Events queue ~
           <b>
-            {batchSize !== null
+            {batchSize && queueParams?.max_event_batches
               ? bytes(batchSize * queueParams.max_event_batches * eventSize, {
                   decimalPlaces: 2,
                 })
-              : ' possibly unlimited'}
+              : ' unknown'}
           </b>
         </List.Item>
       </List>

@@ -30,14 +30,14 @@ export const GenerationParametersSection: FC<
   const [batchingMode, setBatchingMode] = useState<
     'size' | 'delay' | 'combined'
   >(
-    formValues.batch.size !== null && formValues.batch.delay !== null
+    formValues?.batch?.size && formValues?.batch?.delay
       ? 'combined'
-      : formValues.batch.size == null
+      : formValues?.batch?.size
         ? 'delay'
         : 'size'
   );
 
-  const [batchSize, setBatchSize] = useState(formValues.batch.size);
+  const [batchSize, setBatchSize] = useState(formValues?.batch?.size);
   const [queueParams, setQueueParams] = useState(formValues.queue);
 
   form.watch('batch.size', ({ value }) => {
