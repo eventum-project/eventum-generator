@@ -19,6 +19,16 @@ import {
 
 const columnHelper = createColumnHelper<GeneratorsInfo[number]>();
 
+function rankInstanceStatus(status: GeneratorStatus): number {
+  if (status.is_initializing) return 1;
+  if (status.is_stopping) return 2;
+  if (status.is_running) return 3;
+  if (status.is_ended_up_successfully) return 4;
+  if (status.is_ended_up) return 5;
+
+  return 999;
+}
+
 export const columns = [
   columnHelper.display({
     id: 'select',
@@ -79,6 +89,12 @@ export const columns = [
       }
 
       return rowValue.is_running;
+    },
+    sortingFn: (rowA, rowB, columnId) => {
+      const rowValueA: GeneratorStatus = rowA.getValue(columnId);
+      const rowValueB: GeneratorStatus = rowB.getValue(columnId);
+
+      return rankInstanceStatus(rowValueA) - rankInstanceStatus(rowValueB);
     },
     cell: (info) => {
       const status = info.getValue();
