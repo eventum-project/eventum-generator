@@ -107,7 +107,7 @@ PreparedGeneratorParamsDep = Annotated[
 
 @set_responses(
     responses={
-        422: {
+        404: {
             'description': 'No configuration exists in specified path',
         },
     },
@@ -135,7 +135,7 @@ async def check_path_exists(
     """
     if not params.path.exists():
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=f'No configuration exists in specified path: {params.path}',
         ) from None
 

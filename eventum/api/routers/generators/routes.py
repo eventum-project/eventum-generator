@@ -126,7 +126,7 @@ async def get_generator_status(generator: GeneratorDep) -> GeneratorStatus:
         check_path_exists.responses,
         {
             409: {'description': 'Generator with provided id already exists'},
-            422: {'description': 'No configuration exists in specified path'},
+            404: {'description': 'No configuration exists in specified path'},
         },
     ),
     status_code=status.HTTP_201_CREATED,
@@ -154,8 +154,8 @@ async def add_generator(
         _get_generator.responses,
         check_path_exists.responses,
         {
-            422: {'description': 'No configuration exists in specified path'},
-            423: {'description': 'Generator must be stopped before updating'},
+            404: {'description': 'No configuration exists in specified path'},
+            400: {'description': 'Generator must be stopped before updating'},
         },
     ),
 )
@@ -167,7 +167,7 @@ async def update_generator(
 ) -> None:
     if generator.is_initializing or generator.is_running:
         raise HTTPException(
-            status_code=status.HTTP_423_LOCKED,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail='Generator must be stopped before updating',
         ) from None
 
