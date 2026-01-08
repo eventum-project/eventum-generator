@@ -3,10 +3,12 @@ import {
   Box,
   Center,
   Container,
+  Divider,
   Grid,
   Loader,
   Stack,
   Text,
+  Title,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
@@ -167,14 +169,41 @@ export default function SettingsPage() {
   if (isSettingsSuccess && APIParamsForm.initialized) {
     return (
       <>
-        <Container size="xl" mb="510px">
+        <Container size="xl" mb="535px">
           <Grid gutter="xl">
             <Grid.Col span="auto">
               <form>
                 <Stack>
+                  <Stack gap="4px">
+                    <Title order={2} fw={500}>
+                      API parameters
+                    </Title>
+                    <Divider />
+                  </Stack>
                   <APIParametersSection form={APIParamsForm} />
+
+                  <Stack gap="4px">
+                    <Title order={2} fw={500} mt="xs">
+                      Generation parameters
+                    </Title>
+                    <Divider />
+                  </Stack>
                   <GenerationParametersSection form={generationParamsForm} />
+
+                  <Stack gap="4px">
+                    <Title order={2} fw={500} mt="xs">
+                      Path parameters
+                    </Title>
+                    <Divider />
+                  </Stack>
                   <PathParametersSection form={pathParamsForm} />
+
+                  <Stack gap="4px">
+                    <Title order={2} fw={500} mt="xs">
+                      Logging parameters
+                    </Title>
+                    <Divider />
+                  </Stack>
                   <LoggingParametersSection form={logParamsForm} />
                 </Stack>
                 <FloatingPanel

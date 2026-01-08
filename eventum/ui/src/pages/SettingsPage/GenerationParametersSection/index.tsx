@@ -1,13 +1,12 @@
 import {
   Alert,
   Box,
-  Divider,
   Group,
   NumberInput,
   Radio,
   Select,
   Switch,
-  Title,
+  Text,
   Tooltip,
 } from '@mantine/core';
 import { UseFormReturnType } from '@mantine/form';
@@ -49,10 +48,6 @@ export const GenerationParametersSection: FC<
 
   return (
     <>
-      <Title order={2} fw={500} mt="xl">
-        Generation parameters
-      </Title>
-      <Divider />
       <Switch
         label={
           <LabelWithTooltip
@@ -106,9 +101,10 @@ export const GenerationParametersSection: FC<
         {...form.getInputProps('write_timeout')}
         key={form.key('write_timeout')}
       />
-      <Title order={3} fw={500} mt="md">
+
+      <Text size="sm" fw="bold" mt="md">
         Batching
-      </Title>
+      </Text>
       <Radio.Group
         name="batchingMode"
         label="Batching mode"
@@ -213,9 +209,10 @@ export const GenerationParametersSection: FC<
         plugins. At event plugin stage, batch is expanded from timestamps to
         events. So, for large events, smaller batch sizes are preferred.
       </Alert>
-      <Title order={3} fw={500} mt="md">
+
+      <Text size="sm" fw="bold" mt="md">
         Queue
-      </Title>
+      </Text>
       <Group grow align="start">
         <NumberInput
           label={

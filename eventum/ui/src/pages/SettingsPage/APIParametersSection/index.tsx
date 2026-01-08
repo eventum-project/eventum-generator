@@ -1,14 +1,13 @@
 import {
   Alert,
   Box,
-  Divider,
   Group,
   NumberInput,
   PasswordInput,
   Radio,
   Switch,
+  Text,
   TextInput,
-  Title,
   Tooltip,
 } from '@mantine/core';
 import { UseFormReturnType } from '@mantine/form';
@@ -27,10 +26,6 @@ export const APIParametersSection: FC<APIParametersSectionProps> = ({
 }) => {
   return (
     <>
-      <Title order={2} fw={500}>
-        API parameters
-      </Title>
-      <Divider />
       <Switch
         label={
           <LabelWithTooltip
@@ -78,9 +73,10 @@ export const APIParametersSection: FC<APIParametersSectionProps> = ({
           key={form.key('port')}
         />
       </Group>
-      <Title order={3} fw={500} mt="md">
+
+      <Text size="sm" fw="bold" mt="md">
         SSL
-      </Title>
+      </Text>
       <Switch
         label="Enable SSL"
         disabled={!form.getValues().enabled}
@@ -186,9 +182,10 @@ export const APIParametersSection: FC<APIParametersSectionProps> = ({
         {...form.getInputProps('ssl.cert_key')}
         key={form.key('ssl.cert_key')}
       />
-      <Title order={3} fw={500} mt="md">
+
+      <Text size="sm" fw="bold" mt="md">
         Authentication
-      </Title>
+      </Text>
       <Group grow align="start">
         <TextInput
           label={

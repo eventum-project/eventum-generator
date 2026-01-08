@@ -1,4 +1,4 @@
-import { Divider, TextInput, Title } from '@mantine/core';
+import { TextInput } from '@mantine/core';
 import { UseFormReturnType } from '@mantine/form';
 import { FC } from 'react';
 
@@ -14,10 +14,6 @@ export const PathParametersSection: FC<PathParametersSectionProps> = ({
 }) => {
   return (
     <>
-      <Title order={2} fw={500} mt="xl">
-        Path parameters
-      </Title>
-      <Divider />
       <TextInput
         label={
           <LabelWithTooltip

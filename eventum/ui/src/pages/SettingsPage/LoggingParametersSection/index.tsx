@@ -1,4 +1,4 @@
-import { Divider, Group, NumberInput, Select, Title } from '@mantine/core';
+import { Group, NumberInput, Select, Text } from '@mantine/core';
 import { UseFormReturnType } from '@mantine/form';
 import { FC } from 'react';
 
@@ -18,10 +18,6 @@ export const LoggingParametersSection: FC<LoggingParametersSectionProps> = ({
 }) => {
   return (
     <>
-      <Title order={2} fw={500} mt="xl">
-        Logging parameters
-      </Title>
-      <Divider />
       <Select
         label={
           <LabelWithTooltip
@@ -43,9 +39,10 @@ export const LoggingParametersSection: FC<LoggingParametersSectionProps> = ({
         {...form.getInputProps('format')}
         key={form.key('format')}
       />
-      <Title order={3} fw={500} mt="md">
+
+      <Text size="sm" fw="bold" mt="md">
         Rotation
-      </Title>
+      </Text>
       <Group grow align="start">
         <NumberInput
           label={
