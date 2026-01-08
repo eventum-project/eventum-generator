@@ -47,7 +47,9 @@ export const InstancesTable: FC<InstancesTableProps> = ({
   rowSelection,
   onRowSelectionChange,
 }) => {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: 'id', desc: false },
+  ]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,

@@ -42,7 +42,9 @@ export const GeneratorDirsTable: FC<GeneratorDirsTableProps> = ({
   instancesFilter = [],
   anyInstanceFilter = false,
 }) => {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: 'name', desc: false },
+  ]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
