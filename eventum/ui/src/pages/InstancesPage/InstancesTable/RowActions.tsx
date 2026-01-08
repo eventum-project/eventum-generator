@@ -4,6 +4,7 @@ import { notifications } from '@mantine/notifications';
 import {
   IconEdit,
   IconGauge,
+  IconLogs,
   IconPlayerPlay,
   IconPlayerStop,
   IconTrash,
@@ -11,6 +12,7 @@ import {
 import { FC, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { LogsModal } from './LogsModal';
 import { MetricsModal } from './MetricsModal';
 import {
   useDeleteGeneratorMutation,
@@ -48,6 +50,14 @@ export const RowActions: FC<RowActionsProps> = ({
       title: `Instance metrics`,
       children: <MetricsModal instanceId={instanceId} />,
       size: 'xl',
+    });
+  }
+
+  function handleShowLogs() {
+    modals.open({
+      title: `Instance logs`,
+      children: <LogsModal instanceId={instanceId} />,
+      size: '80vw',
     });
   }
 
@@ -162,12 +172,21 @@ export const RowActions: FC<RowActionsProps> = ({
         <Menu.Item leftSection={<IconEdit size={14} />} onClick={handleEdit}>
           Edit
         </Menu.Item>
+
+        <Menu.Divider />
+
         <Menu.Item
           leftSection={<IconGauge size={14} />}
           onClick={handleShowMetrics}
           disabled={!instanceStatus.is_running}
         >
           Show metrics
+        </Menu.Item>
+        <Menu.Item
+          leftSection={<IconLogs size={14} />}
+          onClick={handleShowLogs}
+        >
+          Show logs
         </Menu.Item>
 
         <Menu.Divider />

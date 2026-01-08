@@ -77,3 +77,12 @@ export async function bulkStopGenerators(ids: string[]) {
 export async function bulkRemoveGenerators(ids: string[]) {
   await apiClient.post('/generators/group-actions/bulk-delete', ids);
 }
+
+export function streamGeneratorLogs(id: string, endOffset: number): WebSocket {
+  const protocol = globalThis.location.protocol === 'https:' ? 'wss' : 'ws';
+  const host = globalThis.location.host;
+
+  return new WebSocket(
+    `${protocol}://${host}/api/generators/${id}/logs?end_offset=${endOffset}`
+  );
+}
