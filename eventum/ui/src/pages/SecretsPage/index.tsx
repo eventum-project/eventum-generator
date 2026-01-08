@@ -42,7 +42,7 @@ export default function SecretsPage() {
 
   if (isSecretNamesSuccess) {
     return (
-      <Container size="lg" mb="400px">
+      <Container size="xl" mb="400px">
         <PageTitle title="Secrets" />
         <Table mt="md" highlightOnHover stickyHeader stickyHeaderOffset={60}>
           <Table.Thead>

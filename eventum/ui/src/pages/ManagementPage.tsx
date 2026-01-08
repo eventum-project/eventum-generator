@@ -73,7 +73,7 @@ export default function ManagementPage() {
     });
   }
   return (
-    <Container size="lg" mb="400px">
+    <Container size="xl" mb="400px">
       <Stack>
         <PageTitle title="Management" />
         <Alert
