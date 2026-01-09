@@ -10,15 +10,17 @@ from fastapi import APIRouter, Body, HTTPException, status
 from eventum.api.dependencies.app import SettingsDep
 from eventum.api.routers.startup.dependencies import (
     CheckIdInBodyMatchPathDep,
-    StartupGeneratorsParametersDep,
+    StartupGeneratorsParametersListDep,
     TargetStartupParamsIndexDep,
     check_id_in_body_match_path,
-    get_startup_generators_parameters,
+    get_startup_generator_parameters_list,
     get_target_startup_params_index,
 )
 from eventum.api.utils.response_description import merge_responses
-from eventum.app.models.generators import GeneratorsParameters
-from eventum.core.parameters import GeneratorParameters
+from eventum.app.models.generators import (
+    StartupGeneratorParameters,
+    StartupGeneratorParametersList,
+)
 
 router = APIRouter()
 
@@ -31,15 +33,15 @@ router = APIRouter()
         'Note that response also includes default parameters '
         'even if they are not set in the file.'
     ),
-    responses=get_startup_generators_parameters.responses,
+    responses=get_startup_generator_parameters_list.responses,
 )
 async def get_generators_in_startup(
-    generators_parameters: StartupGeneratorsParametersDep,
+    generators_parameters: StartupGeneratorsParametersListDep,
     settings: SettingsDep,
-) -> GeneratorsParameters:
+) -> StartupGeneratorParametersList:
     generators_parameters_model, _ = generators_parameters
 
-    normalized_params_list: list[GeneratorParameters] = []
+    normalized_params_list: list[StartupGeneratorParameters] = []
     for params in generators_parameters_model.root:
         try:
             normalized_params = params.as_relative(
@@ -50,7 +52,7 @@ async def get_generators_in_startup(
 
         normalized_params_list.append(normalized_params)
 
-    return GeneratorsParameters(root=tuple(normalized_params_list))
+    return StartupGeneratorParametersList(root=tuple(normalized_params_list))
 
 
 @router.get(
@@ -62,15 +64,15 @@ async def get_generators_in_startup(
         'even if they are not set in the file.'
     ),
     responses=merge_responses(
-        get_startup_generators_parameters.responses,
+        get_startup_generator_parameters_list.responses,
         get_target_startup_params_index.responses,
     ),
 )
 async def get_generator_from_startup(
-    generators_parameters: StartupGeneratorsParametersDep,
+    generators_parameters: StartupGeneratorsParametersListDep,
     target_index: TargetStartupParamsIndexDep,
     settings: SettingsDep,
-) -> GeneratorParameters:
+) -> StartupGeneratorParameters:
     generators_parameters_model, _ = generators_parameters
 
     target_params = generators_parameters_model.root[target_index]
@@ -84,7 +86,7 @@ async def get_generator_from_startup(
     '/{id}',
     description='Add generator definition to list in the startup file',
     responses=merge_responses(
-        get_startup_generators_parameters.responses,
+        get_startup_generator_parameters_list.responses,
         check_id_in_body_match_path.responses,
         {409: {'description': 'Generator with this ID is already defined'}},
         {
@@ -101,10 +103,10 @@ async def get_generator_from_startup(
 async def add_generator_to_startup(
     id: Annotated[str, CheckIdInBodyMatchPathDep],
     params: Annotated[
-        GeneratorParameters,
+        StartupGeneratorParameters,
         Body(description='Generator parameters'),
     ],
-    generators_parameters: StartupGeneratorsParametersDep,
+    generators_parameters: StartupGeneratorsParametersListDep,
     settings: SettingsDep,
 ) -> None:
     generators_parameters_model, _ = generators_parameters
@@ -149,7 +151,7 @@ async def add_generator_to_startup(
     '/{id}',
     description='Update generator definition in list in the startup file',
     responses=merge_responses(
-        get_startup_generators_parameters.responses,
+        get_startup_generator_parameters_list.responses,
         get_target_startup_params_index.responses,
         check_id_in_body_match_path.responses,
         {
@@ -162,11 +164,11 @@ async def add_generator_to_startup(
 async def update_generator_in_startup(
     id: Annotated[str, CheckIdInBodyMatchPathDep],  # noqa: ARG001
     params: Annotated[
-        GeneratorParameters,
-        Body(description='Generator parameters'),
+        StartupGeneratorParameters,
+        Body(description='Startup generator parameters'),
     ],
     target_index: TargetStartupParamsIndexDep,
-    generators_parameters: StartupGeneratorsParametersDep,
+    generators_parameters: StartupGeneratorsParametersListDep,
     settings: SettingsDep,
 ) -> None:
     _, generators_parameters_raw_content = generators_parameters
@@ -195,7 +197,7 @@ async def update_generator_in_startup(
     '/{id}',
     description='Delete generator definition from list in the startup file',
     responses=merge_responses(
-        get_startup_generators_parameters.responses,
+        get_startup_generator_parameters_list.responses,
         get_target_startup_params_index.responses,
         {
             500: {
@@ -205,7 +207,7 @@ async def update_generator_in_startup(
     ),
 )
 async def delete_generator_from_startup(
-    generators_parameters: StartupGeneratorsParametersDep,
+    generators_parameters: StartupGeneratorsParametersListDep,
     target_index: TargetStartupParamsIndexDep,
     settings: SettingsDep,
 ) -> None:
