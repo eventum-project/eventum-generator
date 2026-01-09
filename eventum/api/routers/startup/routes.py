@@ -230,7 +230,7 @@ async def delete_generator_from_startup(
         ) from None
 
 
-@router.delete(
+@router.post(
     '/group-actions/bulk-delete',
     description=(
         'Bulk delete several generator definitions from list in the '
