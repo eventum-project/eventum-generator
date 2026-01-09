@@ -112,7 +112,9 @@ async def add_generator_to_startup(
     generators_parameters: StartupGeneratorsParametersListDep,
     settings: SettingsDep,
 ) -> None:
-    generators_parameters_model, _ = generators_parameters
+    generators_parameters_model, generators_parameters_raw_content = (
+        generators_parameters
+    )
 
     for startup_params in generators_parameters_model.root:
         if id == startup_params.id:
@@ -124,22 +126,20 @@ async def add_generator_to_startup(
                 ),
             )
 
-    content_to_add = await asyncio.to_thread(
+    new_content = await asyncio.to_thread(
         lambda: yaml.dump(
             [
+                *generators_parameters_raw_content,
                 params.as_absolute(
                     base_dir=settings.path.generators_dir,
-                ).model_dump(
-                    mode='json',
-                    exclude_unset=True,
-                ),
+                ).model_dump(mode='json', exclude_unset=True),
             ],
         ),
     )
 
     try:
-        async with aiofiles.open(settings.path.startup, 'a') as f:
-            await f.write(content_to_add)
+        async with aiofiles.open(settings.path.startup, 'w') as f:
+            await f.write(new_content)
     except OSError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
