@@ -2,7 +2,6 @@
 
 import ssl
 from threading import Thread
-from typing import TYPE_CHECKING
 
 import structlog
 import uvicorn
@@ -11,14 +10,14 @@ from pydantic import ValidationError, validate_call
 
 from eventum.app.hooks import InstanceHooks
 from eventum.app.manager import GeneratorManager, ManagingError
-from eventum.app.models.generators import GeneratorsParameters
+from eventum.app.models.generators import (
+    StartupGeneratorParameters,
+    StartupGeneratorParametersList,
+)
 from eventum.app.models.settings import Settings
 from eventum.exceptions import ContextualError
 from eventum.security.manage import SECURITY_SETTINGS
 from eventum.utils.validation_prettier import prettify_validation_errors
-
-if TYPE_CHECKING:
-    from eventum.core.parameters import GeneratorParameters
 
 logger = structlog.stdlib.get_logger()
 
@@ -104,19 +103,19 @@ class App:
     def _validate_generators_params(
         self,
         object: list[dict],
-    ) -> GeneratorsParameters:
-        """Validate list of generators.
+    ) -> StartupGeneratorParametersList:
+        """Validate list of startup generator params.
 
         Parameters
         ----------
         object : list[dict]
-            List with parameters of generators.
+            List with startup parameters of generators.
 
         Returns
         -------
-        GeneratorsParameters
-            Validated list of generators parameters applied above
-            generation parameters from settings.
+        StartupGeneratorParametersList
+            Validated list of startup generator parameters applied
+            above generation parameters from settings.
 
         Raises
         ------
@@ -125,7 +124,7 @@ class App:
 
         """
         generators_parameters = (
-            GeneratorsParameters.build_over_generation_parameters(
+            StartupGeneratorParametersList.build_over_generation_parameters(
                 object=object,
                 generation_parameters=self._settings.generation,
             )
@@ -136,7 +135,7 @@ class App:
             parameters=self._settings.generation.model_dump(mode='json'),
         )
 
-        normalized_params_list: list[GeneratorParameters] = []
+        normalized_params_list: list[StartupGeneratorParameters] = []
         for params in generators_parameters.root:
             normalized_params = params.as_absolute(
                 base_dir=self._settings.path.generators_dir,
@@ -154,16 +153,20 @@ class App:
                     path=str(self._settings.path.generators_dir),
                 )
 
-        return GeneratorsParameters(root=tuple(normalized_params_list))
+        return StartupGeneratorParametersList(
+            root=tuple(normalized_params_list),
+        )
 
-    def _load_startup_generators_params(self) -> GeneratorsParameters:
+    def _load_startup_generators_params(
+        self,
+    ) -> StartupGeneratorParametersList:
         """Load params of generators from the startup file specified in
         config.
 
         Returns
         -------
-        GeneratorsParameters
-            List of generators params.
+        StartupGeneratorParametersList
+            List of startup generator params.
 
         Raises
         ------
@@ -213,23 +216,30 @@ class App:
 
     def _start_generators(
         self,
-        generators_params: GeneratorsParameters,
+        generators_params: StartupGeneratorParametersList,
     ) -> None:
         """Start generators.
 
         Parameters
         ----------
-        generators_params : GeneratorsParameters
+        generators_params : StartupGeneratorParametersList
             List of generators parameters.
 
         """
         added_generators: list[str] = []
+        autostarted_generators: list[str] = []
+        not_autostarted_generators: list[str] = []
         not_added_generators: list[str] = []
 
         for params in generators_params.root:
             try:
                 self._manager.add(params)
                 added_generators.append(params.id)
+
+                if params.autostart:
+                    autostarted_generators.append(params.id)
+                else:
+                    not_autostarted_generators.append(params.id)
             except ManagingError as e:
                 not_added_generators.append(params.id)
                 logger.error(
@@ -240,12 +250,13 @@ class App:
 
         logger.debug(
             'Bulk starting generators',
-            generator_ids=added_generators,
+            generator_ids=autostarted_generators,
         )
         running_generators, non_running_generators = self._manager.bulk_start(
-            generator_ids=added_generators,
+            generator_ids=autostarted_generators,
         )
         non_running_generators.extend(not_added_generators)
+        non_running_generators.extend(not_autostarted_generators)
 
         if len(running_generators) > 0:
             logger.info(

@@ -7,11 +7,15 @@
 # Generator unique identified
 # Required, there is no default value
 # - id: "test"
-  
+
+  # Whether to automatically start the generator
+  # Optional, default is true
+  # autostart: true
+
   # Absolute path to configuration
   # Required, there is no default value
   # path: "/app/eventum/config/conf.d/test/config.yml"
-  
+
   # Whether to use live mode and generate events at moments defined by timestamp
   # values or sample mode to generate all events at a time
   # Optional, default is true

@@ -129,7 +129,7 @@ class GeneratorParameters(GenerationParameters, frozen=True):
     skip_past: bool = Field(default=True)
     params: dict[str, Any] = Field(default_factory=dict)
 
-    def as_absolute(self, base_dir: Path) -> 'GeneratorParameters':
+    def as_absolute(self, base_dir: Path) -> Self:
         """Get instance with absolute path to generator.
 
         Parameters
@@ -139,7 +139,7 @@ class GeneratorParameters(GenerationParameters, frozen=True):
 
         Returns
         -------
-        GeneratorParameters
+        Self
             Same instance if path is already absolute or new instance
             with absolute path.
 
@@ -150,9 +150,9 @@ class GeneratorParameters(GenerationParameters, frozen=True):
         kwargs = {attr: getattr(self, attr) for attr in self.model_fields_set}
         kwargs.update(path=base_dir / self.path)
 
-        return GeneratorParameters(**kwargs)
+        return self.__class__(**kwargs)
 
-    def as_relative(self, base_dir: Path) -> 'GeneratorParameters':
+    def as_relative(self, base_dir: Path) -> Self:
         """Get instance with relative path to generator.
 
         Parameters
@@ -162,7 +162,7 @@ class GeneratorParameters(GenerationParameters, frozen=True):
 
         Returns
         -------
-        GeneratorParameters
+        Self
             Same instance if path is already relative or new instance
             with relative path.
 
@@ -178,4 +178,4 @@ class GeneratorParameters(GenerationParameters, frozen=True):
         kwargs = {attr: getattr(self, attr) for attr in self.model_fields_set}
         kwargs.update(path=self.path.relative_to(base_dir))
 
-        return GeneratorParameters(**kwargs)
+        return self.__class__(**kwargs)
