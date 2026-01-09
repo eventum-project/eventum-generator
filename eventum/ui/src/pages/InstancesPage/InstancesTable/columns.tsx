@@ -115,11 +115,11 @@ export const columns = [
         text = 'Running';
         color = 'green.6';
       } else if (status.is_ended_up) {
-        text = 'Finished';
-
         if (status.is_ended_up_successfully) {
+          text = 'Finished';
           color = '#1c5427';
         } else {
+          text = 'Failed';
           color = '#910606';
         }
       }
