@@ -10,6 +10,7 @@ from fastapi import APIRouter, Body, HTTPException, status
 from eventum.api.dependencies.app import SettingsDep
 from eventum.api.routers.startup.dependencies import (
     CheckIdInBodyMatchPathDep,
+    StartupGeneratorParametersListRaw,
     StartupGeneratorsParametersListDep,
     TargetStartupParamsIndexDep,
     TargetStartupParamsIndexesDep,
@@ -236,6 +237,7 @@ async def delete_generator_from_startup(
         'Bulk delete several generator definitions from list in the '
         'startup file'
     ),
+    response_description='IDs of deleted generator definitions',
     responses=merge_responses(
         get_startup_generator_parameters_list.responses,
         get_target_startup_params_indexes.responses,
@@ -250,17 +252,20 @@ async def bulk_delete_generators_from_startup(
     generators_parameters: StartupGeneratorsParametersListDep,
     target_indexes: TargetStartupParamsIndexesDep,
     settings: SettingsDep,
-) -> None:
+) -> list[str]:
     _, generators_parameters_raw_content = generators_parameters
 
-    generators_parameters_raw_content = [
-        params
-        for index, params in enumerate(generators_parameters_raw_content)
-        if index not in target_indexes
-    ]
+    deleted_ids: list[str] = []
+    new_raw_content: StartupGeneratorParametersListRaw = []
+
+    for index, params in enumerate(generators_parameters_raw_content):
+        if index in target_indexes:
+            deleted_ids.append(params['id'])
+        else:
+            new_raw_content.append(params)
 
     new_content = await asyncio.to_thread(
-        lambda: yaml.dump(generators_parameters_raw_content),
+        lambda: yaml.dump(new_raw_content),
     )
 
     try:
@@ -271,3 +276,5 @@ async def bulk_delete_generators_from_startup(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f'Cannot modify startup file due to OS error: {e}',
         ) from None
+
+    return deleted_ids
