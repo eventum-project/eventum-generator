@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   addGeneratorToStartup,
+  bulkDeleteGeneratorsFromStartup,
   deleteGeneratorFromStartup,
   getStartupGenerator,
   getStartupGenerators,
@@ -70,6 +71,21 @@ export function useDeleteGeneratorFromStartupMutation() {
 
   return useMutation({
     mutationFn: ({ id }: { id: string }) => deleteGeneratorFromStartup(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: STARTUP_QUERY_KEY,
+        exact: true,
+      });
+    },
+  });
+}
+
+export function useBulkDeleteGeneratorsFromStartupMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ids }: { ids: string[] }) =>
+      bulkDeleteGeneratorsFromStartup(ids),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: STARTUP_QUERY_KEY,

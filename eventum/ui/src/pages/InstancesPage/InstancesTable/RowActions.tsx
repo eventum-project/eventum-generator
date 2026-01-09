@@ -20,6 +20,7 @@ import {
   useStopGeneratorMutation,
   useUpdateGeneratorStatus,
 } from '@/api/hooks/useGenerators';
+import { useDeleteGeneratorFromStartupMutation } from '@/api/hooks/useStartup';
 import { GeneratorStatus } from '@/api/routes/generators/schemas';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 import { ROUTE_PATHS } from '@/routing/paths';
@@ -39,6 +40,7 @@ export const RowActions: FC<RowActionsProps> = ({
   const startGenerator = useStartGeneratorMutation();
   const stopGenerator = useStopGeneratorMutation();
   const deleteGenerator = useDeleteGeneratorMutation();
+  const deleteGeneratorFromStartup = useDeleteGeneratorFromStartupMutation();
   const updateGeneratorStatus = useUpdateGeneratorStatus();
 
   function handleEdit() {
@@ -142,11 +144,30 @@ export const RowActions: FC<RowActionsProps> = ({
       { id: instanceId },
       {
         onSuccess: () => {
-          notifications.show({
-            title: 'Success',
-            message: 'Instance is deleted',
-            color: 'green',
-          });
+          deleteGeneratorFromStartup.mutate(
+            { id: instanceId },
+            {
+              onSuccess: () => {
+                notifications.show({
+                  title: 'Success',
+                  message: 'Instance is deleted',
+                  color: 'green',
+                });
+              },
+              onError: (error) => {
+                notifications.show({
+                  title: 'Error',
+                  message: (
+                    <>
+                      Failed to delete instance definition from startup
+                      <ShowErrorDetailsAnchor error={error} prependDot />
+                    </>
+                  ),
+                  color: 'red',
+                });
+              },
+            }
+          );
         },
         onError: (error) => {
           notifications.show({

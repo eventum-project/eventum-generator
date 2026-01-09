@@ -40,3 +40,7 @@ export async function updateGeneratorInStartup(
 export async function deleteGeneratorFromStartup(id: string) {
   await apiClient.delete(`/startup/${id}`);
 }
+
+export async function bulkDeleteGeneratorsFromStartup(ids: string[]) {
+  await apiClient.post('/startup/group-actions/bulk-delete', ids);
+}

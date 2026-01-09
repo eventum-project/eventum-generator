@@ -4,7 +4,7 @@ import { GeneratorParametersSchema } from '../generators/schemas';
 
 export const StartupGeneratorParametersSchema =
   GeneratorParametersSchema.extend({
-    startup: z.boolean().optional(),
+    autostart: z.boolean().optional(),
   });
 export type StartupGeneratorParameters = z.infer<
   typeof StartupGeneratorParametersSchema

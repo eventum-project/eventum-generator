@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Center,
+  Checkbox,
   Container,
   Divider,
   Group,
@@ -30,10 +31,15 @@ import {
   useUpdateGeneratorMutation,
 } from '@/api/hooks/useGenerators';
 import {
-  GeneratorParameters,
-  GeneratorParametersSchema,
-} from '@/api/routes/generators/schemas';
+  useStartupGenerator,
+  useUpdateGeneratorInStartupMutation,
+} from '@/api/hooks/useStartup';
+import { GeneratorParametersSchema } from '@/api/routes/generators/schemas';
 import { GenerationParameters } from '@/api/routes/instance/schemas';
+import {
+  StartupGeneratorParameters,
+  StartupGeneratorParametersSchema,
+} from '@/api/routes/startup/schemas';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 import { ROUTE_PATHS } from '@/routing/paths';
@@ -58,35 +64,76 @@ export default function InstancePage() {
     isSuccess: isGeneratorParamsSuccess,
   } = useGenerator(instanceId);
 
-  const form = useForm<GeneratorParameters>({
+  const {
+    data: startupGeneratorParams,
+    isLoading: isStartupGeneratorParamsLoading,
+    isError: isStartupGeneratorParamsError,
+    error: startupGeneratorParamsError,
+    isSuccess: isStartupGeneratorParamsSuccess,
+  } = useStartupGenerator(instanceId);
+
+  const form = useForm<StartupGeneratorParameters>({
     mode: 'uncontrolled',
-    validate: zod4Resolver(GeneratorParametersSchema),
+    validate: zod4Resolver(StartupGeneratorParametersSchema),
     validateInputOnChange: true,
     cascadeUpdates: true,
   });
 
   useEffect(() => {
-    if (isGeneratorParamsSuccess && !form.initialized) {
-      form.initialize(generatorParams);
+    if (
+      isGeneratorParamsSuccess &&
+      isStartupGeneratorParamsSuccess &&
+      !form.initialized
+    ) {
+      form.initialize({
+        ...generatorParams,
+        autostart: startupGeneratorParams.autostart,
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [generatorParams, isGeneratorParamsSuccess]);
+  }, [
+    generatorParams,
+    isGeneratorParamsSuccess,
+    startupGeneratorParams,
+    isStartupGeneratorParamsSuccess,
+  ]);
 
   const updateGenerator = useUpdateGeneratorMutation();
+  const updateGeneratorInStartup = useUpdateGeneratorInStartupMutation();
 
   function handleSave() {
-    const params = form.getValues();
+    const generatorParams = GeneratorParametersSchema.parse(form.getValues());
+    const startupGeneratorParams = form.getValues();
 
     updateGenerator.mutate(
-      { id: instanceId, params: params },
+      { id: instanceId, params: generatorParams },
       {
         onSuccess: () => {
-          form.resetDirty();
-          notifications.show({
-            title: 'Success',
-            message: 'Instance is saved',
-            color: 'green',
-          });
+          updateGeneratorInStartup.mutate(
+            { id: instanceId, params: startupGeneratorParams },
+            {
+              onSuccess: () => {
+                form.resetDirty();
+                notifications.show({
+                  title: 'Success',
+                  message: 'Instance is saved',
+                  color: 'green',
+                });
+              },
+              onError: (error) => {
+                notifications.show({
+                  title: 'Error',
+                  message: (
+                    <>
+                      Failed to save instance
+                      <ShowErrorDetailsAnchor error={error} prependDot />
+                    </>
+                  ),
+                  color: 'red',
+                });
+              },
+            }
+          );
         },
         onError: (error) => {
           notifications.show({
@@ -108,36 +155,61 @@ export default function InstancePage() {
   const startGenerator = useStartGeneratorMutation();
 
   function handleSaveWithRestart() {
+    const params = GeneratorParametersSchema.parse(form.getValues());
+    const startupGeneratorParams = form.getValues();
+
     stopGenerator.mutate(
       { id: instanceId },
       {
         onSuccess: () => {
           updateGenerator.mutate(
-            { id: instanceId, params: form.getValues() },
+            { id: instanceId, params: params },
             {
               onSuccess: () => {
-                form.resetDirty();
-                notifications.show({
-                  title: 'Success',
-                  message: 'Instance is saved',
-                  color: 'green',
-                });
-                startGenerator.mutate(
-                  { id: instanceId },
+                updateGeneratorInStartup.mutate(
+                  { id: instanceId, params: startupGeneratorParams },
                   {
                     onSuccess: () => {
+                      form.resetDirty();
                       notifications.show({
                         title: 'Success',
-                        message: 'Instance is started',
+                        message: 'Instance is saved',
                         color: 'green',
                       });
+                      startGenerator.mutate(
+                        { id: instanceId },
+                        {
+                          onSuccess: () => {
+                            notifications.show({
+                              title: 'Success',
+                              message: 'Instance is started',
+                              color: 'green',
+                            });
+                          },
+                          onError: (error) => {
+                            notifications.show({
+                              title: 'Error',
+                              message: (
+                                <>
+                                  Failed to start instance
+                                  <ShowErrorDetailsAnchor
+                                    error={error}
+                                    prependDot
+                                  />
+                                </>
+                              ),
+                              color: 'red',
+                            });
+                          },
+                        }
+                      );
                     },
                     onError: (error) => {
                       notifications.show({
                         title: 'Error',
                         message: (
                           <>
-                            Failed to start instance
+                            Failed to save instance
                             <ShowErrorDetailsAnchor error={error} prependDot />
                           </>
                         ),
@@ -196,7 +268,11 @@ export default function InstancePage() {
     }
   }
 
-  if (isGeneratorParamsLoading || isStatusLoading) {
+  if (
+    isGeneratorParamsLoading ||
+    isStartupGeneratorParamsLoading ||
+    isStatusLoading
+  ) {
     return (
       <Center>
         <Loader size="lg" />
@@ -214,6 +290,24 @@ export default function InstancePage() {
         >
           {generatorParamsError.message}
           <ShowErrorDetailsAnchor error={generatorParamsError} prependDot />
+        </Alert>
+      </Container>
+    );
+  }
+
+  if (isStartupGeneratorParamsError) {
+    return (
+      <Container size="md">
+        <Alert
+          variant="default"
+          icon={<Box c="red" component={IconAlertSquareRounded}></Box>}
+          title="Failed to get startup instance parameters"
+        >
+          {startupGeneratorParamsError.message}
+          <ShowErrorDetailsAnchor
+            error={startupGeneratorParamsError}
+            prependDot
+          />
         </Alert>
       </Container>
     );
@@ -272,6 +366,7 @@ export default function InstancePage() {
                 disabled={!form.isDirty()}
                 loading={
                   updateGenerator.isPending ||
+                  updateGeneratorInStartup.isPending ||
                   stopGenerator.isPending ||
                   startGenerator.isPending
                 }
@@ -312,6 +407,15 @@ export default function InstancePage() {
                 />
               }
               {...form.getInputProps('skip_past', { type: 'checkbox' })}
+            />
+            <Checkbox
+              label={
+                <LabelWithTooltip
+                  label="Auto start"
+                  tooltip="Whether to automatically start the generator on application start up"
+                />
+              }
+              {...form.getInputProps('autostart', { type: 'checkbox' })}
             />
           </Group>
 

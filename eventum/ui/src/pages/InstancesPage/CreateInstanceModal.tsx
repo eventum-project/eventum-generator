@@ -21,6 +21,7 @@ import {
   useGeneratorDirs,
 } from '@/api/hooks/useGeneratorConfigs';
 import { useAddGeneratorMutation } from '@/api/hooks/useGenerators';
+import { useAddGeneratorToStartupMutation } from '@/api/hooks/useStartup';
 import { GeneratorParameters } from '@/api/routes/generators/schemas';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
@@ -62,6 +63,7 @@ export const CreateInstanceModal: FC<CreateInstanceModalProps> = ({
   } = useGeneratorDirs(false);
 
   const addGenerator = useAddGeneratorMutation();
+  const addGeneratorToStartup = useAddGeneratorToStartupMutation();
 
   const getGeneratorConfigPath = useGeneratorConfigPathMutation();
 
@@ -74,12 +76,34 @@ export const CreateInstanceModal: FC<CreateInstanceModalProps> = ({
             { id: values.id, params: { ...values, path: resolvedPath } },
             {
               onSuccess: () => {
-                notifications.show({
-                  title: 'Success',
-                  message: 'Instance is created',
-                  color: 'green',
-                });
-                modals.closeAll();
+                addGeneratorToStartup.mutate(
+                  {
+                    id: values.id,
+                    params: { ...values, path: resolvedPath, autostart: false },
+                  },
+                  {
+                    onSuccess: () => {
+                      notifications.show({
+                        title: 'Success',
+                        message: 'Instance is created',
+                        color: 'green',
+                      });
+                      modals.closeAll();
+                    },
+                    onError: (error) => {
+                      notifications.show({
+                        title: 'Error',
+                        message: (
+                          <>
+                            Failed to add instance definition to startup
+                            <ShowErrorDetailsAnchor error={error} prependDot />
+                          </>
+                        ),
+                        color: 'red',
+                      });
+                    },
+                  }
+                );
               },
               onError: (error) => {
                 notifications.show({

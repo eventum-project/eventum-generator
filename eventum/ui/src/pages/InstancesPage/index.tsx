@@ -34,6 +34,7 @@ import {
   useGenerators,
   useUpdateGeneratorStatus,
 } from '@/api/hooks/useGenerators';
+import { useBulkDeleteGeneratorsFromStartupMutation } from '@/api/hooks/useStartup';
 import { PageTitle } from '@/components/ui/PageTitle';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
@@ -56,6 +57,8 @@ export default function InstancesPage() {
   const bulkStart = useBulkStartGeneratorMutation();
   const bulkStop = useBulkStopGeneratorMutation();
   const bulkDelete = useBulkDeleteGeneratorMutation();
+  const bulkDeleteGeneratorsFromStartup =
+    useBulkDeleteGeneratorsFromStartupMutation();
 
   function getInactiveInstances() {
     if (generators === undefined) {
@@ -203,12 +206,31 @@ export default function InstancesPage() {
           });
         },
         onSuccess: () => {
-          setRowSelection({});
-          notifications.show({
-            title: 'Success',
-            message: `Instances are deleted`,
-            color: 'green',
-          });
+          bulkDeleteGeneratorsFromStartup.mutate(
+            { ids: instanceIds },
+            {
+              onSuccess: () => {
+                setRowSelection({});
+                notifications.show({
+                  title: 'Success',
+                  message: `Instances are deleted`,
+                  color: 'green',
+                });
+              },
+              onError: (error) => {
+                notifications.show({
+                  title: 'Error',
+                  message: (
+                    <>
+                      Failed to delete instances definition from startup
+                      <ShowErrorDetailsAnchor error={error} prependDot />
+                    </>
+                  ),
+                  color: 'red',
+                });
+              },
+            }
+          );
         },
       }
     );
