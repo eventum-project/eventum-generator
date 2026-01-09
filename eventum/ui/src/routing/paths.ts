@@ -5,7 +5,6 @@ export const ROUTE_PATHS = {
   INSTANCE: '/instances/:instanceId',
   PROJECTS: '/projects',
   PROJECT: '/projects/:projectName',
-  STARTUP: '/startup',
   SECRETS: '/secrets',
   SETTINGS: '/settings',
   MANAGEMENT: '/management',
