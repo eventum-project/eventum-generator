@@ -63,13 +63,7 @@ export const TemplateParams: FC<TemplateParamsProps> = ({
           <LabelWithTooltip label="Template" tooltip="Path to template file" />
         }
         {...form.getInputProps('template')}
-        value={
-          form.values.template != undefined
-            ? form.values.template.startsWith('./')
-              ? form.values.template
-              : './' + form.values.template
-            : null
-        }
+        value={form.values.template ?? null}
         onChange={(value) => {
           form.setFieldValue('template', value ?? undefined!);
         }}

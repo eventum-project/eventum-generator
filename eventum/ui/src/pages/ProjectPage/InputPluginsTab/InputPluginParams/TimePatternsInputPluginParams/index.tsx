@@ -3,6 +3,7 @@ import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
 import { IconPlus } from '@tabler/icons-react';
 import { zod4Resolver } from 'mantine-form-zod-resolver';
+import { normalize } from 'pathe';
 import { FC, useState } from 'react';
 
 import { useProjectName } from '../../../hooks/useProjectName';
@@ -102,9 +103,7 @@ export const TimePatternsInputPluginParams: FC<
                     <ProjectNameProvider initialProjectName={projectName}>
                       <AddNewPatternModal
                         onAddNewPattern={(filePath) => {
-                          const normalizedPath = filePath.startsWith('./')
-                            ? filePath
-                            : `./${filePath}`;
+                          const normalizedPath = normalize(filePath);
                           setSelectedTimePattern(normalizedPath);
                         }}
                       />
@@ -118,7 +117,10 @@ export const TimePatternsInputPluginParams: FC<
             </ActionIcon>
           </Group>
           {selectedTimePattern && (
-            <TimePatternParams filePath={selectedTimePattern} />
+            <TimePatternParams
+              filePath={selectedTimePattern}
+              key={selectedTimePattern}
+            />
           )}
         </Stack>
       </Stack>
