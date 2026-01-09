@@ -12,9 +12,11 @@ from eventum.api.routers.startup.dependencies import (
     CheckIdInBodyMatchPathDep,
     StartupGeneratorsParametersListDep,
     TargetStartupParamsIndexDep,
+    TargetStartupParamsIndexesDep,
     check_id_in_body_match_path,
     get_startup_generator_parameters_list,
     get_target_startup_params_index,
+    get_target_startup_params_indexes,
 )
 from eventum.api.utils.response_description import merge_responses
 from eventum.app.models.generators import (
@@ -201,7 +203,7 @@ async def update_generator_in_startup(
         get_target_startup_params_index.responses,
         {
             500: {
-                'description': ('Cannot modify startup file due to OS error'),
+                'description': 'Cannot modify startup file due to OS error',
             },
         },
     ),
@@ -214,6 +216,49 @@ async def delete_generator_from_startup(
     _, generators_parameters_raw_content = generators_parameters
 
     del generators_parameters_raw_content[target_index]
+    new_content = await asyncio.to_thread(
+        lambda: yaml.dump(generators_parameters_raw_content),
+    )
+
+    try:
+        async with aiofiles.open(settings.path.startup, 'w') as f:
+            await f.write(new_content)
+    except OSError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f'Cannot modify startup file due to OS error: {e}',
+        ) from None
+
+
+@router.delete(
+    '/group-actions/bulk-delete',
+    description=(
+        'Bulk delete several generator definitions from list in the '
+        'startup file'
+    ),
+    responses=merge_responses(
+        get_startup_generator_parameters_list.responses,
+        get_target_startup_params_indexes.responses,
+        {
+            500: {
+                'description': 'Cannot modify startup file due to OS error',
+            },
+        },
+    ),
+)
+async def bulk_delete_generators_from_startup(
+    generators_parameters: StartupGeneratorsParametersListDep,
+    target_indexes: TargetStartupParamsIndexesDep,
+    settings: SettingsDep,
+) -> None:
+    _, generators_parameters_raw_content = generators_parameters
+
+    generators_parameters_raw_content = [
+        params
+        for index, params in enumerate(generators_parameters_raw_content)
+        if index not in target_indexes
+    ]
+
     new_content = await asyncio.to_thread(
         lambda: yaml.dump(generators_parameters_raw_content),
     )

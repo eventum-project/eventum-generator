@@ -13,8 +13,10 @@ from eventum.api.utils.response_description import (
     merge_responses,
     set_responses,
 )
-from eventum.app.models.generators import StartupGeneratorParametersList
-from eventum.core.parameters import GeneratorParameters
+from eventum.app.models.generators import (
+    StartupGeneratorParameters,
+    StartupGeneratorParametersList,
+)
 from eventum.utils.validation_prettier import prettify_validation_errors
 
 type StartupGeneratorParametersListRaw = list[dict]
@@ -136,6 +138,47 @@ TargetStartupParamsIndexDep = Annotated[
 ]
 
 
+@set_responses({})
+async def get_target_startup_params_indexes(
+    ids: Annotated[
+        list[str],
+        Body(description='IDs of the generators', min_length=1),
+    ],
+    generators_parameters: StartupGeneratorsParametersListDep,
+) -> set[int]:
+    """Get target startup params indexes.
+
+    Parameters
+    ----------
+    ids : Annotated[list[str], Body]
+        IDs of the generators.
+
+    generators_parameters : StartupGeneratorsParametersListDep
+        Startup generator parameters list dependency.
+
+    Returns
+    -------
+    set[int]
+        Indexes of the target parameters that match provided IDs.
+
+    """
+    generators_parameters_model, _ = generators_parameters
+    indexes: set[int] = set()
+    ids_set = set(ids)
+
+    for i, startup_params in enumerate(generators_parameters_model.root):
+        if startup_params.id in ids_set:
+            indexes.add(i)
+
+    return indexes
+
+
+TargetStartupParamsIndexesDep = Annotated[
+    set[int],
+    Depends(get_target_startup_params_indexes),
+]
+
+
 @set_responses(
     {
         400: {
@@ -148,7 +191,7 @@ TargetStartupParamsIndexDep = Annotated[
 async def check_id_in_body_match_path(
     id: Annotated[str, Path(description='ID of the generator', min_length=1)],
     params: Annotated[
-        GeneratorParameters,
+        StartupGeneratorParameters,
         Body(description='Generator parameters'),
     ],
 ) -> str:
@@ -159,7 +202,7 @@ async def check_id_in_body_match_path(
     id : Annotated[str, Path]
         ID path parameter.
 
-    params : Annotated[GeneratorParameters, Body]
+    params : Annotated[StartupGeneratorParameters, Body]
         Request body.
 
     Returns
