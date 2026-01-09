@@ -25,7 +25,7 @@ class StartupGeneratorParameters(
 class StartupGeneratorParametersList(RootModel, frozen=True):
     """List of startup generator parameters."""
 
-    root: tuple[StartupGeneratorParameters, ...] = Field(min_length=1)
+    root: tuple[StartupGeneratorParameters, ...] = Field()
 
     @classmethod
     def build_over_generation_parameters(
