@@ -1,17 +1,11 @@
-import {
-  ActionIcon,
-  Checkbox,
-  DefaultMantineColor,
-  Group,
-  Indicator,
-  Text,
-} from '@mantine/core';
+import { ActionIcon, Checkbox, Group, Indicator, Text } from '@mantine/core';
 import { IconDotsVertical } from '@tabler/icons-react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { formatDistanceToNow } from 'date-fns';
 import { dirname } from 'pathe';
 
 import { RowActions } from './RowActions';
+import { describeInstanceStatus } from './common/instance-status';
 import {
   GeneratorStatus,
   GeneratorsInfo,
@@ -99,30 +93,7 @@ export const columns = [
     cell: (info) => {
       const status = info.getValue();
 
-      let text = 'Not started';
-      let color: DefaultMantineColor = 'gray.6';
-      let processing = false;
-
-      if (status.is_initializing) {
-        text = 'Starting';
-        color = 'yellow.7';
-        processing = true;
-      } else if (status.is_stopping) {
-        text = 'Stopping';
-        color = 'yellow.7';
-        processing = true;
-      } else if (status.is_running) {
-        text = 'Running';
-        color = 'green.6';
-      } else if (status.is_ended_up) {
-        if (status.is_ended_up_successfully) {
-          text = 'Finished';
-          color = '#1c5427';
-        } else {
-          text = 'Failed';
-          color = '#910606';
-        }
-      }
+      const { text, color, processing } = describeInstanceStatus(status);
 
       return (
         <Group gap="sm" align="center">
