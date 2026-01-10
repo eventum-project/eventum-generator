@@ -7,7 +7,7 @@ export function describeInstanceStatus(status: GeneratorStatus): {
   color: DefaultMantineColor;
   processing: boolean;
 } {
-  let text = 'Not started';
+  let text = 'Inactive';
   let color: DefaultMantineColor = 'gray.6';
   let processing = false;
 
@@ -20,7 +20,7 @@ export function describeInstanceStatus(status: GeneratorStatus): {
     color = 'yellow.7';
     processing = true;
   } else if (status.is_running) {
-    text = 'Running';
+    text = 'Active';
     color = 'green.6';
   } else if (status.is_ended_up) {
     if (status.is_ended_up_successfully) {
