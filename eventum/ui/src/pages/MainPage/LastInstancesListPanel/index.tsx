@@ -10,6 +10,7 @@ import {
 import { IconFolder } from '@tabler/icons-react';
 import { dirname } from 'pathe';
 import { FC } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { InstanceStatus } from './InstanceStatus';
 import { GeneratorsInfo } from '@/api/routes/generators/schemas';
@@ -22,6 +23,8 @@ interface LastInstancesListPanelProps {
 export const LastInstancesListPanel: FC<LastInstancesListPanelProps> = ({
   generators,
 }) => {
+  const navigate = useNavigate();
+
   const sortedGenerators = [...generators]
     .sort(
       (a, b) =>
@@ -46,17 +49,22 @@ export const LastInstancesListPanel: FC<LastInstancesListPanelProps> = ({
                   </Text>
                 )}
               </Group>
-              <Paper key={generator.id} withBorder p="xs" shadow="0">
+              <Paper
+                key={generator.id}
+                withBorder
+                p="xs"
+                shadow="0"
+                onClick={() =>
+                  void navigate(`${ROUTE_PATHS.INSTANCES}/${generator.id}`)
+                }
+                style={{ cursor: 'pointer' }}
+              >
                 <Stack gap="xs">
                   <Stack gap="4px">
                     <Group justify="space-between">
-                      <Anchor
-                        size="sm"
-                        fw="bold"
-                        href={`${ROUTE_PATHS.INSTANCES}/${generator.id}`}
-                      >
+                      <Text size="sm" fw="bold">
                         {generator.id}
-                      </Anchor>
+                      </Text>
 
                       <InstanceStatus status={generator.status} />
                     </Group>
