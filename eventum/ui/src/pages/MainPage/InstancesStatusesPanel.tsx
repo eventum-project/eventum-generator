@@ -80,7 +80,7 @@ export const InstancesStatusesPanel: FC<InstancesStatusesPanelProps> = ({
 
         <Group grow gap="xs" align="start">
           {metrics.map((panel, index) => (
-            <Stack key={index} gap="xs" justify="center" align="center">
+            <Stack key={index} gap="2px" justify="center" align="center">
               <Title order={2} fw="500">
                 {panel.content}
               </Title>

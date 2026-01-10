@@ -24,6 +24,7 @@ export const PerformanceDonutChart: FC<PerformanceDonutChartProps> = ({
           h="80"
           w="80"
           chartLabel={chartLabel}
+          tooltipDataSource="segment"
           startAngle={90}
           endAngle={-270}
           size={80}
