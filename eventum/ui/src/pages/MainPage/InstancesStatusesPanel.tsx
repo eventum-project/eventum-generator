@@ -20,11 +20,11 @@ import { FC, ReactNode } from 'react';
 
 import { GeneratorsInfo } from '@/api/routes/generators/schemas';
 
-interface InstancesStatsPanelProps {
+interface InstancesStatusesPanelProps {
   generators: GeneratorsInfo;
 }
 
-export const InstancesStatsPanel: FC<InstancesStatsPanelProps> = ({
+export const InstancesStatusesPanel: FC<InstancesStatusesPanelProps> = ({
   generators,
 }) => {
   const metrics: {
