@@ -81,6 +81,7 @@ class OutputPluginStats(PluginStats, frozen=True, extra='forbid'):
 class GeneratorStats(BaseModel, frozen=True, extra='forbid'):
     """Stats of generator."""
 
+    id: str = Field(min_length=1, description='Generator id')
     start_time: datetime = Field(description='Start time of the generator')
     input: list[InputPluginStats] = Field(
         description='Input plugins statistics',

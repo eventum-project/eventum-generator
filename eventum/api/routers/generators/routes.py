@@ -244,7 +244,10 @@ async def delete_generator(
     description='Get stats of running generator',
     responses=_get_generator.responses,
 )
-async def get_generator_stats(generator: GeneratorDep) -> GeneratorStats:
+async def get_generator_stats(
+    id: str,
+    generator: GeneratorDep,
+) -> GeneratorStats:
     if generator.is_running and generator.start_time is not None:
         plugins = generator.get_plugins_info()
     else:
@@ -254,6 +257,7 @@ async def get_generator_stats(generator: GeneratorDep) -> GeneratorStats:
         )
 
     return GeneratorStats(
+        id=id,
         start_time=generator.start_time,
         input=[
             InputPluginStats(
@@ -280,6 +284,58 @@ async def get_generator_stats(generator: GeneratorDep) -> GeneratorStats:
             for plugin in plugins.output
         ],
     )
+
+
+@router.get(
+    '/group-actions/stats-running',
+    description='Get stats of all running generators',
+    responses=_get_generator.responses,
+)
+async def get_running_generators_stats(
+    generator_manager: GeneratorManagerDep,
+) -> list[GeneratorStats]:
+    stats: list[GeneratorStats] = []
+
+    for generator_id in generator_manager.generator_ids:
+        generator = generator_manager.get_generator(generator_id)
+
+        if not generator.is_running or generator.start_time is None:
+            continue
+
+        plugins = generator.get_plugins_info()
+
+        stats.append(
+            GeneratorStats(
+                id=generator_id,
+                start_time=generator.start_time,
+                input=[
+                    InputPluginStats(
+                        plugin_name=plugin.name,
+                        plugin_id=plugin.id,
+                        generated=plugin.generated,
+                    )
+                    for plugin in plugins.input
+                ],
+                event=EventPluginStats(
+                    plugin_name=plugins.event.name,
+                    plugin_id=plugins.event.id,
+                    produced=plugins.event.produced,
+                    produce_failed=plugins.event.produce_failed,
+                ),
+                output=[
+                    OutputPluginStats(
+                        plugin_name=plugin.name,
+                        plugin_id=plugin.id,
+                        written=plugin.written,
+                        write_failed=plugin.write_failed,
+                        format_failed=plugin.format_failed,
+                    )
+                    for plugin in plugins.output
+                ],
+            ),
+        )
+
+    return stats
 
 
 @router.post(
