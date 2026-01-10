@@ -27,7 +27,7 @@ export const LastInstancesListPanel: FC<LastInstancesListPanelProps> = ({
       (a, b) =>
         Date.parse(b.start_time ?? '1970') - Date.parse(a.start_time ?? '1970')
     )
-    .slice(0, 7);
+    .slice(0, 5);
 
   return (
     <Paper withBorder shadow="sm" p="md">
