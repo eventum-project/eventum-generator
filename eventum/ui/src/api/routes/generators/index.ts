@@ -58,7 +58,7 @@ export async function getGeneratorStats(id: string): Promise<GeneratorStats> {
 export async function getRunningGeneratorsStats(): Promise<GeneratorStats[]> {
   return await validateResponse(
     z.array(GeneratorStatsSchema),
-    apiClient.get('/group-actions/stats-running')
+    apiClient.get('/generators/group-actions/stats-running')
   );
 }
 
