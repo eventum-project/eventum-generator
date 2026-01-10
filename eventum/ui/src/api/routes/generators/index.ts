@@ -1,3 +1,5 @@
+import z from 'zod';
+
 import {
   BulkStartResponse,
   BulkStartResponseSchema,
@@ -50,6 +52,13 @@ export async function getGeneratorStats(id: string): Promise<GeneratorStats> {
   return await validateResponse(
     GeneratorStatsSchema,
     apiClient.get(`/generators/${id}/stats`)
+  );
+}
+
+export async function getRunningGeneratorsStats(): Promise<GeneratorStats[]> {
+  return await validateResponse(
+    z.array(GeneratorStatsSchema),
+    apiClient.get('/group-actions/stats-running')
   );
 }
 

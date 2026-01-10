@@ -45,6 +45,7 @@ export const OutputPluginStatsSchema = PluginStatsSchema.extend({
 export type OutputPluginStats = z.infer<typeof OutputPluginStatsSchema>;
 
 export const GeneratorStatsSchema = z.object({
+  id: z.string(),
   start_time: z.string(),
   input: z.array(InputPluginStatsSchema),
   event: EventPluginStatsSchema,

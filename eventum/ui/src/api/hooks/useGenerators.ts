@@ -9,6 +9,7 @@ import {
   getGenerator,
   getGeneratorStats,
   getGeneratorStatus,
+  getRunningGeneratorsStats,
   listGenerators,
   startGenerator,
   stopGenerator,
@@ -92,6 +93,13 @@ export function useGeneratorStats(id: string) {
   return useQuery({
     queryKey: [...GENERATORS_QUERY_KEY, id, 'stats'],
     queryFn: () => getGeneratorStats(id),
+  });
+}
+
+export function useRunningGeneratorsStats() {
+  return useQuery({
+    queryKey: [...GENERATORS_QUERY_KEY, 'group-actions', 'stats-running'],
+    queryFn: getRunningGeneratorsStats,
   });
 }
 
