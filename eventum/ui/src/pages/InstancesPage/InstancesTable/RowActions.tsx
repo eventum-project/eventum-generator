@@ -12,7 +12,6 @@ import {
 import { FC, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { LogsModal } from './LogsModal';
 import { MetricsModal } from './MetricsModal';
 import {
   useDeleteGeneratorMutation,
@@ -21,7 +20,9 @@ import {
   useUpdateGeneratorStatus,
 } from '@/api/hooks/useGenerators';
 import { useDeleteGeneratorFromStartupMutation } from '@/api/hooks/useStartup';
+import { streamGeneratorLogs } from '@/api/routes/generators';
 import { GeneratorStatus } from '@/api/routes/generators/schemas';
+import { LogsModal } from '@/components/modals/LogsModal';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 import { ROUTE_PATHS } from '@/routing/paths';
 
@@ -58,7 +59,11 @@ export const RowActions: FC<RowActionsProps> = ({
   function handleShowLogs() {
     modals.open({
       title: `Instance logs`,
-      children: <LogsModal instanceId={instanceId} />,
+      children: (
+        <LogsModal
+          getWebSocket={() => streamGeneratorLogs(instanceId, 10_048_576)}
+        />
+      ),
       size: '80vw',
     });
   }

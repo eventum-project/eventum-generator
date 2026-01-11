@@ -5,13 +5,11 @@ import { vscodeDark, vscodeLight } from '@uiw/codemirror-theme-vscode';
 import CodeMirror, { EditorView } from '@uiw/react-codemirror';
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
 
-import { streamGeneratorLogs } from '@/api/routes/generators';
-
 interface LogsModalProps {
-  instanceId: string;
+  getWebSocket: () => WebSocket;
 }
 
-export const LogsModal: FC<LogsModalProps> = ({ instanceId }) => {
+export const LogsModal: FC<LogsModalProps> = ({ getWebSocket }) => {
   const { colorScheme } = useMantineColorScheme();
 
   const [editorView, setEditorView] = useState<EditorView>();
@@ -37,7 +35,7 @@ export const LogsModal: FC<LogsModalProps> = ({ instanceId }) => {
       return;
     }
 
-    const ws = streamGeneratorLogs(instanceId, 10_048_576);
+    const ws = getWebSocket();
     wsRef.current = ws;
 
     // eslint-disable-next-line unicorn/prefer-add-event-listener
@@ -58,7 +56,8 @@ export const LogsModal: FC<LogsModalProps> = ({ instanceId }) => {
     return () => {
       ws.close(1000);
     };
-  }, [instanceId, editorView, appendLogs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editorView, appendLogs]);
 
   return (
     <Stack>
