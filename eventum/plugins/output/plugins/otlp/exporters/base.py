@@ -45,12 +45,19 @@ class ExportResult:
     failure : ExportFailure | None
         Failure of the request, `None` when the request succeeded.
 
+    body_unparsable : bool
+        Whether a successful response carried a body that could not
+        be parsed. The records are still counted as accepted in
+        `accepted`, since a 2xx response means the receiver took
+        them regardless of whether its body can be read.
+
     """
 
     accepted: int
     rejected: int = 0
     message: str = ''
     failure: ExportFailure | None = None
+    body_unparsable: bool = False
 
 
 class Exporter(Protocol):

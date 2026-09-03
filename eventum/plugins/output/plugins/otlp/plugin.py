@@ -3,7 +3,7 @@
 import asyncio
 import time
 from collections.abc import Iterator, Sequence
-from typing import cast, override
+from typing import Any, cast, override
 from urllib.parse import urlsplit, urlunsplit
 
 from eventum.plugins.exceptions import PluginConfigurationError
@@ -11,6 +11,7 @@ from eventum.plugins.output.base.plugin import (
     OutputPlugin,
     OutputPluginParams,
 )
+from eventum.plugins.output.exceptions import PluginWriteError
 from eventum.plugins.output.http_client import create_ssl_context
 from eventum.plugins.output.plugins.otlp.config import OtlpOutputPluginConfig
 from eventum.plugins.output.plugins.otlp.exporters.base import (
@@ -68,9 +69,17 @@ class _FailedExports:
     """
 
     def __init__(self) -> None:
-        self._groups: dict[tuple[str, int | None], tuple[int, dict]] = {}
+        self._groups: dict[
+            tuple[str, int | None],
+            tuple[int, dict[str, Any]],
+        ] = {}
 
-    def add(self, message: str, records: int, context: dict) -> None:
+    def add(
+        self,
+        message: str,
+        records: int,
+        context: dict[str, Any],
+    ) -> None:
         """Add a failed export request.
 
         Parameters
@@ -81,7 +90,7 @@ class _FailedExports:
         records : int
             Number of records the failed request carried.
 
-        context : dict
+        context : dict[str, Any]
             Context of the failure.
 
         """
@@ -90,12 +99,12 @@ class _FailedExports:
 
         self._groups[key] = (count + records, first_context)
 
-    def groups(self) -> Iterator[tuple[str, int, dict]]:
+    def groups(self) -> Iterator[tuple[str, int, dict[str, Any]]]:
         """Iterate over grouped failures.
 
         Yields
         ------
-        tuple[str, int, dict]
+        tuple[str, int, dict[str, Any]]
             Message, number of records lost across the group and
             context of the first failure in it.
 
@@ -213,17 +222,132 @@ class OtlpOutputPlugin(
             ],
         )
 
+    async def _send_payload(
+        self,
+        body: bytes,
+        records: int,
+        failures: _FailedExports,
+    ) -> ExportResult:
+        """Send one payload, collecting an unexpected failure instead
+        of letting it escape the write.
+
+        Parameters
+        ----------
+        body : bytes
+            Serialized body of the request to send.
+
+        records : int
+            Number of records the request carries.
+
+        failures : _FailedExports
+            Collector an unexpected failure is added to.
+
+        Returns
+        -------
+        ExportResult
+            Result of the delivery, `accepted=0` and no failure of
+            its own when sending itself raised - the failure already
+            went to `failures`.
+
+        """
+        try:
+            return await self._exporter.send(body, records)
+        except Exception as e:  # noqa: BLE001
+            failures.add(
+                'Failed to send request to OTLP receiver',
+                records,
+                {'reason': str(e), 'url': self._url},
+            )
+            return ExportResult(accepted=0)
+
+    async def _report_notices(
+        self,
+        batch: MappedBatch,
+        payloads: list[tuple[bytes, int]],
+        rejected: int,
+        partial_message: str,
+        unparsable_bodies: int,
+    ) -> None:
+        """Report non-fatal conditions observed while mapping and
+        sending one write's batch.
+
+        Parameters
+        ----------
+        batch : MappedBatch
+            Batch the events of the write were mapped to.
+
+        payloads : list[tuple[bytes, int]]
+            Encoded requests the batch was sent as, empty when the
+            batch carried no records worth reporting on.
+
+        rejected : int
+            Number of records the receiver rejected via a partial
+            success across every request of the write.
+
+        partial_message : str
+            Partial success message reported for `rejected`, empty
+            when none was reported.
+
+        unparsable_bodies : int
+            Number of successful responses whose body could not be
+            parsed.
+
+        """
+        if rejected:
+            await self._logger.awarning(
+                'OTLP receiver reported a partial success',
+                count=rejected,
+                reason=partial_message,
+            )
+
+        if unparsable_bodies:
+            await self._logger.awarning(
+                'OTLP receiver returned a successful response with a '
+                'body that could not be parsed; its records were '
+                'counted as accepted',
+                count=unparsable_bodies,
+            )
+
+        if not payloads:
+            return
+
+        if batch.fallback_timestamps:
+            await self._logger.awarning(
+                'Events without a usable timestamp fell back to the '
+                'time of writing',
+                count=batch.fallback_timestamps,
+            )
+
+        if batch.missing_bodies:
+            await self._logger.awarning(
+                'Events without the configured body field fell back '
+                'to the whole event as the body',
+                count=batch.missing_bodies,
+            )
+
+        if batch.oversized_records:
+            await self._logger.awarning(
+                'Records larger than the request size limit were '
+                'packed alone and may be rejected by the receiver',
+                count=batch.oversized_records,
+            )
+
     @override
     async def _write(self, events: Sequence[str]) -> int:
-        batch, payloads = await asyncio.to_thread(self._prepare, events)
+        try:
+            batch, payloads = await asyncio.to_thread(self._prepare, events)
+        except Exception as e:
+            msg = 'Failed to map events to OTLP export requests'
+            raise PluginWriteError(msg, context={'reason': str(e)}) from e
 
         written = 0
         rejected = 0
         partial_message = ''
+        unparsable_bodies = 0
         failures = _FailedExports()
 
         for body, records in payloads:
-            result: ExportResult = await self._exporter.send(body, records)
+            result = await self._send_payload(body, records, failures)
             written += result.accepted
 
             if result.failure is not None:
@@ -232,38 +356,22 @@ class OtlpOutputPlugin(
                     records,
                     result.failure.context,
                 )
-            elif result.rejected:
+                continue
+
+            if result.rejected:
                 rejected += result.rejected
                 partial_message = partial_message or result.message
 
+            if result.body_unparsable:
+                unparsable_bodies += 1
+
         await self._report_failures(failures)
-
-        if rejected:
-            await self._logger.awarning(
-                'OTLP receiver reported a partial success',
-                count=rejected,
-                reason=partial_message,
-            )
-
-        if payloads and batch.fallback_timestamps:
-            await self._logger.awarning(
-                'Events without a usable timestamp were written with '
-                'the time of writing',
-                count=batch.fallback_timestamps,
-            )
-
-        if payloads and batch.missing_bodies:
-            await self._logger.awarning(
-                'Events without the configured body field were written '
-                'with the whole event as the body',
-                count=batch.missing_bodies,
-            )
-
-        if payloads and batch.oversized_records:
-            await self._logger.awarning(
-                'Records larger than the request size limit were sent '
-                'on their own and may be rejected by the receiver',
-                count=batch.oversized_records,
-            )
+        await self._report_notices(
+            batch,
+            payloads,
+            rejected,
+            partial_message,
+            unparsable_bodies,
+        )
 
         return written

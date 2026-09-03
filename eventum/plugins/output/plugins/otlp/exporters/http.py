@@ -116,7 +116,7 @@ class HttpExporter:
 
         return body
 
-    def _read_partial_success(self, content: bytes) -> tuple[int, str]:
+    def _read_partial_success(self, content: bytes) -> tuple[int, str, bool]:
         """Read the partial success reported in a response body.
 
         Parameters
@@ -126,16 +126,18 @@ class HttpExporter:
 
         Returns
         -------
-        tuple[int, str]
-            Number of records the receiver rejected and the partial
-            success message reported for them. `(0, '')` for an
-            empty body and for a body that fails to parse, since a
-            2xx response has taken the records regardless of whether
-            its body can be read.
+        tuple[int, str, bool]
+            Number of records the receiver rejected, the partial
+            success message reported for them, and whether the body
+            could not be parsed. `(0, '', False)` for an empty body,
+            since a 2xx response with no body reports no partial
+            failure. `(0, '', True)` for a non-empty body that fails
+            to parse, since a 2xx response has taken the records
+            regardless of whether its body can be read.
 
         """
         if not content:
-            return 0, ''
+            return 0, '', False
 
         response = ExportLogsServiceResponse()
 
@@ -145,11 +147,12 @@ class HttpExporter:
             else:
                 response.ParseFromString(content)
         except Exception:  # noqa: BLE001
-            return 0, ''
+            return 0, '', True
 
         return (
             response.partial_success.rejected_log_records,
             response.partial_success.error_message,
+            False,
         )
 
     async def send(self, body: bytes, records: int) -> ExportResult:
@@ -188,13 +191,16 @@ class HttpExporter:
 
         if response.is_success:
             content = await response.aread()
-            rejected, message = self._read_partial_success(content)
+            rejected, message, body_unparsable = self._read_partial_success(
+                content
+            )
             rejected = min(max(rejected, 0), records)
 
             return ExportResult(
                 accepted=records - rejected,
                 rejected=rejected,
                 message=message,
+                body_unparsable=body_unparsable,
             )
 
         content = await response.aread()
