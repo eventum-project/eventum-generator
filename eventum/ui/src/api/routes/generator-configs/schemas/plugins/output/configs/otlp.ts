@@ -2,6 +2,7 @@ import z from 'zod';
 
 import { orPlaceholder } from '../../../placeholder';
 import { BaseOutputPluginConfigSchema } from '../base-config';
+import { Format } from '../formatters';
 
 export const OTLP_PROTOCOLS = ['http/protobuf', 'http/json'];
 export const OTLP_COMPRESSIONS = ['none', 'gzip'];
@@ -31,7 +32,24 @@ export const OtlpOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend(
     client_cert_key: z.string().min(1).nullable().optional(),
     proxy_url: orPlaceholder(z.httpUrl()).nullable().optional(),
   }
-);
+).superRefine((config, ctx) => {
+  const format = config.formatter?.format;
+
+  if (
+    format === Format.JSONBatch ||
+    format === Format.TemplateBatch ||
+    format === Format.EventumHTTPInput
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['formatter', 'format'],
+      message:
+        'This formatter produces one string for the whole batch, but ' +
+        'otlp maps every event to its own record. Choose a per-event ' +
+        'formatter instead.',
+    });
+  }
+});
 export type OtlpOutputPluginConfig = z.infer<
   typeof OtlpOutputPluginConfigSchema
 >;
