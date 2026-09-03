@@ -62,11 +62,13 @@ class HttpExporter:
             if self._config.protocol == 'http/json'
             else PROTOBUF_CONTENT_TYPE
         )
+        managed_headers = {'content-type', 'content-encoding'}
         headers = {
-            **self._config.headers,
-            'Content-Type': content_type,
+            key: value
+            for key, value in self._config.headers.items()
+            if key.lower() not in managed_headers
         }
-        headers.pop('Content-Encoding', None)
+        headers['Content-Type'] = content_type
 
         if self._config.compression == 'gzip':
             headers['Content-Encoding'] = GZIP_CONTENT_ENCODING

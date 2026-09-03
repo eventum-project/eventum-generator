@@ -288,3 +288,52 @@ async def test_plugin_drops_user_content_encoding_when_not_compressing(
         _sent_request(httpx_mock).resource_logs[0].scope_logs[0].log_records
     )
     assert records[0].body.string_value == '{"message": "hi"}'
+
+
+@pytest.mark.asyncio
+async def test_plugin_drops_lowercase_user_content_encoding(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(
+            compression='none',
+            headers={'content-encoding': 'gzip'},
+        ),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    await plugin.write(['{"message": "hi"}'])
+    await plugin.close()
+
+    request = httpx_mock.get_requests()[0]
+    assert 'content-encoding' not in request.headers
+
+    records = (
+        _sent_request(httpx_mock).resource_logs[0].scope_logs[0].log_records
+    )
+    assert records[0].body.string_value == '{"message": "hi"}'
+
+
+@pytest.mark.asyncio
+async def test_plugin_overrides_lowercase_user_content_type(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(
+            protocol='http/json',
+            headers={'content-type': 'text/plain'},
+        ),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    await plugin.write(['{"message": "hi"}'])
+    await plugin.close()
+
+    request = httpx_mock.get_requests()[0]
+    assert request.headers['content-type'] == 'application/json'
