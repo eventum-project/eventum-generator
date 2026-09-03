@@ -106,6 +106,12 @@ def test_parse_timestamp_returns_none_for_garbage():
     assert parse_timestamp(None) is None
 
 
+def test_parse_timestamp_returns_none_for_out_of_range():
+    assert parse_timestamp('1969-12-31T00:00:00+00:00') is None
+    assert parse_timestamp(-1_772_000_625) is None
+    assert parse_timestamp(2**64) is None
+
+
 def test_parse_severity_maps_names():
     assert parse_severity('info') == (9, 'info')
     assert parse_severity('WARNING') == (13, 'WARNING')
@@ -149,6 +155,19 @@ def test_unparsable_timestamp_falls_back_and_is_counted():
     params = MappingParams(flatten=True, timestamp_path=('@timestamp',))
     batch = map_events(
         ['{"@timestamp": "yesterday"}'],
+        params,
+        observed_ns=_OBSERVED_NS,
+    )
+    records = batch.requests[0].resource_logs[0].scope_logs[0].log_records
+
+    assert records[0].time_unix_nano == _OBSERVED_NS
+    assert batch.fallback_timestamps == 1
+
+
+def test_pre_epoch_timestamp_falls_back_and_is_counted():
+    params = MappingParams(flatten=True, timestamp_path=('@timestamp',))
+    batch = map_events(
+        ['{"@timestamp": "1969-12-31T00:00:00+00:00"}'],
         params,
         observed_ns=_OBSERVED_NS,
     )

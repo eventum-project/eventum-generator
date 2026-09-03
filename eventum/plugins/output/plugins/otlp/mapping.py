@@ -56,6 +56,9 @@ _SECONDS_MAX = 10**11
 _MILLISECONDS_MAX = 10**14
 _MICROSECONDS_MAX = 10**17
 
+_NS_MIN = 0
+_NS_MAX = 2**64 - 1
+
 _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 
 _MISSING = object()
@@ -279,6 +282,27 @@ def _drop(data: dict, path: tuple[str, ...]) -> dict:
     return {**data, head: _drop(nested, tuple(rest))}
 
 
+def _checked_ns(nanoseconds: int) -> int | None:
+    """Return nanoseconds when they fit an unsigned 64-bit field.
+
+    Parameters
+    ----------
+    nanoseconds : int
+        Value to check.
+
+    Returns
+    -------
+    int | None
+        `nanoseconds` unchanged, or `None` when it falls outside the
+        range a protobuf `fixed64` can carry.
+
+    """
+    if _NS_MIN <= nanoseconds <= _NS_MAX:
+        return nanoseconds
+
+    return None
+
+
 def parse_timestamp(value: object) -> int | None:
     """Convert a field value to unix nanoseconds.
 
@@ -291,7 +315,8 @@ def parse_timestamp(value: object) -> int | None:
     Returns
     -------
     int | None
-        Unix nanoseconds, or `None` when the value carries no time.
+        Unix nanoseconds, or `None` when the value carries no time or
+        the result does not fit an unsigned 64-bit field.
 
     """
     match value:
@@ -309,7 +334,7 @@ def parse_timestamp(value: object) -> int | None:
             else:
                 multiplier = 1
 
-            return int(value * multiplier)
+            return _checked_ns(int(value * multiplier))
         case str():
             try:
                 parsed = datetime.fromisoformat(value)
@@ -321,9 +346,11 @@ def parse_timestamp(value: object) -> int | None:
 
             delta = parsed - _EPOCH
 
-            return (
+            nanoseconds = (
                 delta.days * 86_400 + delta.seconds
             ) * 10**9 + delta.microseconds * 10**3
+
+            return _checked_ns(nanoseconds)
         case _:
             return None
 
