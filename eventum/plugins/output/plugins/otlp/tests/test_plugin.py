@@ -261,3 +261,30 @@ async def test_plugin_exporter_headers_win_over_user_headers(
     request = httpx_mock.get_requests()[0]
     assert request.headers['content-type'] == 'application/json'
     assert request.headers['content-encoding'] == 'gzip'
+
+
+@pytest.mark.asyncio
+async def test_plugin_drops_user_content_encoding_when_not_compressing(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(
+            compression='none',
+            headers={'Content-Encoding': 'gzip'},
+        ),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    await plugin.write(['{"message": "hi"}'])
+    await plugin.close()
+
+    request = httpx_mock.get_requests()[0]
+    assert 'content-encoding' not in request.headers
+
+    records = (
+        _sent_request(httpx_mock).resource_logs[0].scope_logs[0].log_records
+    )
+    assert records[0].body.string_value == '{"message": "hi"}'

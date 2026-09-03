@@ -30,8 +30,9 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
         Address of the OTLP receiver, `/v1/logs` is appended when the
         address carries no path.
 
-    protocol : Literal['http/protobuf', 'http/json'], default='http/protobuf'
-        Wire encoding of the request body.
+    protocol : Literal['http/protobuf', 'http/json']
+        Wire encoding of the request body, `'http/protobuf'` by
+        default.
 
     compression : Literal['none', 'gzip'], default='none'
         Compression applied to the request body.

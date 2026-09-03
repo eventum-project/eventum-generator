@@ -66,6 +66,7 @@ class HttpExporter:
             **self._config.headers,
             'Content-Type': content_type,
         }
+        headers.pop('Content-Encoding', None)
 
         if self._config.compression == 'gzip':
             headers['Content-Encoding'] = GZIP_CONTENT_ENCODING
