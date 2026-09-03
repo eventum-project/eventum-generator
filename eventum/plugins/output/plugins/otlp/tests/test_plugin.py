@@ -1,8 +1,8 @@
 import gzip
 import json
-from types import SimpleNamespace
 
 import pytest
+import structlog
 from opentelemetry.proto.collector.logs.v1.logs_service_pb2 import (
     ExportLogsServiceRequest,
     ExportLogsServiceResponse,
@@ -409,26 +409,66 @@ async def test_plugin_reports_failures_grouped(httpx_mock: HTTPXMock):
         config=_config(max_request_bytes=8000),
         params={'id': 1},
     )
-    logged: list[tuple[str, dict]] = []
-
-    async def capture(message, **context):
-        logged.append((message, context))
-
-    stand_in = SimpleNamespace(
-        aerror=capture,
-        awarning=capture,
-        adebug=capture,
-    )
-    plugin._logger = stand_in  # type: ignore[assignment]  # noqa: SLF001
 
     event = '{"blob": "' + 'x' * 2000 + '"}'
 
-    await plugin.open()
-    written = await plugin.write([event] * 10)
-    await plugin.close()
+    with structlog.testing.capture_logs() as logged:
+        await plugin.open()
+        written = await plugin.write([event] * 10)
+        await plugin.close()
 
     assert written == 0
     assert len(httpx_mock.get_requests()) > 1
-    errors = [entry for entry in logged if entry[1].get('http_status') == 503]
+    errors = [entry for entry in logged if entry.get('http_status') == 503]
     assert len(errors) == 1
-    assert errors[0][1]['count'] == 10
+    assert errors[0]['count'] == 10
+
+
+@pytest.mark.asyncio
+async def test_plugin_logs_partial_success_once(httpx_mock: HTTPXMock):
+    response = ExportLogsServiceResponse()
+    response.partial_success.rejected_log_records = 3
+    response.partial_success.error_message = 'three dropped'
+
+    httpx_mock.add_response(
+        url=_LOGS_URL,
+        status_code=200,
+        content=response.SerializeToString(),
+    )
+
+    plugin = OtlpOutputPlugin(config=_config(), params={'id': 1})
+
+    with structlog.testing.capture_logs() as logged:
+        await plugin.open()
+        await plugin.write(['{"a": 1}'] * 5)
+        await plugin.close()
+
+    partial = [
+        entry
+        for entry in logged
+        if entry['event'] == 'OTLP receiver reported a partial success'
+    ]
+    assert len(partial) == 1
+    assert partial[0]['count'] == 3
+    assert partial[0]['reason'] == 'three dropped'
+
+
+@pytest.mark.asyncio
+async def test_plugin_logs_no_partial_success_when_fully_accepted(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(config=_config(), params={'id': 1})
+
+    with structlog.testing.capture_logs() as logged:
+        await plugin.open()
+        await plugin.write(['{"a": 1}'])
+        await plugin.close()
+
+    partial = [
+        entry
+        for entry in logged
+        if entry['event'] == 'OTLP receiver reported a partial success'
+    ]
+    assert len(partial) == 0
