@@ -1,0 +1,142 @@
+"""Definition of otlp output plugin."""
+
+import asyncio
+import time
+from collections.abc import Sequence
+from typing import override
+
+from eventum.plugins.exceptions import PluginConfigurationError
+from eventum.plugins.output.base.plugin import (
+    OutputPlugin,
+    OutputPluginParams,
+)
+from eventum.plugins.output.http_client import create_ssl_context
+from eventum.plugins.output.plugins.otlp.config import OtlpOutputPluginConfig
+from eventum.plugins.output.plugins.otlp.exporters.base import (
+    Exporter,
+    ExportResult,
+)
+from eventum.plugins.output.plugins.otlp.exporters.http import HttpExporter
+from eventum.plugins.output.plugins.otlp.mapping import (
+    MappedBatch,
+    MappingParams,
+    map_events,
+)
+
+LOGS_PATH = '/v1/logs'
+
+
+def build_logs_url(endpoint: str) -> str:
+    """Build URL of the logs endpoint.
+
+    Parameters
+    ----------
+    endpoint : str
+        Address of the receiver.
+
+    Returns
+    -------
+    str
+        Address with the logs path appended when the address carries
+        no path of its own.
+
+    """
+    trimmed = endpoint.rstrip('/')
+    path = trimmed.partition('://')[2].partition('/')[2]
+
+    if path:
+        return trimmed
+
+    return f'{trimmed}{LOGS_PATH}'
+
+
+class OtlpOutputPlugin(
+    OutputPlugin[OtlpOutputPluginConfig, OutputPluginParams],
+):
+    """Output plugin for sending events as OTLP log records."""
+
+    @override
+    def __init__(
+        self,
+        config: OtlpOutputPluginConfig,
+        params: OutputPluginParams,
+    ) -> None:
+        super().__init__(config, params)
+
+        try:
+            ssl_context = create_ssl_context(
+                verify=config.verify,
+                ca_cert=(
+                    self.resolve_path(config.ca_cert)
+                    if config.ca_cert
+                    else None
+                ),
+                client_cert=(
+                    self.resolve_path(config.client_cert)
+                    if config.client_cert
+                    else None
+                ),
+                client_key=(
+                    self.resolve_path(config.client_cert_key)
+                    if config.client_cert_key
+                    else None
+                ),
+            )
+        except OSError as e:
+            msg = 'Failed to create SSL context'
+            raise PluginConfigurationError(
+                msg,
+                context={'reason': str(e)},
+            ) from e
+
+        self._url = build_logs_url(str(config.endpoint))
+        self._mapping_params = MappingParams(flatten=True)
+        self._exporter: Exporter = HttpExporter(
+            config=config,
+            ssl_context=ssl_context,
+            url=self._url,
+        )
+
+    @override
+    async def _open(self) -> None:
+        await self._exporter.open()
+
+    @override
+    async def _close(self) -> None:
+        await self._exporter.close()
+
+    def _prepare(self, events: Sequence[str]) -> list[tuple[bytes, int]]:
+        """Map events and encode them into request bodies."""
+        batch: MappedBatch = map_events(
+            events,
+            self._mapping_params,
+            observed_ns=time.time_ns(),
+        )
+
+        return [
+            (self._exporter.encode(request), records)
+            for request, records in zip(
+                batch.requests,
+                batch.records_per_request,
+                strict=True,
+            )
+        ]
+
+    @override
+    async def _write(self, events: Sequence[str]) -> int:
+        payloads = await asyncio.to_thread(self._prepare, events)
+
+        written = 0
+
+        for body, records in payloads:
+            result: ExportResult = await self._exporter.send(body, records)
+            written += result.accepted
+
+            if result.failure is not None:
+                await self._logger.aerror(
+                    result.failure.message,
+                    count=records,
+                    **result.failure.context,
+                )
+
+        return written

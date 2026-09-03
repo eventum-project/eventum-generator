@@ -66,6 +66,7 @@ dependencies = [
     "mimesis>=19.0.0",
     "msgspec>=0.20.0",
     "numpy>=2.4.2",
+    "opentelemetry-proto>=1.44.0",
     "psutil>=7.2.2",
     "pwinput>=1.0.3",
     "pydantic>=2.12.5",
