@@ -429,6 +429,28 @@ def test_oversized_batch_splits_into_several_requests():
     )
 
 
+def test_split_keeps_several_records_per_request_within_budget():
+    event = '{"pad": "AAAA"}'
+    batch = map_events(
+        [event] * 40,
+        _params(),
+        observed_ns=_OBSERVED_NS,
+        max_request_bytes=220,
+    )
+
+    assert len(batch.requests) > 1
+    assert sum(batch.records_per_request) == 40
+    assert any(count > 1 for count in batch.records_per_request)
+    assert all(
+        request.ByteSize() <= 220 or count == 1
+        for request, count in zip(
+            batch.requests,
+            batch.records_per_request,
+            strict=True,
+        )
+    )
+
+
 def test_unbounded_batch_stays_in_one_request():
     event = '{"blob": "' + 'x' * 2000 + '"}'
     batch = map_events([event] * 10, _params(), observed_ns=_OBSERVED_NS)

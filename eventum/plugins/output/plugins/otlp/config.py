@@ -95,7 +95,6 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
     max_request_bytes : int, default=4194304
         Approximate byte budget of a single request, records of one
         write are split across several requests to stay within it.
-        Must be at least 1024.
 
     Notes
     -----
