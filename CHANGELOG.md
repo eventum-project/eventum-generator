@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### 🚀 New Features
+
+- **Added the `otlp` output plugin** — delivers events to any OpenTelemetry receiver as OTLP log records over HTTP, with event fields as typed attributes and records grouped per resource
+
 ## 2.8.0 (2026-08-29)
 
 ### 🚀 New Features
