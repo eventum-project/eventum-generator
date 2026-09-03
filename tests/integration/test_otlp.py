@@ -337,6 +337,7 @@ class TestCliGenerate:
     called directly from a test process.
     """
 
+    @pytest.mark.e2e
     async def test_generate_writes_expected_records(
         self,
         tmp_path,

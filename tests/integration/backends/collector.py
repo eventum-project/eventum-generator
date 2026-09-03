@@ -41,6 +41,14 @@ class CollectorConsumer(BackendConsumer):
     truncate; the container's lifecycle (started and stopped around
     the whole test session) is what bounds its size.
 
+    Unlike the OpenSearch index, ClickHouse table or Kafka topic
+    consumers, this one carves out no per-test namespace of its
+    own - every instance reads the same file. The offset recorded
+    at `setup` only orders tests correctly when they run one after
+    another: this module must stay single-worker (no `-n auto` /
+    xdist), the same requirement the browser-test suite states for
+    its own single shared backend.
+
     """
 
     def __init__(self, output_path: Path) -> None:

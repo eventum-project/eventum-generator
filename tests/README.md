@@ -114,4 +114,6 @@ uv run pytest tests/ --no-cov -vs --test-report=/tmp/report.html
 
 **Kafka not reachable** — KRaft mode, external listener on port 9094. Verify `KAFKA_BOOTSTRAP=localhost:9094`.
 
+**otelcol output grows on disk** — its `file` exporter appends across every run and `docker compose down` does not clear a bind mount (only named/anonymous volumes). Reclaim disk with `rm -rf tests/docker/otelcol/output`.
+
 **Performance numbers vary** — hardware-dependent. No assertions on absolute values.
