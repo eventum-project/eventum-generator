@@ -92,6 +92,11 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
         Whether to flatten nested objects into dotted attribute
         keys, `False` keeps their nested shape.
 
+    max_request_bytes : int, default=4194304
+        Approximate byte budget of a single request, records of one
+        write are split across several requests to stay within it.
+        Must be at least 1024.
+
     Notes
     -----
     Events are mapped to log records one by one, so formatters that
@@ -120,6 +125,7 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
     resource_attributes_from: dict[str, str] = Field(default_factory=dict)
     body_field: str | None = Field(default=None, min_length=1)
     flatten_attributes: bool = Field(default=True)
+    max_request_bytes: int = Field(default=4 * 1024 * 1024, ge=1024)
     formatter: FormatterConfigT = Field(
         default_factory=lambda: SimpleFormatterConfig(format=Format.PLAIN),
         validate_default=True,

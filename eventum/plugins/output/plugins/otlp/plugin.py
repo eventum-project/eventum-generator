@@ -115,6 +115,7 @@ class OtlpOutputPlugin(
             ssl_context=ssl_context,
             url=self._url,
         )
+        self._max_request_bytes = config.max_request_bytes
 
     @override
     async def _open(self) -> None:
@@ -133,6 +134,7 @@ class OtlpOutputPlugin(
             events,
             self._mapping_params,
             observed_ns=time.time_ns(),
+            max_request_bytes=self._max_request_bytes,
         )
 
         payloads = [
@@ -175,6 +177,13 @@ class OtlpOutputPlugin(
                 'Events without the configured body field were written '
                 'with the whole event as the body',
                 count=batch.missing_bodies,
+            )
+
+        if payloads and batch.oversized_records:
+            await self._logger.awarning(
+                'Records larger than the request size limit were sent '
+                'on their own and may be rejected by the receiver',
+                count=batch.oversized_records,
             )
 
         return written

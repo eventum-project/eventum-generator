@@ -405,3 +405,84 @@ def test_null_body_field_falls_back_to_the_event():
 
     assert records[0].body.string_value == '{"a": null}'
     assert batch.missing_bodies == 1
+
+
+def test_oversized_batch_splits_into_several_requests():
+    event = '{"blob": "' + 'x' * 2000 + '"}'
+    batch = map_events(
+        [event] * 10,
+        _params(),
+        observed_ns=_OBSERVED_NS,
+        max_request_bytes=8000,
+    )
+
+    assert len(batch.requests) > 1
+    assert sum(batch.records_per_request) == 10
+    assert batch.records == 10
+    assert all(
+        request.ByteSize() <= 8000 or count == 1
+        for request, count in zip(
+            batch.requests,
+            batch.records_per_request,
+            strict=True,
+        )
+    )
+
+
+def test_unbounded_batch_stays_in_one_request():
+    event = '{"blob": "' + 'x' * 2000 + '"}'
+    batch = map_events([event] * 10, _params(), observed_ns=_OBSERVED_NS)
+
+    assert len(batch.requests) == 1
+    assert batch.records_per_request == [10]
+    assert batch.oversized_records == 0
+
+
+def test_oversized_record_gets_its_own_request_and_is_counted():
+    event = '{"blob": "' + 'x' * 2000 + '"}'
+    batch = map_events(
+        [event],
+        _params(),
+        observed_ns=_OBSERVED_NS,
+        max_request_bytes=1024,
+    )
+
+    assert len(batch.requests) == 1
+    assert batch.records_per_request == [1]
+    assert batch.oversized_records == 1
+
+
+def test_split_never_mixes_resources_and_keeps_first_seen_order():
+    params = MappingParams(
+        flatten=True,
+        resource_paths=(('host.name', ('host', 'name')),),
+    )
+    blob = 'x' * 2000
+    events = [
+        f'{{"host": {{"name": "srv-1"}}, "blob": "{blob}"}}',
+        f'{{"host": {{"name": "srv-2"}}, "blob": "{blob}"}}',
+        f'{{"host": {{"name": "srv-1"}}, "blob": "{blob}"}}',
+    ]
+    batch = map_events(
+        events,
+        params,
+        observed_ns=_OBSERVED_NS,
+        max_request_bytes=4200,
+    )
+
+    assert sum(batch.records_per_request) == 3
+
+    seen_names: list[str] = []
+
+    for request in batch.requests:
+        for resource_logs in request.resource_logs:
+            names = {
+                kv.value.string_value
+                for kv in resource_logs.resource.attributes
+                if kv.key == 'host.name'
+            }
+            assert len(names) == 1
+            seen_names.append(next(iter(names)))
+
+    first_seen = list(dict.fromkeys(seen_names))
+    assert first_seen == ['srv-1', 'srv-2']

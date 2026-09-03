@@ -66,6 +66,24 @@ async def test_plugin_counts_failed_request(httpx_mock: HTTPXMock):
 
 
 @pytest.mark.asyncio
+async def test_plugin_splits_oversized_write(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200, is_reusable=True)
+
+    event = '{"blob": "' + 'x' * 2000 + '"}'
+    plugin = OtlpOutputPlugin(
+        config=_config(max_request_bytes=8000),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    written = await plugin.write([event] * 10)
+    await plugin.close()
+
+    assert written == 10
+    assert len(httpx_mock.get_requests()) > 1
+
+
+@pytest.mark.asyncio
 async def test_plugin_appends_logs_path_once(httpx_mock: HTTPXMock):
     httpx_mock.add_response(url=_LOGS_URL, status_code=200)
 

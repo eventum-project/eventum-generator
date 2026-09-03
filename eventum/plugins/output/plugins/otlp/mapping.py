@@ -16,7 +16,11 @@ from opentelemetry.proto.common.v1.common_pb2 import (
     KeyValue,
     KeyValueList,
 )
-from opentelemetry.proto.logs.v1.logs_pb2 import LogRecord, SeverityNumber
+from opentelemetry.proto.logs.v1.logs_pb2 import (
+    LogRecord,
+    ResourceLogs,
+    SeverityNumber,
+)
 from opentelemetry.proto.resource.v1.resource_pb2 import Resource
 
 import eventum
@@ -113,10 +117,12 @@ class MappedBatch:
     Attributes
     ----------
     requests : list[ExportLogsServiceRequest]
-        Requests carrying the mapped records.
+        Requests carrying the mapped records, split so that none of
+        them exceeds the configured request size budget.
 
     records_per_request : list[int]
-        Number of records each request carries.
+        Number of records each request in `requests` carries, one
+        entry per request, in the same order.
 
     records : int
         Number of records across all requests.
@@ -129,6 +135,10 @@ class MappedBatch:
         Number of records whose body fell back to the whole event,
         since the event carried no usable value at the body path.
 
+    oversized_records : int
+        Number of records that alone exceed the request size budget.
+        Each was still sent, alone in a request of its own.
+
     """
 
     requests: list[ExportLogsServiceRequest] = field(default_factory=list)
@@ -136,6 +146,7 @@ class MappedBatch:
     records: int = 0
     fallback_timestamps: int = 0
     missing_bodies: int = 0
+    oversized_records: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -640,11 +651,135 @@ def _merge_resource_attributes(
     return list(attributes.values())
 
 
+def _group_envelope(resource: Resource, scope: InstrumentationScope) -> int:
+    """Size the empty `ResourceLogs` entry of one group.
+
+    Parameters
+    ----------
+    resource : Resource
+        Resource of the group.
+
+    scope : InstrumentationScope
+        Scope of the group.
+
+    Returns
+    -------
+    int
+        Protobuf byte size of a `ResourceLogs` entry carrying
+        `resource` and `scope` with no records yet, counted once per
+        group rather than once per record.
+
+    """
+    skeleton = ResourceLogs(resource=resource)
+    skeleton.scope_logs.add().scope.CopyFrom(scope)
+
+    return skeleton.ByteSize()
+
+
+def _pack_requests(
+    groups: dict[tuple[tuple[str, object], ...], list[LogRecord]],
+    base_attributes: tuple[KeyValue, ...],
+    max_request_bytes: int | None,
+) -> tuple[list[ExportLogsServiceRequest], list[int], int]:
+    """Pack grouped records into requests within the size budget.
+
+    A new request starts whenever adding the next record would push
+    the current request's estimated size past `max_request_bytes`. A
+    record that alone exceeds the budget is still added, alone in a
+    request of its own. A new group never joins a `ResourceLogs`
+    entry created for another group, even when the current request
+    has room left.
+
+    Parameters
+    ----------
+    groups : dict[tuple[tuple[str, object], ...], list[LogRecord]]
+        Records to pack, grouped by resource, in the order each
+        resource first appeared.
+
+    base_attributes : tuple[KeyValue, ...]
+        Attributes every resource of the plugin carries.
+
+    max_request_bytes : int | None
+        Approximate byte budget of a single request, `None` puts
+        every record into one request regardless of size.
+
+    Returns
+    -------
+    tuple[list[ExportLogsServiceRequest], list[int], int]
+        Requests, the number of records each of them carries in the
+        same order, and the number of records that alone exceeded
+        the budget.
+
+    """
+    requests: list[ExportLogsServiceRequest] = []
+    records_per_request: list[int] = []
+    oversized_records = 0
+
+    request = ExportLogsServiceRequest()
+    request_size = 0
+    request_records = 0
+
+    def flush() -> None:
+        nonlocal request, request_size, request_records
+
+        if request_records:
+            requests.append(request)
+            records_per_request.append(request_records)
+
+        request = ExportLogsServiceRequest()
+        request_size = 0
+        request_records = 0
+
+    scope = _scope()
+
+    for lifted, records in groups.items():
+        resource = Resource(
+            attributes=_merge_resource_attributes(base_attributes, lifted),
+        )
+        envelope = _group_envelope(resource, scope)
+        group_entry: ResourceLogs | None = None
+
+        for record in records:
+            record_size = record.ByteSize()
+            addition = record_size + (0 if group_entry else envelope)
+
+            must_split = (
+                max_request_bytes is not None
+                and request_records
+                and request_size + addition > max_request_bytes
+            )
+            if must_split:
+                flush()
+                group_entry = None
+                addition = record_size + envelope
+
+            is_oversized = (
+                max_request_bytes is not None
+                and envelope + record_size > max_request_bytes
+            )
+            if is_oversized:
+                oversized_records += 1
+
+            if group_entry is None:
+                group_entry = request.resource_logs.add()
+                group_entry.resource.CopyFrom(resource)
+                group_entry.scope_logs.add().scope.CopyFrom(scope)
+
+            group_entry.scope_logs[0].log_records.append(record)
+            request_size += addition
+            request_records += 1
+
+    flush()
+
+    return requests, records_per_request, oversized_records
+
+
 def map_events(
     events: Sequence[str],
     params: MappingParams,
     *,
     observed_ns: int,
+    max_request_bytes: int | None = None,
 ) -> MappedBatch:
     """Map events to OTLP export requests.
 
@@ -659,12 +794,29 @@ def map_events(
     observed_ns : int
         Time of writing in unix nanoseconds.
 
+    max_request_bytes : int | None, default=None
+        Approximate byte budget of a single request. `None` puts
+        every record into one request regardless of size.
+
     Returns
     -------
     MappedBatch
         Requests carrying the mapped records, grouped into one
         `ResourceLogs` entry per distinct resource, in the order each
-        resource first appeared.
+        resource first appeared, and split so that none of them
+        exceeds `max_request_bytes`.
+
+    Notes
+    -----
+    The budget is checked against the protobuf `ByteSize()` of the
+    request under construction, with the size of a group's
+    `ResourceLogs` and `ScopeLogs` wrappers counted once per group
+    rather than once per record. This is an approximation, not an
+    exact accounting of what goes over the wire: it ignores the few
+    bytes each record and each `ResourceLogs` entry adds once
+    embedded in the request, and it does not reflect `http/json`
+    encoding, which is larger than protobuf, or gzip compression,
+    which is smaller.
 
     """
     if not events:
@@ -685,26 +837,17 @@ def map_events(
 
         groups.setdefault(result.lifted, []).append(result.record)
 
-    request = ExportLogsServiceRequest()
-
-    for lifted, records in groups.items():
-        resource_logs = request.resource_logs.add()
-        resource_logs.resource.CopyFrom(
-            Resource(
-                attributes=_merge_resource_attributes(
-                    params.resource_attributes,
-                    lifted,
-                ),
-            ),
-        )
-        scope_logs = resource_logs.scope_logs.add()
-        scope_logs.scope.CopyFrom(_scope())
-        scope_logs.log_records.extend(records)
+    requests, records_per_request, oversized_records = _pack_requests(
+        groups,
+        params.resource_attributes,
+        max_request_bytes,
+    )
 
     return MappedBatch(
-        requests=[request],
-        records_per_request=[len(events)],
+        requests=requests,
+        records_per_request=records_per_request,
         records=len(events),
         fallback_timestamps=fallback_timestamps,
         missing_bodies=missing_bodies,
+        oversized_records=oversized_records,
     )
