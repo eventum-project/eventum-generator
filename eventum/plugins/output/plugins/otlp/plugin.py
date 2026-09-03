@@ -22,6 +22,7 @@ from eventum.plugins.output.plugins.otlp.mapping import (
     MappedBatch,
     MappingParams,
     map_events,
+    parse_path,
 )
 
 LOGS_PATH = '/v1/logs'
@@ -92,7 +93,11 @@ class OtlpOutputPlugin(
             ) from e
 
         self._url = build_logs_url(str(config.endpoint))
-        self._mapping_params = MappingParams(flatten=True)
+        self._mapping_params = MappingParams(
+            flatten=True,
+            timestamp_path=parse_path(config.timestamp_field),
+            severity_path=parse_path(config.severity_field),
+        )
         self._exporter: Exporter = HttpExporter(
             config=config,
             ssl_context=ssl_context,
@@ -107,7 +112,10 @@ class OtlpOutputPlugin(
     async def _close(self) -> None:
         await self._exporter.close()
 
-    def _prepare(self, events: Sequence[str]) -> list[tuple[bytes, int]]:
+    def _prepare(
+        self,
+        events: Sequence[str],
+    ) -> tuple[MappedBatch, list[tuple[bytes, int]]]:
         """Map events and encode them into request bodies."""
         batch: MappedBatch = map_events(
             events,
@@ -115,7 +123,7 @@ class OtlpOutputPlugin(
             observed_ns=time.time_ns(),
         )
 
-        return [
+        payloads = [
             (self._exporter.encode(request), records)
             for request, records in zip(
                 batch.requests,
@@ -124,9 +132,11 @@ class OtlpOutputPlugin(
             )
         ]
 
+        return batch, payloads
+
     @override
     async def _write(self, events: Sequence[str]) -> int:
-        payloads = await asyncio.to_thread(self._prepare, events)
+        batch, payloads = await asyncio.to_thread(self._prepare, events)
 
         written = 0
 
@@ -140,5 +150,12 @@ class OtlpOutputPlugin(
                     count=records,
                     **result.failure.context,
                 )
+
+        if payloads and batch.fallback_timestamps:
+            await self._logger.awarning(
+                'Events without a usable timestamp were written with '
+                'the time of writing',
+                count=batch.fallback_timestamps,
+            )
 
         return written

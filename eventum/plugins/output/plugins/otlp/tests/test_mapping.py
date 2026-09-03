@@ -3,10 +3,14 @@ import math
 from eventum.plugins.output.plugins.otlp.mapping import (
     MappingParams,
     map_events,
+    parse_path,
+    parse_severity,
+    parse_timestamp,
     to_any_value,
 )
 
 _OBSERVED_NS = 1_700_000_000_000_000_000
+_ISO_NS = 1_772_005_425_123_456_000
 
 
 def _params(**kwargs) -> MappingParams:
@@ -80,3 +84,81 @@ def test_non_json_event_carries_no_attributes():
 
     assert records[0].body.string_value == 'plain line'
     assert list(records[0].attributes) == []
+
+
+def test_parse_timestamp_reads_iso_with_offset():
+    assert parse_timestamp('2026-02-25T07:43:45.123456+00:00') == _ISO_NS
+
+
+def test_parse_timestamp_reads_naive_iso_as_utc():
+    assert parse_timestamp('2026-02-25T07:43:45.123456') == _ISO_NS
+
+
+def test_parse_timestamp_reads_units_by_magnitude():
+    assert parse_timestamp(1_772_000_625) == 1_772_000_625_000_000_000
+    assert parse_timestamp(1_772_000_625_123) == 1_772_000_625_123_000_000
+    assert parse_timestamp(1_772_000_625_123_456) == 1_772_000_625_123_456_000
+    assert parse_timestamp(_ISO_NS) == _ISO_NS
+
+
+def test_parse_timestamp_returns_none_for_garbage():
+    assert parse_timestamp('yesterday') is None
+    assert parse_timestamp(None) is None
+
+
+def test_parse_severity_maps_names():
+    assert parse_severity('info') == (9, 'info')
+    assert parse_severity('WARNING') == (13, 'WARNING')
+    assert parse_severity('critical') == (18, 'critical')
+
+
+def test_parse_severity_keeps_unknown_text():
+    assert parse_severity('spam') == (0, 'spam')
+
+
+def test_parse_severity_takes_number_as_is():
+    assert parse_severity(17) == (17, '')
+
+
+def test_record_takes_time_and_severity_from_fields():
+    params = MappingParams(
+        flatten=True,
+        timestamp_path=('@timestamp',),
+        severity_path=('log', 'level'),
+    )
+    records = _records(
+        [
+            '{"@timestamp": "2026-02-25T07:43:45.123456+00:00",'
+            ' "log": {"level": "warn"}, "message": "hi"}',
+        ],
+        params,
+    )
+
+    assert records[0].time_unix_nano == _ISO_NS
+    assert records[0].observed_time_unix_nano == _OBSERVED_NS
+    assert records[0].severity_number == 13
+    assert records[0].severity_text == 'warn'
+
+    attributes = {kv.key: kv.value for kv in records[0].attributes}
+    assert '@timestamp' not in attributes
+    assert 'log.level' not in attributes
+    assert attributes['message'].string_value == 'hi'
+
+
+def test_unparsable_timestamp_falls_back_and_is_counted():
+    params = MappingParams(flatten=True, timestamp_path=('@timestamp',))
+    batch = map_events(
+        ['{"@timestamp": "yesterday"}'],
+        params,
+        observed_ns=_OBSERVED_NS,
+    )
+    records = batch.requests[0].resource_logs[0].scope_logs[0].log_records
+
+    assert records[0].time_unix_nano == _OBSERVED_NS
+    assert batch.fallback_timestamps == 1
+
+
+def test_parse_path_splits_dotted_field():
+    assert parse_path('log.level') == ('log', 'level')
+    assert parse_path('@timestamp') == ('@timestamp',)
+    assert parse_path(None) is None

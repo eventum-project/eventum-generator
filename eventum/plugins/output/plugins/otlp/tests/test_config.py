@@ -18,6 +18,13 @@ def test_config_defaults():
     assert config.headers == {}
 
 
+def test_config_takes_ecs_fields_by_default():
+    config = OtlpOutputPluginConfig(endpoint=HttpUrl('http://localhost:4318'))
+
+    assert config.timestamp_field == '@timestamp'
+    assert config.severity_field == 'log.level'
+
+
 @pytest.mark.parametrize(
     'formatter',
     [

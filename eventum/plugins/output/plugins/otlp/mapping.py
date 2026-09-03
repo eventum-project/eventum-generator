@@ -3,6 +3,7 @@
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 
 import msgspec
 from opentelemetry.proto.collector.logs.v1.logs_service_pb2 import (
@@ -15,7 +16,7 @@ from opentelemetry.proto.common.v1.common_pb2 import (
     KeyValue,
     KeyValueList,
 )
-from opentelemetry.proto.logs.v1.logs_pb2 import LogRecord
+from opentelemetry.proto.logs.v1.logs_pb2 import LogRecord, SeverityNumber
 
 import eventum
 
@@ -24,7 +25,40 @@ INT64_MAX = 2**63 - 1
 
 SCOPE_NAME = 'eventum'
 
+SEVERITY_NUMBERS = {
+    'trace': 1,
+    'debug': 5,
+    'verbose': 5,
+    'info': 9,
+    'information': 9,
+    'informational': 9,
+    'notice': 10,
+    'warn': 13,
+    'warning': 13,
+    'error': 17,
+    'err': 17,
+    'severe': 17,
+    'critical': 18,
+    'crit': 18,
+    'alert': 19,
+    'fatal': 21,
+    'panic': 21,
+    'emergency': 22,
+    'emerg': 22,
+}
+
+SEVERITY_NUMBER_MIN = 1
+SEVERITY_NUMBER_MAX = 24
+
 _DECODER = msgspec.json.Decoder()
+
+_SECONDS_MAX = 10**11
+_MILLISECONDS_MAX = 10**14
+_MICROSECONDS_MAX = 10**17
+
+_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+
+_MISSING = object()
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,9 +70,19 @@ class MappingParams:
     flatten : bool
         Whether to flatten nested objects into dotted attribute keys.
 
+    timestamp_path : tuple[str, ...] | None
+        Path of the field carrying the record time, `None` when the
+        time of writing should always be used.
+
+    severity_path : tuple[str, ...] | None
+        Path of the field carrying the record severity, `None` when
+        no severity should be read from the event.
+
     """
 
     flatten: bool
+    timestamp_path: tuple[str, ...] | None = None
+    severity_path: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,11 +100,34 @@ class MappedBatch:
     records : int
         Number of records across all requests.
 
+    fallback_timestamps : int
+        Number of records whose time fell back to the time of
+        writing, since the event carried no usable timestamp.
+
     """
 
     requests: list[ExportLogsServiceRequest] = field(default_factory=list)
     records_per_request: list[int] = field(default_factory=list)
     records: int = 0
+    fallback_timestamps: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class _RecordResult:
+    """Result of mapping a single event to a log record.
+
+    Attributes
+    ----------
+    record : LogRecord
+        Mapped record.
+
+    fallback_timestamp : bool
+        Whether the record's time fell back to the time of writing.
+
+    """
+
+    record: LogRecord
+    fallback_timestamp: bool
 
 
 def _int_any_value(value: int) -> AnyValue:
@@ -161,6 +228,132 @@ def to_attributes(data: dict, *, flatten: bool) -> list[KeyValue]:
     return attributes
 
 
+def parse_path(value: str | None) -> tuple[str, ...] | None:
+    """Split a dotted field path into its parts.
+
+    Parameters
+    ----------
+    value : str | None
+        Dotted field path, or `None` when no field is configured.
+
+    Returns
+    -------
+    tuple[str, ...] | None
+        Parts of the path, `None` when `value` is `None`.
+
+    """
+    if value is None:
+        return None
+
+    return tuple(value.split('.'))
+
+
+def _lookup(data: dict, path: tuple[str, ...]) -> object:
+    """Get the value at the path, `_MISSING` when it is absent."""
+    current: object = data
+
+    for part in path:
+        if not isinstance(current, dict) or part not in current:
+            return _MISSING
+
+        current = current[part]
+
+    return current
+
+
+def _drop(data: dict, path: tuple[str, ...]) -> dict:
+    """Return a copy of data without the value at the path."""
+    head, *rest = path
+
+    if head not in data:
+        return data
+
+    if not rest:
+        return {key: value for key, value in data.items() if key != head}
+
+    nested = data[head]
+
+    if not isinstance(nested, dict):
+        return data
+
+    return {**data, head: _drop(nested, tuple(rest))}
+
+
+def parse_timestamp(value: object) -> int | None:
+    """Convert a field value to unix nanoseconds.
+
+    Parameters
+    ----------
+    value : object
+        Value to convert, an ISO 8601 string or a number whose unit is
+        taken from its magnitude.
+
+    Returns
+    -------
+    int | None
+        Unix nanoseconds, or `None` when the value carries no time.
+
+    """
+    match value:
+        case bool():
+            return None
+        case int() | float():
+            magnitude = abs(value)
+
+            if magnitude < _SECONDS_MAX:
+                multiplier = 10**9
+            elif magnitude < _MILLISECONDS_MAX:
+                multiplier = 10**6
+            elif magnitude < _MICROSECONDS_MAX:
+                multiplier = 10**3
+            else:
+                multiplier = 1
+
+            return int(value * multiplier)
+        case str():
+            try:
+                parsed = datetime.fromisoformat(value)
+            except ValueError:
+                return None
+
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=UTC)
+
+            delta = parsed - _EPOCH
+
+            return (
+                delta.days * 86_400 + delta.seconds
+            ) * 10**9 + delta.microseconds * 10**3
+        case _:
+            return None
+
+
+def parse_severity(value: object) -> tuple[int, str]:
+    """Convert a field value to severity number and text.
+
+    Parameters
+    ----------
+    value : object
+        Value to convert.
+
+    Returns
+    -------
+    tuple[int, str]
+        Severity number and severity text, the number is `0` when the
+        value names no known severity.
+
+    """
+    match value:
+        case bool():
+            return 0, str(value)
+        case int() if SEVERITY_NUMBER_MIN <= value <= SEVERITY_NUMBER_MAX:
+            return value, ''
+        case str():
+            return SEVERITY_NUMBERS.get(value.strip().lower(), 0), value
+        case _:
+            return 0, ''
+
+
 def _scope() -> InstrumentationScope:
     """Build scope identifying Eventum."""
     return InstrumentationScope(
@@ -173,8 +366,15 @@ def _to_record(
     event: str,
     params: MappingParams,
     observed_ns: int,
-) -> LogRecord:
-    """Map a single event to a log record."""
+) -> _RecordResult:
+    """Map a single event to a log record.
+
+    Returns
+    -------
+    _RecordResult
+        Record and whether its time fell back to the time of writing.
+
+    """
     record = LogRecord(
         observed_time_unix_nano=observed_ns,
         time_unix_nano=observed_ns,
@@ -184,14 +384,43 @@ def _to_record(
     try:
         data = _DECODER.decode(event)
     except msgspec.DecodeError:
-        return record
+        return _RecordResult(record=record, fallback_timestamp=False)
 
     if not isinstance(data, dict):
-        return record
+        return _RecordResult(record=record, fallback_timestamp=False)
+
+    fallback = False
+    consumed: list[tuple[str, ...]] = []
+
+    if params.timestamp_path is not None:
+        value = _lookup(data, params.timestamp_path)
+
+        if value is not _MISSING:
+            consumed.append(params.timestamp_path)
+            timestamp = parse_timestamp(value)
+
+            if timestamp is None:
+                fallback = True
+            else:
+                record.time_unix_nano = timestamp
+        else:
+            fallback = True
+
+    if params.severity_path is not None:
+        value = _lookup(data, params.severity_path)
+
+        if value is not _MISSING:
+            consumed.append(params.severity_path)
+            number, text = parse_severity(value)
+            record.severity_number = SeverityNumber.ValueType(number)
+            record.severity_text = text
+
+    for path in consumed:
+        data = _drop(data, path)
 
     record.attributes.extend(to_attributes(data, flatten=params.flatten))
 
-    return record
+    return _RecordResult(record=record, fallback_timestamp=fallback)
 
 
 def map_events(
@@ -227,13 +456,18 @@ def map_events(
     scope_logs = resource_logs.scope_logs.add()
     scope_logs.scope.CopyFrom(_scope())
 
+    fallback_timestamps = 0
+
     for event in events:
-        scope_logs.log_records.append(
-            _to_record(event, params, observed_ns),
-        )
+        result = _to_record(event, params, observed_ns)
+        scope_logs.log_records.append(result.record)
+
+        if result.fallback_timestamp:
+            fallback_timestamps += 1
 
     return MappedBatch(
         requests=[request],
         records_per_request=[len(events)],
         records=len(events),
+        fallback_timestamps=fallback_timestamps,
     )

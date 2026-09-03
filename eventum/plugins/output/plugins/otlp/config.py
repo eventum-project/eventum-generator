@@ -54,6 +54,14 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
     proxy_url : HttpUrl | None, default=None
         HTTP(S) proxy address.
 
+    timestamp_field : str | None, default='@timestamp'
+        Dotted path of the event field carrying the record time.
+        `None` means the time of writing is always used.
+
+    severity_field : str | None, default='log.level'
+        Dotted path of the event field carrying the record severity.
+        `None` means no severity is read from the event.
+
     Notes
     -----
     Events are mapped to log records one by one, so formatters that
@@ -70,6 +78,8 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
     client_cert: Path | None = Field(default=None)
     client_cert_key: Path | None = Field(default=None)
     proxy_url: HttpUrl | None = Field(default=None)
+    timestamp_field: str | None = Field(default='@timestamp', min_length=1)
+    severity_field: str | None = Field(default='log.level', min_length=1)
     formatter: FormatterConfigT = Field(
         default_factory=lambda: SimpleFormatterConfig(format=Format.PLAIN),
         validate_default=True,
