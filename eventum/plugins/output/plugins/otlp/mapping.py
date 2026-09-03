@@ -342,7 +342,13 @@ def _lookup(data: dict, path: tuple[str, ...]) -> object:
 
 
 def _drop(data: dict, path: tuple[str, ...]) -> dict:
-    """Return a copy of data without the value at the path."""
+    """Return a copy of data without the value at the path.
+
+    A mapping left empty by the removal is dropped in turn, at every
+    level along the path, so consuming a leaf never leaves behind an
+    empty parent attribute.
+
+    """
     head, *rest = path
 
     if head not in data:
@@ -356,7 +362,12 @@ def _drop(data: dict, path: tuple[str, ...]) -> dict:
     if not isinstance(nested, dict):
         return data
 
-    return {**data, head: _drop(nested, tuple(rest))}
+    dropped = _drop(nested, tuple(rest))
+
+    if not dropped:
+        return {key: value for key, value in data.items() if key != head}
+
+    return {**data, head: dropped}
 
 
 def _checked_ns(nanoseconds: int) -> int | None:
@@ -398,6 +409,8 @@ def parse_timestamp(value: object) -> int | None:
     """
     match value:
         case bool():
+            return None
+        case float() if not math.isfinite(value):
             return None
         case int() | float():
             magnitude = abs(value)
@@ -444,7 +457,9 @@ def parse_severity(value: object) -> tuple[int, str]:
     -------
     tuple[int, str]
         Severity number and severity text, the number is `0` when the
-        value names no known severity.
+        value names no known severity. Whenever the number cannot be
+        determined, the text carries the value's string form instead
+        of being left empty, so the value is not lost.
 
     """
     match value:
@@ -452,10 +467,12 @@ def parse_severity(value: object) -> tuple[int, str]:
             return 0, str(value)
         case int() if SEVERITY_NUMBER_MIN <= value <= SEVERITY_NUMBER_MAX:
             return value, ''
+        case int() | float():
+            return 0, str(value)
         case str():
             return SEVERITY_NUMBERS.get(value.strip().lower(), 0), value
         case _:
-            return 0, ''
+            return 0, str(value)
 
 
 def _scope() -> InstrumentationScope:
@@ -651,44 +668,251 @@ def _merge_resource_attributes(
     return list(attributes.values())
 
 
-def _group_envelope(resource: Resource, scope: InstrumentationScope) -> int:
-    """Size the empty `ResourceLogs` entry of one group.
+def _varint_len(value: int) -> int:
+    """Length in bytes of `value` encoded as a protobuf unsigned varint.
 
     Parameters
     ----------
-    resource : Resource
-        Resource of the group.
-
-    scope : InstrumentationScope
-        Scope of the group.
+    value : int
+        Non-negative value to measure, a byte count in every call
+        site of this module.
 
     Returns
     -------
     int
-        Protobuf byte size of a `ResourceLogs` entry carrying
-        `resource` and `scope` with no records yet, counted once per
-        group rather than once per record.
+        Number of bytes the varint encoding takes.
 
     """
-    skeleton = ResourceLogs(resource=resource)
-    skeleton.scope_logs.add().scope.CopyFrom(scope)
+    length = 1
+    value >>= 7
 
-    return skeleton.ByteSize()
+    while value:
+        length += 1
+        value >>= 7
+
+    return length
+
+
+def _framed_size(content_size: int) -> int:
+    """Bytes a length-delimited field of `content_size` adds once
+    embedded in its parent message: one tag byte plus the varint
+    encoding of the length, on top of the content itself.
+
+    Parameters
+    ----------
+    content_size : int
+        Byte size of the field's content, without its own tag and
+        length prefix.
+
+    Returns
+    -------
+    int
+        Total bytes the field contributes to its parent.
+
+    Notes
+    -----
+    Every field this module frames (`resource`, `scope`, a log
+    record, a `ScopeLogs` entry, a `ResourceLogs` entry) has a field
+    number below 16, so its tag always fits a single byte.
+
+    """
+    return 1 + _varint_len(content_size) + content_size
+
+
+@dataclass(frozen=True, slots=True)
+class _PackResult:
+    """Result of packing grouped records into requests.
+
+    Attributes
+    ----------
+    requests : list[ExportLogsServiceRequest]
+        Requests carrying the packed records.
+
+    records_per_request : list[int]
+        Number of records each request in `requests` carries, one
+        entry per request, in the same order.
+
+    oversized_records : int
+        Number of records that alone exceed the request size budget.
+
+    """
+
+    requests: list[ExportLogsServiceRequest]
+    records_per_request: list[int]
+    oversized_records: int
+
+
+@dataclass(frozen=True, slots=True)
+class _PackingContext:
+    """Values constant across every group being packed.
+
+    Attributes
+    ----------
+    scope : InstrumentationScope
+        Scope every record is reported under.
+
+    scope_field_frame : int
+        Bytes the `scope` field contributes once embedded in a
+        `ScopeLogs` entry with no records yet.
+
+    max_request_bytes : int | None
+        Approximate byte budget of a single request, `None` puts
+        every record into one request regardless of size.
+
+    """
+
+    scope: InstrumentationScope
+    scope_field_frame: int
+    max_request_bytes: int | None
+
+
+@dataclass(slots=True)
+class _Packer:
+    """Requests accumulated so far, plus the one under construction.
+
+    Attributes
+    ----------
+    request : ExportLogsServiceRequest
+        Request accumulating records until it is flushed.
+
+    requests : list[ExportLogsServiceRequest]
+        Completed requests, in the order they were flushed.
+
+    records_per_request : list[int]
+        Record counts of `requests`, one entry per request in the
+        same order.
+
+    size : int
+        Exact protobuf byte size `request` will have once flushed.
+
+    records : int
+        Number of records `request` carries so far.
+
+    """
+
+    request: ExportLogsServiceRequest
+    requests: list[ExportLogsServiceRequest] = field(default_factory=list)
+    records_per_request: list[int] = field(default_factory=list)
+    size: int = 0
+    records: int = 0
+
+
+def _flush(packer: _Packer) -> None:
+    """Move a non-empty request under construction into `packer`'s
+    output lists and reset it to a fresh, empty request.
+    """
+    if packer.records:
+        packer.requests.append(packer.request)
+        packer.records_per_request.append(packer.records)
+
+    packer.request = ExportLogsServiceRequest()
+    packer.size = 0
+    packer.records = 0
+
+
+def _pack_group(
+    packer: _Packer,
+    context: _PackingContext,
+    resource: Resource,
+    records: list[LogRecord],
+) -> int:
+    """Pack one group's records into `packer`, splitting into further
+    requests as needed.
+
+    Parameters
+    ----------
+    packer : _Packer
+        Requests accumulated so far, mutated in place: records are
+        appended to its request under construction, which is flushed
+        into its output lists whenever the budget forces a split.
+
+    context : _PackingContext
+        Values constant across every group of this call.
+
+    resource : Resource
+        Resource of the group.
+
+    records : list[LogRecord]
+        Records of the group, in encounter order.
+
+    Returns
+    -------
+    int
+        Number of records in the group that alone exceed the budget.
+
+    """
+    max_request_bytes = context.max_request_bytes
+    scope_field_frame = context.scope_field_frame
+
+    group_entry: ResourceLogs | None = None
+    scope_logs_content = 0
+    group_frame_size = 0
+    oversized_records = 0
+    resource_frame_size = _framed_size(resource.ByteSize())
+
+    for record in records:
+        record_size = record.ByteSize()
+        record_frame_size = _framed_size(record_size)
+        fresh_content = scope_field_frame + record_frame_size
+        fresh_frame_size = _framed_size(
+            resource_frame_size + _framed_size(fresh_content),
+        )
+
+        if group_entry is None:
+            candidate_content = fresh_content
+            candidate_frame_size = fresh_frame_size
+        else:
+            candidate_content = scope_logs_content + record_frame_size
+            candidate_frame_size = _framed_size(
+                resource_frame_size + _framed_size(candidate_content),
+            )
+
+        addition = candidate_frame_size - group_frame_size
+
+        must_split = (
+            max_request_bytes is not None
+            and packer.records
+            and packer.size + addition > max_request_bytes
+        )
+        if must_split:
+            _flush(packer)
+            group_entry = None
+            candidate_content = fresh_content
+            candidate_frame_size = fresh_frame_size
+            addition = candidate_frame_size
+
+        if max_request_bytes is not None and (
+            fresh_frame_size > max_request_bytes
+        ):
+            oversized_records += 1
+
+        if group_entry is None:
+            group_entry = packer.request.resource_logs.add()
+            group_entry.resource.CopyFrom(resource)
+            group_entry.scope_logs.add().scope.CopyFrom(context.scope)
+
+        group_entry.scope_logs[0].log_records.append(record)
+        scope_logs_content = candidate_content
+        group_frame_size = candidate_frame_size
+        packer.size += addition
+        packer.records += 1
+
+    return oversized_records
 
 
 def _pack_requests(
     groups: dict[tuple[tuple[str, object], ...], list[LogRecord]],
     base_attributes: tuple[KeyValue, ...],
     max_request_bytes: int | None,
-) -> tuple[list[ExportLogsServiceRequest], list[int], int]:
+) -> _PackResult:
     """Pack grouped records into requests within the size budget.
 
     A new request starts whenever adding the next record would push
-    the current request's estimated size past `max_request_bytes`. A
-    record that alone exceeds the budget is still added, alone in a
-    request of its own. A new group never joins a `ResourceLogs`
-    entry created for another group, even when the current request
-    has room left.
+    the current request's size past `max_request_bytes`. A record
+    that alone exceeds the budget is still added, alone in a request
+    of its own. A new group never joins a `ResourceLogs` entry
+    created for another group, even when the current request has
+    room left.
 
     Parameters
     ----------
@@ -705,73 +929,34 @@ def _pack_requests(
 
     Returns
     -------
-    tuple[list[ExportLogsServiceRequest], list[int], int]
+    _PackResult
         Requests, the number of records each of them carries in the
         same order, and the number of records that alone exceeded
         the budget.
 
     """
-    requests: list[ExportLogsServiceRequest] = []
-    records_per_request: list[int] = []
-    oversized_records = 0
-
-    request = ExportLogsServiceRequest()
-    request_size = 0
-    request_records = 0
-
-    def flush() -> None:
-        nonlocal request, request_size, request_records
-
-        if request_records:
-            requests.append(request)
-            records_per_request.append(request_records)
-
-        request = ExportLogsServiceRequest()
-        request_size = 0
-        request_records = 0
-
     scope = _scope()
+    context = _PackingContext(
+        scope=scope,
+        scope_field_frame=_framed_size(scope.ByteSize()),
+        max_request_bytes=max_request_bytes,
+    )
+    packer = _Packer(request=ExportLogsServiceRequest())
+    oversized_records = 0
 
     for lifted, records in groups.items():
         resource = Resource(
             attributes=_merge_resource_attributes(base_attributes, lifted),
         )
-        envelope = _group_envelope(resource, scope)
-        group_entry: ResourceLogs | None = None
+        oversized_records += _pack_group(packer, context, resource, records)
 
-        for record in records:
-            record_size = record.ByteSize()
-            addition = record_size + (0 if group_entry else envelope)
+    _flush(packer)
 
-            must_split = (
-                max_request_bytes is not None
-                and request_records
-                and request_size + addition > max_request_bytes
-            )
-            if must_split:
-                flush()
-                group_entry = None
-                addition = record_size + envelope
-
-            is_oversized = (
-                max_request_bytes is not None
-                and envelope + record_size > max_request_bytes
-            )
-            if is_oversized:
-                oversized_records += 1
-
-            if group_entry is None:
-                group_entry = request.resource_logs.add()
-                group_entry.resource.CopyFrom(resource)
-                group_entry.scope_logs.add().scope.CopyFrom(scope)
-
-            group_entry.scope_logs[0].log_records.append(record)
-            request_size += addition
-            request_records += 1
-
-    flush()
-
-    return requests, records_per_request, oversized_records
+    return _PackResult(
+        requests=packer.requests,
+        records_per_request=packer.records_per_request,
+        oversized_records=oversized_records,
+    )
 
 
 def map_events(
@@ -808,13 +993,10 @@ def map_events(
 
     Notes
     -----
-    The budget is checked against the protobuf `ByteSize()` of the
-    request under construction, with the size of a group's
-    `ResourceLogs` and `ScopeLogs` wrappers counted once per group
-    rather than once per record. This is an approximation, not an
-    exact accounting of what goes over the wire: it ignores the few
-    bytes each record and each `ResourceLogs` entry adds once
-    embedded in the request, and it does not reflect `http/json`
+    The budget is checked against the exact protobuf byte size the
+    request under construction will have once flushed, including the
+    tag and length prefix each record and each `ResourceLogs` entry
+    adds once embedded in it. This still does not reflect `http/json`
     encoding, which is larger than protobuf, or gzip compression,
     which is smaller.
 
@@ -837,17 +1019,17 @@ def map_events(
 
         groups.setdefault(result.lifted, []).append(result.record)
 
-    requests, records_per_request, oversized_records = _pack_requests(
+    pack_result = _pack_requests(
         groups,
         params.resource_attributes,
         max_request_bytes,
     )
 
     return MappedBatch(
-        requests=requests,
-        records_per_request=records_per_request,
+        requests=pack_result.requests,
+        records_per_request=pack_result.records_per_request,
         records=len(events),
         fallback_timestamps=fallback_timestamps,
         missing_bodies=missing_bodies,
-        oversized_records=oversized_records,
+        oversized_records=pack_result.oversized_records,
     )
