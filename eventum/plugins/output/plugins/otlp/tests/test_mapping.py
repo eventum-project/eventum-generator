@@ -114,6 +114,12 @@ def test_parse_timestamp_returns_none_for_out_of_range():
     assert parse_timestamp(2**64) is None
 
 
+def test_parse_timestamp_returns_none_for_non_finite_float():
+    assert parse_timestamp(math.inf) is None
+    assert parse_timestamp(math.nan) is None
+    assert parse_timestamp(-math.inf) is None
+
+
 def test_parse_severity_maps_names():
     assert parse_severity('info') == (9, 'info')
     assert parse_severity('WARNING') == (13, 'WARNING')
@@ -126,6 +132,21 @@ def test_parse_severity_keeps_unknown_text():
 
 def test_parse_severity_takes_number_as_is():
     assert parse_severity(17) == (17, '')
+
+
+def test_parse_severity_out_of_range_number_keeps_text():
+    # 0 is the realistic trigger: a syslog severity code (0-7) read
+    # through severity_field, below this module's SEVERITY_NUMBER_MIN.
+    assert parse_severity(0) == (0, '0')
+    assert parse_severity(99) == (0, '99')
+
+
+def test_parse_severity_float_keeps_text():
+    assert parse_severity(9.5) == (0, '9.5')
+
+
+def test_parse_severity_fallback_keeps_text():
+    assert parse_severity(None) == (0, 'None')
 
 
 def test_record_takes_time_and_severity_from_fields():
@@ -508,3 +529,52 @@ def test_split_never_mixes_resources_and_keeps_first_seen_order():
 
     first_seen = list(dict.fromkeys(seen_names))
     assert first_seen == ['srv-1', 'srv-2']
+
+
+def test_split_stays_within_budget_with_protobuf_framing_accounted():
+    # At this record count and the default budget, the tag byte and
+    # length varint each record and each ResourceLogs entry adds once
+    # embedded in the request is no longer a few bytes of slack: an
+    # accounting that ignores it drifts past the budget it is meant
+    # to enforce.
+    event = '{"blob": "' + 'x' * 360 + '"}'
+    budget = 4 * 1024 * 1024
+    batch = map_events(
+        [event] * 12000,
+        _params(),
+        observed_ns=_OBSERVED_NS,
+        max_request_bytes=budget,
+    )
+
+    assert len(batch.requests) > 1
+    assert sum(batch.records_per_request) == 12000
+    assert batch.records == 12000
+    assert all(request.ByteSize() <= budget for request in batch.requests)
+
+
+def test_consumed_leaf_drops_empty_parent_without_flattening():
+    params = MappingParams(flatten=False, severity_path=('log', 'level'))
+    records = _records(['{"log": {"level": "warn"}}'], params)
+
+    assert list(records[0].attributes) == []
+
+
+def test_consumed_leaf_drops_empty_grandparent_without_flattening():
+    params = MappingParams(flatten=False, body_path=('a', 'b', 'c'))
+    records = _records(['{"a": {"b": {"c": "v"}}, "n": 1}'], params)
+
+    attributes = {kv.key: kv.value for kv in records[0].attributes}
+    assert 'a' not in attributes
+    assert attributes['n'].int_value == 1
+
+
+def test_consumed_leaf_keeps_sibling_fields_in_parent():
+    params = MappingParams(flatten=False, severity_path=('log', 'level'))
+    records = _records(
+        ['{"log": {"level": "warn", "logger": "app"}}'],
+        params,
+    )
+
+    attributes = {kv.key: kv.value for kv in records[0].attributes}
+    nested = attributes['log'].kvlist_value.values
+    assert [kv.key for kv in nested] == ['logger']

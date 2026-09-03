@@ -10,6 +10,7 @@ from opentelemetry.proto.collector.logs.v1.logs_service_pb2 import (
 from pydantic import HttpUrl
 from pytest_httpx import HTTPXMock
 
+from eventum.plugins.output.exceptions import PluginWriteError
 from eventum.plugins.output.plugins.otlp.config import OtlpOutputPluginConfig
 from eventum.plugins.output.plugins.otlp.plugin import (
     OtlpOutputPlugin,
@@ -472,3 +473,130 @@ async def test_plugin_logs_no_partial_success_when_fully_accepted(
         if entry['event'] == 'OTLP receiver reported a partial success'
     ]
     assert len(partial) == 0
+
+
+@pytest.mark.asyncio
+async def test_plugin_wraps_a_mapping_failure_as_write_error(
+    httpx_mock: HTTPXMock,
+):
+    # A lone surrogate is invalid Unicode: constructing the record's
+    # body raises inside the mapping path, before any request exists.
+    plugin = OtlpOutputPlugin(config=_config(), params={'id': 1})
+
+    await plugin.open()
+    with pytest.raises(PluginWriteError) as exc_info:
+        await plugin.write(['plain line with \ud800 inside'])
+    await plugin.close()
+
+    assert exc_info.value.context['reason']
+    assert len(httpx_mock.get_requests()) == 0
+
+
+@pytest.mark.asyncio
+async def test_plugin_reports_unexpected_send_failure_instead_of_raising(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_exception(RuntimeError('boom'), url=_LOGS_URL)
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200, is_reusable=True)
+
+    event = '{"blob": "' + 'x' * 2000 + '"}'
+    plugin = OtlpOutputPlugin(
+        config=_config(max_request_bytes=8000),
+        params={'id': 1},
+    )
+
+    with structlog.testing.capture_logs() as logged:
+        await plugin.open()
+        written = await plugin.write([event] * 10)
+        await plugin.close()
+
+    assert len(httpx_mock.get_requests()) > 1
+
+    errors = [
+        entry
+        for entry in logged
+        if entry['event'] == 'Failed to send request to OTLP receiver'
+    ]
+    assert len(errors) == 1
+    failed_count = errors[0]['count']
+    assert 0 < failed_count < 10
+    assert written == 10 - failed_count
+
+
+@pytest.mark.asyncio
+async def test_plugin_wires_timestamp_and_severity_from_config(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(config=_config(), params={'id': 1})
+
+    await plugin.open()
+    await plugin.write(
+        [
+            '{"@timestamp": "2026-02-25T07:43:45.123456+00:00",'
+            ' "log": {"level": "warn"}}',
+        ],
+    )
+    await plugin.close()
+
+    scope_logs = _sent_request(httpx_mock).resource_logs[0].scope_logs[0]
+    record = scope_logs.log_records[0]
+
+    assert record.time_unix_nano == 1_772_005_425_123_456_000
+    assert record.severity_number == 13  # noqa: PLR2004
+    assert record.severity_text == 'warn'
+
+
+@pytest.mark.asyncio
+async def test_plugin_wires_body_field_and_flatten_attributes_from_config(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(
+            body_field='message',
+            flatten_attributes=False,
+            severity_field=None,
+        ),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    await plugin.write(['{"message": "hi", "log": {"level": "warn"}}'])
+    await plugin.close()
+
+    scope_logs = _sent_request(httpx_mock).resource_logs[0].scope_logs[0]
+    record = scope_logs.log_records[0]
+
+    assert record.body.string_value == 'hi'
+
+    attributes = {kv.key: kv.value for kv in record.attributes}
+    nested = attributes['log'].kvlist_value.values
+    assert nested[0].key == 'level'
+    assert nested[0].value.string_value == 'warn'
+
+
+@pytest.mark.asyncio
+async def test_plugin_reports_unparsable_success_body(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        url=_LOGS_URL,
+        status_code=200,
+        content=b'\xff\xff\xff',
+    )
+
+    plugin = OtlpOutputPlugin(config=_config(), params={'id': 1})
+
+    with structlog.testing.capture_logs() as logged:
+        await plugin.open()
+        written = await plugin.write(['{"a": 1}'])
+        await plugin.close()
+
+    assert written == 1
+
+    warnings = [
+        entry for entry in logged if 'could not be parsed' in entry['event']
+    ]
+    assert len(warnings) == 1
+    assert warnings[0]['count'] == 1
