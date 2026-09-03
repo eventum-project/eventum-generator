@@ -1,8 +1,10 @@
 """OTLP/HTTP exporter."""
 
+import gzip
 import ssl
 
 import httpx
+from google.protobuf.json_format import MessageToJson
 from opentelemetry.proto.collector.logs.v1.logs_service_pb2 import (
     ExportLogsServiceRequest,
 )
@@ -15,6 +17,8 @@ from eventum.plugins.output.plugins.otlp.exporters.base import (
 )
 
 PROTOBUF_CONTENT_TYPE = 'application/x-protobuf'
+JSON_CONTENT_TYPE = 'application/json'
+GZIP_CONTENT_ENCODING = 'gzip'
 
 
 class HttpExporter:
@@ -53,12 +57,22 @@ class HttpExporter:
 
     async def open(self) -> None:
         """Acquire the resources of the transport."""
+        content_type = (
+            JSON_CONTENT_TYPE
+            if self._config.protocol == 'http/json'
+            else PROTOBUF_CONTENT_TYPE
+        )
+        headers = {
+            **self._config.headers,
+            'Content-Type': content_type,
+        }
+
+        if self._config.compression == 'gzip':
+            headers['Content-Encoding'] = GZIP_CONTENT_ENCODING
+
         self._client = create_client(
             ssl_context=self._ssl_context,
-            headers={
-                **self._config.headers,
-                'Content-Type': PROTOBUF_CONTENT_TYPE,
-            },
+            headers=headers,
             connect_timeout=self._config.connect_timeout,
             request_timeout=self._config.request_timeout,
             proxy_url=(
@@ -88,7 +102,15 @@ class HttpExporter:
         Called from a worker thread, since serialization is CPU bound.
 
         """
-        return request.SerializeToString()
+        if self._config.protocol == 'http/json':
+            body = MessageToJson(request, indent=None).encode()
+        else:
+            body = request.SerializeToString()
+
+        if self._config.compression == 'gzip':
+            return gzip.compress(body)
+
+        return body
 
     async def send(self, body: bytes, records: int) -> ExportResult:
         """Deliver an encoded request carrying `records` records.

@@ -80,3 +80,26 @@ def test_config_rejects_empty_body_field():
             endpoint=HttpUrl('http://localhost:4318'),
             body_field='',
         )
+
+
+def test_config_protocol_and_compression_defaults():
+    config = OtlpOutputPluginConfig(endpoint=HttpUrl('http://localhost:4318'))
+
+    assert config.protocol == 'http/protobuf'
+    assert config.compression == 'none'
+
+
+def test_config_rejects_unknown_protocol():
+    with pytest.raises(ValidationError):
+        OtlpOutputPluginConfig(
+            endpoint=HttpUrl('http://localhost:4318'),
+            protocol='http/xml',
+        )
+
+
+def test_config_rejects_unknown_compression():
+    with pytest.raises(ValidationError):
+        OtlpOutputPluginConfig(
+            endpoint=HttpUrl('http://localhost:4318'),
+            compression='br',
+        )

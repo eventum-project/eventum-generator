@@ -1,3 +1,6 @@
+import gzip
+import json
+
 import pytest
 from opentelemetry.proto.collector.logs.v1.logs_service_pb2 import (
     ExportLogsServiceRequest,
@@ -171,3 +174,90 @@ async def test_plugin_groups_records_by_configured_resource_field(
 
     resource_logs = _sent_request(httpx_mock).resource_logs
     assert len(resource_logs) == 2
+
+
+@pytest.mark.asyncio
+async def test_plugin_sends_json_when_configured(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(protocol='http/json'),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    await plugin.write(['{"message": "hi"}'])
+    await plugin.close()
+
+    request = httpx_mock.get_requests()[0]
+    assert request.headers['content-type'] == 'application/json'
+
+    payload = json.loads(request.content)
+    record = payload['resourceLogs'][0]['scopeLogs'][0]['logRecords'][0]
+    assert record['body']['stringValue'] == '{"message": "hi"}'
+
+
+@pytest.mark.asyncio
+async def test_plugin_sends_compact_json(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(protocol='http/json'),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    await plugin.write(['{"message": "hi"}'])
+    await plugin.close()
+
+    request = httpx_mock.get_requests()[0]
+    assert b'\n' not in request.content
+
+
+@pytest.mark.asyncio
+async def test_plugin_compresses_when_configured(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(compression='gzip'),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    await plugin.write(['{"message": "hi"}'])
+    await plugin.close()
+
+    request = httpx_mock.get_requests()[0]
+    assert request.headers['content-encoding'] == 'gzip'
+
+    decoded = ExportLogsServiceRequest()
+    decoded.ParseFromString(gzip.decompress(request.content))
+    records = decoded.resource_logs[0].scope_logs[0].log_records
+    assert records[0].body.string_value == '{"message": "hi"}'
+
+
+@pytest.mark.asyncio
+async def test_plugin_exporter_headers_win_over_user_headers(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(
+            protocol='http/json',
+            compression='gzip',
+            headers={
+                'Content-Type': 'text/plain',
+                'Content-Encoding': 'br',
+            },
+        ),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    await plugin.write(['{"message": "hi"}'])
+    await plugin.close()
+
+    request = httpx_mock.get_requests()[0]
+    assert request.headers['content-type'] == 'application/json'
+    assert request.headers['content-encoding'] == 'gzip'

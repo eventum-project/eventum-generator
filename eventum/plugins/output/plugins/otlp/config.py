@@ -1,7 +1,7 @@
 """Definition of otlp output plugin config."""
 
 from pathlib import Path
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import Field, HttpUrl, field_validator, model_validator
 
@@ -30,8 +30,16 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
         Address of the OTLP receiver, `/v1/logs` is appended when the
         address carries no path.
 
+    protocol : Literal['http/protobuf', 'http/json'], default='http/protobuf'
+        Wire encoding of the request body.
+
+    compression : Literal['none', 'gzip'], default='none'
+        Compression applied to the request body.
+
     headers : dict[str, str], default={}
-        Extra request headers.
+        Extra request headers. A `Content-Type` or `Content-Encoding`
+        entry is overridden, since both are dictated by `protocol`
+        and `compression`.
 
     connect_timeout : int, default=10
         Connection timeout in seconds.
@@ -91,6 +99,10 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
     """
 
     endpoint: HttpUrl
+    protocol: Literal['http/protobuf', 'http/json'] = Field(
+        default='http/protobuf',
+    )
+    compression: Literal['none', 'gzip'] = Field(default='none')
     headers: dict[str, str] = Field(default_factory=dict)
     connect_timeout: int = Field(default=10, ge=1)
     request_timeout: int = Field(default=300, ge=1)
