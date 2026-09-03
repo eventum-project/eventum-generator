@@ -1,9 +1,11 @@
 import gzip
 import json
+from types import SimpleNamespace
 
 import pytest
 from opentelemetry.proto.collector.logs.v1.logs_service_pb2 import (
     ExportLogsServiceRequest,
+    ExportLogsServiceResponse,
 )
 from pydantic import HttpUrl
 from pytest_httpx import HTTPXMock
@@ -355,3 +357,78 @@ async def test_plugin_overrides_lowercase_user_content_type(
 
     request = httpx_mock.get_requests()[0]
     assert request.headers['content-type'] == 'application/json'
+
+
+@pytest.mark.asyncio
+async def test_plugin_subtracts_rejected_records(httpx_mock: HTTPXMock):
+    response = ExportLogsServiceResponse()
+    response.partial_success.rejected_log_records = 1
+    response.partial_success.error_message = 'one dropped'
+
+    httpx_mock.add_response(
+        url=_LOGS_URL,
+        status_code=200,
+        content=response.SerializeToString(),
+    )
+
+    plugin = OtlpOutputPlugin(config=_config(), params={'id': 1})
+
+    await plugin.open()
+    written = await plugin.write(['{"a": 1}', '{"b": 2}'])
+    await plugin.close()
+
+    assert written == 1
+    assert plugin.write_failed == 1
+
+
+@pytest.mark.asyncio
+async def test_plugin_treats_empty_body_as_full_success(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200, content=b'')
+
+    plugin = OtlpOutputPlugin(config=_config(), params={'id': 1})
+
+    await plugin.open()
+    written = await plugin.write(['{"a": 1}'])
+    await plugin.close()
+
+    assert written == 1
+
+
+@pytest.mark.asyncio
+async def test_plugin_reports_failures_grouped(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        url=_LOGS_URL,
+        status_code=503,
+        text='unavailable',
+        is_reusable=True,
+    )
+
+    plugin = OtlpOutputPlugin(
+        config=_config(max_request_bytes=8000),
+        params={'id': 1},
+    )
+    logged: list[tuple[str, dict]] = []
+
+    async def capture(message, **context):
+        logged.append((message, context))
+
+    stand_in = SimpleNamespace(
+        aerror=capture,
+        awarning=capture,
+        adebug=capture,
+    )
+    plugin._logger = stand_in  # type: ignore[assignment]  # noqa: SLF001
+
+    event = '{"blob": "' + 'x' * 2000 + '"}'
+
+    await plugin.open()
+    written = await plugin.write([event] * 10)
+    await plugin.close()
+
+    assert written == 0
+    assert len(httpx_mock.get_requests()) > 1
+    errors = [entry for entry in logged if entry[1].get('http_status') == 503]
+    assert len(errors) == 1
+    assert errors[0][1]['count'] == 10

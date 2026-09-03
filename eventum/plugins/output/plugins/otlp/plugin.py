@@ -2,7 +2,7 @@
 
 import asyncio
 import time
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import cast, override
 from urllib.parse import urlsplit, urlunsplit
 
@@ -53,6 +53,55 @@ def build_logs_url(endpoint: str) -> str:
         return urlunsplit(parts._replace(path=path))
 
     return urlunsplit(parts._replace(path=LOGS_PATH))
+
+
+class _FailedExports:
+    """Failures of the export requests performed within a single
+    write.
+
+    Notes
+    -----
+    Failures are grouped by their message and status code, so the
+    number of log lines a write produces is bound by the number of
+    distinct failures instead of the number of requests it performs.
+
+    """
+
+    def __init__(self) -> None:
+        self._groups: dict[tuple[str, int | None], tuple[int, dict]] = {}
+
+    def add(self, message: str, records: int, context: dict) -> None:
+        """Add a failed export request.
+
+        Parameters
+        ----------
+        message : str
+            Message of the failure.
+
+        records : int
+            Number of records the failed request carried.
+
+        context : dict
+            Context of the failure.
+
+        """
+        key = (message, context.get('http_status'))
+        count, first_context = self._groups.get(key, (0, context))
+
+        self._groups[key] = (count + records, first_context)
+
+    def groups(self) -> Iterator[tuple[str, int, dict]]:
+        """Iterate over grouped failures.
+
+        Yields
+        ------
+        tuple[str, int, dict]
+            Message, number of records lost across the group and
+            context of the first failure in it.
+
+        """
+        for (message, _), (count, context) in self._groups.items():
+            yield message, count, context
 
 
 class OtlpOutputPlugin(
@@ -148,22 +197,53 @@ class OtlpOutputPlugin(
 
         return batch, payloads
 
+    async def _report_failures(self, failures: _FailedExports) -> None:
+        """Report grouped failures of the export requests.
+
+        Parameters
+        ----------
+        failures : _FailedExports
+            Collected failures of the requests.
+
+        """
+        await asyncio.gather(
+            *[
+                self._logger.aerror(message, count=count, **context)
+                for message, count, context in failures.groups()
+            ],
+        )
+
     @override
     async def _write(self, events: Sequence[str]) -> int:
         batch, payloads = await asyncio.to_thread(self._prepare, events)
 
         written = 0
+        rejected = 0
+        partial_message = ''
+        failures = _FailedExports()
 
         for body, records in payloads:
             result: ExportResult = await self._exporter.send(body, records)
             written += result.accepted
 
             if result.failure is not None:
-                await self._logger.aerror(
+                failures.add(
                     result.failure.message,
-                    count=records,
-                    **result.failure.context,
+                    records,
+                    result.failure.context,
                 )
+            elif result.rejected:
+                rejected += result.rejected
+                partial_message = partial_message or result.message
+
+        await self._report_failures(failures)
+
+        if rejected:
+            await self._logger.awarning(
+                'OTLP receiver reported a partial success',
+                count=rejected,
+                reason=partial_message,
+            )
 
         if payloads and batch.fallback_timestamps:
             await self._logger.awarning(

@@ -38,6 +38,10 @@ class ExportResult:
     rejected : int
         Number of records the receiver rejected.
 
+    message : str
+        Partial success message reported by the receiver, empty
+        when the receiver reported none.
+
     failure : ExportFailure | None
         Failure of the request, `None` when the request succeeded.
 
@@ -45,6 +49,7 @@ class ExportResult:
 
     accepted: int
     rejected: int = 0
+    message: str = ''
     failure: ExportFailure | None = None
 
 

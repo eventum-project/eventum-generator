@@ -4,9 +4,10 @@ import gzip
 import ssl
 
 import httpx
-from google.protobuf.json_format import MessageToJson
+from google.protobuf import json_format
 from opentelemetry.proto.collector.logs.v1.logs_service_pb2 import (
     ExportLogsServiceRequest,
+    ExportLogsServiceResponse,
 )
 
 from eventum.plugins.output.http_client import create_client
@@ -106,7 +107,7 @@ class HttpExporter:
 
         """
         if self._config.protocol == 'http/json':
-            body = MessageToJson(request, indent=None).encode()
+            body = json_format.MessageToJson(request, indent=None).encode()
         else:
             body = request.SerializeToString()
 
@@ -114,6 +115,42 @@ class HttpExporter:
             return gzip.compress(body)
 
         return body
+
+    def _read_partial_success(self, content: bytes) -> tuple[int, str]:
+        """Read the partial success reported in a response body.
+
+        Parameters
+        ----------
+        content : bytes
+            Body of a successful response.
+
+        Returns
+        -------
+        tuple[int, str]
+            Number of records the receiver rejected and the partial
+            success message reported for them. `(0, '')` for an
+            empty body and for a body that fails to parse, since a
+            2xx response has taken the records regardless of whether
+            its body can be read.
+
+        """
+        if not content:
+            return 0, ''
+
+        response = ExportLogsServiceResponse()
+
+        try:
+            if self._config.protocol == 'http/json':
+                json_format.Parse(content.decode(), response)
+            else:
+                response.ParseFromString(content)
+        except Exception:  # noqa: BLE001
+            return 0, ''
+
+        return (
+            response.partial_success.rejected_log_records,
+            response.partial_success.error_message,
+        )
 
     async def send(self, body: bytes, records: int) -> ExportResult:
         """Deliver an encoded request carrying `records` records.
@@ -129,10 +166,12 @@ class HttpExporter:
         Returns
         -------
         ExportResult
-            Result of the delivery: `accepted` equals `records` on a
-            successful response, `failure` is populated and nothing is
-            counted as accepted on a transport error or an
-            unsuccessful response.
+            Result of the delivery: on a successful response,
+            `accepted` and `rejected` split `records` according to
+            the partial success the receiver reported (none of it
+            when the response carries none); `failure` is populated
+            and nothing is counted as accepted on a transport error
+            or an unsuccessful response.
 
         """
         try:
@@ -148,7 +187,15 @@ class HttpExporter:
             )
 
         if response.is_success:
-            return ExportResult(accepted=records)
+            content = await response.aread()
+            rejected, message = self._read_partial_success(content)
+            rejected = min(max(rejected, 0), records)
+
+            return ExportResult(
+                accepted=records - rejected,
+                rejected=rejected,
+                message=message,
+            )
 
         content = await response.aread()
 
