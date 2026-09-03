@@ -62,11 +62,10 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
         Dotted path of the event field carrying the record severity.
         `None` means no severity is read from the event.
 
-    resource_attributes : dict[str, str | int | float | bool], \
-default={}
-        Static attributes added to every resource. Overrides the
-        default `service.name` and `telemetry.sdk.*` attributes when
-        a key collides.
+    resource_attributes : dict[str, str | int | float | bool]
+        Static attributes added to every resource, empty by default.
+        Overrides the default `service.name` and `telemetry.sdk.*`
+        attributes when a key collides.
 
     resource_attributes_from : dict[str, str], default={}
         Resource attribute name mapped to the dotted path of the

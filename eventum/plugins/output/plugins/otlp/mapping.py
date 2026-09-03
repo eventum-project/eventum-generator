@@ -446,9 +446,10 @@ def _lift_resources(
 ) -> tuple[tuple[tuple[str, object], ...], list[tuple[str, ...]]]:
     """Pick scalar values at the given paths for the record's resource.
 
-    A list or dict value is left in place: it stays a record attribute
-    and does not enter the resource key, since only scalars are
-    hashable.
+    A missing, null, list, or dict value is left in place: a null or
+    absent one carries nothing to lift, and a list or dict is not
+    hashable, so none of them can enter the resource key. A null value
+    stays a record attribute, where `to_attributes` drops it.
 
     Returns
     -------
@@ -462,7 +463,12 @@ def _lift_resources(
     for name, path in paths:
         value = _lookup(data, path)
 
-        if value is _MISSING or isinstance(value, list | dict):
+        skip = (
+            value is _MISSING
+            or value is None
+            or isinstance(value, list | dict)
+        )
+        if skip:
             continue
 
         consumed.append(path)
@@ -540,6 +546,38 @@ def _to_record(
     )
 
 
+def _merge_resource_attributes(
+    base: tuple[KeyValue, ...],
+    lifted: tuple[tuple[str, object], ...],
+) -> list[KeyValue]:
+    """Merge lifted values into the resource's base attributes.
+
+    Parameters
+    ----------
+    base : tuple[KeyValue, ...]
+        Attributes every resource of the plugin carries.
+
+    lifted : tuple[tuple[str, object], ...]
+        Values lifted from one group of events, taking precedence
+        over `base` on a key collision since they come from the
+        event itself rather than a plugin-wide default.
+
+    Returns
+    -------
+    list[KeyValue]
+        Merged attributes, `base` order kept and any new lifted key
+        appended after it.
+
+    """
+    attributes: dict[str, KeyValue] = {kv.key: kv for kv in base}
+    attributes.update(
+        (key, KeyValue(key=key, value=to_any_value(value)))
+        for key, value in lifted
+    )
+
+    return list(attributes.values())
+
+
 def map_events(
     events: Sequence[str],
     params: MappingParams,
@@ -587,13 +625,10 @@ def map_events(
         resource_logs = request.resource_logs.add()
         resource_logs.resource.CopyFrom(
             Resource(
-                attributes=[
-                    *params.resource_attributes,
-                    *(
-                        KeyValue(key=key, value=to_any_value(value))
-                        for key, value in lifted
-                    ),
-                ],
+                attributes=_merge_resource_attributes(
+                    params.resource_attributes,
+                    lifted,
+                ),
             ),
         )
         scope_logs = resource_logs.scope_logs.add()

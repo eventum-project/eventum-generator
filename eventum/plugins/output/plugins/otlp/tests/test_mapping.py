@@ -283,3 +283,67 @@ def test_non_scalar_resource_value_stays_in_record_attributes():
     attributes = {kv.key: kv.value for kv in records[0].attributes}
     values = attributes['tags'].array_value.values
     assert [value.string_value for value in values] == ['a', 'b']
+
+
+def test_dict_resource_value_stays_in_record_attributes():
+    params = MappingParams(
+        flatten=True,
+        resource_paths=(('meta', ('meta',)),),
+    )
+    batch = map_events(
+        ['{"meta": {"a": 1}}'],
+        params,
+        observed_ns=_OBSERVED_NS,
+    )
+    resource_logs = batch.requests[0].resource_logs
+
+    assert len(resource_logs) == 1
+    assert 'meta' not in {
+        kv.key for kv in resource_logs[0].resource.attributes
+    }
+
+    records = resource_logs[0].scope_logs[0].log_records
+    attributes = {kv.key: kv.value for kv in records[0].attributes}
+    assert attributes['meta.a'].int_value == 1
+
+
+def test_null_resource_value_is_not_lifted():
+    params = MappingParams(
+        flatten=True,
+        resource_paths=(('host.name', ('host', 'name')),),
+    )
+    batch = map_events(
+        ['{"host": {"name": null}}'],
+        params,
+        observed_ns=_OBSERVED_NS,
+    )
+    resource_logs = batch.requests[0].resource_logs
+
+    assert len(resource_logs) == 1
+    assert 'host.name' not in {
+        kv.key for kv in resource_logs[0].resource.attributes
+    }
+
+    records = resource_logs[0].scope_logs[0].log_records
+    assert 'host.name' not in {kv.key for kv in records[0].attributes}
+
+
+def test_lifted_value_wins_over_static_attribute_with_same_key():
+    params = MappingParams(
+        flatten=True,
+        resource_attributes=build_resource_attributes(
+            static={'host.name': 'static-value'},
+            service_name='svc',
+        ),
+        resource_paths=(('host.name', ('host', 'name')),),
+    )
+    batch = map_events(
+        ['{"host": {"name": "srv-1"}}'],
+        params,
+        observed_ns=_OBSERVED_NS,
+    )
+    resource = batch.requests[0].resource_logs[0].resource
+    matches = [kv for kv in resource.attributes if kv.key == 'host.name']
+
+    assert len(matches) == 1
+    assert matches[0].value.string_value == 'srv-1'
