@@ -4,6 +4,7 @@ import asyncio
 import time
 from collections.abc import Sequence
 from typing import override
+from urllib.parse import urlsplit, urlunsplit
 
 from eventum.plugins.exceptions import PluginConfigurationError
 from eventum.plugins.output.base.plugin import (
@@ -38,16 +39,17 @@ def build_logs_url(endpoint: str) -> str:
     -------
     str
         Address with the logs path appended when the address carries
-        no path of its own.
+        no path of its own; a query or fragment already present is
+        kept after the appended path.
 
     """
-    trimmed = endpoint.rstrip('/')
-    path = trimmed.partition('://')[2].partition('/')[2]
+    parts = urlsplit(endpoint)
+    path = parts.path.rstrip('/')
 
     if path:
-        return trimmed
+        return urlunsplit(parts._replace(path=path))
 
-    return f'{trimmed}{LOGS_PATH}'
+    return urlunsplit(parts._replace(path=LOGS_PATH))
 
 
 class OtlpOutputPlugin(

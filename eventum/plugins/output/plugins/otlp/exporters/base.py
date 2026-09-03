@@ -62,6 +62,16 @@ class Exporter(Protocol):
     def encode(self, request: ExportLogsServiceRequest) -> bytes:
         """Serialize request to the body of a single delivery.
 
+        Parameters
+        ----------
+        request : ExportLogsServiceRequest
+            Request to serialize.
+
+        Returns
+        -------
+        bytes
+            Serialized body of the request.
+
         Notes
         -----
         Called from a worker thread, since serialization is CPU bound.
@@ -70,5 +80,20 @@ class Exporter(Protocol):
         ...
 
     async def send(self, body: bytes, records: int) -> ExportResult:
-        """Deliver an encoded request carrying `records` records."""
+        """Deliver an encoded request carrying `records` records.
+
+        Parameters
+        ----------
+        body : bytes
+            Serialized body of the request to send.
+
+        records : int
+            Number of records the request carries.
+
+        Returns
+        -------
+        ExportResult
+            Result of the delivery.
+
+        """
         ...

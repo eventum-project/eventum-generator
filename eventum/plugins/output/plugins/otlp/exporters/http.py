@@ -73,6 +73,16 @@ class HttpExporter:
     def encode(self, request: ExportLogsServiceRequest) -> bytes:
         """Serialize request to the body of a single delivery.
 
+        Parameters
+        ----------
+        request : ExportLogsServiceRequest
+            Request to serialize.
+
+        Returns
+        -------
+        bytes
+            Serialized body of the request.
+
         Notes
         -----
         Called from a worker thread, since serialization is CPU bound.
@@ -81,7 +91,25 @@ class HttpExporter:
         return request.SerializeToString()
 
     async def send(self, body: bytes, records: int) -> ExportResult:
-        """Deliver an encoded request carrying `records` records."""
+        """Deliver an encoded request carrying `records` records.
+
+        Parameters
+        ----------
+        body : bytes
+            Serialized body of the request to send.
+
+        records : int
+            Number of records the request carries.
+
+        Returns
+        -------
+        ExportResult
+            Result of the delivery: `accepted` equals `records` on a
+            successful response, `failure` is populated and nothing is
+            counted as accepted on a transport error or an
+            unsuccessful response.
+
+        """
         try:
             response = await self._client.post(self._url, content=body)
         except httpx.RequestError as e:

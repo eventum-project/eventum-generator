@@ -6,7 +6,10 @@ from pydantic import HttpUrl
 from pytest_httpx import HTTPXMock
 
 from eventum.plugins.output.plugins.otlp.config import OtlpOutputPluginConfig
-from eventum.plugins.output.plugins.otlp.plugin import OtlpOutputPlugin
+from eventum.plugins.output.plugins.otlp.plugin import (
+    OtlpOutputPlugin,
+    build_logs_url,
+)
 
 _ENDPOINT = 'http://localhost:4318'
 _LOGS_URL = 'http://localhost:4318/v1/logs'
@@ -73,3 +76,10 @@ async def test_plugin_appends_logs_path_once(httpx_mock: HTTPXMock):
     await plugin.close()
 
     assert str(httpx_mock.get_requests()[0].url) == _LOGS_URL
+
+
+def test_build_logs_url_appends_path_before_query():
+    assert (
+        build_logs_url('http://localhost:4318/?api-key=secret')
+        == 'http://localhost:4318/v1/logs?api-key=secret'
+    )
