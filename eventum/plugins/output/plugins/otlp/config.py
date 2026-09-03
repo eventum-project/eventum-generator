@@ -73,6 +73,16 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
         grouped into one resource per distinct combination of
         lifted values.
 
+    body_field : str | None, default=None
+        Dotted path of the event field carrying the record body.
+        `None` means the whole event is always used as the body. A
+        field that is absent or `null` falls back to the whole
+        event.
+
+    flatten_attributes : bool, default=True
+        Whether to flatten nested objects into dotted attribute
+        keys, `False` keeps their nested shape.
+
     Notes
     -----
     Events are mapped to log records one by one, so formatters that
@@ -95,6 +105,8 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
         default_factory=dict,
     )
     resource_attributes_from: dict[str, str] = Field(default_factory=dict)
+    body_field: str | None = Field(default=None, min_length=1)
+    flatten_attributes: bool = Field(default=True)
     formatter: FormatterConfigT = Field(
         default_factory=lambda: SimpleFormatterConfig(format=Format.PLAIN),
         validate_default=True,

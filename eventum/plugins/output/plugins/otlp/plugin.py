@@ -97,7 +97,7 @@ class OtlpOutputPlugin(
         self._url = build_logs_url(str(config.endpoint))
         service_name = params.get('generator_id', DEFAULT_SERVICE_NAME)
         self._mapping_params = MappingParams(
-            flatten=True,
+            flatten=config.flatten_attributes,
             timestamp_path=parse_path(config.timestamp_field),
             severity_path=parse_path(config.severity_field),
             resource_attributes=build_resource_attributes(
@@ -108,6 +108,7 @@ class OtlpOutputPlugin(
                 (name, cast('tuple[str, ...]', parse_path(path)))
                 for name, path in config.resource_attributes_from.items()
             ),
+            body_path=parse_path(config.body_field),
         )
         self._exporter: Exporter = HttpExporter(
             config=config,
@@ -167,6 +168,13 @@ class OtlpOutputPlugin(
                 'Events without a usable timestamp were written with '
                 'the time of writing',
                 count=batch.fallback_timestamps,
+            )
+
+        if payloads and batch.missing_bodies:
+            await self._logger.awarning(
+                'Events without the configured body field were written '
+                'with the whole event as the body',
+                count=batch.missing_bodies,
             )
 
         return written

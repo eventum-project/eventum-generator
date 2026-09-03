@@ -347,3 +347,61 @@ def test_lifted_value_wins_over_static_attribute_with_same_key():
 
     assert len(matches) == 1
     assert matches[0].value.string_value == 'srv-1'
+
+
+def test_body_field_takes_the_value_with_its_type():
+    params = MappingParams(flatten=True, body_path=('event', 'original'))
+    records = _records(
+        ['{"event": {"original": "raw line"}, "n": 1}'],
+        params,
+    )
+
+    assert records[0].body.string_value == 'raw line'
+    attributes = {kv.key: kv.value for kv in records[0].attributes}
+    assert 'event.original' not in attributes
+    assert attributes['n'].int_value == 1
+
+
+def test_body_field_keeps_structured_values_structured():
+    params = MappingParams(flatten=True, body_path=('payload',))
+    records = _records(['{"payload": {"a": 1}}'], params)
+
+    values = records[0].body.kvlist_value.values
+    assert values[0].key == 'a'
+    assert values[0].value.int_value == 1
+
+
+def test_missing_body_field_falls_back_to_the_event():
+    params = MappingParams(flatten=True, body_path=('nope',))
+    batch = map_events(
+        ['{"a": 1}'],
+        params,
+        observed_ns=_OBSERVED_NS,
+    )
+    records = batch.requests[0].resource_logs[0].scope_logs[0].log_records
+
+    assert records[0].body.string_value == '{"a": 1}'
+    assert batch.missing_bodies == 1
+
+
+def test_unflattened_attributes_stay_maps():
+    params = MappingParams(flatten=False)
+    records = _records(['{"host": {"name": "srv-1"}}'], params)
+
+    attributes = {kv.key: kv.value for kv in records[0].attributes}
+    nested = attributes['host'].kvlist_value.values
+    assert nested[0].key == 'name'
+    assert nested[0].value.string_value == 'srv-1'
+
+
+def test_null_body_field_falls_back_to_the_event():
+    params = MappingParams(flatten=True, body_path=('a',))
+    batch = map_events(
+        ['{"a": null}'],
+        params,
+        observed_ns=_OBSERVED_NS,
+    )
+    records = batch.requests[0].resource_logs[0].scope_logs[0].log_records
+
+    assert records[0].body.string_value == '{"a": null}'
+    assert batch.missing_bodies == 1

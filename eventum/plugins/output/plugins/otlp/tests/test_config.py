@@ -65,3 +65,18 @@ def test_config_rejects_empty_resource_path():
             endpoint=HttpUrl('http://localhost:4318'),
             resource_attributes_from={'host.name': ''},
         )
+
+
+def test_config_body_and_flatten_defaults():
+    config = OtlpOutputPluginConfig(endpoint=HttpUrl('http://localhost:4318'))
+
+    assert config.body_field is None
+    assert config.flatten_attributes is True
+
+
+def test_config_rejects_empty_body_field():
+    with pytest.raises(ValidationError):
+        OtlpOutputPluginConfig(
+            endpoint=HttpUrl('http://localhost:4318'),
+            body_field='',
+        )

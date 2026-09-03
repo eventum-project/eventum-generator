@@ -92,6 +92,10 @@ class MappingParams:
         Resource attribute name paired with the dotted path of the
         event field whose value is lifted into it.
 
+    body_path : tuple[str, ...] | None
+        Path of the field carrying the record body, `None` when the
+        whole event should always be used as the body.
+
     """
 
     flatten: bool
@@ -99,6 +103,7 @@ class MappingParams:
     severity_path: tuple[str, ...] | None = None
     resource_attributes: tuple[KeyValue, ...] = ()
     resource_paths: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    body_path: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,12 +125,17 @@ class MappedBatch:
         Number of records whose time fell back to the time of
         writing, since the event carried no usable timestamp.
 
+    missing_bodies : int
+        Number of records whose body fell back to the whole event,
+        since the event carried no usable value at the body path.
+
     """
 
     requests: list[ExportLogsServiceRequest] = field(default_factory=list)
     records_per_request: list[int] = field(default_factory=list)
     records: int = 0
     fallback_timestamps: int = 0
+    missing_bodies: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -143,11 +153,16 @@ class _RecordResult:
     lifted : tuple[tuple[str, object], ...]
         Values lifted from the event into the record's resource.
 
+    missing_body : bool
+        Whether the record's body fell back to the whole event,
+        since the event carried no usable value at the body path.
+
     """
 
     record: LogRecord
     fallback_timestamp: bool
     lifted: tuple[tuple[str, object], ...] = ()
+    missing_body: bool = False
 
 
 def _int_any_value(value: int) -> AnyValue:
@@ -477,6 +492,46 @@ def _lift_resources(
     return tuple(lifted), consumed
 
 
+def _apply_body(
+    record: LogRecord,
+    data: dict,
+    path: tuple[str, ...] | None,
+) -> tuple[bool, tuple[str, ...] | None]:
+    """Set the record's body from the field at the path.
+
+    Parameters
+    ----------
+    record : LogRecord
+        Record whose body is set, left untouched when the path
+        carries no usable value.
+
+    data : dict
+        Event fields to look the value up in.
+
+    path : tuple[str, ...] | None
+        Path of the body field, `None` when the whole event should
+        always be used as the body.
+
+    Returns
+    -------
+    tuple[bool, tuple[str, ...] | None]
+        Whether the body fell back to the whole event, and the path
+        consumed from `data`, `None` when nothing was consumed.
+
+    """
+    if path is None:
+        return False, None
+
+    value = _lookup(data, path)
+
+    if value is _MISSING or value is None:
+        return True, None
+
+    record.body.CopyFrom(to_any_value(value))
+
+    return False, path
+
+
 def _to_record(
     event: str,
     params: MappingParams,
@@ -487,8 +542,9 @@ def _to_record(
     Returns
     -------
     _RecordResult
-        Record, whether its time fell back to the time of writing,
-        and the values lifted into the record's resource.
+        Record, whether its time and body fell back to the time of
+        writing and the whole event respectively, and the values
+        lifted into the record's resource.
 
     """
     record = LogRecord(
@@ -534,6 +590,11 @@ def _to_record(
     lifted, lifted_paths = _lift_resources(data, params.resource_paths)
     consumed.extend(lifted_paths)
 
+    missing_body, body_path = _apply_body(record, data, params.body_path)
+
+    if body_path is not None:
+        consumed.append(body_path)
+
     for path in consumed:
         data = _drop(data, path)
 
@@ -543,6 +604,7 @@ def _to_record(
         record=record,
         fallback_timestamp=fallback,
         lifted=lifted,
+        missing_body=missing_body,
     )
 
 
@@ -610,12 +672,16 @@ def map_events(
 
     groups: dict[tuple[tuple[str, object], ...], list[LogRecord]] = {}
     fallback_timestamps = 0
+    missing_bodies = 0
 
     for event in events:
         result = _to_record(event, params, observed_ns)
 
         if result.fallback_timestamp:
             fallback_timestamps += 1
+
+        if result.missing_body:
+            missing_bodies += 1
 
         groups.setdefault(result.lifted, []).append(result.record)
 
@@ -640,4 +706,5 @@ def map_events(
         records_per_request=[len(events)],
         records=len(events),
         fallback_timestamps=fallback_timestamps,
+        missing_bodies=missing_bodies,
     )
