@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Self
 
-from pydantic import Field, HttpUrl, model_validator
+from pydantic import Field, HttpUrl, field_validator, model_validator
 
 from eventum.plugins.output.base.config import OutputPluginConfig
 from eventum.plugins.output.fields import (
@@ -62,6 +62,18 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
         Dotted path of the event field carrying the record severity.
         `None` means no severity is read from the event.
 
+    resource_attributes : dict[str, str | int | float | bool], \
+default={}
+        Static attributes added to every resource. Overrides the
+        default `service.name` and `telemetry.sdk.*` attributes when
+        a key collides.
+
+    resource_attributes_from : dict[str, str], default={}
+        Resource attribute name mapped to the dotted path of the
+        event field whose value is lifted into it. Records are
+        grouped into one resource per distinct combination of
+        lifted values.
+
     Notes
     -----
     Events are mapped to log records one by one, so formatters that
@@ -80,11 +92,27 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
     proxy_url: HttpUrl | None = Field(default=None)
     timestamp_field: str | None = Field(default='@timestamp', min_length=1)
     severity_field: str | None = Field(default='log.level', min_length=1)
+    resource_attributes: dict[str, str | int | float | bool] = Field(
+        default_factory=dict,
+    )
+    resource_attributes_from: dict[str, str] = Field(default_factory=dict)
     formatter: FormatterConfigT = Field(
         default_factory=lambda: SimpleFormatterConfig(format=Format.PLAIN),
         validate_default=True,
         discriminator='format',
     )
+
+    @field_validator('resource_attributes_from')
+    @classmethod
+    def validate_resource_attributes_from(  # noqa: D102
+        cls,
+        v: dict[str, str],
+    ) -> dict[str, str]:
+        if any(not path for path in v.values()):
+            msg = 'Resource attribute path must not be empty'
+            raise ValueError(msg)
+
+        return v
 
     @model_validator(mode='after')
     def validate_client_cert(self) -> Self:  # noqa: D102

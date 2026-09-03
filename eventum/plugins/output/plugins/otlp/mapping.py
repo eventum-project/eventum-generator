@@ -17,6 +17,7 @@ from opentelemetry.proto.common.v1.common_pb2 import (
     KeyValueList,
 )
 from opentelemetry.proto.logs.v1.logs_pb2 import LogRecord, SeverityNumber
+from opentelemetry.proto.resource.v1.resource_pb2 import Resource
 
 import eventum
 
@@ -24,6 +25,9 @@ INT64_MIN = -(2**63)
 INT64_MAX = 2**63 - 1
 
 SCOPE_NAME = 'eventum'
+
+SERVICE_NAME_KEY = 'service.name'
+DEFAULT_SERVICE_NAME = 'eventum'
 
 SEVERITY_NUMBERS = {
     'trace': 1,
@@ -81,11 +85,20 @@ class MappingParams:
         Path of the field carrying the record severity, `None` when
         no severity should be read from the event.
 
+    resource_attributes : tuple[KeyValue, ...]
+        Attributes every resource of the plugin carries.
+
+    resource_paths : tuple[tuple[str, tuple[str, ...]], ...]
+        Resource attribute name paired with the dotted path of the
+        event field whose value is lifted into it.
+
     """
 
     flatten: bool
     timestamp_path: tuple[str, ...] | None = None
     severity_path: tuple[str, ...] | None = None
+    resource_attributes: tuple[KeyValue, ...] = ()
+    resource_paths: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,10 +140,14 @@ class _RecordResult:
     fallback_timestamp : bool
         Whether the record's time fell back to the time of writing.
 
+    lifted : tuple[tuple[str, object], ...]
+        Values lifted from the event into the record's resource.
+
     """
 
     record: LogRecord
     fallback_timestamp: bool
+    lifted: tuple[tuple[str, object], ...] = ()
 
 
 def _int_any_value(value: int) -> AnyValue:
@@ -229,6 +246,40 @@ def to_attributes(data: dict, *, flatten: bool) -> list[KeyValue]:
         attributes.append(KeyValue(key=str(key), value=to_any_value(value)))
 
     return attributes
+
+
+def build_resource_attributes(
+    static: dict[str, str | int | float | bool],
+    service_name: str,
+) -> tuple[KeyValue, ...]:
+    """Build attributes every resource of the plugin carries.
+
+    Parameters
+    ----------
+    static : dict[str, str | int | float | bool]
+        Attributes from the plugin config.
+
+    service_name : str
+        Name of the service used when the config names none.
+
+    Returns
+    -------
+    tuple[KeyValue, ...]
+        Attributes of the resource.
+
+    """
+    attributes: dict[str, object] = {
+        SERVICE_NAME_KEY: service_name,
+        'telemetry.sdk.name': 'eventum',
+        'telemetry.sdk.language': 'python',
+        'telemetry.sdk.version': eventum.__version__,
+    }
+    attributes.update(static)
+
+    return tuple(
+        KeyValue(key=key, value=to_any_value(value))
+        for key, value in attributes.items()
+    )
 
 
 def parse_path(value: str | None) -> tuple[str, ...] | None:
@@ -389,6 +440,37 @@ def _scope() -> InstrumentationScope:
     )
 
 
+def _lift_resources(
+    data: dict,
+    paths: tuple[tuple[str, tuple[str, ...]], ...],
+) -> tuple[tuple[tuple[str, object], ...], list[tuple[str, ...]]]:
+    """Pick scalar values at the given paths for the record's resource.
+
+    A list or dict value is left in place: it stays a record attribute
+    and does not enter the resource key, since only scalars are
+    hashable.
+
+    Returns
+    -------
+    tuple[tuple[tuple[str, object], ...], list[tuple[str, ...]]]
+        Lifted name/value pairs, and the paths consumed from `data`.
+
+    """
+    lifted: list[tuple[str, object]] = []
+    consumed: list[tuple[str, ...]] = []
+
+    for name, path in paths:
+        value = _lookup(data, path)
+
+        if value is _MISSING or isinstance(value, list | dict):
+            continue
+
+        consumed.append(path)
+        lifted.append((name, value))
+
+    return tuple(lifted), consumed
+
+
 def _to_record(
     event: str,
     params: MappingParams,
@@ -399,7 +481,8 @@ def _to_record(
     Returns
     -------
     _RecordResult
-        Record and whether its time fell back to the time of writing.
+        Record, whether its time fell back to the time of writing,
+        and the values lifted into the record's resource.
 
     """
     record = LogRecord(
@@ -442,12 +525,19 @@ def _to_record(
             record.severity_number = SeverityNumber.ValueType(number)
             record.severity_text = text
 
+    lifted, lifted_paths = _lift_resources(data, params.resource_paths)
+    consumed.extend(lifted_paths)
+
     for path in consumed:
         data = _drop(data, path)
 
     record.attributes.extend(to_attributes(data, flatten=params.flatten))
 
-    return _RecordResult(record=record, fallback_timestamp=fallback)
+    return _RecordResult(
+        record=record,
+        fallback_timestamp=fallback,
+        lifted=lifted,
+    )
 
 
 def map_events(
@@ -472,25 +562,43 @@ def map_events(
     Returns
     -------
     MappedBatch
-        Requests carrying the mapped records.
+        Requests carrying the mapped records, grouped into one
+        `ResourceLogs` entry per distinct resource, in the order each
+        resource first appeared.
 
     """
     if not events:
         return MappedBatch()
 
-    request = ExportLogsServiceRequest()
-    resource_logs = request.resource_logs.add()
-    scope_logs = resource_logs.scope_logs.add()
-    scope_logs.scope.CopyFrom(_scope())
-
+    groups: dict[tuple[tuple[str, object], ...], list[LogRecord]] = {}
     fallback_timestamps = 0
 
     for event in events:
         result = _to_record(event, params, observed_ns)
-        scope_logs.log_records.append(result.record)
 
         if result.fallback_timestamp:
             fallback_timestamps += 1
+
+        groups.setdefault(result.lifted, []).append(result.record)
+
+    request = ExportLogsServiceRequest()
+
+    for lifted, records in groups.items():
+        resource_logs = request.resource_logs.add()
+        resource_logs.resource.CopyFrom(
+            Resource(
+                attributes=[
+                    *params.resource_attributes,
+                    *(
+                        KeyValue(key=key, value=to_any_value(value))
+                        for key, value in lifted
+                    ),
+                ],
+            ),
+        )
+        scope_logs = resource_logs.scope_logs.add()
+        scope_logs.scope.CopyFrom(_scope())
+        scope_logs.log_records.extend(records)
 
     return MappedBatch(
         requests=[request],

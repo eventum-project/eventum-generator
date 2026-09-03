@@ -50,3 +50,18 @@ def test_config_rejects_lonely_client_cert():
             endpoint=HttpUrl('http://localhost:4318'),
             client_cert='cert.pem',
         )
+
+
+def test_config_resource_attributes_default_empty():
+    config = OtlpOutputPluginConfig(endpoint=HttpUrl('http://localhost:4318'))
+
+    assert config.resource_attributes == {}
+    assert config.resource_attributes_from == {}
+
+
+def test_config_rejects_empty_resource_path():
+    with pytest.raises(ValidationError):
+        OtlpOutputPluginConfig(
+            endpoint=HttpUrl('http://localhost:4318'),
+            resource_attributes_from={'host.name': ''},
+        )

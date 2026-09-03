@@ -1,7 +1,9 @@
 import math
 
 from eventum.plugins.output.plugins.otlp.mapping import (
+    DEFAULT_SERVICE_NAME,
     MappingParams,
+    build_resource_attributes,
     map_events,
     parse_path,
     parse_severity,
@@ -181,3 +183,103 @@ def test_parse_path_splits_dotted_field():
     assert parse_path('log.level') == ('log', 'level')
     assert parse_path('@timestamp') == ('@timestamp',)
     assert parse_path(None) is None
+
+
+def test_build_resource_attributes_carries_service_and_sdk_info():
+    attributes = {
+        kv.key: kv.value
+        for kv in build_resource_attributes(
+            static={},
+            service_name='linux-syslog',
+        )
+    }
+
+    assert attributes['service.name'].string_value == 'linux-syslog'
+    assert attributes['telemetry.sdk.name'].string_value == 'eventum'
+    assert attributes['telemetry.sdk.language'].string_value == 'python'
+    assert 'telemetry.sdk.version' in attributes
+
+
+def test_build_resource_attributes_uses_default_service_name():
+    attributes = {
+        kv.key: kv.value
+        for kv in build_resource_attributes(
+            static={},
+            service_name=DEFAULT_SERVICE_NAME,
+        )
+    }
+
+    assert attributes['service.name'].string_value == DEFAULT_SERVICE_NAME
+
+
+def test_build_resource_attributes_static_overrides_defaults():
+    attributes = {
+        kv.key: kv.value
+        for kv in build_resource_attributes(
+            static={'service.name': 'custom', 'team': 'sec'},
+            service_name='linux-syslog',
+        )
+    }
+
+    assert attributes['service.name'].string_value == 'custom'
+    assert attributes['team'].string_value == 'sec'
+
+
+def test_records_group_by_lifted_resource_attributes():
+    params = MappingParams(
+        flatten=True,
+        resource_paths=(('host.name', ('host', 'name')),),
+    )
+    batch = map_events(
+        [
+            '{"host": {"name": "srv-1"}, "n": 1}',
+            '{"host": {"name": "srv-2"}, "n": 2}',
+            '{"host": {"name": "srv-1"}, "n": 3}',
+        ],
+        params,
+        observed_ns=_OBSERVED_NS,
+    )
+    resource_logs = batch.requests[0].resource_logs
+
+    assert len(resource_logs) == 2
+    assert batch.records == 3
+
+    names = [
+        next(
+            kv.value.string_value
+            for kv in entry.resource.attributes
+            if kv.key == 'host.name'
+        )
+        for entry in resource_logs
+    ]
+    assert names == ['srv-1', 'srv-2']
+
+    first = resource_logs[0].scope_logs[0].log_records
+    assert len(first) == 2
+    assert all(
+        'host.name' not in {kv.key for kv in record.attributes}
+        for record in first
+    )
+
+
+def test_non_scalar_resource_value_stays_in_record_attributes():
+    params = MappingParams(
+        flatten=True,
+        resource_paths=(('tags', ('tags',)),),
+    )
+    batch = map_events(
+        ['{"tags": ["a", "b"]}'],
+        params,
+        observed_ns=_OBSERVED_NS,
+    )
+    resource_logs = batch.requests[0].resource_logs
+
+    assert len(resource_logs) == 1
+    assert 'tags' not in {
+        kv.key for kv in resource_logs[0].resource.attributes
+    }
+
+    records = resource_logs[0].scope_logs[0].log_records
+    attributes = {kv.key: kv.value for kv in records[0].attributes}
+    values = attributes['tags'].array_value.values
+    assert [value.string_value for value in values] == ['a', 'b']

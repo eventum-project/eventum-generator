@@ -83,3 +83,91 @@ def test_build_logs_url_appends_path_before_query():
         build_logs_url('http://localhost:4318/?api-key=secret')
         == 'http://localhost:4318/v1/logs?api-key=secret'
     )
+
+
+@pytest.mark.asyncio
+async def test_plugin_names_the_generator_as_the_service(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(),
+        params={'id': 1, 'generator_id': 'linux-syslog'},
+    )
+
+    await plugin.open()
+    await plugin.write(['{"a": 1}'])
+    await plugin.close()
+
+    resource = _sent_request(httpx_mock).resource_logs[0].resource
+    attributes = {kv.key: kv.value.string_value for kv in resource.attributes}
+
+    assert attributes['service.name'] == 'linux-syslog'
+    assert attributes['telemetry.sdk.name'] == 'eventum'
+    assert attributes['telemetry.sdk.language'] == 'python'
+
+
+@pytest.mark.asyncio
+async def test_plugin_falls_back_to_default_service_name(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(config=_config(), params={'id': 1})
+
+    await plugin.open()
+    await plugin.write(['{"a": 1}'])
+    await plugin.close()
+
+    resource = _sent_request(httpx_mock).resource_logs[0].resource
+    attributes = {kv.key: kv.value.string_value for kv in resource.attributes}
+
+    assert attributes['service.name'] == 'eventum'
+
+
+@pytest.mark.asyncio
+async def test_plugin_config_resource_attributes_override_defaults(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(resource_attributes={'service.name': 'custom'}),
+        params={'id': 1, 'generator_id': 'linux-syslog'},
+    )
+
+    await plugin.open()
+    await plugin.write(['{"a": 1}'])
+    await plugin.close()
+
+    resource = _sent_request(httpx_mock).resource_logs[0].resource
+    attributes = {kv.key: kv.value.string_value for kv in resource.attributes}
+
+    assert attributes['service.name'] == 'custom'
+
+
+@pytest.mark.asyncio
+async def test_plugin_groups_records_by_configured_resource_field(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(
+            resource_attributes_from={'host.name': 'host.name'},
+        ),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    await plugin.write(
+        [
+            '{"host": {"name": "srv-1"}}',
+            '{"host": {"name": "srv-2"}}',
+        ],
+    )
+    await plugin.close()
+
+    resource_logs = _sent_request(httpx_mock).resource_logs
+    assert len(resource_logs) == 2

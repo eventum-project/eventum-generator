@@ -3,7 +3,7 @@
 import asyncio
 import time
 from collections.abc import Sequence
-from typing import override
+from typing import cast, override
 from urllib.parse import urlsplit, urlunsplit
 
 from eventum.plugins.exceptions import PluginConfigurationError
@@ -19,8 +19,10 @@ from eventum.plugins.output.plugins.otlp.exporters.base import (
 )
 from eventum.plugins.output.plugins.otlp.exporters.http import HttpExporter
 from eventum.plugins.output.plugins.otlp.mapping import (
+    DEFAULT_SERVICE_NAME,
     MappedBatch,
     MappingParams,
+    build_resource_attributes,
     map_events,
     parse_path,
 )
@@ -93,10 +95,19 @@ class OtlpOutputPlugin(
             ) from e
 
         self._url = build_logs_url(str(config.endpoint))
+        service_name = params.get('generator_id', DEFAULT_SERVICE_NAME)
         self._mapping_params = MappingParams(
             flatten=True,
             timestamp_path=parse_path(config.timestamp_field),
             severity_path=parse_path(config.severity_field),
+            resource_attributes=build_resource_attributes(
+                static=config.resource_attributes,
+                service_name=service_name,
+            ),
+            resource_paths=tuple(
+                (name, cast('tuple[str, ...]', parse_path(path)))
+                for name, path in config.resource_attributes_from.items()
+            ),
         )
         self._exporter: Exporter = HttpExporter(
             config=config,
