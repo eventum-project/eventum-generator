@@ -29,6 +29,12 @@ Common rules for all plugin types. Type-specific plugin contracts live in `.clau
 - Resolve relative user paths via `self.resolve_path(cfg_path_field)`.
 - Raise `PluginConfigurationError` for problems Pydantic can't catch.
 
+## Runtime dependencies
+
+- Import a runtime client in the lifecycle method where its resource is acquired, not at module scope. For an output plugin, this is normally `_open`.
+- Keep imports needed only by annotations under `TYPE_CHECKING`.
+- Add heavy dependencies deferred by output plugins to `eventum/plugins/output/tests/test_imports.py`, which guards the startup-import contract in a clean interpreter.
+
 ## Directory layout
 
 ```

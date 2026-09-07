@@ -18,9 +18,7 @@ from eventum.plugins.output.plugins.clickhouse.plugin import (
 )
 
 _BASE_PATH = Path('/generators/demo')
-_CLIENT_FACTORY = (
-    'eventum.plugins.output.plugins.clickhouse.plugin.get_async_client'
-)
+_CLIENT_FACTORY = 'clickhouse_connect.get_async_client'
 
 # Variables that hide a re-enabled GIL: the first one overrides the
 # interpreter decision, the second one skips loading C extensions
@@ -142,6 +140,19 @@ async def test_open_failure_is_wrapped() -> None:
         await plugin.open()
 
 
+async def test_open_import_failure_is_wrapped() -> None:
+    """Failed client import raises `PluginOpenError`."""
+    plugin = _make_plugin()
+
+    with (
+        patch.dict(sys.modules, {'clickhouse_connect': None}),
+        pytest.raises(PluginOpenError) as info,
+    ):
+        await plugin.open()
+
+    assert isinstance(info.value.__cause__, ModuleNotFoundError)
+
+
 async def test_close_closes_client() -> None:
     """Closing the plugin closes the async client."""
     plugin = _make_plugin()
@@ -167,6 +178,24 @@ async def test_write_returns_written_rows() -> None:
     written = await plugin.write(['{"a": 1}', '{"a": 2}'])
 
     assert written == 2  # noqa: PLR2004
+
+
+async def test_write_uses_quoted_fully_qualified_table_name() -> None:
+    """Database and table identifiers are quoted separately."""
+    plugin = _make_plugin(
+        database='analytics database',
+    )
+    client = AsyncMock()
+    client.raw_insert.return_value.written_rows = 1
+
+    with patch(_CLIENT_FACTORY, AsyncMock(return_value=client)):
+        await plugin.open()
+
+    await plugin.write(['{}'])
+
+    assert client.raw_insert.await_args.kwargs['table'] == (
+        '`analytics database`.`events`'
+    )
 
 
 @pytest.mark.skipif(

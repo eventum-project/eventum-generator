@@ -3,9 +3,6 @@
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, override
 
-from clickhouse_connect import get_async_client
-from clickhouse_connect.driver.binding import quote_identifier as quote
-
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
 from eventum.plugins.output.exceptions import PluginOpenError, PluginWriteError
 from eventum.plugins.output.plugins.clickhouse.config import (
@@ -31,9 +28,7 @@ class ClickhouseOutputPlugin(
     ) -> None:
         super().__init__(config, params)
 
-        self._fq_table_name = '.'.join(
-            [quote(config.database), quote(config.table)],
-        )
+        self._fq_table_name: str
         self._client: AsyncClient
 
     def _resolve_optional_path(self, path: Path | None) -> str | None:
@@ -53,6 +48,14 @@ class ClickhouseOutputPlugin(
         uses_https = self._config.protocol == 'https'
 
         try:
+            from clickhouse_connect import get_async_client
+            from clickhouse_connect.driver.binding import (
+                quote_identifier as quote,
+            )
+
+            self._fq_table_name = '.'.join(
+                [quote(self._config.database), quote(self._config.table)],
+            )
             self._client = await get_async_client(
                 host=self._config.host,
                 port=self._config.port,

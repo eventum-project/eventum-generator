@@ -3,9 +3,10 @@
 import asyncio
 import ssl
 from collections.abc import Sequence
-from typing import override
+from typing import TYPE_CHECKING, override
 
-from aiokafka import AIOKafkaProducer
+if TYPE_CHECKING:
+    from aiokafka import AIOKafkaProducer
 
 from eventum.plugins.exceptions import PluginConfigurationError
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
@@ -66,6 +67,8 @@ class KafkaOutputPlugin(
     @override
     async def _open(self) -> None:
         try:
+            from aiokafka import AIOKafkaProducer
+
             self._producer = AIOKafkaProducer(
                 bootstrap_servers=self._config.bootstrap_servers,  # type: ignore[arg-type]
                 client_id=self._config.client_id,
