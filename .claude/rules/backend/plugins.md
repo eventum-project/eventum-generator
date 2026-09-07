@@ -19,6 +19,7 @@ Common rules for all plugin types. Type-specific plugin contracts live in `.clau
 - Inherit the category config: `InputPluginConfig` / `EventPluginConfig` / `OutputPluginConfig`.
 - Always `frozen=True, extra='forbid'`.
 - Cross-field validation via `@model_validator`.
+- Field constraints and `@field_validator` / `@model_validator` rules in every mode are enforced by the API for concrete values. A validator waits until load time only when the value it judges still carries a `${params.*}` or `${secrets.*}` placeholder.
 - Multi-mode configs: `RootModel` + `Field(discriminator=...)`.
 
 ## Init
