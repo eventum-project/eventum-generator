@@ -24,7 +24,7 @@ from jinja2 import (
     TemplateNotFound,
 )
 
-from eventum.plugins.output.exceptions import FormatError
+from eventum.plugins.output.exceptions import FormatError, FormatErrorKind
 from eventum.plugins.output.fields import (
     BaseFormatterConfig,
     Format,
@@ -215,7 +215,14 @@ class JsonFormatter(Formatter[JsonFormatterConfig], format=Format.JSON):
                     msgspec.json.format(event, indent=self._config.indent),
                 )
             except msgspec.DecodeError as e:
-                errors.append(FormatError(str(e), original_event=event))
+                errors.append(
+                    FormatError(
+                        str(e),
+                        original_event=event,
+                        kind=FormatErrorKind.JSON_DECODE,
+                        report_reason='Event is not valid JSON',
+                    ),
+                )
 
         return FormattingResult(
             events=formatted_events,
@@ -247,7 +254,14 @@ class JsonBatchFormatter(
             try:
                 validated_events.append(msgspec.json.format(event, indent=-1))
             except msgspec.DecodeError as e:
-                errors.append(FormatError(str(e), original_event=event))
+                errors.append(
+                    FormatError(
+                        str(e),
+                        original_event=event,
+                        kind=FormatErrorKind.JSON_DECODE,
+                        report_reason='Event is not valid JSON',
+                    ),
+                )
 
         if not validated_events:
             return FormattingResult(
@@ -383,6 +397,8 @@ class TemplateFormatter(
                             f'{e.__class__.__name__}: {e}',
                         ),
                         original_event=event,
+                        kind=FormatErrorKind.TEMPLATE_RENDER,
+                        report_reason='Failed to render template',
                     ),
                 )
 
@@ -431,6 +447,9 @@ class TemplateBatchFormatter(
                 errors=[
                     FormatError(
                         f'Failed render template: {e.__class__.__name__}: {e}',
+                        kind=FormatErrorKind.TEMPLATE_RENDER,
+                        report_reason='Failed to render template',
+                        rejected_count=len(events),
                     ),
                 ],
             )

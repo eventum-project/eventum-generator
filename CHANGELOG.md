@@ -25,6 +25,8 @@ All notable changes to this project will be documented in this file.
 
 - **Refused a configuration whose fields contradict each other** — a rule across fields, such as TLS material without TLS enabled or a template and a template path together, was dropped when the API relaxed a plugin model to accept `${params.*}` placeholders, so Studio saved a configuration like that and the generator failed only when someone started it. The rules answer over the API now, on reading a configuration as well as on saving one, and a rule reaching a field that still carries a substitution token waits for the value instead of guessing. A configuration saved earlier that breaks such a rule opens in the file editor with the rule named, in place of a form built over a configuration no generator would run
 
+- **Bounded formatter rejection logs** — rejected events of the same formatter failure kind are reported at most once per ten seconds with a running count, so a configuration mistake cannot fill the generator log at the event rate. The first record keeps one rejected event for diagnosis; later summaries and the final count written when the output closes omit it
+
 ### 📝 Other Changes
 
 - **Moved the `username` and `password` of the `http` output into the `auth` section** — a configuration still carrying the flat keys is rejected, with an error naming the section to write instead. A password given without a user name used to load and authenticate with nothing, which the section makes impossible, and an `Authorization` header written by hand alongside `auth` is now refused rather than silently overridden
