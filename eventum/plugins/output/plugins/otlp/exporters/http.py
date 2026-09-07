@@ -65,6 +65,7 @@ class HttpExporter:
         self._ssl_context = ssl_context
         self._url = url
         self._client: httpx.AsyncClient
+        self._headers: dict[str, str]
         self._authenticator: HttpAuthenticator[Any] | None = None
 
     async def open(self) -> None:
@@ -92,9 +93,15 @@ class HttpExporter:
         if self._config.compression == 'gzip':
             headers['Content-Encoding'] = GZIP_CONTENT_ENCODING
 
+        self._headers = headers
+
+        # the configured and computed headers address the receiver of
+        # this plugin, so they travel the requests to it rather than
+        # the client the authenticator also reaches its own endpoint
+        # through
         self._client = create_client(
             ssl_context=self._ssl_context,
-            headers=headers,
+            headers={},
             connect_timeout=self._config.connect_timeout,
             request_timeout=self._config.request_timeout,
             proxy_url=(
@@ -229,7 +236,7 @@ class HttpExporter:
             response = await self._client.post(
                 self._url,
                 content=body,
-                headers=credentials,
+                headers=self._headers | dict(credentials),
             )
         except httpx.RequestError as e:
             return ExportFailure(

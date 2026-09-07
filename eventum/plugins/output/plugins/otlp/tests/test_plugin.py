@@ -758,3 +758,73 @@ async def test_plugin_reports_authentication_failure_while_sending(
     assert written == 0
     assert plugin.write_failed == 1
     assert len(httpx_mock.get_requests(url=_LOGS_URL)) == 0
+
+
+@pytest.mark.asyncio
+async def test_plugin_keeps_content_headers_off_the_token_request(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(
+        method='POST',
+        url=_TOKEN_URL,
+        json={'access_token': 'tok', 'expires_in': 3600},
+    )
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(
+            headers={'X-API-Key': 'ingest-secret'},
+            auth=_oauth2_auth(),
+        ),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    await plugin.write(['{"a": 1}'])
+    await plugin.close()
+
+    token_request = next(
+        request
+        for request in httpx_mock.get_requests()
+        if str(request.url) == _TOKEN_URL
+    )
+    data_request = next(
+        request
+        for request in httpx_mock.get_requests()
+        if str(request.url) == _LOGS_URL
+    )
+
+    # the token request is a form post of its own, not shaped by what
+    # this plugin sends its receiver
+    assert (
+        token_request.headers['content-type']
+        == 'application/x-www-form-urlencoded'
+    )
+    assert 'x-api-key' not in token_request.headers
+
+    assert data_request.headers['content-type'] == 'application/x-protobuf'
+    assert data_request.headers['x-api-key'] == 'ingest-secret'
+
+
+@pytest.mark.asyncio
+async def test_plugin_data_request_carries_headers_and_credentials_together(
+    httpx_mock: HTTPXMock,
+):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(
+            compression='gzip',
+            auth={'type': 'bearer', 'token': 'abc'},
+        ),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    await plugin.write(['{"a": 1}'])
+    await plugin.close()
+
+    request = httpx_mock.get_requests()[0]
+    assert request.headers['content-type'] == 'application/x-protobuf'
+    assert request.headers['content-encoding'] == 'gzip'
+    assert request.headers['Authorization'] == 'Bearer abc'
