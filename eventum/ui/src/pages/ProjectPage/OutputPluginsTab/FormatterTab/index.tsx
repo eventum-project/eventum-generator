@@ -114,6 +114,7 @@ export const FormatterTab: FC = () => {
         <ToolPane title="Formatter" grow={0} basis={300}>
           <FormatterParams
             value={form.values.formatter}
+            errors={form.errors}
             onChange={(config) => {
               form.setFieldValue('formatter', config);
             }}

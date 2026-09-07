@@ -10,6 +10,7 @@ type EventValue = string | number | EventFieldRef | undefined;
 interface EventValueInputProps {
   label: string;
   tooltip: string;
+  error?: ReactNode;
   placeholder?: string;
   /** Values the static mode offers instead of free text. */
   options?: readonly string[];
@@ -85,6 +86,7 @@ const StaticValueInput: FC<ValueInputProps> = ({
 export const EventValueInput: FC<EventValueInputProps> = ({
   label,
   tooltip,
+  error,
   placeholder,
   options,
   hideLabel = false,
@@ -103,8 +105,11 @@ export const EventValueInput: FC<EventValueInputProps> = ({
 
   // A hidden label still names the input for anyone not reading it.
   const labelProps = hideLabel
-    ? { 'aria-label': label }
-    : { label: <LabelWithTooltip label={label} tooltip={tooltip} /> };
+    ? { 'aria-label': label, error }
+    : {
+        label: <LabelWithTooltip label={label} tooltip={tooltip} />,
+        error,
+      };
 
   const toggle = (
     <Tooltip label={toggleLabel} withArrow openDelay={200}>

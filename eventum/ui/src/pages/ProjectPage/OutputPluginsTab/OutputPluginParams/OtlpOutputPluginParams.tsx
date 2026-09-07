@@ -29,13 +29,15 @@ interface OtlpOutputPluginParamsProps {
   onChange: (config: OtlpOutputPluginConfig) => void;
 }
 
+const validateConfig = zod4Resolver(OtlpOutputPluginConfigSchema);
+
 export const OtlpOutputPluginParams: FC<OtlpOutputPluginParamsProps> = ({
   initialConfig,
   onChange,
 }) => {
   const form = useForm<OtlpOutputPluginConfig>({
     initialValues: initialConfig,
-    validate: zod4Resolver(OtlpOutputPluginConfigSchema),
+    validate: validateConfig,
     onValuesChange: onChange,
     validateInputOnChange: true,
   });
@@ -463,6 +465,11 @@ export const OtlpOutputPluginParams: FC<OtlpOutputPluginParamsProps> = ({
       <Paper withBorder p="xs">
         <FormatterParams
           value={form.getValues().formatter}
+          errors={form.errors}
+          setErrors={form.setErrors}
+          validate={(formatter) =>
+            validateConfig({ ...form.getValues(), formatter })
+          }
           onChange={(values) => form.setFieldValue('formatter', values)}
         />
       </Paper>

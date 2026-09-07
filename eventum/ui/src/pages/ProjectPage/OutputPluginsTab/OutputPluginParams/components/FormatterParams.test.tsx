@@ -1,3 +1,4 @@
+import type { FormErrors, SetErrors } from '@mantine/form';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -24,7 +25,11 @@ const FILE_TREE: FileNode[] = [
   },
 ];
 
-function setup(value?: FormatterConfig) {
+function setup(
+  value?: FormatterConfig,
+  errors: FormErrors = {},
+  setErrors?: SetErrors
+) {
   vi.mocked(useGeneratorFileTree).mockReturnValue({
     data: FILE_TREE,
     isLoading: false,
@@ -39,7 +44,12 @@ function setup(value?: FormatterConfig) {
     <MemoryRouter>
       <ProjectNameProvider initialProjectName="web">
         <FileTreeProvider>
-          <FormatterParams value={value} onChange={onChange} />
+          <FormatterParams
+            value={value}
+            errors={errors}
+            setErrors={setErrors}
+            onChange={onChange}
+          />
         </FileTreeProvider>
       </ProjectNameProvider>
     </MemoryRouter>
@@ -133,6 +143,41 @@ describe('FormatterParams', () => {
     expect(screen.queryByRole('textbox', { name: /Indent/ })).toBeNull();
   });
 
+  it('shows an error on a formatter field', () => {
+    setup({ format: 'json', indent: -1 } as FormatterConfig, {
+      'formatter.indent': 'Indent must not be negative',
+    });
+
+    expect(screen.getByRole('textbox', { name: /Indent/ })).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    );
+    expect(screen.getByText('Indent must not be negative')).toBeVisible();
+  });
+
+  it('clears stale formatter errors without clearing another field', async () => {
+    const setErrors = vi.fn<SetErrors>();
+    const { user } = setup(
+      { format: 'syslog', hostname: 'web-01' } as FormatterConfig,
+      {},
+      setErrors
+    );
+    const hostname = screen.getByRole('textbox', { name: /Hostname/ });
+
+    await user.type(hostname, ' ');
+    await user.keyboard('{Backspace}');
+
+    const reconcile = setErrors.mock.lastCall?.[0];
+    expect(typeof reconcile).toBe('function');
+    expect(
+      (reconcile as (current: FormErrors) => FormErrors)({
+        host: 'Host is required',
+        formatter: 'Formatter is invalid',
+        'formatter.hostname': 'Hostname is invalid',
+      })
+    ).toEqual({ host: 'Host is required' });
+  });
+
   it.each(['template', 'template-batch'])(
     'takes a template written in place for %s',
     async (format) => {
@@ -218,6 +263,18 @@ describe('FormatterParams', () => {
     );
   });
 
+  it('shows an error on a syslog event field reference', () => {
+    setup({ format: 'syslog', hostname: { field: '' } } as FormatterConfig, {
+      'formatter.hostname.field': 'Event field is required',
+    });
+
+    expect(screen.getByRole('textbox', { name: /Hostname/ })).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    );
+    expect(screen.getByText('Event field is required')).toBeVisible();
+  });
+
   it('keeps a nameless structured data element out of the config', async () => {
     const { user, onChange } = setup({ format: 'syslog' } as FormatterConfig);
 
@@ -241,6 +298,65 @@ describe('FormatterParams', () => {
         structured_data: [{ id: 'origin@32473', params: {} }],
       })
     );
+  });
+
+  it('shows errors on structured data row fields', () => {
+    setup(
+      {
+        format: 'syslog',
+        structured_data: [{ id: 'bad]id', params: { 'bad]name': 'value' } }],
+      } as FormatterConfig,
+      {
+        'formatter.structured_data.0.id': 'Element id is invalid',
+        'formatter.structured_data.0.params.bad]name':
+          'Parameter name is invalid',
+      }
+    );
+
+    expect(screen.getByRole('textbox', { name: /Element id/ })).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    );
+    expect(
+      screen.getByRole('textbox', { name: 'Parameter name' })
+    ).toHaveAttribute('aria-invalid', 'true');
+    expect(
+      screen.getByRole('textbox', { name: 'Parameter value' })
+    ).toHaveAttribute('aria-invalid', 'false');
+  });
+
+  it('matches structured data errors after unnamed editor rows', () => {
+    setup(
+      {
+        format: 'syslog',
+        structured_data: [{ id: '' }, { id: 'bad]id' }],
+      } as FormatterConfig,
+      { 'formatter.structured_data.0.id': 'Element id is invalid' }
+    );
+
+    const ids = screen.getAllByRole('textbox', { name: /Element id/ });
+    expect(ids[0]).toHaveAttribute('aria-invalid', 'false');
+    expect(ids[1]).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('matches parameter errors to their structured data element', () => {
+    setup(
+      {
+        format: 'syslog',
+        structured_data: [
+          { id: 'first', params: { name: 'value' } },
+          { id: 'second', params: { 'bad]name': 'value' } },
+        ],
+      } as FormatterConfig,
+      {
+        'formatter.structured_data.1.params.bad]name':
+          'Parameter name is invalid',
+      }
+    );
+
+    const names = screen.getAllByRole('textbox', { name: 'Parameter name' });
+    expect(names[0]).toHaveAttribute('aria-invalid', 'false');
+    expect(names[1]).toHaveAttribute('aria-invalid', 'true');
   });
 
   it.each([

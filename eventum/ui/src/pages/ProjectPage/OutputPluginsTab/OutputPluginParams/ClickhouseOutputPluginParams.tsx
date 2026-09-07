@@ -544,6 +544,8 @@ export const ClickhouseOutputPluginParams: FC<
 
           <FormatterParams
             value={form.getValues().formatter}
+            errors={form.errors}
+            setErrors={form.setErrors}
             onChange={(values) => form.setFieldValue('formatter', values)}
           />
         </Stack>
