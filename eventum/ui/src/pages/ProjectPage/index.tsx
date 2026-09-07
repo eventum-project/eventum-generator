@@ -32,14 +32,17 @@ export default function ProjectPage() {
   }
 
   if (isError) {
-    // A config that cannot be parsed/read (422) or errored on the server (500)
-    // still has an editable project directory, so open the studio in recovery
-    // mode to let the user fix the file that locked them out. A missing project
-    // (404) or other errors have nothing to recover and keep the plain error.
+    // A config that cannot be parsed/read (422), errored on the server (500)
+    // or came back in a shape this build does not accept still has an editable
+    // project directory, so open the studio in recovery mode to let the user
+    // fix the file that locked them out. A missing project (404) or other
+    // errors have nothing to recover and keep the plain error.
     const status =
       error instanceof APIError ? error.response?.status : undefined;
+    const isUnreadableResponse =
+      error instanceof APIError && error.isResponseValidationError();
 
-    if (status === 422 || status === 500) {
+    if (status === 422 || status === 500 || isUnreadableResponse) {
       return (
         <ProjectNameProvider initialProjectName={projectName}>
           <FileTreeProvider>
