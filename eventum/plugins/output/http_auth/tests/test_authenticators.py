@@ -2,6 +2,7 @@
 
 import asyncio
 import math
+from collections.abc import Iterator
 from typing import Any, Literal, override
 from urllib.parse import parse_qs
 
@@ -709,8 +710,15 @@ async def test_oauth2_holds_back_from_an_endpoint_failing_slowly(
 ) -> None:
     """The hold counts from where an attempt ends, not where it starts."""
 
+    # the endpoint takes four times the hold to fail, so a hold
+    # counted from the start of the attempt would already be over by
+    # the time the failure exists, and every request that waited for
+    # it would ask again
+    failure_delay = 0.2
+    hold = 0.05
+
     async def respond(_request: httpx.Request) -> httpx.Response:
-        await asyncio.sleep(0.02)
+        await asyncio.sleep(failure_delay)
         return httpx.Response(status_code=_BAD_REQUEST, text='invalid_client')
 
     httpx_mock.add_callback(
@@ -719,12 +727,10 @@ async def test_oauth2_holds_back_from_an_endpoint_failing_slowly(
         url=_TOKEN_URL,
         is_reusable=True,
     )
-    # an endpoint slower to fail than the interval would otherwise be
-    # asked again by every request that waited for it
     monkeypatch.setattr(
         authenticators,
         'FAILED_ACQUISITION_HOLD_SECONDS',
-        0.01,
+        hold,
     )
 
     authenticator = create_authenticator(_oauth2_config(), client)
@@ -794,16 +800,41 @@ class _KeyHttpAuthenticator(TokenHttpAuthenticator[_KeyHttpAuthConfig]):
     """Method supplying nothing but the exchange minting a token."""
 
     minted = 0
+    lifetime = 3600.0
 
     @override
     async def _fetch_token(self) -> AcquiredToken:
         type(self).minted += 1
-        return AcquiredToken(value=f'tok-{self.minted}', lifetime=0.001)
+
+        return AcquiredToken(
+            value=f'tok-{self.minted}',
+            lifetime=type(self).lifetime,
+        )
+
+
+@pytest.fixture
+def key_authenticator(
+    client: HttpAuthenticatorParams,
+) -> Iterator[_KeyHttpAuthenticator]:
+    """Return a method built on the token lifecycle.
+
+    Notes
+    -----
+    The life of the token is stated by the method rather than waited
+    out, so what is asserted is the lifecycle and not the clock.
+
+    """
+    _KeyHttpAuthenticator.minted = 0
+    _KeyHttpAuthenticator.lifetime = 3600.0
+
+    yield _KeyHttpAuthenticator(_KeyHttpAuthConfig(), client)
+
+    _KeyHttpAuthenticator.lifetime = 3600.0
 
 
 @pytest.mark.asyncio
-async def test_a_method_built_on_the_lifecycle_inherits_it(
-    client: HttpAuthenticatorParams,
+async def test_a_method_built_on_the_lifecycle_caches_its_token(
+    key_authenticator: _KeyHttpAuthenticator,
 ) -> None:
     """A further method supplies the exchange and nothing else.
 
@@ -812,28 +843,47 @@ async def test_a_method_built_on_the_lifecycle_inherits_it(
     exists: a method that mints a token differently must not have to
     carry its own copy of them.
     """
-    _KeyHttpAuthenticator.minted = 0
-    authenticator = _KeyHttpAuthenticator(_KeyHttpAuthConfig(), client)
+    await key_authenticator.open()
 
-    await authenticator.open()
-    sent = await authenticator.headers()
+    for _ in range(5):
+        headers = await key_authenticator.headers()
+        assert headers == {'Authorization': 'Bearer tok-1'}
 
-    assert sent == {'Authorization': 'Bearer tok-1'}
+    assert _KeyHttpAuthenticator.minted == 1
 
-    # cached until it expires, then renewed
-    assert await authenticator.headers() == sent
-    await asyncio.sleep(0.01)
-    assert await authenticator.headers() == {'Authorization': 'Bearer tok-2'}
 
-    # a rejection naming a token just minted is not answered by
-    # minting another one
-    assert await authenticator.handle_unauthorized(sent) is True
-    assert (
-        await authenticator.handle_unauthorized(
-            {'Authorization': 'Bearer tok-2'},
-        )
-        is False
-    )
+@pytest.mark.asyncio
+async def test_a_method_built_on_the_lifecycle_renews_its_token(
+    key_authenticator: _KeyHttpAuthenticator,
+) -> None:
+    """A token the method gives no life to is replaced per request."""
+    _KeyHttpAuthenticator.lifetime = 0.0
+
+    await key_authenticator.open()
+    await key_authenticator.headers()
+    await key_authenticator.headers()
+
+    assert _KeyHttpAuthenticator.minted == _REFRESHED_TOKEN_REQUESTS
+
+
+@pytest.mark.asyncio
+async def test_a_method_built_on_the_lifecycle_answers_a_rejection(
+    key_authenticator: _KeyHttpAuthenticator,
+) -> None:
+    """A rejection is answered by the age of what it names."""
+    await key_authenticator.open()
+    sent = await key_authenticator.headers()
+
+    # the token the rejection names is the one just minted, so
+    # minting another one would only ask for the same rejection
+    assert await key_authenticator.handle_unauthorized(sent) is False
+
+    # one it does not name was already replaced, and the request
+    # deserves what the cache holds
+    superseded = {'Authorization': 'Bearer tok-superseded'}
+    assert await key_authenticator.handle_unauthorized(superseded) is True
+
+    assert _KeyHttpAuthenticator.minted == 1
 
 
 def test_an_abstract_method_claims_no_auth_type() -> None:
