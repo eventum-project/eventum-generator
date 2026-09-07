@@ -32,3 +32,17 @@ services:
         limits:
           memory: 768m
           cpus: "0.5"
+
+  otelcol:
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.25"
+
+  minio:
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.25"

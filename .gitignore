@@ -168,3 +168,6 @@ superpowers/
 .playwright-mcp/
 .claude/scheduled_tasks.lock
 .claude/worktrees/
+
+# otelcol file exporter output (bind-mounted, integration tests)
+tests/docker/otelcol/output/

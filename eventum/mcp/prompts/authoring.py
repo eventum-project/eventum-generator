@@ -26,8 +26,9 @@ and receives the same `globals` state in `params['globals']` - MCP \
 file tools cannot write `.py`, so pick it only when the script is \
 already on disk; otherwise prefer `template`.
    - Output (delivery): `stdout`/`file` for local sinks, \
-`http`/`tcp`/`udp`/`kafka` to push to a pipeline, \
-`clickhouse`/`opensearch` to index into a datastore; pick a formatter \
+`http`/`tcp`/`udp`/`kafka`/`otlp` to push to a pipeline, \
+`clickhouse`/`opensearch` to index into a datastore, `s3` to write \
+objects of JSON Lines or Parquet to object storage; pick a formatter \
 via `list_formatters` and `get_formatter_schema`. If the config \
 references `${secrets.*}`, call `list_secret_names` for the names; use \
 `${params.*}` for caller-supplied values and pass them as `params` \

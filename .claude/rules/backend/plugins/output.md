@@ -34,3 +34,12 @@ Adding a new formatter requires:
 - matching Zod schema under `ui/src/api/routes/generator-configs/schemas/`.
 - `FormatterParams.tsx` UI component.
 - entry in `../docs/content/docs/plugins/formatters.mdx`.
+
+Adding an authentication method to `output/http_auth/` requires:
+
+- config variant in `config.py`, listed in `HttpAuthConfigT`.
+- authenticator in `authenticators.py`, bound through `auth_type=`.
+- Zod variant in `schemas/plugins/output/auth.ts` and a branch in `AuthParams.tsx`.
+- section in `../docs/content/docs/plugins/output/http.mdx`.
+
+A method holding a token it renews builds on `TokenHttpAuthenticator` and supplies `_fetch_token` alone.

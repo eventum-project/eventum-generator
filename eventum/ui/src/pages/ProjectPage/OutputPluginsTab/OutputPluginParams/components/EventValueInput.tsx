@@ -118,11 +118,7 @@ export const EventValueInput: FC<EventValueInputProps> = ({
           onChange(undefined);
         }}
       >
-        {fromEvent ? (
-          <IconBraces size={16} />
-        ) : (
-          <IconLetterCase size={16} />
-        )}
+        {fromEvent ? <IconBraces size={16} /> : <IconLetterCase size={16} />}
       </ActionIcon>
     </Tooltip>
   );

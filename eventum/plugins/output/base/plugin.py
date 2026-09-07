@@ -3,7 +3,7 @@
 import asyncio
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import TypeVar, assert_never, override
+from typing import NotRequired, TypeVar, assert_never, override
 
 from pydantic import RootModel
 
@@ -23,7 +23,16 @@ from eventum.plugins.output.formatters import (
 
 
 class OutputPluginParams(PluginParams):
-    """Parameters for output plugin."""
+    """Parameters for output plugin.
+
+    Attributes
+    ----------
+    generator_id : NotRequired[str]
+        Identifier of the generator the plugin belongs to.
+
+    """
+
+    generator_id: NotRequired[str]
 
 
 ConfigT = TypeVar(

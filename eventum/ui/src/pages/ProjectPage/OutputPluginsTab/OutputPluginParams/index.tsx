@@ -5,6 +5,8 @@ import { FileOutputPluginParams } from './FileOutputPluginParams';
 import { HTTPOutputPluginParams } from './HTTPOutputPluginParams';
 import { KafkaOutputPluginParams } from './KafkaOutputPluginParams';
 import { OpensearchOutputPluginParams } from './OpensearchOutputPluginParams';
+import { OtlpOutputPluginParams } from './OtlpOutputPluginParams';
+import { S3OutputPluginParams } from './S3OutputPluginParams';
 import { StdoutOutputPluginParams } from './StdoutOutputPluginParams';
 import { TcpOutputPluginParams } from './TcpOutputPluginParams';
 import { UdpOutputPluginParams } from './UdpOutputPluginParams';
@@ -32,6 +34,8 @@ const pluginNamesToParamsComponent = {
   http: HTTPOutputPluginParams,
   kafka: KafkaOutputPluginParams,
   opensearch: OpensearchOutputPluginParams,
+  otlp: OtlpOutputPluginParams,
+  s3: S3OutputPluginParams,
   stdout: StdoutOutputPluginParams,
   tcp: TcpOutputPluginParams,
   udp: UdpOutputPluginParams,

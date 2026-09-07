@@ -6,12 +6,47 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 New Features
 
+- **Added the `otlp` output plugin** — delivers events to any OpenTelemetry receiver as OTLP log records over HTTP, with event fields as typed attributes, records grouped per resource, and the same `auth` section as the `http` output for basic credentials, a static bearer token, or the OAuth2 client credentials grant
+- **Added token authentication to the `http` output** — the credentials of a request are written in an `auth` section: a user name and a password, a static bearer token, or the OAuth2 client credentials grant, where Eventum takes a token from the configured token endpoint, renews it before it expires and once more when a request comes back rejected. Token requests travel the same TLS settings, proxy and timeouts as the events themselves, and the client secret and the token are secret-bearing fields offering the keyring in Studio. This covers the endpoints that accept nothing else — Azure Monitor Logs Ingestion, Google SecOps, and hosted log APIs handing out tokens with a lifetime
+- **Added the `s3` output plugin** — events are written as objects to S3 compatible storage: AWS, MinIO, Ceph and the interoperability endpoints of the other clouds, in place of writing to a local path and lifting the files with a separate uploader. Every batch of events becomes one object, so the size of objects follows the batch parameters of the generator, and the key each object takes is a template of the time it was written at, a sequence number, a random value and the extension of the object format, which makes Hive style partitioning by hour the default layout. Objects hold JSON Lines, optionally compressed whole with gzip or zstd, or Parquet with its own column compression, row group size and a schema declared by pointing at one representative event — so a lake seeded by Eventum is read in place by ClickHouse, DuckDB, Athena, Spark or Databricks. Credentials are given as an access key pair, optionally through `${secrets.*}`, or left out for the storage client to resolve from the environment; the endpoint, region, addressing style, timeouts, retries, TLS verification, CA certificate and proxy are configurable. What cannot work is refused when the configuration is loaded rather than at the first write: an object format takes only the event formats it can read back, a key template that would render one key for every object is rejected, and a path to a missing schema or certificate file fails validation
+
 - **Added a `syslog` formatter** — an output plugin wraps each event into an RFC 5424 or RFC 3164 message on its own, in place of the header every syslog-shaped generator wrote by hand in its templates. Facility, severity, hostname, application, process id and message type are written in place or taken from a field of the event, the time comes from a field or from the moment of writing, structured data mixes static parameters with ones read from the event, and the message part is the event as it stands, collapsed into a single line, or one named field of it. A header part the event turns out not to carry becomes the `-` the RFC defines for it, while an event that cannot answer for the priority, the time or the message itself is dropped and counted as failed rather than sent as a broken line
 - **Added octet counting to the `tcp` output** — each event is prefixed with the number of bytes it takes, which is the framing syslog over TLS requires and the only one a message carrying a line break survives. `framing: delimiter` stays the default, so existing configurations keep sending what they sent
 
+### 📦 Dependencies
+
+- **Added `obstore` and `pyarrow`** — the storage client of the `s3` output plugin and the Parquet encoder behind its columnar objects. Both are loaded when a generator opens the plugin rather than at startup, so an installation that writes nowhere near object storage keeps them out of its resident memory, though they are installed either way
+
 ### 🐛 Bug Fixes
 
+- **Accepted an endpoint at an IP address, `localhost` or a container name** — Studio checked the address of the `http`, `opensearch` and `otlp` outputs, their proxies and the OAuth2 token endpoint against a domain name alone, so a project pointing at a service on a local network refused to open with "Unexpected server response" while the generator itself ran against it happily. The token endpoint, in turn, now refuses a plaintext address in the form rather than at generator start
+- **Opened the file editor on a configuration Studio cannot read** — recovery mode exists so the file that locked the user out can be fixed by hand, but it was reached only when the server failed the request. A configuration the server returns and Studio does not accept left a dead-end error page with the file out of reach
+
 - **Refused a configuration whose fields contradict each other** — a rule across fields, such as TLS material without TLS enabled or a template and a template path together, was dropped when the API relaxed a plugin model to accept `${params.*}` placeholders, so Studio saved a configuration like that and the generator failed only when someone started it. The rules answer over the API now, on reading a configuration as well as on saving one, and a rule reaching a field that still carries a substitution token waits for the value instead of guessing. A configuration saved earlier that breaks such a rule opens in the file editor with the rule named, in place of a form built over a configuration no generator would run
+
+### 📝 Other Changes
+
+- **Moved the `username` and `password` of the `http` output into the `auth` section** — a configuration still carrying the flat keys is rejected, with an error naming the section to write instead. A password given without a user name used to load and authenticate with nothing, which the section makes impossible, and an `Authorization` header written by hand alongside `auth` is now refused rather than silently overridden
+
+  ```yaml
+  # before
+  output:
+    - http:
+        url: https://api.example.com/ingest
+        username: user
+        password: ${secrets.api_password}
+
+  # after
+  output:
+    - http:
+        url: https://api.example.com/ingest
+        auth:
+          type: basic
+          username: user
+          password: ${secrets.api_password}
+  ```
+
+- **Narrowed the `headers` of the `http` output to string values** — a value of any other type was accepted by the configuration and then refused by the HTTP client, so a header written as a number stopped the generator at start or, once the credential moved into `auth`, failed every event quietly. It is now named where it is written
 
 ## 2.8.0 (2026-08-29)
 

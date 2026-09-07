@@ -97,14 +97,10 @@ interface ParamRow {
   value: string | EventFieldRef;
 }
 
-const paramRowsOf = (
-  params: SyslogStructuredData['params']
-): Row<ParamRow>[] =>
+const paramRowsOf = (params: SyslogStructuredData['params']): Row<ParamRow>[] =>
   Object.entries(params ?? {}).map(([name, value]) => rowOf({ name, value }));
 
-const paramsOf = (
-  rows: Row<ParamRow>[]
-): SyslogStructuredData['params'] =>
+const paramsOf = (rows: Row<ParamRow>[]): SyslogStructuredData['params'] =>
   Object.fromEntries(
     rows
       .filter((row) => row.value.name !== '')
@@ -119,11 +115,8 @@ const StructuredDataElement: FC<StructuredDataElementProps> = ({
   const [rows, updateRows, setRows] = useEditorRows<
     ParamRow,
     SyslogStructuredData['params']
-  >(
-    value.params ?? {},
-    paramRowsOf,
-    paramsOf,
-    (params) => onChange({ ...value, params })
+  >(value.params ?? {}, paramRowsOf, paramsOf, (params) =>
+    onChange({ ...value, params })
   );
 
   return (
@@ -456,9 +449,7 @@ export const SyslogFormatterParams: FC<SyslogFormatterParamsProps> = ({
                     }
                     onRemove={() =>
                       updateElements(
-                        elementRows.filter(
-                          (_, position) => position !== index
-                        )
+                        elementRows.filter((_, position) => position !== index)
                       )
                     }
                   />

@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        backend: [opensearch, clickhouse, kafka]
+        backend: [opensearch, clickhouse, kafka, otlp, s3]
 
     services:
       opensearch:
@@ -53,6 +53,20 @@ jobs:
           CLICKHOUSE_SKIP_USER_SETUP: '1'
         options: >-
           --health-cmd "clickhouse-client --query 'SELECT 1'"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+          --health-start-period 10s
+
+      minio:
+        image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+        ports:
+          - 9000:9000
+        env:
+          MINIO_ROOT_USER: eventum
+          MINIO_ROOT_PASSWORD: eventum-secret
+        options: >-
+          --health-cmd "curl -sf http://localhost:9000/minio/health/live"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
@@ -86,6 +100,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Start OTLP collector
+        if: matrix.backend == 'otlp'
+        run: docker compose -f tests/docker/docker-compose.yml up -d otelcol
+
+      - name: Create the test bucket
+        if: matrix.backend == 's3'
+        run: |
+          docker run --rm --network host \
+            --entrypoint sh minio/mc:RELEASE.2025-04-16T18-13-26Z -c "
+              mc alias set test http://localhost:9000 eventum eventum-secret &&
+              mc mb --ignore-existing test/eventum-test
+            "
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
@@ -106,6 +133,12 @@ jobs:
           CLICKHOUSE_HOST: localhost
           CLICKHOUSE_PORT: '8123'
           KAFKA_BOOTSTRAP: localhost:9094
+          OTLP_ENDPOINT: http://localhost:4318
+          OTLP_HEALTH_URL: http://localhost:13133
+          MINIO_URL: http://localhost:9000
+          MINIO_BUCKET: eventum-test
+          MINIO_ACCESS_KEY: eventum
+          MINIO_SECRET_KEY: eventum-secret
         run: |
           uv run pytest tests/integration/test_${{ matrix.backend }}.py \
             -m integration \
@@ -123,6 +156,10 @@ jobs:
           name: integration-results-${{ matrix.backend }}
           path: reports/
           retention-days: 30
+
+      - name: Stop OTLP collector
+        if: always() && matrix.backend == 'otlp'
+        run: docker compose -f tests/docker/docker-compose.yml down
 
   performance:
     name: Performance
