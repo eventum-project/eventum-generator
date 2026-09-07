@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from eventum.plugins.output.fields import Format
 from eventum.plugins.output.plugins.s3.config import (
     DEFAULT_KEY_TEMPLATE,
-    Encoding,
+    ObjectFormat,
     JsonLinesEncoderConfig,
     ParquetEncoderConfig,
     S3OutputPluginConfig,
@@ -32,7 +32,7 @@ class TestDefaults:
 
     def test_encoder_defaults_to_json_lines(self):
         assert config().encoder == JsonLinesEncoderConfig(
-            encoding=Encoding.JSON_LINES,
+            format=ObjectFormat.JSON_LINES,
         )
 
     def test_formatter_defaults_to_single_line_json(self):
@@ -145,7 +145,7 @@ class TestEncoderCompression:
         with pytest.raises(ValidationError, match='at most 9'):
             config(
                 encoder={
-                    'encoding': 'jsonl',
+                    'format': 'jsonl',
                     'compression': 'gzip',
                     'compression_level': 10,
                 },
@@ -154,7 +154,7 @@ class TestEncoderCompression:
     def test_gzip_maximum_level_is_accepted(self):
         cfg = config(
             encoder={
-                'encoding': 'jsonl',
+                'format': 'jsonl',
                 'compression': 'gzip',
                 'compression_level': 9,
             },
@@ -166,7 +166,7 @@ class TestEncoderCompression:
         with pytest.raises(ValidationError):
             config(
                 encoder={
-                    'encoding': 'jsonl',
+                    'format': 'jsonl',
                     'compression': 'zstd',
                     'compression_level': 23,
                 },
@@ -175,7 +175,7 @@ class TestEncoderCompression:
     def test_zstd_high_level_is_accepted(self):
         cfg = config(
             encoder={
-                'encoding': 'jsonl',
+                'format': 'jsonl',
                 'compression': 'zstd',
                 'compression_level': 22,
             },
@@ -186,54 +186,54 @@ class TestEncoderCompression:
     def test_level_without_compression_is_rejected(self):
         with pytest.raises(ValidationError, match='requires a compression'):
             config(
-                encoder={'encoding': 'jsonl', 'compression_level': 5},
+                encoder={'format': 'jsonl', 'compression_level': 5},
             )
 
     def test_unknown_compression_is_rejected(self):
         with pytest.raises(ValidationError):
-            config(encoder={'encoding': 'jsonl', 'compression': 'lzma'})
+            config(encoder={'format': 'jsonl', 'compression': 'lzma'})
 
 
 class TestEncoderDiscrimination:
     def test_parquet_encoder_is_selected_by_encoding(self):
-        cfg = config(encoder={'encoding': 'parquet'})
+        cfg = config(encoder={'format': 'parquet'})
 
         assert isinstance(cfg.encoder, ParquetEncoderConfig)
 
     def test_parquet_field_under_json_lines_is_rejected(self):
         with pytest.raises(ValidationError):
-            config(encoder={'encoding': 'jsonl', 'row_group_size': 10})
+            config(encoder={'format': 'jsonl', 'row_group_size': 10})
 
     def test_json_lines_field_under_parquet_is_rejected(self):
         with pytest.raises(ValidationError):
-            config(encoder={'encoding': 'parquet', 'compression_level': 5})
+            config(encoder={'format': 'parquet', 'compression_level': 5})
 
     def test_separator_is_not_a_setting_of_json_lines(self):
         with pytest.raises(ValidationError):
-            config(encoder={'encoding': 'jsonl', 'separator': ', '})
+            config(encoder={'format': 'jsonl', 'separator': ', '})
 
     def test_parquet_compression_is_its_own_vocabulary(self):
-        cfg = config(encoder={'encoding': 'parquet', 'compression': 'snappy'})
+        cfg = config(encoder={'format': 'parquet', 'compression': 'snappy'})
 
         assert cfg.encoder.compression == 'snappy'
 
     def test_json_lines_rejects_parquet_compression(self):
         with pytest.raises(ValidationError):
-            config(encoder={'encoding': 'jsonl', 'compression': 'snappy'})
+            config(encoder={'format': 'jsonl', 'compression': 'snappy'})
 
     def test_unknown_encoding_is_rejected(self):
         with pytest.raises(ValidationError):
-            config(encoder={'encoding': 'avro'})
+            config(encoder={'format': 'avro'})
 
     def test_row_group_size_must_be_positive(self):
         with pytest.raises(ValidationError):
-            config(encoder={'encoding': 'parquet', 'row_group_size': 0})
+            config(encoder={'format': 'parquet', 'row_group_size': 0})
 
 
 class TestFormatterCompatibility:
     def test_parquet_takes_json(self):
         cfg = config(
-            encoder={'encoding': 'parquet'},
+            encoder={'format': 'parquet'},
             formatter={'format': 'json', 'indent': 0},
         )
 
@@ -242,21 +242,21 @@ class TestFormatterCompatibility:
     def test_parquet_rejects_plain(self):
         with pytest.raises(ValidationError, match='takes events of'):
             config(
-                encoder={'encoding': 'parquet'},
+                encoder={'format': 'parquet'},
                 formatter={'format': 'plain'},
             )
 
     def test_parquet_rejects_json_batch(self):
         with pytest.raises(ValidationError, match='takes events of'):
             config(
-                encoder={'encoding': 'parquet'},
+                encoder={'format': 'parquet'},
                 formatter={'format': 'json-batch'},
             )
 
     def test_parquet_rejects_template(self):
         with pytest.raises(ValidationError, match='takes events of'):
             config(
-                encoder={'encoding': 'parquet'},
+                encoder={'format': 'parquet'},
                 formatter={'format': 'template', 'template': '{{ event }}'},
             )
 
@@ -300,7 +300,7 @@ class TestSingleLineRequirement:
 
     def test_parquet_accepts_indented_json(self):
         cfg = config(
-            encoder={'encoding': 'parquet'},
+            encoder={'format': 'parquet'},
             formatter={'format': 'json', 'indent': 4},
         )
 

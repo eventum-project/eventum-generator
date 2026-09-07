@@ -43,7 +43,7 @@ class EncodingError(Exception):
 
 
 def extension_of(config: EncoderConfigT) -> str:
-    """Get extension of objects of the encoding.
+    """Get extension of objects of the format.
 
     Parameters
     ----------
@@ -67,7 +67,7 @@ def extension_of(config: EncoderConfigT) -> str:
 
 
 def content_type_of(config: EncoderConfigT) -> str:
-    """Get content type of objects of the encoding.
+    """Get content type of objects of the format.
 
     Parameters
     ----------

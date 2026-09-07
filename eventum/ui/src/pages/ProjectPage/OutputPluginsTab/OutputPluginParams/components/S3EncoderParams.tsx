@@ -4,10 +4,10 @@ import { FC } from 'react';
 import { ProjectFileSelect } from '../../../components/ProjectFileSelect';
 import {
   EncoderConfig,
-  Encoding,
   JSON_LINES_COMPRESSIONS,
   MAX_GZIP_COMPRESSION_LEVEL,
   MAX_ZSTD_COMPRESSION_LEVEL,
+  ObjectFormat,
   PARQUET_COMPRESSIONS,
 } from '@/api/routes/generator-configs/schemas/plugins/output/configs/s3';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
@@ -38,26 +38,27 @@ export const S3EncoderParams: FC<S3EncoderParamsProps> = ({
       <Select
         label={
           <LabelWithTooltip
-            label="Encoding"
-            tooltip="Encoding of object bodies, JSON Lines is used by default"
+            label="Object format"
+            tooltip="Format object bodies are written in, JSON Lines is used
+            by default"
           />
         }
-        placeholder="encoding"
-        data={[Encoding.JSONLines, Encoding.Parquet]}
+        placeholder="format"
+        data={[ObjectFormat.JSONLines, ObjectFormat.Parquet]}
         clearable
-        value={value?.encoding ?? null}
-        onChange={(encoding) => {
-          if (encoding === null) {
+        value={value?.format ?? null}
+        onChange={(format) => {
+          if (format === null) {
             // eslint-disable-next-line unicorn/no-useless-undefined
             onChange(undefined);
             return;
           }
 
-          onChange({ encoding } as EncoderConfig);
+          onChange({ format } as EncoderConfig);
         }}
       />
 
-      {value?.encoding === Encoding.JSONLines && (
+      {value?.format === ObjectFormat.JSONLines && (
         <>
           <Select
             label={
@@ -71,7 +72,7 @@ export const S3EncoderParams: FC<S3EncoderParamsProps> = ({
             value={compression ?? 'none'}
             onChange={(selected) =>
               onChange({
-                encoding: value.encoding,
+                format: value.format,
                 compression:
                   (selected as (typeof JSON_LINES_COMPRESSIONS)[number]) ??
                   undefined,
@@ -110,7 +111,7 @@ export const S3EncoderParams: FC<S3EncoderParamsProps> = ({
         </>
       )}
 
-      {value?.encoding === Encoding.Parquet && (
+      {value?.format === ObjectFormat.Parquet && (
         <>
           <Select
             label={

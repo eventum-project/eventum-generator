@@ -34,8 +34,8 @@ MAX_GZIP_COMPRESSION_LEVEL = 9
 MAX_ZSTD_COMPRESSION_LEVEL = 22
 
 
-class Encoding(StrEnum):
-    """Encoding of an object body."""
+class ObjectFormat(StrEnum):
+    """Format an object body is written in."""
 
     JSON_LINES = 'jsonl'
     PARQUET = 'parquet'
@@ -50,8 +50,8 @@ class JsonLinesEncoderConfig(BaseEncoderConfig, frozen=True):
 
     Attributes
     ----------
-    encoding : Literal[Encoding.JSON_LINES]
-        Target encoding.
+    format : Literal[ObjectFormat.JSON_LINES]
+        Target format.
 
     compression : Literal['none', 'gzip', 'zstd'], default='none'
         Compression applied to the whole object.
@@ -62,7 +62,7 @@ class JsonLinesEncoderConfig(BaseEncoderConfig, frozen=True):
 
     """
 
-    encoding: Literal[Encoding.JSON_LINES]
+    format: Literal[ObjectFormat.JSON_LINES]
     compression: Literal['none', 'gzip', 'zstd'] = 'none'
     compression_level: int | None = Field(
         default=None,
@@ -97,8 +97,8 @@ class ParquetEncoderConfig(BaseEncoderConfig, frozen=True):
 
     Attributes
     ----------
-    encoding : Literal[Encoding.PARQUET]
-        Target encoding.
+    format : Literal[ObjectFormat.PARQUET]
+        Target format.
 
     compression : Literal['none', 'snappy', 'gzip', 'zstd', 'brotli',
     'lz4'], default='snappy'
@@ -122,7 +122,7 @@ class ParquetEncoderConfig(BaseEncoderConfig, frozen=True):
 
     """
 
-    encoding: Literal[Encoding.PARQUET]
+    format: Literal[ObjectFormat.PARQUET]
     compression: Literal[
         'none',
         'snappy',
@@ -143,7 +143,7 @@ _PARQUET_FORMATS = frozenset({Format.JSON})
 
 
 def supported_formats(config: EncoderConfigT) -> frozenset[Format]:
-    """Get formats an encoding takes.
+    """Get event formats an object format takes.
 
     Parameters
     ----------
@@ -153,8 +153,8 @@ def supported_formats(config: EncoderConfigT) -> frozenset[Format]:
     Returns
     -------
     frozenset[Format]
-        Formats the encoding can read back, the rest produce an object
-        that is not readable as the encoding promises.
+        Formats the object format can read back, the rest produce an
+        object that is not readable as its format promises.
 
     """
     match config:
@@ -201,7 +201,7 @@ class S3OutputPluginConfig(OutputPluginConfig, frozen=True):
         Session token of temporary credentials.
 
     encoder : EncoderConfigT, default=JsonLinesEncoderConfig(...)
-        Encoding of object bodies.
+        Format of object bodies.
 
     content_type : str | None, default=None
         Content type to set on objects, `None` to use the content type
@@ -273,10 +273,10 @@ class S3OutputPluginConfig(OutputPluginConfig, frozen=True):
     )
     encoder: EncoderConfigT = Field(
         default_factory=lambda: JsonLinesEncoderConfig(
-            encoding=Encoding.JSON_LINES,
+            format=ObjectFormat.JSON_LINES,
         ),
         validate_default=True,
-        discriminator='encoding',
+        discriminator='format',
     )
     content_type: str | None = Field(
         default=None,
@@ -323,8 +323,8 @@ class S3OutputPluginConfig(OutputPluginConfig, frozen=True):
         if self.formatter.format not in supported:
             formats = ', '.join(sorted(supported))
             msg = (
-                f'Encoding `{self.encoder.encoding}` takes events of '
-                f'{formats} format, got `{self.formatter.format}`'
+                f'Object format `{self.encoder.format}` takes events '
+                f'of {formats} format, got `{self.formatter.format}`'
             )
             raise ValueError(msg)
 
@@ -332,7 +332,7 @@ class S3OutputPluginConfig(OutputPluginConfig, frozen=True):
 
     @model_validator(mode='after')
     def validate_json_lines_stay_on_single_lines(self) -> Self:  # noqa: D102
-        if self.encoder.encoding != Encoding.JSON_LINES:
+        if self.encoder.format != ObjectFormat.JSON_LINES:
             return self
 
         formatter = self.formatter

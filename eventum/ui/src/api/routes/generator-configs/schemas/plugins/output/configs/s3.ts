@@ -3,7 +3,7 @@ import z from 'zod';
 import { orPlaceholder } from '../../../placeholder';
 import { BaseOutputPluginConfigSchema } from '../base-config';
 
-export const enum Encoding {
+export const enum ObjectFormat {
   JSONLines = 'jsonl',
   Parquet = 'parquet',
 }
@@ -26,7 +26,7 @@ export const MAX_GZIP_COMPRESSION_LEVEL = 9;
 export const MAX_ZSTD_COMPRESSION_LEVEL = 22;
 
 const JSONLinesEncoderConfigSchema = z.object({
-  encoding: z.literal(Encoding.JSONLines),
+  format: z.literal(ObjectFormat.JSONLines),
   compression: orPlaceholder(z.enum(JSON_LINES_COMPRESSIONS)).optional(),
   compression_level: orPlaceholder(
     z.number().int().gte(1).lte(MAX_ZSTD_COMPRESSION_LEVEL)
@@ -36,13 +36,13 @@ const JSONLinesEncoderConfigSchema = z.object({
 });
 
 const ParquetEncoderConfigSchema = z.object({
-  encoding: z.literal(Encoding.Parquet),
+  format: z.literal(ObjectFormat.Parquet),
   compression: orPlaceholder(z.enum(PARQUET_COMPRESSIONS)).optional(),
   row_group_size: orPlaceholder(z.number().int().gte(1)).optional(),
   schema_path: z.string().min(1).nullable().optional(),
 });
 
-export const EncoderConfigSchema = z.discriminatedUnion('encoding', [
+export const EncoderConfigSchema = z.discriminatedUnion('format', [
   JSONLinesEncoderConfigSchema,
   ParquetEncoderConfigSchema,
 ]);

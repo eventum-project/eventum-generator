@@ -167,7 +167,7 @@ class TestEncodings:
         )
         gzip_plugin = await s3_plugin_factory(
             key_template=s3_consumer.key_template('gzip-{seq}{ext}'),
-            encoder={'encoding': 'jsonl', 'compression': 'gzip'},
+            encoder={'format': 'jsonl', 'compression': 'gzip'},
         )
         events = [e.raw_json for e in event_factory.create_batch(50)]
 
@@ -193,7 +193,7 @@ class TestEncodings:
         event_factory,
     ):
         plugin = await s3_plugin_factory(
-            encoder={'encoding': 'jsonl', 'compression': 'zstd'},
+            encoder={'format': 'jsonl', 'compression': 'zstd'},
         )
         events = event_factory.create_batch(20)
 
@@ -212,7 +212,7 @@ class TestEncodings:
         event_factory,
     ):
         plugin = await s3_plugin_factory(
-            encoder={'encoding': 'parquet', 'compression': 'zstd'},
+            encoder={'format': 'parquet', 'compression': 'zstd'},
         )
         events = event_factory.create_batch(50)
 
@@ -230,7 +230,7 @@ class TestEncodings:
         event_factory,
     ):
         plugin = await s3_plugin_factory(
-            encoder={'encoding': 'parquet', 'row_group_size': 10},
+            encoder={'format': 'parquet', 'row_group_size': 10},
         )
         events = event_factory.create_batch(50)
 
@@ -247,7 +247,7 @@ class TestEncodings:
         event_factory,
     ):
         plugin = await s3_plugin_factory(
-            encoder={'encoding': 'parquet'},
+            encoder={'format': 'parquet'},
         )
         events = event_factory.create_batch(10)
 
@@ -268,7 +268,7 @@ class TestEncodings:
         )
         parquet_plugin = await s3_plugin_factory(
             key_template=s3_consumer.key_template('columns-{seq}{ext}'),
-            encoder={'encoding': 'parquet', 'compression': 'zstd'},
+            encoder={'format': 'parquet', 'compression': 'zstd'},
         )
         events = [e.raw_json for e in event_factory.create_batch(200)]
 
@@ -296,7 +296,7 @@ class TestParquetIntegrity:
         event_factory,
     ):
         plugin = await s3_plugin_factory(
-            encoder={'encoding': 'parquet'},
+            encoder={'format': 'parquet'},
         )
         events = event_factory.create_batch(50)
         expected = [json.loads(e.raw_json) for e in events]
@@ -319,7 +319,7 @@ class TestParquetIntegrity:
         event_factory,
     ):
         plugin = await s3_plugin_factory(
-            encoder={'encoding': 'parquet'},
+            encoder={'format': 'parquet'},
         )
         events = event_factory.create_batch(20)
 
@@ -404,7 +404,7 @@ class TestSchema:
 
         plugin = await s3_plugin_factory(
             encoder={
-                'encoding': 'parquet',
+                'format': 'parquet',
                 'schema_path': str(schema_path),
             },
         )
@@ -431,7 +431,7 @@ class TestSchema:
 
         plugin = await s3_plugin_factory(
             encoder={
-                'encoding': 'parquet',
+                'format': 'parquet',
                 'schema_path': str(schema_path),
             },
         )

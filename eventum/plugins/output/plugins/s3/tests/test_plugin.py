@@ -166,7 +166,7 @@ class TestObjectKeys:
         instance = await opened(
             store,
             key_template='{seq}{ext}',
-            encoder={'encoding': 'jsonl', 'compression': 'gzip'},
+            encoder={'format': 'jsonl', 'compression': 'gzip'},
         )
 
         await instance.write(EVENTS)
@@ -178,7 +178,7 @@ class TestObjectKeys:
         instance = await opened(
             store,
             key_template='{seq}{ext}',
-            encoder={'encoding': 'parquet'},
+            encoder={'format': 'parquet'},
         )
 
         await instance.write(EVENTS)
@@ -245,7 +245,7 @@ class TestEncodings:
 
     async def test_parquet_object_is_readable(self, opened):
         store = MemoryStore()
-        instance = await opened(store, encoder={'encoding': 'parquet'})
+        instance = await opened(store, encoder={'format': 'parquet'})
 
         await instance.write(EVENTS)
         body = await body_of(store, keys(store)[0])
@@ -262,7 +262,7 @@ class TestEncodings:
         store = MemoryStore()
         instance = await opened(
             store,
-            encoder={'encoding': 'parquet', 'schema_path': str(schema_path)},
+            encoder={'format': 'parquet', 'schema_path': str(schema_path)},
         )
 
         await instance.write([json.dumps({'n': 2})])
@@ -278,7 +278,7 @@ class TestEncodings:
         instance = await opened(
             store,
             key_template='{seq}{ext}',
-            encoder={'encoding': 'parquet'},
+            encoder={'format': 'parquet'},
         )
 
         await instance.write([json.dumps({'n': 1})])
@@ -302,7 +302,7 @@ class TestEncodings:
         instance = await opened(
             store,
             key_template='{seq}{ext}',
-            encoder={'encoding': 'parquet', 'schema_path': str(schema_path)},
+            encoder={'format': 'parquet', 'schema_path': str(schema_path)},
         )
 
         await instance.write([json.dumps({'n': 1})])
@@ -327,7 +327,7 @@ class TestEncodings:
     async def test_event_conflicting_within_a_batch_fails_the_write(
         self, opened
     ):
-        instance = await opened(MemoryStore(), encoder={'encoding': 'parquet'})
+        instance = await opened(MemoryStore(), encoder={'format': 'parquet'})
         events = [json.dumps({'n': 1}), json.dumps({'n': 'text'})]
 
         with pytest.raises(PluginWriteError, match='Failed to encode'):
@@ -342,7 +342,7 @@ class TestEncodings:
         schema_path.write_text(json.dumps({'n': 1}))
         instance = await opened(
             MemoryStore(),
-            encoder={'encoding': 'parquet', 'schema_path': str(schema_path)},
+            encoder={'format': 'parquet', 'schema_path': str(schema_path)},
         )
 
         with pytest.raises(PluginWriteError, match='Failed to encode'):
@@ -359,7 +359,7 @@ class TestEncodings:
         schema_path.write_text(json.dumps({'n': 1}))
         instance = await opened(
             MemoryStore(),
-            encoder={'encoding': 'parquet', 'schema_path': str(schema_path)},
+            encoder={'format': 'parquet', 'schema_path': str(schema_path)},
         )
 
         with pytest.raises(PluginWriteError) as info:
@@ -368,7 +368,7 @@ class TestEncodings:
         assert info.value.context['file_path'] == str(schema_path)
 
     async def test_inferred_schema_conflict_names_no_file(self, opened):
-        instance = await opened(MemoryStore(), encoder={'encoding': 'parquet'})
+        instance = await opened(MemoryStore(), encoder={'format': 'parquet'})
         events = [json.dumps({'n': 1}), json.dumps({'n': 'text'})]
 
         with pytest.raises(PluginWriteError) as info:
@@ -378,7 +378,7 @@ class TestEncodings:
 
     async def test_failed_encoding_writes_no_object(self, opened):
         store = MemoryStore()
-        instance = await opened(store, encoder={'encoding': 'parquet'})
+        instance = await opened(store, encoder={'format': 'parquet'})
         events = [json.dumps({'n': 1}), json.dumps({'n': 'text'})]
 
         with pytest.raises(PluginWriteError):
@@ -387,7 +387,7 @@ class TestEncodings:
         assert keys(store) == []
 
     async def test_failed_encoding_counts_events_as_failed(self, opened):
-        instance = await opened(MemoryStore(), encoder={'encoding': 'parquet'})
+        instance = await opened(MemoryStore(), encoder={'format': 'parquet'})
         events = [json.dumps({'n': 1}), json.dumps({'n': 'text'})]
 
         with pytest.raises(PluginWriteError):
@@ -406,7 +406,7 @@ class TestOpening:
         ):
             build(
                 encoder={
-                    'encoding': 'parquet',
+                    'format': 'parquet',
                     'schema_path': str(tmp_path / 'absent.json'),
                 },
             )
@@ -421,7 +421,7 @@ class TestOpening:
         ):
             build(
                 encoder={
-                    'encoding': 'parquet',
+                    'format': 'parquet',
                     'schema_path': str(schema_path),
                 },
             )
@@ -440,7 +440,7 @@ class TestOpening:
 
         instance = build(
             encoder={
-                'encoding': 'parquet',
+                'format': 'parquet',
                 'schema_path': str(schema_path),
             },
         )
@@ -459,7 +459,7 @@ class TestOpening:
             store,
             params={**PARAMS, 'base_path': tmp_path},
             encoder={
-                'encoding': 'parquet',
+                'format': 'parquet',
                 'schema_path': 'schema/event.json',
             },
         )
@@ -514,7 +514,7 @@ class TestStoreWiring:
 
     async def test_parquet_content_type_is_set_on_the_object(self, opened):
         store = MemoryStore()
-        instance = await opened(store, encoder={'encoding': 'parquet'})
+        instance = await opened(store, encoder={'format': 'parquet'})
 
         await instance.write(EVENTS)
         result = await obstore.get_async(store, keys(store)[0])
@@ -831,7 +831,7 @@ class TestNetworkAccounting:
             store = MemoryStore()
             instance = await opened(
                 store,
-                encoder={'encoding': 'jsonl', 'compression': 'gzip'},
+                encoder={'format': 'jsonl', 'compression': 'gzip'},
             )
             await instance.write(EVENTS)
             sizes.append(len(await body_of(store, keys(store)[0])))

@@ -8,7 +8,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from eventum.plugins.output.plugins.s3.config import (
-    Encoding,
+    ObjectFormat,
     JsonLinesEncoderConfig,
     ParquetEncoderConfig,
 )
@@ -27,11 +27,11 @@ EVENTS = [
 
 
 def json_lines(**kwargs) -> JsonLinesEncoderConfig:
-    return JsonLinesEncoderConfig(encoding=Encoding.JSON_LINES, **kwargs)
+    return JsonLinesEncoderConfig(format=ObjectFormat.JSON_LINES, **kwargs)
 
 
 def parquet(**kwargs) -> ParquetEncoderConfig:
-    return ParquetEncoderConfig(encoding=Encoding.PARQUET, **kwargs)
+    return ParquetEncoderConfig(format=ObjectFormat.PARQUET, **kwargs)
 
 
 class TestExtension:

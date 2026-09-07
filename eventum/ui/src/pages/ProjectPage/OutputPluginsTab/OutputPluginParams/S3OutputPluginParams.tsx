@@ -70,7 +70,7 @@ export const S3OutputPluginParams: FC<S3OutputPluginParamsProps> = ({
             `hour`, `minute`, `second` and `timestamp` of the moment the object
             is written at in UTC, `seq` with the number of objects written
             before it, `uuid` with a random value and `ext` with the extension
-            of the selected encoding"
+            of the selected object format"
           />
         }
         placeholder="year={year}/month={month}/day={day}/hour={hour}/{timestamp}-{uuid}{ext}"
