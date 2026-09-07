@@ -7,6 +7,7 @@ with automatic setup/teardown of backend resources.
 import os
 import socket
 import time
+from pathlib import Path
 
 import httpx
 import pytest
@@ -22,6 +23,21 @@ MINIO_URL = os.environ.get('MINIO_URL', 'http://localhost:9000')
 MINIO_BUCKET = os.environ.get('MINIO_BUCKET', 'eventum-test')
 MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY', 'eventum')
 MINIO_SECRET_KEY = os.environ.get('MINIO_SECRET_KEY', 'eventum-secret')
+OTLP_ENDPOINT = os.environ.get('OTLP_ENDPOINT', 'http://localhost:4318')
+OTLP_HEALTH_URL = os.environ.get(
+    'OTLP_HEALTH_URL',
+    'http://localhost:13133',
+)
+
+# Host side of the bind mount `tests/docker/docker-compose.yml` sets up
+# for the collector's `file` exporter.
+OTLP_OUTPUT_PATH = (
+    Path(__file__).resolve().parent.parent
+    / 'docker'
+    / 'otelcol'
+    / 'output'
+    / 'logs.json'
+)
 
 
 # - Service readiness helpers --
@@ -65,6 +81,14 @@ def _check_clickhouse() -> None:
     r.raise_for_status()
 
 
+def _check_kafka() -> None:
+    s = socket.create_connection(
+        (KAFKA_BOOTSTRAP.split(':')[0], int(KAFKA_BOOTSTRAP.split(':')[1])),
+        timeout=5,
+    )
+    s.close()
+
+
 def _check_minio() -> None:
     r = httpx.get(f'{MINIO_URL}/minio/health/live', timeout=5)
     r.raise_for_status()
@@ -77,12 +101,9 @@ def _check_minio() -> None:
         raise RuntimeError(msg)
 
 
-def _check_kafka() -> None:
-    s = socket.create_connection(
-        (KAFKA_BOOTSTRAP.split(':')[0], int(KAFKA_BOOTSTRAP.split(':')[1])),
-        timeout=5,
-    )
-    s.close()
+def _check_otelcol() -> None:
+    r = httpx.get(OTLP_HEALTH_URL, timeout=5)
+    r.raise_for_status()
 
 
 # - Session-scoped service readiness fixtures --
@@ -103,23 +124,30 @@ def clickhouse_dsn():
 
 
 @pytest.fixture(scope='session')
-def minio_url():
-    """Return MinIO URL after verifying service is ready."""
-    _wait_for_service(_check_minio, 'MinIO')
-    return MINIO_URL
-
-
-@pytest.fixture(scope='session')
 def kafka_bootstrap():
     """Return bootstrap servers string after verifying Kafka is ready."""
     _wait_for_service(_check_kafka, 'Kafka')
     return KAFKA_BOOTSTRAP
 
 
+@pytest.fixture(scope='session')
+def otlp_endpoint():
+    """Return the OTLP endpoint after verifying collector readiness."""
+    _wait_for_service(_check_otelcol, 'OTLP collector')
+    return OTLP_ENDPOINT
+
+
+@pytest.fixture(scope='session')
+def minio_url():
+    """Return MinIO URL after verifying service is ready."""
+    _wait_for_service(_check_minio, 'MinIO')
+    return MINIO_URL
+
+
 # - Shared utility fixtures --
 
 
-@pytest.fixture()
+@pytest.fixture
 def event_factory():
     """Create a fresh EventFactory for each test."""
     from tests.integration.event_factory import EventFactory
@@ -230,6 +258,45 @@ async def kafka_plugin(kafka_consumer):
         topic=kafka_consumer.topic,
     )
     plugin = KafkaOutputPlugin(config=config, params={'id': 1})
+    await plugin.open()
+    yield plugin
+    await plugin.close()
+
+
+# - OTLP fixtures --
+
+
+@pytest_asyncio.fixture()
+async def collector_consumer(otlp_endpoint):  # noqa: ARG001
+    """Create a collector consumer, isolated to records written after it.
+
+    Depends on `otlp_endpoint` only to gate on collector readiness
+    before recording the read offset; the file path itself does not
+    come from it.
+    """
+    from tests.integration.backends.collector import CollectorConsumer
+
+    consumer = CollectorConsumer(output_path=OTLP_OUTPUT_PATH)
+    await consumer.setup()
+    yield consumer
+    await consumer.teardown()
+
+
+@pytest_asyncio.fixture()
+async def otlp_plugin(otlp_endpoint):
+    """Create and open an otlp output plugin targeting the collector."""
+    from eventum.plugins.output.plugins.otlp.config import (
+        OtlpOutputPluginConfig,
+    )
+    from eventum.plugins.output.plugins.otlp.plugin import OtlpOutputPlugin
+
+    config = OtlpOutputPluginConfig(
+        endpoint=otlp_endpoint,  # type: ignore[arg-type]
+    )
+    plugin = OtlpOutputPlugin(
+        config=config,
+        params={'id': 1, 'generator_id': 'otlp-it'},
+    )
     await plugin.open()
     yield plugin
     await plugin.close()

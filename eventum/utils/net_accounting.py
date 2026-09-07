@@ -7,8 +7,8 @@ application* moves, this module wraps the send and receive methods of
 ``socket.socket`` so every byte the process passes through a Python
 socket is counted.
 
-Eventum's network output plugins (tcp, udp, http and opensearch via
-httpx, kafka via aiokafka, clickhouse) all run on asyncio and route
+Eventum's network output plugins (tcp, udp, http, opensearch and otlp
+via httpx, kafka via aiokafka, clickhouse) all run on asyncio and route
 through Python sockets, so the counters reflect the application's real
 network I/O - including TLS, whose encrypted bytes reach the raw socket.
 Counts are cumulative since ``install`` was called.

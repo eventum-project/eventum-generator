@@ -69,6 +69,21 @@ services:
         limits:
           memory: 2g
 
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.144.0
+    user: "0:0"
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otelcol/config.yaml:/etc/otelcol/config.yaml
+      - ./otelcol/output:/output
+    ports:
+      - "4318:4318"
+      - "13133:13133"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     command: server /data --console-address ":9001"
