@@ -42,6 +42,7 @@ export interface EventStage {
 
 export interface OutputStage {
   names: string[];
+  ids: string[];
   selected: number;
   selectedId: string | undefined;
   setSelected: (index: number) => void;

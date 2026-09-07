@@ -180,6 +180,7 @@ export const StudioProvider: FC<StudioProviderProps> = ({
   const output = useMemo<OutputStage>(
     () => ({
       names: pluginNames(outputConfig),
+      ids: outputIds,
       selected: outputSelected,
       selectedId: outputIds[outputSelected],
       setSelected: setOutputSelected,

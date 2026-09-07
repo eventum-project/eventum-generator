@@ -24,12 +24,28 @@ vi.mock('../../InputPluginsTab/TimestampsHistogram', () => ({
 vi.mock('../../EventPluginTab/Workspace/common/DebuggerTab', () => ({
   DebuggerTab: ({
     onInitializedChange,
+    onProducedEventsChange,
   }: {
     onInitializedChange: (value: boolean) => void;
+    onProducedEventsChange: (events: string[]) => void;
   }) => (
-    <button type="button" onClick={() => onInitializedChange(true)}>
-      debugger tool
-    </button>
+    <>
+      <button type="button" onClick={() => onInitializedChange(true)}>
+        debugger tool
+      </button>
+      <button
+        type="button"
+        onClick={() => onProducedEventsChange(['from debugger'])}
+      >
+        produce mocked event
+      </button>
+      <button
+        type="button"
+        onClick={() => onProducedEventsChange(['newer debugger event'])}
+      >
+        produce newer mocked event
+      </button>
+    </>
   ),
 }));
 vi.mock(
@@ -37,7 +53,30 @@ vi.mock(
   () => ({ StateTab: () => <div>state tool</div> })
 );
 vi.mock('../../OutputPluginsTab/FormatterTab', () => ({
-  FormatterTab: () => <div>formatter tool</div>,
+  FormatterTab: ({
+    outputPlugins,
+    outputPluginNames,
+    outputPluginIds,
+    selectedOutputPluginId,
+    debuggerEvents,
+  }: {
+    outputPlugins: unknown[];
+    outputPluginNames: string[];
+    outputPluginIds: string[];
+    selectedOutputPluginId: string | undefined;
+    debuggerEvents?: string[];
+  }) => (
+    <>
+      <div>formatter tool</div>
+      <div>
+        formatter sources: {outputPlugins.length}:{outputPluginNames.join(',')}:
+        {outputPluginIds.join(',')}:{selectedOutputPluginId}
+      </div>
+      <div>
+        formatter debugger events: {debuggerEvents?.join(',') ?? 'none'}
+      </div>
+    </>
+  ),
 }));
 
 interface Options {
@@ -102,8 +141,12 @@ function setup(options: Options = {}) {
     } as EventStage,
     output: {
       names: Array.from({ length: outputPlugins }, () => 'file'),
+      ids: Array.from(
+        { length: outputPlugins },
+        (_, index) => `output-${index}`
+      ),
       selected: 0,
-      selectedId: 'file-0',
+      selectedId: outputPlugins > 0 ? 'output-0' : undefined,
       setSelected: vi.fn(),
       add: vi.fn(),
       remove: vi.fn(),
@@ -169,6 +212,39 @@ describe('ConsolePanel', () => {
     expect(paneOf('timestamps tool')).toHaveAttribute('data-active', 'false');
     expect(paneOf('debugger tool')).toHaveAttribute('data-active', 'true');
     expect(paneOf('formatter tool')).toHaveAttribute('data-active', 'false');
+  });
+
+  it('passes output sources and the selected plugin to the formatter', () => {
+    setup({ stage: 'output', outputPlugins: 2 });
+
+    expect(
+      screen.getByText(
+        'formatter sources: 2:file,file:output-0,output-1:output-0'
+      )
+    ).toBeVisible();
+  });
+
+  it('passes the last debugger events to the formatter', async () => {
+    const user = userEvent.setup();
+    setup({ stage: 'event' });
+
+    expect(screen.getByText('formatter debugger events: none')).toBeVisible();
+
+    await user.click(
+      screen.getByRole('button', { name: 'produce mocked event' })
+    );
+
+    expect(
+      screen.getByText('formatter debugger events: from debugger')
+    ).toBeVisible();
+
+    await user.click(
+      screen.getByRole('button', { name: 'produce newer mocked event' })
+    );
+
+    expect(
+      screen.getByText('formatter debugger events: newer debugger event')
+    ).toBeVisible();
   });
 
   it.each([

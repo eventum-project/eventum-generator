@@ -52,7 +52,10 @@ function produced(
   return { events, errors, exhausted: false } as ProducedEventsInfo;
 }
 
-function setup(initialized?: boolean) {
+function setup(
+  initialized?: boolean,
+  onProducedEventsChange = vi.fn<(events: string[]) => void>()
+) {
   const onInitializedChange = vi.fn();
   const getPluginConfig = vi.fn(() => CONFIG);
 
@@ -64,12 +67,13 @@ function setup(initialized?: boolean) {
           onInitializedChange={
             initialized === undefined ? undefined : onInitializedChange
           }
+          onProducedEventsChange={onProducedEventsChange}
         />
       </GetPluginConfigProvider>
     </ProjectNameProvider>
   );
 
-  return { onInitializedChange, getPluginConfig };
+  return { onInitializedChange, onProducedEventsChange, getPluginConfig };
 }
 
 beforeEach(() => {
@@ -162,6 +166,23 @@ describe('DebuggerTab', () => {
     expect(produce.mutate).toHaveBeenCalledTimes(1);
     expect(await screen.findByText('Events')).toBeInTheDocument();
   });
+
+  it.each([[[`{"a":1}`]], [[]]])(
+    'reports produced events upwards after a successful run',
+    async (events) => {
+      const user = userEvent.setup();
+      produce = mutation(produced(events));
+      vi.mocked(useProduceEventsMutation).mockReturnValue(
+        produce as unknown as ReturnType<typeof useProduceEventsMutation>
+      );
+      const { onProducedEventsChange } = setup();
+
+      await user.click(screen.getByRole('button', { name: /Start/ }));
+      await user.click(await screen.findByRole('button', { name: /Produce/ }));
+
+      expect(onProducedEventsChange).toHaveBeenCalledWith(events);
+    }
+  );
 
   it('says so when the parameters produced nothing', async () => {
     const user = userEvent.setup();

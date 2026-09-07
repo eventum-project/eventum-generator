@@ -42,11 +42,13 @@ interface DebuggerTabProps {
    *  state when used standalone. */
   initialized?: boolean;
   onInitializedChange?: (value: boolean) => void;
+  onProducedEventsChange?: (events: string[]) => void;
 }
 
 export const DebuggerTab: FC<DebuggerTabProps> = ({
   initialized,
   onInitializedChange,
+  onProducedEventsChange,
 }) => {
   const produceParamsForm = useForm<{
     timestamp: string;
@@ -166,6 +168,7 @@ export const DebuggerTab: FC<DebuggerTabProps> = ({
       {
         onSuccess: (data) => {
           setProducedEventsInfo(data);
+          onProducedEventsChange?.(data.events);
 
           if (data.exhausted) {
             notifications.show({

@@ -3,6 +3,7 @@ import {
   Button,
   Code,
   Group,
+  Select,
   Text,
   Textarea,
   Tooltip,
@@ -16,7 +17,7 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { nanoid } from 'nanoid';
-import { FC, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 
 import { useProjectName } from '../../hooks/useProjectName';
 import {
@@ -28,6 +29,10 @@ import {
 } from '../../studio/panels/console/primitives';
 import { FormatterParams } from '../OutputPluginParams/components/FormatterParams';
 import { useFormatEventsMutation } from '@/api/hooks/usePreview';
+import { OUTPUT_PLUGIN_DEFAULT_FORMATTERS } from '@/api/routes/generator-configs/modules/plugins/registry';
+import { OutputPluginsNamedConfig } from '@/api/routes/generator-configs/schemas';
+import { OutputPluginConfig } from '@/api/routes/generator-configs/schemas/plugins/output';
+import { OutputPluginName } from '@/api/routes/generator-configs/schemas/plugins/output/base-config';
 import {
   Format,
   FormatterConfig,
@@ -35,7 +40,31 @@ import {
 import { FormattingResult } from '@/api/routes/preview/schemas';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
-export const FormatterTab: FC = () => {
+interface FormatterTabProps {
+  outputPlugins: OutputPluginsNamedConfig;
+  outputPluginNames: string[];
+  outputPluginIds: string[];
+  selectedOutputPluginId: string | undefined;
+  debuggerEvents?: string[];
+}
+
+function getFormatterConfig(
+  outputPlugin: OutputPluginsNamedConfig[number]
+): FormatterConfig {
+  const [name, config] = Object.entries(outputPlugin)[0] as [
+    OutputPluginName,
+    OutputPluginConfig,
+  ];
+  return config.formatter ?? OUTPUT_PLUGIN_DEFAULT_FORMATTERS[name];
+}
+
+export const FormatterTab: FC<FormatterTabProps> = ({
+  outputPlugins,
+  outputPluginNames,
+  outputPluginIds,
+  selectedOutputPluginId,
+  debuggerEvents,
+}) => {
   const form = useForm<{ formatter?: FormatterConfig }>({
     initialValues: {
       formatter: {
@@ -50,8 +79,59 @@ export const FormatterTab: FC = () => {
   const [events, setEvents] = useState<{ id: string; content: string }[]>([
     { id: nanoid(), content: '' },
   ]);
+  const [formatterSource, setFormatterSource] = useState(
+    selectedOutputPluginId ?? outputPluginIds[0] ?? ''
+  );
   const [formattingResult, setFormattingResult] =
     useState<FormattingResult | null>(null);
+
+  const formatterSourceOptions = outputPluginNames.map((name, index) => ({
+    value: outputPluginIds[index]!,
+    label: `${name} #${index + 1}`,
+  }));
+  const formatterSourceIndex = outputPluginIds.indexOf(formatterSource);
+  const formatterSourceLabel =
+    formatterSourceOptions.find(({ value }) => value === formatterSource)
+      ?.label ?? 'output plugin';
+
+  useEffect(() => {
+    if (selectedOutputPluginId !== undefined) {
+      setFormatterSource(selectedOutputPluginId);
+    }
+  }, [selectedOutputPluginId]);
+
+  useEffect(() => {
+    setFormatterSource((current) =>
+      outputPluginIds.includes(current)
+        ? current
+        : (selectedOutputPluginId ?? outputPluginIds[0] ?? '')
+    );
+  }, [outputPluginIds, selectedOutputPluginId]);
+
+  function handleLoadFormatter() {
+    const outputPlugin = outputPlugins[formatterSourceIndex];
+    if (outputPlugin === undefined) {
+      return;
+    }
+
+    form.setFieldValue(
+      'formatter',
+      structuredClone(getFormatterConfig(outputPlugin))
+    );
+  }
+
+  function handleLoadDebuggerEvents() {
+    if (debuggerEvents === undefined) {
+      return;
+    }
+
+    setEvents(
+      debuggerEvents.map((content) => ({
+        id: nanoid(),
+        content,
+      }))
+    );
+  }
 
   function handleFormatEvents(values: typeof form.values) {
     if (values.formatter === undefined) {
@@ -111,7 +191,37 @@ export const FormatterTab: FC = () => {
       }
     >
       <ToolBody>
-        <ToolPane title="Formatter" grow={0} basis={300}>
+        <ToolPane
+          title="Formatter"
+          grow={0}
+          basis={300}
+          actions={
+            <Group gap={4} wrap="nowrap">
+              <Select
+                aria-label="Output plugin formatter source"
+                data={formatterSourceOptions}
+                value={formatterSource}
+                onChange={(value) => {
+                  if (value !== null) {
+                    setFormatterSource(value);
+                  }
+                }}
+                allowDeselect={false}
+                size="xs"
+                w={115}
+              />
+              <Button
+                aria-label={`Load formatter from ${formatterSourceLabel}`}
+                variant="default"
+                size="compact-xs"
+                disabled={outputPlugins[formatterSourceIndex] === undefined}
+                onClick={handleLoadFormatter}
+              >
+                Load
+              </Button>
+            </Group>
+          }
+        >
           <FormatterParams
             value={form.values.formatter}
             onChange={(config) => {
@@ -124,18 +234,38 @@ export const FormatterTab: FC = () => {
           title="Events"
           grow={1}
           actions={
-            <Tooltip label="Add event" withArrow>
-              <ActionIcon
+            <Group gap={4} wrap="nowrap">
+              <Button
                 variant="default"
-                size="sm"
-                aria-label="Add event"
-                onClick={() =>
-                  setEvents((prev) => [...prev, { id: nanoid(), content: '' }])
+                size="compact-xs"
+                aria-label={
+                  debuggerEvents === undefined
+                    ? 'No debugger events to load'
+                    : `Replace with ${debuggerEvents.length} debugger events`
                 }
+                disabled={debuggerEvents === undefined}
+                onClick={handleLoadDebuggerEvents}
               >
-                <IconPlus size={15} />
-              </ActionIcon>
-            </Tooltip>
+                {debuggerEvents === undefined
+                  ? 'No debugger events'
+                  : `Replace with ${debuggerEvents.length} debugger events`}
+              </Button>
+              <Tooltip label="Add event" withArrow>
+                <ActionIcon
+                  variant="default"
+                  size="sm"
+                  aria-label="Add event"
+                  onClick={() =>
+                    setEvents((prev) => [
+                      ...prev,
+                      { id: nanoid(), content: '' },
+                    ])
+                  }
+                >
+                  <IconPlus size={15} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
           }
         >
           {events.length > 0 ? (

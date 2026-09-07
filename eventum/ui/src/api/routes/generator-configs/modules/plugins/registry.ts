@@ -29,6 +29,10 @@ import { InputPluginConfig } from '../../schemas/plugins/input';
 import { InputPluginName } from '../../schemas/plugins/input/base-config';
 import { OutputPluginConfig } from '../../schemas/plugins/output';
 import { OutputPluginName } from '../../schemas/plugins/output/base-config';
+import {
+  FormatterConfig,
+  FormatterConfigSchema,
+} from '../../schemas/plugins/output/formatters';
 import { ReplayEventPluginDefaultConfig } from './default-configs/event/replay';
 import { ScriptEventPluginDefaultConfig } from './default-configs/event/script';
 import { TemplateEventPluginDefaultConfig } from './default-configs/event/template';
@@ -49,6 +53,7 @@ import { S3OutputPluginDefaultConfig } from './default-configs/output/s3';
 import { StdoutOutputPluginDefaultConfig } from './default-configs/output/stdout';
 import { TcpOutputPluginDefaultConfig } from './default-configs/output/tcp';
 import { UdpOutputPluginDefaultConfig } from './default-configs/output/udp';
+import outputPluginDefaultFormatters from './output-plugin-default-formatters.json';
 
 /** Scale down filled brand icons to visually match stroked Tabler icons. */
 function brandIcon(BaseIcon: IconType): IconType {
@@ -223,6 +228,24 @@ export const OUTPUT_PLUGIN_DEFAULT_CONFIGS = {
   tcp: TcpOutputPluginDefaultConfig,
   udp: UdpOutputPluginDefaultConfig,
 } as const satisfies Record<OutputPluginName, OutputPluginConfig>;
+
+/** Formatters constructed by output plugins when none is set explicitly. */
+export const OUTPUT_PLUGIN_DEFAULT_FORMATTERS = {
+  clickhouse: FormatterConfigSchema.parse(
+    outputPluginDefaultFormatters.clickhouse
+  ),
+  file: FormatterConfigSchema.parse(outputPluginDefaultFormatters.file),
+  http: FormatterConfigSchema.parse(outputPluginDefaultFormatters.http),
+  kafka: FormatterConfigSchema.parse(outputPluginDefaultFormatters.kafka),
+  opensearch: FormatterConfigSchema.parse(
+    outputPluginDefaultFormatters.opensearch
+  ),
+  otlp: FormatterConfigSchema.parse(outputPluginDefaultFormatters.otlp),
+  s3: FormatterConfigSchema.parse(outputPluginDefaultFormatters.s3),
+  stdout: FormatterConfigSchema.parse(outputPluginDefaultFormatters.stdout),
+  tcp: FormatterConfigSchema.parse(outputPluginDefaultFormatters.tcp),
+  udp: FormatterConfigSchema.parse(outputPluginDefaultFormatters.udp),
+} satisfies Record<OutputPluginName, FormatterConfig>;
 
 export const EVENT_PLUGIN_DEFAULT_ASSETS = {
   replay: {

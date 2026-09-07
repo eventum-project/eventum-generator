@@ -42,6 +42,7 @@ interface EventSlotProps {
   stateAvailable: boolean;
   initialized: boolean;
   onInitializedChange: (value: boolean) => void;
+  onProducedEventsChange: (events: string[]) => void;
   getConfig: EventStage['getConfig'];
 }
 
@@ -54,6 +55,7 @@ const EventSlot: FC<EventSlotProps> = ({
   stateAvailable,
   initialized,
   onInitializedChange,
+  onProducedEventsChange,
   getConfig,
 }) => {
   if (!ready) {
@@ -70,6 +72,7 @@ const EventSlot: FC<EventSlotProps> = ({
         <DebuggerTab
           initialized={initialized}
           onInitializedChange={onInitializedChange}
+          onProducedEventsChange={onProducedEventsChange}
         />
       </div>
       {stateAvailable && (
@@ -100,6 +103,7 @@ export const ConsolePanel: FC<ConsolePanelProps> = ({
   const { config, input, event, output } = useStudioConfig();
   const [eventView, setEventView] = useState<EventView>('debugger');
   const [eventInitialized, setEventInitialized] = useState(false);
+  const [debuggerEvents, setDebuggerEvents] = useState<string[]>();
 
   const isTemplate = event.name === 'template';
 
@@ -202,12 +206,19 @@ export const ConsolePanel: FC<ConsolePanelProps> = ({
           stateAvailable={stateAvailable}
           initialized={eventInitialized}
           onInitializedChange={setEventInitialized}
+          onProducedEventsChange={setDebuggerEvents}
           getConfig={event.getConfig}
         />
 
         <div className="stage-pane" data-active={activeStage === 'output'}>
           {output.names.length > 0 ? (
-            <FormatterTab />
+            <FormatterTab
+              outputPlugins={config.output}
+              outputPluginNames={output.names}
+              outputPluginIds={output.ids}
+              selectedOutputPluginId={output.selectedId}
+              debuggerEvents={debuggerEvents}
+            />
           ) : (
             <StageEmpty message="Add an output plugin to preview formatted events." />
           )}

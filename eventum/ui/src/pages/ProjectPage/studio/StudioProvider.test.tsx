@@ -107,6 +107,17 @@ describe('StudioProvider', () => {
     expect(studio.config.input.selectedId).not.toBe(first);
   });
 
+  it('keeps output identities aligned when a preceding plugin is removed', () => {
+    setup();
+
+    act(() => studio.config.output.add('http'));
+    const second = studio.config.output.ids[1];
+    act(() => studio.config.output.remove(0));
+
+    expect(studio.config.output.names).toEqual(['http']);
+    expect(studio.config.output.ids).toEqual([second]);
+  });
+
   it('writes an edit into the plugin the inspector is on', () => {
     setup();
 
