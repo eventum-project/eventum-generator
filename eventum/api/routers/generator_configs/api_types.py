@@ -1,47 +1,54 @@
 """API-layer type-resolved generator configuration models.
 
-These models mirror `runtime_types.GeneratorConfig` but relax each
-non-string field to also accept ``PlaceholderString`` values
-(``${params.*}`` / ``${secrets.*}``).  This keeps the OpenAPI schema
-detailed (every plugin field is visible with its original type) while
-letting the API read and write configs that contain variable
-substitution placeholders.
+These models mirror `runtime_types.GeneratorConfig` but relax plugin
+fields to accept ``${params.*}`` / ``${secrets.*}`` substitutions.
+This keeps the OpenAPI schema detailed (every plugin field is visible
+with its original type and rules) while letting the API read and write
+configs that contain values not known until load time.
 
 Plugin config source files (``plugins/*/config.py``) are **not**
 modified — the relaxation is applied programmatically at import time.
 """
 
+import inspect
 import re
+import sys
 import types
 from collections.abc import Callable
+from copy import copy
 from functools import wraps
 from typing import (
     Annotated,
     Any,
+    ForwardRef,
     Literal,
     TypeAliasType,
     Union,
     assert_never,
+    cast,
+    evaluate_forward_ref,
     get_args,
     get_origin,
 )
 
-from annotated_types import Ge, Gt, Le, Lt
 from pydantic import (
     AfterValidator,
     BaseModel,
     ConfigDict,
-    Field,
     RootModel,
+    StringConstraints,
+    TypeAdapter,
+    ValidationInfo,
     create_model,
+    field_validator,
     model_validator,
 )
 from pydantic.fields import FieldInfo
+from pydantic_core import PydanticUndefined
 
 from eventum.api.routers.generator_configs.runtime_types import (
     PluginNamedConfig,
 )
-from eventum.core.config_loader import TOKEN_PATTERN
 from eventum.plugins.loader import (
     get_event_plugin_names,
     get_input_plugin_names,
@@ -53,14 +60,10 @@ from eventum.plugins.loader import (
 
 # - Placeholder type -------------------------------------------------
 
-_PLACEHOLDER_RE = re.compile(r'^\$\{(params|secrets)\..+\}$')
-
-# Numeric constraints that must be moved from FieldInfo into
-# `Annotated[T, ...]` so they only apply to the typed branch, not to
-# PlaceholderString.  MinLen/MaxLen are intentionally dropped — they
-# can crash on coerced types like Path (no len()) and are not
-# meaningful when fields may contain placeholder strings.
-_NUMERIC_CONSTRAINT_CLASSES = (Ge, Gt, Le, Lt)
+_PLACEHOLDER_PATTERN = r'^\$\{\s*(?:params|secrets)\.[^\s}]+\s*\}$'
+_SUBSTITUTION_PATTERN = r'\$\{\s*(?:params|secrets)\.[^\s}]+\s*\}'
+_PLACEHOLDER_RE = re.compile(_PLACEHOLDER_PATTERN)
+_SUBSTITUTION_RE = re.compile(_SUBSTITUTION_PATTERN)
 
 
 def _validate_placeholder(value: str) -> str:
@@ -73,14 +76,29 @@ def _validate_placeholder(value: str) -> str:
     return value
 
 
+def _validate_substitution_string(value: str) -> str:
+    if not _SUBSTITUTION_RE.search(value):
+        msg = f'Value must carry a substitution token, got: {value}'
+        raise ValueError(msg)
+    return value
+
+
 PlaceholderString = Annotated[
     str,
+    StringConstraints(pattern=_PLACEHOLDER_PATTERN),
     AfterValidator(_validate_placeholder),
+]
+SubstitutionString = Annotated[
+    str,
+    StringConstraints(pattern=_SUBSTITUTION_PATTERN),
+    AfterValidator(_validate_substitution_string),
 ]
 
 # - Type relaxation --------------------------------------------------
 
-_relaxed_model_cache: dict[type, type] = {}
+_relaxed_model_cache: dict[type[BaseModel], type[BaseModel]] = {}
+_relaxing_model_refs: dict[type[BaseModel], ForwardRef] = {}
+_relaxed_forward_namespace: dict[str, type[BaseModel]] = {}
 
 
 def _already_accepts_any_str(tp: type) -> bool:
@@ -92,8 +110,29 @@ def _already_accepts_any_str(tp: type) -> bool:
     return tp is str
 
 
+def _accepts_any_str(annotation: Any) -> bool:
+    """Return whether an annotation has an unconstrained string branch."""
+    if _already_accepts_any_str(annotation):
+        return True
+
+    if isinstance(annotation, TypeAliasType):
+        return _accepts_any_str(annotation.__value__)
+
+    origin = get_origin(annotation)
+    args = get_args(annotation)
+    if origin is Annotated:
+        return _accepts_any_str(args[0])
+
+    if origin is types.UnionType or origin is Union:
+        return any(_accepts_any_str(arg) for arg in args)
+
+    return False
+
+
 def _relax_type(  # noqa: C901, PLR0911, PLR0912
     annotation: Any,
+    *,
+    namespace: dict[str, Any] | None = None,
 ) -> Any:
     """Recursively transform a type annotation to also accept
     ``PlaceholderString``.
@@ -112,44 +151,82 @@ def _relax_type(  # noqa: C901, PLR0911, PLR0912
     if annotation is type(None):
         return annotation
 
+    if isinstance(annotation, ForwardRef):
+        resolved = evaluate_forward_ref(
+            annotation,
+            globals=namespace,
+            locals=namespace,
+        )
+        return _relax_type(resolved, namespace=namespace)
+
     if _already_accepts_any_str(annotation):
         return annotation
 
     # ---- TypeAliasType (Python 3.12+ `type X = ...`) -----------------
     # Pydantic stores these unresolved; unwrap to the underlying type.
     if isinstance(annotation, TypeAliasType):
-        return _relax_type(annotation.__value__)
+        module_name = cast('str', annotation.__module__)
+        alias_namespace = vars(sys.modules[module_name])
+        return _relax_type(
+            annotation.__value__,
+            namespace=alias_namespace,
+        )
 
     origin = get_origin(annotation)
     args = get_args(annotation)
 
     # ---- Union (includes T | None) -----------------------------------
     if origin is types.UnionType or origin is Union:
-        # If the union already contains bare `str`, no change needed
-        if any(_already_accepts_any_str(a) for a in args):
-            return annotation
-
-        # Recursively relax BaseModel members (so their inner
-        # fields also accept placeholders).  Non-model members
-        # are kept as-is.
-        relaxed_args: list[Any] = []
-        for a in args:
-            if isinstance(a, type) and issubclass(a, BaseModel):
-                relaxed_args.append(relax_model(a))
-            else:
-                relaxed_args.append(a)
-
-        return Union[*relaxed_args, PlaceholderString]
+        return Union[*(_relax_type(arg, namespace=namespace) for arg in args)]
 
     # ---- list[T] → list[_relax(T)] | PlaceholderString ----------------
     # Inner elements are relaxed AND the whole list can be a placeholder.
     if origin is list:
         inner = args[0] if args else Any
-        return list[_relax_type(inner)] | PlaceholderString  # type: ignore[misc]
+        relaxed_inner = _relax_type(inner, namespace=namespace)
+        return list[relaxed_inner] | PlaceholderString  # type: ignore[valid-type]
 
-    # ---- dict[K, V] — typically dict[str, Any], unchanged ------------
+    # ---- dict[K, V] --------------------------------------------------
     if origin is dict:
-        return annotation
+        key = args[0] if args else Any
+        value = args[1] if len(args) > 1 else Any
+        return (
+            dict[  # type: ignore[misc]
+                _relax_type(key, namespace=namespace),
+                _relax_type(value, namespace=namespace),
+            ]
+            | PlaceholderString
+        )
+
+    # ---- tuple[T, ...], tuple[T, U], set[T], frozenset[T] -----------
+    if origin is tuple:
+        if args and args[-1] is Ellipsis:
+            relaxed_item = _relax_type(args[0], namespace=namespace)
+            return (
+                tuple[relaxed_item, ...]  # type: ignore[valid-type]
+                | PlaceholderString
+            )
+
+        relaxed_items = tuple(
+            _relax_type(arg, namespace=namespace) for arg in args
+        )
+        return (
+            tuple[*relaxed_items]  # type: ignore[valid-type]
+            | PlaceholderString
+        )
+
+    if origin is set:
+        inner = args[0] if args else Any
+        relaxed_inner = _relax_type(inner, namespace=namespace)
+        return set[relaxed_inner] | PlaceholderString  # type: ignore[valid-type]
+
+    if origin is frozenset:
+        inner = args[0] if args else Any
+        relaxed_inner = _relax_type(inner, namespace=namespace)
+        return (
+            frozenset[relaxed_inner]  # type: ignore[valid-type]
+            | PlaceholderString
+        )
 
     # ---- Annotated[T, metadata...] -----------------------------------
     # Keep constraints on the original type; add PlaceholderString as a
@@ -158,25 +235,30 @@ def _relax_type(  # noqa: C901, PLR0911, PLR0912
     if origin is Annotated:
         base = args[0]
         metadata = args[1:]
-        if _already_accepts_any_str(base):
-            return annotation
+        substitution_type = (
+            SubstitutionString if _accepts_any_str(base) else PlaceholderString
+        )
 
-        # For container types (e.g. list[HttpUrl]), relax inner
-        # elements while preserving collection-level constraints
-        # (MinLen, MaxLen).
-        base_origin = get_origin(base)
-        if base_origin is list:
-            inner_args = get_args(base)
-            inner = inner_args[0] if inner_args else Any
-            relaxed_list = list[_relax_type(inner)]  # type: ignore[misc,valid-type]
-            return (
-                Annotated[relaxed_list, *metadata]  # type: ignore[valid-type]
-                | PlaceholderString
+        relaxed_base = _relax_type(base, namespace=namespace)
+        relaxed_origin = get_origin(relaxed_base)
+        if relaxed_origin is types.UnionType or relaxed_origin is Union:
+            concrete_args = tuple(
+                arg
+                for arg in get_args(relaxed_base)
+                if arg not in (PlaceholderString, SubstitutionString)
             )
+            concrete_base = (
+                concrete_args[0]
+                if len(concrete_args) == 1
+                else Union[*concrete_args]
+            )
+        else:
+            concrete_base = relaxed_base
 
-        # For scalar types, keep annotation intact so numeric
-        # constraints (Ge, Gt, etc.) only apply to the typed branch.
-        return annotation | PlaceholderString
+        return (
+            Annotated[concrete_base, *metadata]  # type: ignore[valid-type]
+            | substitution_type
+        )
 
     # ---- Literal[...] ------------------------------------------------
     if origin is Literal:
@@ -187,6 +269,8 @@ def _relax_type(  # noqa: C901, PLR0911, PLR0912
         annotation,
         BaseModel,
     ):
+        if annotation in _relaxing_model_refs:
+            return _relaxing_model_refs[annotation] | PlaceholderString
         return relax_model(annotation) | PlaceholderString
 
     # ---- Everything else (int, float, bool, HttpUrl, Path, …) --------
@@ -214,36 +298,117 @@ def _holds_placeholder(value: Any) -> bool:
     if isinstance(value, str):
         # The loader's own notion of a token, so a value it will
         # substitute is not judged here before it does.
-        return TOKEN_PATTERN.search(value) is not None
+        return _SUBSTITUTION_RE.search(value) is not None
 
     if isinstance(value, BaseModel):
         return any(_holds_placeholder(v) for v in value.__dict__.values())
 
     if isinstance(value, dict):
-        return any(_holds_placeholder(v) for v in value.values())
+        return any(
+            _holds_placeholder(item) for pair in value.items() for item in pair
+        )
 
-    if isinstance(value, list | tuple | set):
+    if isinstance(value, list | tuple | set | frozenset):
         return any(_holds_placeholder(v) for v in value)
 
     return False
 
 
+def _relaxed_field_validator(
+    func: Callable[..., Any],
+    *,
+    mode: str,
+    relaxed_annotations: dict[str, Any],
+) -> Callable[..., Any]:
+    """Wrap a field validator so a placeholder leaves it unanswered.
+
+    Parameters
+    ----------
+    func : Callable[..., Any]
+        Validator of the original field.
+
+    mode : str
+        Pydantic field validator mode.
+
+    relaxed_annotations : dict[str, Any]
+        Relaxed type of each field the validator can receive.
+
+    Returns
+    -------
+    Callable[..., Any]
+        Validator that judges a concrete value and passes a placeholder
+        to the relaxed field schema.
+
+    """
+    positional_count = sum(
+        parameter.kind
+        in (
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        )
+        and parameter.default is inspect.Parameter.empty
+        for parameter in inspect.signature(func).parameters.values()
+    )
+    accepts_info = positional_count == (3 if mode == 'wrap' else 2)
+
+    if mode == 'wrap':
+
+        def validate_wrap(
+            value: Any,
+            handler: Callable[[Any], Any],
+            info: ValidationInfo,
+        ) -> Any:
+            if _holds_placeholder(value) or _holds_placeholder(info.data):
+                return handler(value)
+
+            if accepts_info:
+                return func(value, handler, info)
+            return func(value, handler)
+
+        validate_wrap.__eventum_original_validator__ = func  # type: ignore[attr-defined]
+        return validate_wrap
+
+    def validate(
+        value: Any,
+        info: ValidationInfo,
+    ) -> Any:
+        if not (_holds_placeholder(value) or _holds_placeholder(info.data)):
+            if accepts_info:
+                return func(value, info)
+            return func(value)
+
+        if mode == 'plain':
+            annotation = relaxed_annotations[cast('str', info.field_name)]
+            adapter = TypeAdapter(annotation)
+            adapter.rebuild(
+                _types_namespace=_relaxed_forward_namespace,
+            )
+            return adapter.validate_python(value)
+
+        return value
+
+    validate.__eventum_original_validator__ = func  # type: ignore[attr-defined]
+    return validate
+
+
 def _relaxed_model_validator(
-    func: Callable[[Any], Any],
-) -> Callable[
-    [Any],
-    Any,
-]:
+    func: Callable[..., Any],
+    *,
+    mode: str,
+) -> Callable[..., Any]:
     """Wrap a model validator so a placeholder leaves it unanswered.
 
     Parameters
     ----------
-    func : Callable[[Any], Any]
+    func : Callable[..., Any]
         Validator of the original model.
+
+    mode : str
+        Pydantic model validator mode.
 
     Returns
     -------
-    Callable[[Any], Any]
+    Callable[..., Any]
         Validator that judges a config carrying no placeholder and
         passes over one that does.
 
@@ -258,49 +423,85 @@ def _relaxed_model_validator(
     """
 
     @wraps(func)
-    def validate(self: Any) -> Any:
-        if _holds_placeholder(self):
-            return self
+    def validate(*args: Any, **kwargs: Any) -> Any:
+        value = args[0]
+        if not _holds_placeholder(value):
+            return func(*args, **kwargs)
 
-        return func(self)
+        if mode == 'wrap':
+            handler = args[1]
+            return handler(value)
 
+        return value
+
+    validate.__eventum_original_validator__ = func  # type: ignore[attr-defined]
     return validate
 
 
-def _relax_model_validators(
+def _relax_validators(
     model_cls: type[BaseModel],
+    relaxed_annotations: dict[str, Any],
 ) -> dict[str, Any]:
-    """Take the model validators of a model into a relaxed copy.
+    """Take all field and model validators into a relaxed copy.
 
     Parameters
     ----------
     model_cls : type[BaseModel]
         Model to take the validators of.
 
+    relaxed_annotations : dict[str, Any]
+        Relaxed type of every field on the copied model.
+
     Returns
     -------
     dict[str, Any]
-        Validators to pass to `create_model`.
+        Placeholder-aware validators to pass to `create_model`.
 
     Notes
     -----
-    Only the validators over the whole model, and only the ones running
-    after it is built, are taken. A validator over a single field is
-    left behind together with the constraint of that field, since the
-    relaxed type it would run against is not the one it was written
-    for - so a rule a plugin config needs the API to hold belongs in a
-    model validator.
+    Each validator keeps its original mode. A field validator waits
+    only when its own value carries a placeholder. A model validator
+    waits when any value in the model carries one. Wrap validators still
+    invoke the relaxed schema handler, so skipping a plugin rule never
+    skips shape validation.
 
     """
-    return {
-        name: model_validator(mode='after')(
-            _relaxed_model_validator(decorator.func),
+    validators: dict[str, Any] = {
+        name: field_validator(
+            *decorator.info.fields,
+            mode=decorator.info.mode,  # type: ignore[arg-type]
+            check_fields=decorator.info.check_fields,
+            json_schema_input_type=(
+                _relax_type(decorator.info.json_schema_input_type)
+                if decorator.info.json_schema_input_type
+                is not PydanticUndefined
+                else PydanticUndefined
+            ),
+        )(
+            _relaxed_field_validator(
+                decorator.func,
+                mode=decorator.info.mode,
+                relaxed_annotations=relaxed_annotations,
+            ),
         )
         for name, decorator in (
-            model_cls.__pydantic_decorators__.model_validators.items()
+            model_cls.__pydantic_decorators__.field_validators.items()
         )
-        if decorator.info.mode == 'after'
     }
+    validators.update(
+        {
+            name: model_validator(mode=decorator.info.mode)(
+                _relaxed_model_validator(
+                    decorator.func,
+                    mode=decorator.info.mode,
+                ),
+            )
+            for name, decorator in (
+                model_cls.__pydantic_decorators__.model_validators.items()
+            )
+        },
+    )
+    return validators
 
 
 def _build_relaxed_field(
@@ -310,29 +511,104 @@ def _build_relaxed_field(
     """Build a ``(annotation, FieldInfo)`` tuple for
     ``create_model``.
 
-    Numeric constraints (Ge, Gt, Le, Lt) have been folded into the
-    type annotation by the caller.  Length constraints (MinLen, MaxLen)
-    are intentionally dropped — they can crash on coerced types like
-    ``Path`` (which doesn't support ``len()``), and are not meaningful
-    when fields may contain placeholder strings.  Real validation
-    happens at runtime after substitution.
+    Validation metadata has been folded into the type annotation by
+    the caller, so it applies to the concrete branch rather than to
+    ``PlaceholderString``. Other field attributes are preserved, apart
+    from discriminators which cannot resolve a placeholder union.
     """
-    from pydantic_core import PydanticUndefined
+    relaxed_field_info = copy(field_info)
+    relaxed_field_info.metadata = []
+    relaxed_field_info.discriminator = None
+    # A default factory may return an instance of the original nested
+    # model, which is already validated but is not an instance of its
+    # generated relaxed copy.
+    if relaxed_field_info.validate_default:
+        if relaxed_field_info.default_factory is not None:
+            default_factory = relaxed_field_info.default_factory
 
-    kwargs: dict[str, Any] = {}
+            if relaxed_field_info.default_factory_takes_validated_data:
+                factory_with_data = cast(
+                    'Callable[[dict[str, Any]], Any]',
+                    default_factory,
+                )
 
-    if field_info.default is not PydanticUndefined:
-        kwargs['default'] = field_info.default
-    elif field_info.default_factory is not None:
-        kwargs['default_factory'] = field_info.default_factory
+                @wraps(factory_with_data)
+                def factory(data: dict[str, Any]) -> Any:
+                    return _normalize_default(factory_with_data(data))
 
-    if field_info.title:
-        kwargs['title'] = field_info.title
+            else:
+                factory_without_data = cast(
+                    'Callable[[], Any]',
+                    default_factory,
+                )
 
-    if field_info.description:
-        kwargs['description'] = field_info.description
+                @wraps(factory_without_data)
+                def factory() -> Any:
+                    return _normalize_default(factory_without_data())
 
-    return (relaxed_annotation, Field(**kwargs))
+            relaxed_field_info.default_factory = factory
+        elif relaxed_field_info.default is not PydanticUndefined:
+            relaxed_field_info.default = _normalize_default(
+                relaxed_field_info.default,
+            )
+    return (relaxed_annotation, relaxed_field_info)
+
+
+def _normalize_default(value: Any) -> Any:
+    """Turn original model instances into input for relaxed copies."""
+    if isinstance(value, RootModel):
+        return _normalize_default(value.root)
+
+    if isinstance(value, BaseModel):
+        return {
+            (
+                field.validation_alias
+                if isinstance(field.validation_alias, str)
+                else field.alias or name
+            ): _normalize_default(getattr(value, name))
+            for name, field in value.__class__.model_fields.items()
+        }
+
+    if isinstance(value, dict):
+        return {
+            _normalize_default(key): _normalize_default(item)
+            for key, item in value.items()
+        }
+
+    if isinstance(value, list | tuple | set | frozenset):
+        return type(value)(_normalize_default(item) for item in value)
+
+    return value
+
+
+def _relaxed_model_config(model_cls: type[BaseModel]) -> ConfigDict:
+    """Keep model behaviour while enforcing API model safeguards."""
+    return cast(
+        'ConfigDict',
+        {
+            **model_cls.model_config,
+            'frozen': True,
+            'extra': 'forbid',
+        },
+    )
+
+
+def _finish_relaxed_model(
+    model_cls: type[BaseModel],
+    relaxed_cls: type[BaseModel],
+) -> type[BaseModel]:
+    """Register a relaxed model and resolve pending recursive fields."""
+    reference = _relaxing_model_refs.pop(model_cls)
+    _relaxed_model_cache[model_cls] = relaxed_cls
+    _relaxed_forward_namespace[reference.__forward_arg__] = relaxed_cls
+
+    for generated_cls in _relaxed_model_cache.values():
+        generated_cls.model_rebuild(
+            _types_namespace=_relaxed_forward_namespace,
+            raise_errors=False,
+        )
+
+    return relaxed_cls
 
 
 def relax_model(
@@ -347,9 +623,9 @@ def relax_model(
     if model_cls in _relaxed_model_cache:
         return _relaxed_model_cache[model_cls]
 
-    # Reserve a slot to break infinite recursion on self-referencing
-    # models (unlikely but defensive).
-    _relaxed_model_cache[model_cls] = model_cls  # temporary
+    reference_name = f'_EventumRelaxed_{id(model_cls)}'
+    _relaxing_model_refs[model_cls] = ForwardRef(reference_name)
+    model_namespace = vars(sys.modules[model_cls.__module__])
 
     # RootModel subclasses need special handling: they must remain
     # RootModel so that Pydantic transparently unwraps the ``root``
@@ -360,47 +636,59 @@ def relax_model(
     # discriminated union resolution.
     if issubclass(model_cls, RootModel):
         root_fi = model_cls.model_fields['root']
-        relaxed_root_type = _relax_type(root_fi.annotation)
+        root_annotation: Any = root_fi.annotation
+        if root_fi.metadata:
+            root_annotation = Annotated[root_annotation, *root_fi.metadata]
+        relaxed_root_type = _relax_type(
+            root_annotation,
+            namespace=model_namespace,
+        )
+        root_annotations = {'root': relaxed_root_type}
 
         relaxed_root_cls = create_model(
             model_cls.__name__,
-            __base__=RootModel,
-            root=(relaxed_root_type, ...),
+            __base__=model_cls,
+            __config__=model_cls.model_config,
+            __validators__=_relax_validators(
+                model_cls,
+                root_annotations,
+            ),
+            root=_build_relaxed_field(root_fi, relaxed_root_type),
         )
-        _relaxed_model_cache[model_cls] = relaxed_root_cls
-        return relaxed_root_cls
+        return _finish_relaxed_model(model_cls, relaxed_root_cls)
 
     field_defs: dict[str, tuple[Any, FieldInfo]] = {}
+    relaxed_annotations: dict[str, Any] = {}
 
     for name, fi in model_cls.model_fields.items():
-        annotation = fi.annotation
+        annotation: Any = fi.annotation
 
-        # Move numeric constraints from FieldInfo.metadata into the
-        # annotation so they only apply to the typed branch of the
-        # union, not to PlaceholderString.
-        type_constraints = [
-            m
-            for m in fi.metadata
-            if isinstance(m, _NUMERIC_CONSTRAINT_CLASSES)
-        ]
-
-        if type_constraints:
-            annotation = Annotated[annotation, *type_constraints]  # type: ignore[assignment]
+        # Move validation metadata into the annotation so it applies
+        # only to the concrete branch of the relaxed union.
+        if fi.metadata:
+            annotation = Annotated[annotation, *fi.metadata]
 
         # Relax the (potentially annotated) type
-        relaxed = _relax_type(annotation)
+        relaxed = _relax_type(
+            annotation,
+            namespace=model_namespace,
+        )
+        relaxed_annotations[name] = relaxed
 
         field_defs[name] = _build_relaxed_field(fi, relaxed)
 
     relaxed_cls: type[BaseModel] = create_model(  # type: ignore[call-overload]
         model_cls.__name__,
         **field_defs,  # type: ignore[arg-type]
-        __config__=ConfigDict(frozen=True, extra='forbid'),
-        __validators__=_relax_model_validators(model_cls),
+        __base__=model_cls,
+        __config__=_relaxed_model_config(model_cls),
+        __validators__=_relax_validators(
+            model_cls,
+            relaxed_annotations,
+        ),
     )
 
-    _relaxed_model_cache[model_cls] = relaxed_cls
-    return relaxed_cls
+    return _finish_relaxed_model(model_cls, relaxed_cls)
 
 
 # - API plugin config model generation -------------------------------
