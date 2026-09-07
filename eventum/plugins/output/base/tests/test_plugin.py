@@ -1,19 +1,27 @@
+import asyncio
 from collections.abc import Sequence
 from typing import override
 
 import pytest
+import structlog
 
 from eventum.plugins.output.base.config import (
     FormatterConfigT,
     OutputPluginConfig,
 )
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
-from eventum.plugins.output.exceptions import PluginWriteError
+from eventum.plugins.output.exceptions import (
+    FormatError,
+    FormatErrorKind,
+    PluginWriteError,
+)
 from eventum.plugins.output.fields import (
     Format,
     JsonFormatterConfig,
     TemplateFormatterConfig,
 )
+from eventum.plugins.output.formatters import FormattingResult
+from eventum.plugins.output.syslog import SyslogFormatterConfig
 
 
 class DummyOutputPluginConfig(OutputPluginConfig, frozen=True):
@@ -177,6 +185,310 @@ async def test_format_failed_is_reset_on_open():
     await plugin.open()
 
     assert plugin.format_failed == 0
+
+
+@pytest.mark.asyncio
+async def test_syslog_missing_field_logs_one_event_and_count():
+    plugin = create_plugin(
+        SyslogFormatterConfig(
+            format=Format.SYSLOG,
+            message_field='missing',
+        ),
+    )
+    events = ['{"message":"first"}', '{"message":"second"}']
+
+    await plugin.open()
+
+    with structlog.testing.capture_logs() as logs:
+        await plugin.write(events)
+
+    errors = [entry for entry in logs if entry['log_level'] == 'error']
+
+    assert len(errors) == 1
+    assert errors[0]['reason'] == 'Event does not carry field `missing`'
+    assert errors[0]['count'] == 2
+    assert errors[0]['original_event'] == events[0]
+
+
+@pytest.mark.asyncio
+async def test_syslog_header_failures_are_separated_by_source():
+    plugin = create_plugin(
+        SyslogFormatterConfig(
+            format=Format.SYSLOG,
+            hostname={'field': 'host'},
+            app_name={'field': 'app'},
+        ),
+    )
+    events = [
+        '{"host":"bad\\n","app":"valid"}',
+        '{"host":"valid","app":"bad\\n"}',
+    ]
+
+    await plugin.open()
+
+    with structlog.testing.capture_logs() as logs:
+        await plugin.write(events)
+
+    errors = [entry for entry in logs if entry['log_level'] == 'error']
+
+    assert len(errors) == 2
+    assert errors[0]['reason'].startswith('Field `host`')
+    assert errors[0]['original_event'] == events[0]
+    assert errors[1]['reason'].startswith('Field `app`')
+    assert errors[1]['original_event'] == events[1]
+
+
+@pytest.mark.asyncio
+async def test_same_format_errors_are_reported_once_per_period():
+    plugin = create_plugin(JsonFormatterConfig(format=Format.JSON))
+    error_key = (Format.JSON, FormatErrorKind.JSON_DECODE, None)
+
+    await plugin.open()
+
+    with structlog.testing.capture_logs() as logs:
+        await plugin.write(['{}x', '{} x', '{}  x'])
+
+        throttler = plugin._format_error_throttlers[error_key]
+        assert throttler._period == 10.0
+
+        await plugin.write(['not json'] * 2)
+
+        throttler._moments[0] -= throttler._period
+        await plugin.write(['not json'] * 4)
+
+    errors = [entry for entry in logs if entry['log_level'] == 'error']
+
+    assert len(errors) == 2
+    assert errors[0]['event'] == 'Failed to format event'
+    assert errors[0]['format'] == Format.JSON
+    assert errors[0]['count'] == 3
+    assert errors[0]['original_event'] == '{}x'
+    assert errors[1]['event'] == 'Failed to format event'
+    assert errors[1]['format'] == Format.JSON
+    assert errors[1]['reason'] == 'Event is not valid JSON'
+    assert errors[1]['count'] == 9
+    assert 'original_event' not in errors[1]
+    assert len(plugin._format_error_counts) == 1
+    assert len(plugin._format_error_throttlers) == 1
+    assert len(plugin._format_error_reasons) == 1
+    assert len(plugin._format_error_reported_counts) == 1
+
+
+@pytest.mark.asyncio
+async def test_different_format_errors_are_reported_separately():
+    plugin = create_plugin(JsonFormatterConfig(format=Format.JSON))
+
+    def reject_events(_events: Sequence[str]) -> FormattingResult:
+        return FormattingResult(
+            events=[],
+            formatted_count=0,
+            errors=[
+                FormatError(
+                    'First reason',
+                    original_event='event 1',
+                    source='first',
+                ),
+                FormatError(
+                    'Second reason',
+                    original_event='event 2',
+                    source='second',
+                ),
+                FormatError(
+                    'Updated first reason',
+                    original_event='event 3',
+                    source='first',
+                ),
+            ],
+        )
+
+    plugin._formatter.format_events = reject_events
+
+    await plugin.open()
+
+    with structlog.testing.capture_logs() as logs:
+        await plugin.write(['event 1', 'event 2', 'event 3'])
+
+    errors = [entry for entry in logs if entry['log_level'] == 'error']
+
+    assert len(errors) == 2
+    assert errors[0]['reason'] == 'First reason'
+    assert errors[0]['count'] == 2
+    assert errors[0]['original_event'] == 'event 1'
+    assert errors[1]['reason'] == 'Second reason'
+    assert errors[1]['count'] == 1
+    assert errors[1]['original_event'] == 'event 2'
+
+
+@pytest.mark.asyncio
+async def test_format_error_without_original_event_is_reported():
+    plugin = create_plugin(
+        TemplateFormatterConfig(
+            format=Format.TEMPLATE_BATCH,
+            template='{{ 1 / 0 }}',
+        ),
+    )
+
+    await plugin.open()
+
+    with structlog.testing.capture_logs() as logs:
+        await plugin.write(['event 1', 'event 2'])
+
+    errors = [entry for entry in logs if entry['log_level'] == 'error']
+
+    assert len(errors) == 1
+    assert errors[0]['reason'] == (
+        'Failed render template: ZeroDivisionError: division by zero'
+    )
+    assert errors[0]['count'] == 2
+    assert 'original_event' not in errors[0]
+
+
+@pytest.mark.asyncio
+async def test_pending_format_error_count_is_reported_on_close():
+    plugin = create_plugin(JsonFormatterConfig(format=Format.JSON))
+
+    await plugin.open()
+
+    with structlog.testing.capture_logs() as logs:
+        await plugin.write(['first invalid event'])
+        await plugin.write(['second invalid event', 'third invalid event'])
+        await plugin.close()
+
+    errors = [entry for entry in logs if entry['log_level'] == 'error']
+
+    assert len(errors) == 2
+    assert errors[1]['event'] == 'Failed to format event'
+    assert errors[1]['format'] == Format.JSON
+    assert errors[1]['reason'] == 'Event is not valid JSON'
+    assert errors[1]['count'] == 3
+    assert 'original_event' not in errors[1]
+
+
+@pytest.mark.asyncio
+async def test_pending_format_error_count_is_reported_when_close_fails(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    plugin = create_plugin(JsonFormatterConfig(format=Format.JSON))
+
+    async def fail_close() -> None:
+        raise RuntimeError('close failed')
+
+    await plugin.open()
+    monkeypatch.setattr(plugin, '_close', fail_close)
+
+    with structlog.testing.capture_logs() as logs:
+        await plugin.write(['first invalid event'])
+        await plugin.write(['second invalid event', 'third invalid event'])
+
+        with pytest.raises(RuntimeError, match='close failed'):
+            await plugin.close()
+
+    errors = [entry for entry in logs if entry['log_level'] == 'error']
+
+    assert len(errors) == 2
+    assert errors[1]['count'] == 3
+    assert 'original_event' not in errors[1]
+
+
+@pytest.mark.asyncio
+async def test_format_error_reporting_is_reset_on_open():
+    plugin = create_plugin(JsonFormatterConfig(format=Format.JSON))
+
+    await plugin.open()
+
+    with structlog.testing.capture_logs() as logs:
+        await plugin.write(['first invalid event'])
+        await plugin.close()
+        await plugin.open()
+        await plugin.write(['second invalid event'])
+
+    errors = [entry for entry in logs if entry['log_level'] == 'error']
+
+    assert len(errors) == 2
+    assert errors[0]['count'] == 1
+    assert errors[0]['original_event'] == 'first invalid event'
+    assert errors[1]['count'] == 1
+    assert errors[1]['original_event'] == 'second invalid event'
+
+
+@pytest.mark.asyncio
+async def test_concurrent_format_errors_are_throttled():
+    plugin = create_plugin(JsonFormatterConfig(format=Format.JSON))
+
+    await plugin.open()
+
+    with structlog.testing.capture_logs() as logs:
+        await asyncio.gather(
+            plugin.write(['not json']),
+            plugin.write(['not json']),
+        )
+
+    errors = [entry for entry in logs if entry['log_level'] == 'error']
+
+    assert len(errors) == 1
+    assert plugin.format_failed == 2
+
+
+@pytest.mark.asyncio
+async def test_concurrent_format_error_reports_are_serialized():
+    plugin = create_plugin(JsonFormatterConfig(format=Format.JSON))
+    error_key = (Format.JSON, FormatErrorKind.JSON_DECODE, None)
+    first_started = asyncio.Event()
+    release_first = asyncio.Event()
+    records: list[dict[str, object]] = []
+
+    class BlockingLogger:
+        async def aerror(self, event: str, **context: object) -> None:
+            records.append({'event': event, **context})
+
+            if len(records) == 1:
+                first_started.set()
+                await release_first.wait()
+
+    await plugin.open()
+    plugin._logger = BlockingLogger()
+
+    first_write = asyncio.create_task(
+        plugin._report_format_errors(
+            [
+                FormatError(
+                    'First detailed reason',
+                    original_event='{}x',
+                    kind=FormatErrorKind.JSON_DECODE,
+                    report_reason='Event is not valid JSON',
+                ),
+            ],
+        ),
+    )
+    await first_started.wait()
+    plugin._format_error_throttlers[error_key]._moments[0] -= 10.0
+    second_write = asyncio.create_task(
+        plugin._report_format_errors(
+            [
+                FormatError(
+                    'Second detailed reason',
+                    original_event='not json',
+                    kind=FormatErrorKind.JSON_DECODE,
+                    report_reason='Event is not valid JSON',
+                ),
+            ],
+        ),
+    )
+
+    async with asyncio.timeout(1.0):
+        while plugin._format_error_counts[error_key] != 2:
+            await asyncio.sleep(0)
+
+    assert plugin._format_error_counts[error_key] == 2
+    assert len(records) == 1
+
+    release_first.set()
+    await asyncio.gather(first_write, second_write)
+
+    assert len(records) == 2
+    assert records[0]['original_event'] == '{}x'
+    assert 'original_event' not in records[1]
+    assert plugin._format_error_reported_counts[error_key] == 2
 
 
 @pytest.mark.asyncio
