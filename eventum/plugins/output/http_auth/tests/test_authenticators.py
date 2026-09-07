@@ -511,7 +511,7 @@ async def test_oauth2_renews_ahead_of_the_stated_expiry(
 
     # 100 seconds of life, taken 30 seconds early
     lifetime = authenticator._expires_at - authenticator._obtained_at  # noqa: SLF001
-    assert lifetime == _LIFE_MINUS_LEEWAY
+    assert lifetime == pytest.approx(_LIFE_MINUS_LEEWAY)
 
 
 @pytest.mark.asyncio
@@ -533,7 +533,7 @@ async def test_oauth2_halves_a_life_shorter_than_the_leeway(
 
     # taking 30 seconds off a life of 20 would leave nothing
     lifetime = authenticator._expires_at - authenticator._obtained_at  # noqa: SLF001
-    assert lifetime == _HALVED_LIFE
+    assert lifetime == pytest.approx(_HALVED_LIFE)
 
 
 @pytest.mark.parametrize(
@@ -709,7 +709,6 @@ async def test_oauth2_holds_back_from_an_endpoint_failing_slowly(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The hold counts from where an attempt ends, not where it starts."""
-
     # the endpoint takes four times the hold to fail, so a hold
     # counted from the start of the attempt would already be over by
     # the time the failure exists, and every request that waited for
