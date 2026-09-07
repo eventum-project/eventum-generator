@@ -280,7 +280,11 @@ def init_plugins(
                 name=plugin_name,
                 type='output',
                 config=plugin_conf,
-                params={'id': plugin_id, 'base_path': plugins_base_path},
+                params={
+                    'id': plugin_id,
+                    'base_path': plugins_base_path,
+                    'generator_id': params.id,
+                },
             ),
         )
 

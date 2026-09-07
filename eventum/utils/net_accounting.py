@@ -7,11 +7,18 @@ application* moves, this module wraps the send and receive methods of
 ``socket.socket`` so every byte the process passes through a Python
 socket is counted.
 
-Eventum's network output plugins (tcp, udp, http and opensearch via
-httpx, kafka via aiokafka, clickhouse) all run on asyncio and route
+Eventum's network output plugins (tcp, udp, http, opensearch and otlp
+via httpx, kafka via aiokafka, clickhouse) all run on asyncio and route
 through Python sockets, so the counters reflect the application's real
 network I/O - including TLS, whose encrypted bytes reach the raw socket.
 Counts are cumulative since ``install`` was called.
+
+A client that moves its bytes outside Python - a native extension
+carrying its own HTTP stack, as the object storage output does - never
+touches a wrapped socket, so it reports what it transfers through
+``record_sent``. Such a report covers the payload the client was handed,
+not the protocol framing around it, so the counters understate that
+traffic by the size of the headers and of whatever the client retried.
 
 Bytes are counted per thread name, so a caller can read the traffic of
 one part of the application - the threads a single generator runs, for
@@ -98,6 +105,25 @@ def usage_of(matches: Callable[[str], bool]) -> NetUsage:
         sent_bytes=sum(bucket.sent for bucket in buckets),
         received_bytes=sum(bucket.received for bucket in buckets),
     )
+
+
+def record_sent(count: int) -> None:
+    """Count bytes sent outside a Python socket.
+
+    Parameters
+    ----------
+    count : int
+        Number of bytes sent.
+
+    Notes
+    -----
+    For a client whose transfers never reach a wrapped socket, such as
+    a native extension carrying its own HTTP stack. The bytes land in
+    the counters of the calling thread, which is the thread that handed
+    them to the client rather than the one that put them on the wire.
+
+    """
+    _add_sent(count)
 
 
 def bytes_sent() -> int:
