@@ -11,9 +11,11 @@ import { IconBraces, IconFile } from '@tabler/icons-react';
 import { FC, ReactNode, useState } from 'react';
 
 import { ProjectFileSelect } from '../../../components/ProjectFileSelect';
+import { SyslogFormatterParams } from './SyslogFormatterParams';
 import {
   Format,
   FormatterConfig,
+  SyslogFormatterConfig,
 } from '@/api/routes/generator-configs/schemas/plugins/output/formatters';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 
@@ -42,6 +44,7 @@ export const FormatterParams: FC<FormatterParamsProps> = ({
           Format.JSON,
           Format.JSONBatch,
           Format.Plain,
+          Format.Syslog,
           Format.Template,
           Format.TemplateBatch,
         ]}
@@ -77,6 +80,13 @@ export const FormatterParams: FC<FormatterParamsProps> = ({
               indent: typeof val === 'number' ? val : 0,
             });
           }}
+        />
+      )}
+
+      {value?.format === Format.Syslog && (
+        <SyslogFormatterParams
+          value={value}
+          onChange={(config: SyslogFormatterConfig) => onChange(config)}
         />
       )}
 
