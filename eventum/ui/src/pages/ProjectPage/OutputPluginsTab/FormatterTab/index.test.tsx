@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -41,11 +41,26 @@ function setup(formatted = result(['{"a":1}'])) {
     format as unknown as ReturnType<typeof useFormatEventsMutation>
   );
 
-  renderWithProviders(
+  return renderWithProviders(
     <ProjectNameProvider initialProjectName="web">
       <FormatterTab />
     </ProjectNameProvider>
   );
+}
+
+function mockPointerCapture(element: HTMLElement): void {
+  let capturedPointer: number | null = null;
+
+  element.setPointerCapture = (pointerId: number) => {
+    capturedPointer = pointerId;
+  };
+  element.hasPointerCapture = (pointerId: number) =>
+    capturedPointer === pointerId;
+  element.releasePointerCapture = (pointerId: number) => {
+    if (capturedPointer === pointerId) {
+      capturedPointer = null;
+    }
+  };
 }
 
 function eventFields(): HTMLElement[] {
@@ -69,6 +84,30 @@ describe('FormatterTab', () => {
 
     expect(eventFields()).toHaveLength(1);
     expect(eventFields()[0]).toHaveValue('');
+  });
+
+  it('resizes the formatter pane from its default width', () => {
+    const { container } = setup();
+    const panes = [...container.querySelectorAll<HTMLElement>('.tool-pane')];
+    const divider = screen.getByRole('separator', {
+      name: 'Resize panes 1 and 2',
+    });
+    vi.spyOn(panes[0]!, 'getBoundingClientRect').mockReturnValue({
+      width: 300,
+    } as DOMRect);
+    vi.spyOn(panes[1]!, 'getBoundingClientRect').mockReturnValue({
+      width: 350,
+    } as DOMRect);
+    vi.spyOn(panes[2]!, 'getBoundingClientRect').mockReturnValue({
+      width: 350,
+    } as DOMRect);
+    mockPointerCapture(divider);
+
+    fireEvent.pointerDown(divider, { pointerId: 9, clientX: 100 });
+    fireEvent.pointerMove(divider, { pointerId: 9, clientX: 140 });
+
+    expect(panes[0]).toHaveStyle({ flexBasis: '340px' });
+    expect(panes[1]).toHaveStyle({ flexBasis: '310px' });
   });
 
   it('takes more events on request', async () => {

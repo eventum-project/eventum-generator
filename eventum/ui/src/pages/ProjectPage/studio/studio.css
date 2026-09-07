@@ -367,7 +367,7 @@
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
-  gap: 12px;
+  gap: 0;
   padding: 12px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -383,12 +383,20 @@
   display: flex;
   flex-direction: column;
   flex: 1 1 0;
-  min-width: 260px;
   min-height: 0;
   background-color: var(--mantine-color-default);
   border: 1px solid var(--mantine-color-default-border);
   border-radius: var(--mantine-radius-md);
   overflow: hidden;
+}
+.tool-pane-resizer {
+  width: 12px;
+  margin: 0;
+  touch-action: none;
+}
+.tool-pane-resizer::after {
+  left: 5px;
+  right: 5px;
 }
 .tool-pane-header {
   flex: 0 0 auto;
