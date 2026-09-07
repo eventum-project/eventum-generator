@@ -1,6 +1,7 @@
 import z from 'zod';
 
 import { orPlaceholder } from '../../../placeholder';
+import { HttpUrlSchema } from '../../../url';
 import { HTTPAuthConfigSchema } from '../auth';
 import { BaseOutputPluginConfigSchema } from '../base-config';
 import { Format } from '../formatters';
@@ -10,7 +11,7 @@ export const OTLP_COMPRESSIONS = ['none', 'gzip'];
 
 export const OtlpOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend(
   {
-    endpoint: orPlaceholder(z.httpUrl()),
+    endpoint: orPlaceholder(HttpUrlSchema),
     protocol: orPlaceholder(z.enum(OTLP_PROTOCOLS)).optional(),
     compression: orPlaceholder(z.enum(OTLP_COMPRESSIONS)).optional(),
     headers: z.record(z.string().min(1), z.string()).optional(),
@@ -32,7 +33,7 @@ export const OtlpOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend(
     ca_cert: z.string().min(1).nullable().optional(),
     client_cert: z.string().min(1).nullable().optional(),
     client_cert_key: z.string().min(1).nullable().optional(),
-    proxy_url: orPlaceholder(z.httpUrl()).nullable().optional(),
+    proxy_url: orPlaceholder(HttpUrlSchema).nullable().optional(),
   }
 ).superRefine((config, ctx) => {
   const format = config.formatter?.format;

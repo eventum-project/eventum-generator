@@ -45,6 +45,31 @@ describe('HTTPAuthConfigSchema', () => {
       }).success
     ).toBe(true);
   });
+
+  it.each([
+    ['an IP address', 'https://127.0.0.1:8443/token'],
+    ['a container name', 'https://keycloak:8443/token'],
+  ])('takes a token endpoint at %s', (_label, token_url) => {
+    expect(
+      HTTPAuthConfigSchema.safeParse({
+        type: AuthType.OAuth2ClientCredentials,
+        token_url,
+        client_id: 'id',
+        client_secret: 'secret',
+      }).success
+    ).toBe(true);
+  });
+
+  it('refuses a plaintext token endpoint, as the backend does', () => {
+    expect(
+      HTTPAuthConfigSchema.safeParse({
+        type: AuthType.OAuth2ClientCredentials,
+        token_url: 'http://login.example.com/token',
+        client_id: 'id',
+        client_secret: 'secret',
+      }).success
+    ).toBe(false);
+  });
 });
 
 describe('HTTPOutputPluginConfigSchema', () => {

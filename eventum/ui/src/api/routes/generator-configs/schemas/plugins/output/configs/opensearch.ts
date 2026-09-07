@@ -1,17 +1,12 @@
 import z from 'zod';
 
 import { orPlaceholder } from '../../../placeholder';
+import { HttpUrlSchema } from '../../../url';
 import { BaseOutputPluginConfigSchema } from '../base-config';
 
 export const OpensearchOutputPluginConfigSchema =
   BaseOutputPluginConfigSchema.extend({
-    hosts: z
-      .array(
-        orPlaceholder(
-          z.url({ protocol: /^https?$/, hostname: z.regexes.hostname })
-        )
-      )
-      .min(1),
+    hosts: z.array(orPlaceholder(HttpUrlSchema)).min(1),
     username: z.string().min(1),
     password: z.string().min(1),
     index: z.string().min(1),
@@ -21,7 +16,7 @@ export const OpensearchOutputPluginConfigSchema =
     ca_cert: z.string().min(1).nullable().optional(),
     client_cert: z.string().min(1).nullable().optional(),
     client_cert_key: z.string().min(1).nullable().optional(),
-    proxy_url: orPlaceholder(z.httpUrl()).nullable().optional(),
+    proxy_url: orPlaceholder(HttpUrlSchema).nullable().optional(),
   });
 export type OpensearchOutputPluginConfig = z.infer<
   typeof OpensearchOutputPluginConfigSchema
