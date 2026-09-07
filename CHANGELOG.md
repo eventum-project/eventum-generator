@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 New Features
 
-- **Added the `otlp` output plugin** — delivers events to any OpenTelemetry receiver as OTLP log records over HTTP, with event fields as typed attributes and records grouped per resource
+- **Added the `otlp` output plugin** — delivers events to any OpenTelemetry receiver as OTLP log records over HTTP, with event fields as typed attributes, records grouped per resource, and the same `auth` section as the `http` output for basic credentials, a static bearer token, or the OAuth2 client credentials grant
 - **Added token authentication to the `http` output** — the credentials of a request are written in an `auth` section: a user name and a password, a static bearer token, or the OAuth2 client credentials grant, where Eventum takes a token from the configured token endpoint, renews it before it expires and once more when a request comes back rejected. Token requests travel the same TLS settings, proxy and timeouts as the events themselves, and the client secret and the token are secret-bearing fields offering the keyring in Studio. This covers the endpoints that accept nothing else — Azure Monitor Logs Ingestion, Google SecOps, and hosted log APIs handing out tokens with a lifetime
 
 ### 📝 Other Changes
