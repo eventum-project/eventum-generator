@@ -1,0 +1,123 @@
+import pytest
+from pydantic import HttpUrl, ValidationError
+
+from eventum.plugins.output.fields import (
+    Format,
+    JsonFormatterConfig,
+    SimpleFormatterConfig,
+    TemplateFormatterConfig,
+)
+from eventum.plugins.output.plugins.otlp.config import OtlpOutputPluginConfig
+
+
+def test_config_defaults():
+    config = OtlpOutputPluginConfig(endpoint=HttpUrl('http://localhost:4318'))
+
+    assert config.formatter.format == Format.PLAIN
+    assert config.verify is True
+    assert config.headers == {}
+
+
+def test_config_takes_ecs_fields_by_default():
+    config = OtlpOutputPluginConfig(endpoint=HttpUrl('http://localhost:4318'))
+
+    assert config.timestamp_field == '@timestamp'
+    assert config.severity_field == 'log.level'
+
+
+@pytest.mark.parametrize(
+    'formatter',
+    [
+        JsonFormatterConfig(format=Format.JSON_BATCH, indent=0),
+        TemplateFormatterConfig(
+            format=Format.TEMPLATE_BATCH,
+            template='{{ events }}',
+        ),
+        SimpleFormatterConfig(format=Format.EVENTUM_HTTP_INPUT),
+    ],
+)
+def test_config_rejects_batch_formatters(formatter):
+    with pytest.raises(ValidationError):
+        OtlpOutputPluginConfig(
+            endpoint=HttpUrl('http://localhost:4318'),
+            formatter=formatter,
+        )
+
+
+def test_config_rejects_lonely_client_cert():
+    with pytest.raises(ValidationError):
+        OtlpOutputPluginConfig(
+            endpoint=HttpUrl('http://localhost:4318'),
+            client_cert='cert.pem',
+        )
+
+
+def test_config_resource_attributes_default_empty():
+    config = OtlpOutputPluginConfig(endpoint=HttpUrl('http://localhost:4318'))
+
+    assert config.resource_attributes == {}
+    assert config.resource_attributes_from == {}
+
+
+def test_config_rejects_empty_resource_path():
+    with pytest.raises(ValidationError):
+        OtlpOutputPluginConfig(
+            endpoint=HttpUrl('http://localhost:4318'),
+            resource_attributes_from={'host.name': ''},
+        )
+
+
+def test_config_body_and_flatten_defaults():
+    config = OtlpOutputPluginConfig(endpoint=HttpUrl('http://localhost:4318'))
+
+    assert config.body_field is None
+    assert config.flatten_attributes is True
+
+
+def test_config_rejects_empty_body_field():
+    with pytest.raises(ValidationError):
+        OtlpOutputPluginConfig(
+            endpoint=HttpUrl('http://localhost:4318'),
+            body_field='',
+        )
+
+
+def test_config_protocol_and_compression_defaults():
+    config = OtlpOutputPluginConfig(endpoint=HttpUrl('http://localhost:4318'))
+
+    assert config.protocol == 'http/protobuf'
+    assert config.compression == 'none'
+
+
+def test_config_rejects_unknown_protocol():
+    with pytest.raises(ValidationError):
+        OtlpOutputPluginConfig(
+            endpoint=HttpUrl('http://localhost:4318'),
+            protocol='http/xml',
+        )
+
+
+def test_config_rejects_unknown_compression():
+    with pytest.raises(ValidationError):
+        OtlpOutputPluginConfig(
+            endpoint=HttpUrl('http://localhost:4318'),
+            compression='br',
+        )
+
+
+def test_config_auth_defaults_to_none():
+    config = OtlpOutputPluginConfig(endpoint=HttpUrl('http://localhost:4318'))
+    assert config.auth is None
+
+
+@pytest.mark.parametrize(
+    'header',
+    ['Authorization', 'authorization', 'AUTHORIZATION'],
+)
+def test_config_rejects_authorization_header_with_auth(header):
+    with pytest.raises(ValidationError, match='Authorization'):
+        OtlpOutputPluginConfig(
+            endpoint=HttpUrl('http://localhost:4318'),
+            headers={header: 'Bearer abc'},
+            auth={'type': 'bearer', 'token': 'abc'},
+        )
