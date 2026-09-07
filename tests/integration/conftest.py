@@ -19,6 +19,10 @@ OPENSEARCH_URL = os.environ.get('OPENSEARCH_URL', 'http://localhost:9200')
 CLICKHOUSE_HOST = os.environ.get('CLICKHOUSE_HOST', 'localhost')
 CLICKHOUSE_PORT = int(os.environ.get('CLICKHOUSE_PORT', '8123'))
 KAFKA_BOOTSTRAP = os.environ.get('KAFKA_BOOTSTRAP', 'localhost:9094')
+MINIO_URL = os.environ.get('MINIO_URL', 'http://localhost:9000')
+MINIO_BUCKET = os.environ.get('MINIO_BUCKET', 'eventum-test')
+MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY', 'eventum')
+MINIO_SECRET_KEY = os.environ.get('MINIO_SECRET_KEY', 'eventum-secret')
 OTLP_ENDPOINT = os.environ.get('OTLP_ENDPOINT', 'http://localhost:4318')
 OTLP_HEALTH_URL = os.environ.get(
     'OTLP_HEALTH_URL',
@@ -85,6 +89,18 @@ def _check_kafka() -> None:
     s.close()
 
 
+def _check_minio() -> None:
+    r = httpx.get(f'{MINIO_URL}/minio/health/live', timeout=5)
+    r.raise_for_status()
+
+    # the bucket is created by a one-shot container of its own, so a
+    # live service does not yet mean the tests have somewhere to write
+    r = httpx.get(f'{MINIO_URL}/{MINIO_BUCKET}/', timeout=5)
+    if r.status_code == httpx.codes.NOT_FOUND:
+        msg = f'Bucket {MINIO_BUCKET} does not exist yet'
+        raise RuntimeError(msg)
+
+
 def _check_otelcol() -> None:
     r = httpx.get(OTLP_HEALTH_URL, timeout=5)
     r.raise_for_status()
@@ -119,6 +135,13 @@ def otlp_endpoint():
     """Return the OTLP endpoint after verifying collector readiness."""
     _wait_for_service(_check_otelcol, 'OTLP collector')
     return OTLP_ENDPOINT
+
+
+@pytest.fixture(scope='session')
+def minio_url():
+    """Return MinIO URL after verifying service is ready."""
+    _wait_for_service(_check_minio, 'MinIO')
+    return MINIO_URL
 
 
 # - Shared utility fixtures --
@@ -277,3 +300,57 @@ async def otlp_plugin(otlp_endpoint):
     await plugin.open()
     yield plugin
     await plugin.close()
+
+
+# - S3 fixtures --
+
+
+@pytest_asyncio.fixture()
+async def s3_consumer(minio_url):
+    """Create an S3 consumer with unique key prefix, clean up after."""
+    from tests.integration.backends.s3 import S3Consumer
+
+    consumer = S3Consumer(
+        endpoint_url=minio_url,
+        bucket=MINIO_BUCKET,
+        access_key_id=MINIO_ACCESS_KEY,
+        secret_access_key=MINIO_SECRET_KEY,
+    )
+    await consumer.setup()
+    yield consumer
+    await consumer.teardown()
+
+
+@pytest_asyncio.fixture()
+async def s3_plugin_factory(s3_consumer):
+    """Return a factory of opened S3 output plugins."""
+    from eventum.plugins.output.plugins.s3.config import S3OutputPluginConfig
+    from eventum.plugins.output.plugins.s3.plugin import S3OutputPlugin
+
+    plugins = []
+
+    async def factory(**overrides):
+        # each plugin takes a key space of its own, so two of them in
+        # one test cannot overwrite each other at the same sequence
+        default_template = s3_consumer.key_template(
+            f'plugin-{len(plugins)}-{{seq}}{{ext}}',
+        )
+        config = S3OutputPluginConfig.model_validate(
+            {
+                'bucket': s3_consumer.bucket,
+                'key_template': default_template,
+                'endpoint_url': MINIO_URL,
+                'access_key_id': MINIO_ACCESS_KEY,
+                'secret_access_key': MINIO_SECRET_KEY,
+                **overrides,
+            }
+        )
+        plugin = S3OutputPlugin(config=config, params={'id': 1})
+        await plugin.open()
+        plugins.append(plugin)
+        return plugin
+
+    yield factory
+
+    for plugin in plugins:
+        await plugin.close()

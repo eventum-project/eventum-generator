@@ -9,6 +9,7 @@ export type OutputPluginName =
   | 'kafka'
   | 'opensearch'
   | 'otlp'
+  | 's3'
   | 'stdout'
   | 'tcp'
   | 'udp';
