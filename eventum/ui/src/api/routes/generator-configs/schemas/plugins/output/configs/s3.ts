@@ -1,6 +1,7 @@
 import z from 'zod';
 
 import { orPlaceholder } from '../../../placeholder';
+import { HttpUrlSchema } from '../../../url';
 import { BaseOutputPluginConfigSchema } from '../base-config';
 
 export const enum ObjectFormat {
@@ -9,16 +10,6 @@ export const enum ObjectFormat {
 }
 
 export const ADDRESSING_STYLES = ['auto', 'path', 'virtual'] as const;
-
-/**
- * Address of an endpoint, matching what the backend accepts.
- *
- * `z.httpUrl` is the wrong mirror here: it also demands a domain name, so it
- * rejects the IP address, `localhost` or container name a storage on a local
- * network is reached by. The backend takes any host and constrains the scheme
- * alone, which is what this reproduces.
- */
-const ENDPOINT_URL = z.url({ protocol: /^https?$/ });
 
 export const JSON_LINES_COMPRESSIONS = ['none', 'gzip', 'zstd'] as const;
 
@@ -61,7 +52,7 @@ export type EncoderConfig = z.infer<typeof EncoderConfigSchema>;
 export const S3OutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   bucket: z.string().min(1),
   key_template: z.string().min(1).optional(),
-  endpoint_url: orPlaceholder(ENDPOINT_URL).nullable().optional(),
+  endpoint_url: orPlaceholder(HttpUrlSchema).nullable().optional(),
   region: z.string().min(1).optional(),
   addressing_style: orPlaceholder(z.enum(ADDRESSING_STYLES)).optional(),
   access_key_id: z.string().min(1).nullable().optional(),
@@ -74,7 +65,7 @@ export const S3OutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   max_retries: orPlaceholder(z.number().int().gte(0)).optional(),
   verify: orPlaceholder(z.boolean()).optional(),
   ca_cert: z.string().min(1).nullable().optional(),
-  proxy_url: orPlaceholder(ENDPOINT_URL).nullable().optional(),
+  proxy_url: orPlaceholder(HttpUrlSchema).nullable().optional(),
 });
 export type S3OutputPluginConfig = z.infer<typeof S3OutputPluginConfigSchema>;
 export const S3OutputPluginNamedConfigSchema = z.object({
