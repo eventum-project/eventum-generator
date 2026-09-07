@@ -14,6 +14,10 @@ All notable changes to this project will be documented in this file.
 - **Added a `syslog` formatter** — an output plugin wraps each event into an RFC 5424 or RFC 3164 message on its own, in place of the header every syslog-shaped generator wrote by hand in its templates. Facility, severity, hostname, application, process id and message type are written in place or taken from a field of the event, the time comes from a field or from the moment of writing, structured data mixes static parameters with ones read from the event, and the message part is the event as it stands, collapsed into a single line, or one named field of it. A header part the event turns out not to carry becomes the `-` the RFC defines for it, while an event that cannot answer for the priority, the time or the message itself is dropped and counted as failed rather than sent as a broken line
 - **Added octet counting to the `tcp` output** — each event is prefixed with the number of bytes it takes, which is the framing syslog over TLS requires and the only one a message carrying a line break survives. `framing: delimiter` stays the default, so existing configurations keep sending what they sent
 
+### ⚡ Performance
+
+- **Deferred the ClickHouse and Kafka clients until their outputs open** — startup no longer loads either client or the ClickHouse C extensions for generators that do not use them, keeping roughly 10 MiB out of resident memory
+
 ### 📦 Dependencies
 
 - **Added `obstore` and `pyarrow`** — the storage client of the `s3` output plugin and the Parquet encoder behind its columnar objects. Both are loaded when a generator opens the plugin rather than at startup, so an installation that writes nowhere near object storage keeps them out of its resident memory, though they are installed either way

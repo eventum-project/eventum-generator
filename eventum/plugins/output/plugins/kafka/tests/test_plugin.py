@@ -1,6 +1,7 @@
 """Tests for kafka output plugin."""
 
 import asyncio
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -50,7 +51,7 @@ def _make_producer(**overrides):
 
 @pytest.mark.asyncio
 @patch(
-    'eventum.plugins.output.plugins.kafka.plugin.AIOKafkaProducer',
+    'aiokafka.AIOKafkaProducer',
 )
 async def test_plugin_write(mock_producer_cls):
     producer = _make_producer()
@@ -72,7 +73,7 @@ async def test_plugin_write(mock_producer_cls):
 
 @pytest.mark.asyncio
 @patch(
-    'eventum.plugins.output.plugins.kafka.plugin.AIOKafkaProducer',
+    'aiokafka.AIOKafkaProducer',
 )
 async def test_plugin_write_with_key(mock_producer_cls):
     producer = _make_producer()
@@ -95,7 +96,7 @@ async def test_plugin_write_with_key(mock_producer_cls):
 
 @pytest.mark.asyncio
 @patch(
-    'eventum.plugins.output.plugins.kafka.plugin.AIOKafkaProducer',
+    'aiokafka.AIOKafkaProducer',
 )
 async def test_plugin_write_send_failure(mock_producer_cls):
     """Test when send() itself fails (buffer rejection)."""
@@ -126,7 +127,7 @@ async def test_plugin_write_send_failure(mock_producer_cls):
 
 @pytest.mark.asyncio
 @patch(
-    'eventum.plugins.output.plugins.kafka.plugin.AIOKafkaProducer',
+    'aiokafka.AIOKafkaProducer',
 )
 async def test_plugin_write_delivery_failure(mock_producer_cls):
     """Test when send() succeeds but broker delivery fails."""
@@ -159,7 +160,7 @@ async def test_plugin_write_delivery_failure(mock_producer_cls):
 
 @pytest.mark.asyncio
 @patch(
-    'eventum.plugins.output.plugins.kafka.plugin.AIOKafkaProducer',
+    'aiokafka.AIOKafkaProducer',
 )
 async def test_plugin_open_failure(mock_producer_cls):
     producer = _make_producer(
@@ -175,8 +176,23 @@ async def test_plugin_open_failure(mock_producer_cls):
 
 
 @pytest.mark.asyncio
+async def test_plugin_import_failure():
+    """Failed producer import raises `PluginOpenError`."""
+    config = _make_config()
+    plugin = KafkaOutputPlugin(config=config, params={'id': 1})
+
+    with (
+        patch.dict(sys.modules, {'aiokafka': None}),
+        pytest.raises(PluginOpenError) as info,
+    ):
+        await plugin.open()
+
+    assert isinstance(info.value.__cause__, ModuleNotFoundError)
+
+
+@pytest.mark.asyncio
 @patch(
-    'eventum.plugins.output.plugins.kafka.plugin.AIOKafkaProducer',
+    'aiokafka.AIOKafkaProducer',
 )
 async def test_plugin_acks_minus_one_mapped_to_all(mock_producer_cls):
     producer = _make_producer()
@@ -195,7 +211,7 @@ async def test_plugin_acks_minus_one_mapped_to_all(mock_producer_cls):
 
 @pytest.mark.asyncio
 @patch(
-    'eventum.plugins.output.plugins.kafka.plugin.AIOKafkaProducer',
+    'aiokafka.AIOKafkaProducer',
 )
 async def test_plugin_acks_zero_and_one_unchanged(mock_producer_cls):
     producer = _make_producer()
