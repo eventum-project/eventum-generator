@@ -14,6 +14,7 @@ from eventum.plugins.output.fields import (
     SimpleFormatterConfig,
     TemplateFormatterConfig,
 )
+from eventum.plugins.output.syslog import SyslogFormatterConfig
 
 _FORMAT_CONFIG: dict[Format, type[BaseModel]] = {
     Format.PLAIN: SimpleFormatterConfig,
@@ -22,6 +23,7 @@ _FORMAT_CONFIG: dict[Format, type[BaseModel]] = {
     Format.TEMPLATE: TemplateFormatterConfig,
     Format.TEMPLATE_BATCH: TemplateFormatterConfig,
     Format.EVENTUM_HTTP_INPUT: SimpleFormatterConfig,
+    Format.SYSLOG: SyslogFormatterConfig,
 }
 
 _FORMAT_DESCRIPTIONS: dict[Format, str] = {
@@ -40,6 +42,10 @@ _FORMAT_DESCRIPTIONS: dict[Format, str] = {
     ),
     Format.EVENTUM_HTTP_INPUT: (
         'Request body format expected by the Eventum HTTP input plugin.'
+    ),
+    Format.SYSLOG: (
+        'Each event wrapped into an RFC 5424 or RFC 3164 syslog message; '
+        'header parts are static or taken from fields of the event.'
     ),
 }
 
