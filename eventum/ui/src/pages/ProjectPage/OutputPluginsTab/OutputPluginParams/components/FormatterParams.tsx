@@ -7,7 +7,9 @@ import {
   Stack,
   Textarea,
 } from '@mantine/core';
+import type { FormErrors, SetErrors } from '@mantine/form';
 import { IconBraces, IconFile } from '@tabler/icons-react';
+import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { FC, ReactNode, useState } from 'react';
 
 import { ProjectFileSelect } from '../../../components/ProjectFileSelect';
@@ -15,22 +17,60 @@ import { SyslogFormatterParams } from './SyslogFormatterParams';
 import {
   Format,
   FormatterConfig,
+  FormatterConfigSchema,
   SyslogFormatterConfig,
 } from '@/api/routes/generator-configs/schemas/plugins/output/formatters';
 import { LabelWithTooltip } from '@/components/ui/LabelWithTooltip';
 
+const validateGenericFormatter = zod4Resolver(FormatterConfigSchema);
+
 interface FormatterParamsProps {
   value: FormatterConfig | undefined;
+  errors: FormErrors;
+  setErrors?: SetErrors;
+  validate?: (config: FormatterConfig | undefined) => FormErrors;
   onChange: (config: FormatterConfig | undefined) => void;
 }
 
 export const FormatterParams: FC<FormatterParamsProps> = ({
   value,
+  errors,
+  setErrors,
+  validate,
   onChange,
 }) => {
   const [templateSourceType, setTemplateSourceType] = useState<
     'template' | 'template-path'
   >('template');
+
+  const update = (config: FormatterConfig | undefined) => {
+    onChange(config);
+    setErrors?.((current) => {
+      const next = Object.fromEntries(
+        Object.entries(current).filter(
+          ([path]) => path !== 'formatter' && !path.startsWith('formatter.')
+        )
+      );
+
+      const validationErrors =
+        validate?.(config) ??
+        (config === undefined
+          ? {}
+          : Object.fromEntries(
+              Object.entries(validateGenericFormatter(config)).map(
+                ([path, error]) => [`formatter.${path}`, error]
+              )
+            ));
+
+      for (const [path, error] of Object.entries(validationErrors)) {
+        if (path === 'formatter' || path.startsWith('formatter.')) {
+          next[path] = error;
+        }
+      }
+
+      return next;
+    });
+  };
 
   return (
     <Stack gap="xs">
@@ -49,13 +89,14 @@ export const FormatterParams: FC<FormatterParamsProps> = ({
           Format.TemplateBatch,
         ]}
         clearable
+        error={errors['formatter.format']}
         value={value?.format ?? null}
         onChange={(value) => {
           if (value === null) {
             // eslint-disable-next-line unicorn/no-useless-undefined
-            onChange(undefined);
+            update(undefined);
           } else {
-            onChange({ format: value as Format });
+            update({ format: value as Format });
           }
         }}
       />
@@ -73,9 +114,10 @@ export const FormatterParams: FC<FormatterParamsProps> = ({
           min={0}
           step={1}
           allowDecimal={false}
+          error={errors['formatter.indent']}
           value={value.indent ?? 0}
           onChange={(val) => {
-            onChange({
+            update({
               format: value.format,
               indent: typeof val === 'number' ? val : 0,
             });
@@ -86,7 +128,8 @@ export const FormatterParams: FC<FormatterParamsProps> = ({
       {value?.format === Format.Syslog && (
         <SyslogFormatterParams
           value={value}
-          onChange={(config: SyslogFormatterConfig) => onChange(config)}
+          errors={errors}
+          onChange={(config: SyslogFormatterConfig) => update(config)}
         />
       )}
 
@@ -141,9 +184,10 @@ export const FormatterParams: FC<FormatterParamsProps> = ({
               in template for `template` and `template-batch` modes correspondingly"
               minRows={3}
               autosize
+              error={errors['formatter.template']}
               value={value.template ?? ''}
               onChange={(e) => {
-                onChange({
+                update({
                   format: value.format,
                   template: e.currentTarget.value,
                 });
@@ -160,10 +204,13 @@ export const FormatterParams: FC<FormatterParamsProps> = ({
               }
               clearable
               searchable
-              error={!value?.template_path ? 'Template path is required' : null}
+              error={
+                errors['formatter.template_path'] ??
+                (!value?.template_path ? 'Template path is required' : null)
+              }
               value={value?.template_path ?? null}
               onChange={(val) => {
-                onChange({
+                update({
                   format: value.format,
                   template_path: val ?? undefined,
                 });

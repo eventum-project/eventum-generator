@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
 } from '@mantine/core';
+import type { FormErrors } from '@mantine/form';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { nanoid } from 'nanoid';
 import { FC, useEffect, useMemo, useState } from 'react';
@@ -39,11 +40,14 @@ const nameOfCode = (
 
 interface SyslogFormatterParamsProps {
   value: SyslogFormatterConfig;
+  errors: FormErrors;
   onChange: (config: SyslogFormatterConfig) => void;
 }
 
 interface StructuredDataElementProps {
   value: SyslogStructuredData;
+  errors: FormErrors;
+  elementIndex: number | undefined;
   onChange: (element: SyslogStructuredData) => void;
   onRemove: () => void;
 }
@@ -58,6 +62,21 @@ interface Row<T> {
 }
 
 const rowOf = <T,>(value: T): Row<T> => ({ key: nanoid(), value });
+
+const formatterError = (errors: FormErrors, path: string) =>
+  errors[`formatter.${path}`];
+
+const eventValueError = (errors: FormErrors, path: string) =>
+  formatterError(errors, path) ?? formatterError(errors, `${path}.field`);
+
+const structuredDataError = (
+  errors: FormErrors,
+  index: number | undefined,
+  path: string
+) =>
+  index === undefined
+    ? undefined
+    : formatterError(errors, `structured_data.${index}.${path}`);
 
 /**
  * Rows of an editor over a part of the config that cannot hold them all.
@@ -109,6 +128,8 @@ const paramsOf = (rows: Row<ParamRow>[]): SyslogStructuredData['params'] =>
 
 const StructuredDataElement: FC<StructuredDataElementProps> = ({
   value,
+  errors,
+  elementIndex,
   onChange,
   onRemove,
 }) => {
@@ -132,6 +153,7 @@ const StructuredDataElement: FC<StructuredDataElementProps> = ({
               />
             }
             placeholder="id@enterprise"
+            error={structuredDataError(errors, elementIndex, 'id')}
             value={value.id}
             onChange={(event) =>
               onChange({ ...value, id: event.currentTarget.value })
@@ -160,6 +182,11 @@ const StructuredDataElement: FC<StructuredDataElementProps> = ({
               flex="1 1 90px"
               aria-label="Parameter name"
               placeholder="name"
+              error={structuredDataError(
+                errors,
+                elementIndex,
+                `params.${row.value.name}`
+              )}
               value={row.value.name}
               onChange={(event) =>
                 updateRows(
@@ -183,6 +210,11 @@ const StructuredDataElement: FC<StructuredDataElementProps> = ({
                 tooltip="Value of the parameter, written in place or taken from a field of the event"
                 placeholder="value"
                 hideLabel
+                error={structuredDataError(
+                  errors,
+                  elementIndex,
+                  `params.${row.value.name}.field`
+                )}
                 value={row.value.value}
                 onChange={(next) =>
                   updateRows(
@@ -227,6 +259,7 @@ const StructuredDataElement: FC<StructuredDataElementProps> = ({
 
 export const SyslogFormatterParams: FC<SyslogFormatterParamsProps> = ({
   value,
+  errors,
   onChange,
 }) => {
   const update = (patch: Partial<SyslogFormatterConfig>) =>
@@ -252,6 +285,13 @@ export const SyslogFormatterParams: FC<SyslogFormatterParamsProps> = ({
             : structured_data,
       })
   );
+  const elementConfigIndices = useMemo(() => {
+    let configIndex = 0;
+
+    return elementRows.map((row) =>
+      row.value.id === '' ? undefined : configIndex++
+    );
+  }, [elementRows]);
 
   return (
     <Stack gap="xs">
@@ -283,6 +323,7 @@ export const SyslogFormatterParams: FC<SyslogFormatterParamsProps> = ({
           tooltip="Facility of the message, default is `user`"
           placeholder="facility"
           options={SYSLOG_FACILITIES}
+          error={eventValueError(errors, 'facility')}
           value={nameOfCode(value.facility, SYSLOG_FACILITIES)}
           onChange={(next) =>
             update({ facility: next as SyslogFormatterConfig['facility'] })
@@ -293,6 +334,7 @@ export const SyslogFormatterParams: FC<SyslogFormatterParamsProps> = ({
           tooltip="Severity of the message, default is `info`"
           placeholder="severity"
           options={SYSLOG_SEVERITIES}
+          error={eventValueError(errors, 'severity')}
           value={nameOfCode(value.severity, SYSLOG_SEVERITIES)}
           onChange={(next) =>
             update({ severity: next as SyslogFormatterConfig['severity'] })
@@ -304,6 +346,7 @@ export const SyslogFormatterParams: FC<SyslogFormatterParamsProps> = ({
         label="Hostname"
         tooltip="Host the message originates from, default is `-`"
         placeholder="hostname"
+        error={eventValueError(errors, 'hostname')}
         value={value.hostname}
         onChange={(next) => update({ hostname: next })}
       />
@@ -317,6 +360,7 @@ export const SyslogFormatterParams: FC<SyslogFormatterParamsProps> = ({
               : 'Application the message originates from, default is `-`'
           }
           placeholder="app name"
+          error={eventValueError(errors, 'app_name')}
           value={value.app_name}
           onChange={(next) => update({ app_name: next })}
         />
@@ -324,6 +368,7 @@ export const SyslogFormatterParams: FC<SyslogFormatterParamsProps> = ({
           label="Process id"
           tooltip="Process id of the application, default is `-`"
           placeholder="process id"
+          error={eventValueError(errors, 'procid')}
           value={value.procid}
           onChange={(next) => update({ procid: next })}
         />
@@ -334,6 +379,7 @@ export const SyslogFormatterParams: FC<SyslogFormatterParamsProps> = ({
           label="Message id"
           tooltip="Type of the message, default is `-`"
           placeholder="message id"
+          error={eventValueError(errors, 'msgid')}
           value={value.msgid}
           onChange={(next) => update({ msgid: next })}
         />
@@ -347,6 +393,7 @@ export const SyslogFormatterParams: FC<SyslogFormatterParamsProps> = ({
           />
         }
         placeholder="event field"
+        error={formatterError(errors, 'timestamp.field')}
         value={value.timestamp?.field ?? ''}
         onChange={(event) => {
           const field = event.currentTarget.value;
@@ -363,6 +410,7 @@ export const SyslogFormatterParams: FC<SyslogFormatterParamsProps> = ({
             />
           }
           placeholder="event field"
+          error={formatterError(errors, 'message_field')}
           value={value.message_field ?? ''}
           onChange={(event) => {
             const field = event.currentTarget.value;
@@ -380,6 +428,7 @@ export const SyslogFormatterParams: FC<SyslogFormatterParamsProps> = ({
           data={SYSLOG_MESSAGE_FORMATS as unknown as string[]}
           clearable
           disabled={Boolean(value.message_field)}
+          error={formatterError(errors, 'message_format')}
           value={value.message_format ?? null}
           onChange={(picked) =>
             update({
@@ -438,6 +487,8 @@ export const SyslogFormatterParams: FC<SyslogFormatterParamsProps> = ({
                   <StructuredDataElement
                     key={row.key}
                     value={row.value}
+                    errors={errors}
+                    elementIndex={elementConfigIndices[index]}
                     onChange={(next) =>
                       updateElements(
                         elementRows.map((current, position) =>

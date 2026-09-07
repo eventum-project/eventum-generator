@@ -198,6 +198,8 @@ export const FileOutputPluginParams: FC<FileOutputPluginParamsProps> = ({
       <Paper withBorder p="xs">
         <FormatterParams
           value={form.getValues().formatter}
+          errors={form.errors}
+          setErrors={form.setErrors}
           onChange={(values) => form.setFieldValue('formatter', values)}
         />
       </Paper>
