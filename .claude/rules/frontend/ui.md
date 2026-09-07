@@ -38,12 +38,13 @@ On the API boundary, every backend Pydantic model has a mirror Zod schema - same
 
 ## Plugin UI
 
-Adding or modifying a plugin touches four places.
+Adding or modifying a plugin touches five places.
 
 - **Zod schema** for the plugin config.
 - **Schema union** - add the schema to `schemas/plugins/<type>/index.ts`.
 - **Form component** under `pages/ProjectPage/<Type>PluginTab/<Type>PluginParams/`.
 - **Registry entry** in `modules/plugins/registry.ts` - metadata, default config, and default assets (optional).
+- **Contract test** beside the config schema, using shapes the server returns.
 
 ## Forms
 
@@ -64,7 +65,8 @@ Adding or modifying a plugin touches four places.
 
 - `src/test/setup.ts` - jest-dom matchers, unmount after each test, and the jsdom stubs the app mounts against.
 - `src/test/render.tsx` - `renderWithProviders` for a component, `renderHookWithClient` for a hook that acts on the query cache; page-specific providers are wrapped at the call site.
-- Data comes from mocking the `api/hooks/` module the component reads - tests never reach the network.
+- Component tests mock the `api/hooks/` module and bypass route response validation, so they cannot catch schema drift.
+- Every Zod schema under `api/routes/` that validates a response or persisted config ships with a contract test fed shapes the server returns. Test both shared schemas and the config fields wired to them. Follow `schemas/url.test.ts`, `configs/s3.test.ts`, `configs/http.test.ts`, and `configs/opensearch.test.ts`.
 - Drive interaction through `@testing-library/user-event`. Nothing in jsdom is laid out, so anything resting on real geometry belongs in a browser instead.
 - `pnpm test:coverage` gates on a threshold that sits just under what the suite covers. It is a ratchet: raise it as coverage grows, never lower it to make a red run green.
 - `eslint.config.js` turns a few rules off for `src/**/*.test.*` and `src/test/**`. Add one there only when it fires on the fixture rather than on the code under test.
