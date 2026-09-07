@@ -5,10 +5,12 @@ from typing import Annotated, Literal, Self
 
 from pydantic import Field, model_validator
 
-from eventum.plugins.output.base.config import OutputPluginConfig
+from eventum.plugins.output.base.config import (
+    FormatterConfigT,
+    OutputPluginConfig,
+)
 from eventum.plugins.output.fields import (
     Format,
-    FormatterConfigT,
     JsonFormatterConfig,
 )
 

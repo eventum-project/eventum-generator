@@ -32,6 +32,10 @@ from eventum.plugins.output.fields import (
     SimpleFormatterConfig,
     TemplateFormatterConfig,
 )
+from eventum.plugins.output.syslog import (
+    SyslogFormatterConfig,
+    SyslogRenderer,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -460,6 +464,40 @@ class EventumHttpInputFormatter(
             events=[f'{{"count": {len(events)}}}'],
             formatted_count=len(events),
             errors=[],
+        )
+
+
+class SyslogFormatter(
+    Formatter[SyslogFormatterConfig],
+    format=Format.SYSLOG,
+):
+    """Formatter that formats events as syslog messages."""
+
+    @override
+    def __init__(
+        self,
+        config: SyslogFormatterConfig,
+        params: FormatterParams,
+    ) -> None:
+        super().__init__(config, params)
+
+        self._renderer = SyslogRenderer(config)
+
+    @override
+    def format_events(self, events: Sequence[str]) -> FormattingResult:
+        formatted_events: list[str] = []
+        errors: list[FormatError] = []
+
+        for event in events:
+            try:
+                formatted_events.append(self._renderer.render(event))
+            except FormatError as e:
+                errors.append(e)
+
+        return FormattingResult(
+            events=formatted_events,
+            formatted_count=len(formatted_events),
+            errors=errors,
         )
 
 

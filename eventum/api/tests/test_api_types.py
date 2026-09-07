@@ -539,3 +539,78 @@ class TestRelaxModelSynthetic:
         relaxed = relax_model(M)
         m = _valid(relaxed, {})
         assert m.x is None  # type: ignore
+
+
+class TestCrossFieldRules:
+    """A rule across fields holds for a config written in full and is
+    left unanswered for one that still carries a placeholder.
+    """
+
+    def test_rule_of_the_original_model_holds(self):
+        cls = _relaxed('output', 'tcp')
+
+        _rejects(
+            cls,
+            {
+                'host': 'h',
+                'port': 514,
+                'framing': 'octet_counting',
+                'separator': '|',
+            },
+        )
+
+    def test_rule_passes_a_config_that_complies(self):
+        cls = _relaxed('output', 'tcp')
+
+        _valid(cls, {'host': 'h', 'port': 514, 'framing': 'octet_counting'})
+
+    def test_rule_of_a_nested_model_holds(self):
+        cls = _relaxed('output', 'tcp')
+
+        _rejects(
+            cls,
+            {
+                'host': 'h',
+                'port': 514,
+                'formatter': {'format': 'syslog', 'rfc': 3164, 'bom': True},
+            },
+        )
+
+    def test_rule_is_left_unanswered_under_a_placeholder(self):
+        cls = _relaxed('output', 'tcp')
+
+        _valid(
+            cls,
+            {
+                'host': 'h',
+                'port': 514,
+                'framing': PH,
+                'separator': '|',
+            },
+        )
+
+    def test_rule_comparing_values_is_not_broken_by_a_placeholder(self):
+        # A date range cannot be compared against a placeholder, and
+        # the comparison used to raise out of the layer.
+        cls = _relaxed('input', 'linspace')
+
+        _valid(
+            cls,
+            {
+                'start': PH,
+                'end': '2026-01-01T00:00:00Z',
+                'count': 10,
+            },
+        )
+
+    def test_rule_comparing_values_holds_without_a_placeholder(self):
+        cls = _relaxed('input', 'linspace')
+
+        _rejects(
+            cls,
+            {
+                'start': '2026-01-02T00:00:00Z',
+                'end': '2026-01-01T00:00:00Z',
+                'count': 10,
+            },
+        )

@@ -17,6 +17,7 @@ class Format(StrEnum):
     TEMPLATE = 'template'
     TEMPLATE_BATCH = 'template-batch'
     EVENTUM_HTTP_INPUT = 'eventum-http-input'
+    SYSLOG = 'syslog'
 
 
 class BaseFormatterConfig(BaseModel, ABC, frozen=True, extra='forbid'):
@@ -101,8 +102,3 @@ class TemplateFormatterConfig(BaseFormatterConfig, frozen=True):
             raise ValueError(msg)
 
         return v
-
-
-FormatterConfigT = (
-    SimpleFormatterConfig | JsonFormatterConfig | TemplateFormatterConfig
-)

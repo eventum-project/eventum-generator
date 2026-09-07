@@ -3,12 +3,14 @@ from typing import override
 
 import pytest
 
-from eventum.plugins.output.base.config import OutputPluginConfig
+from eventum.plugins.output.base.config import (
+    FormatterConfigT,
+    OutputPluginConfig,
+)
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
 from eventum.plugins.output.exceptions import PluginWriteError
 from eventum.plugins.output.fields import (
     Format,
-    FormatterConfigT,
     JsonFormatterConfig,
     TemplateFormatterConfig,
 )

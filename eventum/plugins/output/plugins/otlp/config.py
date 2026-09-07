@@ -5,10 +5,12 @@ from typing import Literal, Self
 
 from pydantic import Field, HttpUrl, field_validator, model_validator
 
-from eventum.plugins.output.base.config import OutputPluginConfig
+from eventum.plugins.output.base.config import (
+    FormatterConfigT,
+    OutputPluginConfig,
+)
 from eventum.plugins.output.fields import (
     Format,
-    FormatterConfigT,
     SimpleFormatterConfig,
 )
 from eventum.plugins.output.http_auth.config import HttpAuthConfigT

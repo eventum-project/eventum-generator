@@ -9,7 +9,10 @@ from typing import override
 from eventum.plugins.exceptions import PluginConfigurationError
 from eventum.plugins.output.base.plugin import OutputPlugin, OutputPluginParams
 from eventum.plugins.output.exceptions import PluginOpenError, PluginWriteError
-from eventum.plugins.output.plugins.tcp.config import TcpOutputPluginConfig
+from eventum.plugins.output.plugins.tcp.config import (
+    TcpFraming,
+    TcpOutputPluginConfig,
+)
 from eventum.plugins.output.ssl import create_ssl_context
 
 _CLOSE_TIMEOUT = 5.0
@@ -203,6 +206,59 @@ class TcpOutputPlugin(
                 },
             )
 
+    def _frame_events(self, events: Sequence[str]) -> tuple[bytes, int]:
+        """Encode events into the data to send.
+
+        Parameters
+        ----------
+        events : Sequence[str]
+            Events to encode.
+
+        Returns
+        -------
+        tuple[bytes, int]
+            Encoded events, each delimited as the configured framing
+            requires, and the number of events the data carries.
+
+        Raises
+        ------
+        UnicodeEncodeError
+            If an event cannot be encoded with the configured encoding.
+
+        Notes
+        -----
+        Octet counting prefixes each event with the number of bytes it
+        takes, which is what delimits it - a separator between the
+        events would be read as a part of the length of the next one.
+        An event of no bytes has no frame of its own there, since a
+        length of zero ends the stream for a strict receiver, so it is
+        left out and counted as not written.
+
+        """
+        encoding = self._config.encoding
+
+        if self._config.framing is TcpFraming.DELIMITER:
+            separator = self._config.separator
+            data = b''.join(
+                f'{event}{separator}'.encode(encoding) for event in events
+            )
+            return data, len(events)
+
+        frames: list[bytes] = []
+        framed = 0
+
+        for event in events:
+            encoded = event.encode(encoding)
+
+            if not encoded:
+                continue
+
+            frames.append(f'{len(encoded)} '.encode('ascii'))
+            frames.append(encoded)
+            framed += 1
+
+        return b''.join(frames), framed
+
     @override
     async def _write(self, events: Sequence[str]) -> int:
         if self._writer.is_closing():
@@ -211,18 +267,21 @@ class TcpOutputPlugin(
         self._check_target_keeps_up()
 
         try:
-            data = b''.join(
-                f'{event}{self._config.separator}'.encode(
-                    encoding=self._config.encoding,
-                )
-                for event in events
-            )
+            data, framed = self._frame_events(events)
         except UnicodeEncodeError as e:
             msg = 'Cannot encode events'
             raise PluginWriteError(
                 msg,
                 context={'reason': str(e)},
             ) from e
+
+        if framed < len(events):
+            await self._logger.awarning(
+                'Events of no bytes are left unframed',
+                host=self._config.host,
+                port=self._config.port,
+                count=len(events) - framed,
+            )
 
         try:
             self._writer.write(data)
@@ -244,4 +303,4 @@ class TcpOutputPlugin(
                 },
             ) from e
 
-        return len(events)
+        return framed

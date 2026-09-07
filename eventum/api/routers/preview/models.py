@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from eventum.plugins.input.fields import VersatileDatetime
 from eventum.plugins.input.normalizers import NonePoint
-from eventum.plugins.output.fields import FormatterConfigT
+from eventum.plugins.output.base.config import FormatterConfigT
 
 
 class AggregatedTimestamps(BaseModel, frozen=True, extra='forbid'):

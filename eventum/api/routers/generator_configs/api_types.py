@@ -13,6 +13,8 @@ modified — the relaxation is applied programmatically at import time.
 
 import re
 import types
+from collections.abc import Callable
+from functools import wraps
 from typing import (
     Annotated,
     Any,
@@ -32,12 +34,14 @@ from pydantic import (
     Field,
     RootModel,
     create_model,
+    model_validator,
 )
 from pydantic.fields import FieldInfo
 
 from eventum.api.routers.generator_configs.runtime_types import (
     PluginNamedConfig,
 )
+from eventum.core.config_loader import TOKEN_PATTERN
 from eventum.plugins.loader import (
     get_event_plugin_names,
     get_input_plugin_names,
@@ -192,6 +196,113 @@ def _relax_type(  # noqa: C901, PLR0911, PLR0912
 # - Model relaxation -------------------------------------------------
 
 
+def _holds_placeholder(value: Any) -> bool:
+    """Check the value is or carries a substitution placeholder.
+
+    Parameters
+    ----------
+    value : Any
+        Value to check, of any shape a config field takes.
+
+    Returns
+    -------
+    bool
+        Whether the value itself carries a substitution token or holds
+        one at any depth.
+
+    """
+    if isinstance(value, str):
+        # The loader's own notion of a token, so a value it will
+        # substitute is not judged here before it does.
+        return TOKEN_PATTERN.search(value) is not None
+
+    if isinstance(value, BaseModel):
+        return any(_holds_placeholder(v) for v in value.__dict__.values())
+
+    if isinstance(value, dict):
+        return any(_holds_placeholder(v) for v in value.values())
+
+    if isinstance(value, list | tuple | set):
+        return any(_holds_placeholder(v) for v in value)
+
+    return False
+
+
+def _relaxed_model_validator(
+    func: Callable[[Any], Any],
+) -> Callable[
+    [Any],
+    Any,
+]:
+    """Wrap a model validator so a placeholder leaves it unanswered.
+
+    Parameters
+    ----------
+    func : Callable[[Any], Any]
+        Validator of the original model.
+
+    Returns
+    -------
+    Callable[[Any], Any]
+        Validator that judges a config carrying no placeholder and
+        passes over one that does.
+
+    Notes
+    -----
+    A rule across fields cannot be answered while a field still stands
+    for a value nobody has substituted yet - `left <= right` over a
+    `${params.left}` is not a question with an answer. Such a config
+    passes here and meets the rule at its own layer, where the config
+    is loaded with the placeholders resolved.
+
+    """
+
+    @wraps(func)
+    def validate(self: Any) -> Any:
+        if _holds_placeholder(self):
+            return self
+
+        return func(self)
+
+    return validate
+
+
+def _relax_model_validators(
+    model_cls: type[BaseModel],
+) -> dict[str, Any]:
+    """Take the model validators of a model into a relaxed copy.
+
+    Parameters
+    ----------
+    model_cls : type[BaseModel]
+        Model to take the validators of.
+
+    Returns
+    -------
+    dict[str, Any]
+        Validators to pass to `create_model`.
+
+    Notes
+    -----
+    Only the validators over the whole model, and only the ones running
+    after it is built, are taken. A validator over a single field is
+    left behind together with the constraint of that field, since the
+    relaxed type it would run against is not the one it was written
+    for - so a rule a plugin config needs the API to hold belongs in a
+    model validator.
+
+    """
+    return {
+        name: model_validator(mode='after')(
+            _relaxed_model_validator(decorator.func),
+        )
+        for name, decorator in (
+            model_cls.__pydantic_decorators__.model_validators.items()
+        )
+        if decorator.info.mode == 'after'
+    }
+
+
 def _build_relaxed_field(
     field_info: FieldInfo,
     relaxed_annotation: Any,
@@ -285,6 +396,7 @@ def relax_model(
         model_cls.__name__,
         **field_defs,  # type: ignore[arg-type]
         __config__=ConfigDict(frozen=True, extra='forbid'),
+        __validators__=_relax_model_validators(model_cls),
     )
 
     _relaxed_model_cache[model_cls] = relaxed_cls

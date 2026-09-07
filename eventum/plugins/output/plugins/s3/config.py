@@ -13,10 +13,12 @@ from pydantic import (
     model_validator,
 )
 
-from eventum.plugins.output.base.config import OutputPluginConfig
+from eventum.plugins.output.base.config import (
+    FormatterConfigT,
+    OutputPluginConfig,
+)
 from eventum.plugins.output.fields import (
     Format,
-    FormatterConfigT,
     JsonFormatterConfig,
 )
 from eventum.plugins.output.plugins.s3.keys import validate_key_template

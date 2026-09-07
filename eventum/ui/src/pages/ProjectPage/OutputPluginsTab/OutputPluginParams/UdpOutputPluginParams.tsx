@@ -104,7 +104,7 @@ export const UdpOutputPluginParams: FC<UdpOutputPluginParamsProps> = ({
         label={
           <LabelWithTooltip
             label="Separator"
-            tooltip="Separator appended after each event, default value is line separator defined by OS"
+            tooltip="Separator appended after each event, default value is a line feed"
           />
         }
         rightSectionWidth="70px"

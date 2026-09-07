@@ -4,11 +4,15 @@ import { ENCODINGS } from '../../../encodings';
 import { orPlaceholder } from '../../../placeholder';
 import { BaseOutputPluginConfigSchema } from '../base-config';
 
+/** Ways each event is delimited within the TCP stream. */
+export const TCP_FRAMINGS = ['delimiter', 'octet_counting'] as const;
+
 export const TcpOutputPluginConfigSchema = BaseOutputPluginConfigSchema.extend({
   host: z.string().min(1),
   port: orPlaceholder(z.number().int().gte(1).lte(65_535)),
   encoding: orPlaceholder(z.enum(ENCODINGS)).optional(),
   separator: z.string().optional(),
+  framing: orPlaceholder(z.enum(TCP_FRAMINGS)).optional(),
   connect_timeout: orPlaceholder(z.number().int().gte(1)).optional(),
   ssl: orPlaceholder(z.boolean()).optional(),
   verify: orPlaceholder(z.boolean()).optional(),

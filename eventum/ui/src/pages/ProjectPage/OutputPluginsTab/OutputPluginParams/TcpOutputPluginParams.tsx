@@ -18,6 +18,7 @@ import { ProjectFileSelect } from '../../components/ProjectFileSelect';
 import { FormatterParams } from './components/FormatterParams';
 import { ENCODINGS } from '@/api/routes/generator-configs/schemas/encodings';
 import {
+  TCP_FRAMINGS,
   TcpOutputPluginConfig,
   TcpOutputPluginConfigSchema,
 } from '@/api/routes/generator-configs/schemas/plugins/output/configs/tcp';
@@ -103,13 +104,40 @@ export const TcpOutputPluginParams: FC<TcpOutputPluginParamsProps> = ({
         onChange={(value) => form.setFieldValue('encoding', value ?? undefined)}
       />
 
+      <Select
+        label={
+          <LabelWithTooltip
+            label="Framing"
+            tooltip="Way each event is delimited within the stream, default is delimiter. Octet counting prefixes each event with its length in bytes, as syslog over TLS requires."
+          />
+        }
+        placeholder="framing"
+        data={TCP_FRAMINGS as unknown as string[]}
+        clearable
+        {...form.getInputProps('framing')}
+        value={form.getValues().framing ?? null}
+        onChange={(value) => {
+          const framing =
+            (value as TcpOutputPluginConfig['framing']) ?? undefined;
+
+          // The length of each event delimits it, so a separator is
+          // rejected by the backend along with it.
+          form.setValues(
+            framing === 'octet_counting'
+              ? { framing, separator: undefined }
+              : { framing }
+          );
+        }}
+      />
+
       <TextInput
         label={
           <LabelWithTooltip
             label="Separator"
-            tooltip="Separator appended after each event, default value is line separator defined by OS"
+            tooltip="Separator appended after each event, default value is a line feed. Used only with delimiter framing."
           />
         }
+        disabled={form.getValues().framing === 'octet_counting'}
         rightSectionWidth="70px"
         rightSection={
           <Group wrap="nowrap" gap="2px">
@@ -136,6 +164,7 @@ export const TcpOutputPluginParams: FC<TcpOutputPluginParamsProps> = ({
           </Group>
         }
         {...form.getInputProps('separator')}
+        value={form.getValues().separator ?? ''}
         onChange={(value) =>
           form.setFieldValue(
             'separator',
