@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### 🚀 New Features
+
+- **Added a `syslog` formatter** — an output plugin wraps each event into an RFC 5424 or RFC 3164 message on its own, in place of the header every syslog-shaped generator wrote by hand in its templates. Facility, severity, hostname, application, process id and message type are written in place or taken from a field of the event, the time comes from a field or from the moment of writing, structured data mixes static parameters with ones read from the event, and the message part is the event as it stands, collapsed into a single line, or one named field of it. A header part the event turns out not to carry becomes the `-` the RFC defines for it, while an event that cannot answer for the priority, the time or the message itself is dropped and counted as failed rather than sent as a broken line
+- **Added octet counting to the `tcp` output** — each event is prefixed with the number of bytes it takes, which is the framing syslog over TLS requires and the only one a message carrying a line break survives. `framing: delimiter` stays the default, so existing configurations keep sending what they sent
+
+### 🐛 Bug Fixes
+
+- **Refused a configuration whose fields contradict each other** — a rule across fields, such as TLS material without TLS enabled or a template and a template path together, was dropped when the API relaxed a plugin model to accept `${params.*}` placeholders, so Studio saved a configuration like that and the generator failed only when someone started it. The rules answer over the API now, on reading a configuration as well as on saving one, and a rule reaching a field that still carries a substitution token waits for the value instead of guessing. A configuration saved earlier that breaks such a rule opens in the file editor with the rule named, in place of a form built over a configuration no generator would run
+
 ## 2.8.0 (2026-08-29)
 
 ### 🚀 New Features
