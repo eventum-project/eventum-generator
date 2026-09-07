@@ -606,6 +606,15 @@ class TestStoreConfiguration:
         assert 'secret_access_key' not in config
         assert 'session_token' not in config
 
+    def test_session_token_is_passed_when_configured(self):
+        config = build(
+            access_key_id='k',
+            secret_access_key='s',  # noqa: S106
+            session_token='t',  # noqa: S106
+        )._build_store_config()
+
+        assert config['session_token'] == 't'
+
     def test_credentials_are_passed_when_configured(self):
         config = build(
             access_key_id='k',

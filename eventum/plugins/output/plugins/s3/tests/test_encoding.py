@@ -89,24 +89,34 @@ class TestJsonLinesEncoding:
 
         assert first == second
 
-    def test_gzip_level_changes_output(self):
-        events = [json.dumps({'msg': 'x' * 500})] * 50
+    def test_gzip_level_reaches_the_codec(self):
+        """Only the level reaching the codec is asserted, not the size it
+        yields: which level compresses better is up to the codec, and
+        for a small or very compressible body a higher one can produce
+        more bytes."""
+        events = [
+            json.dumps({'msg': f'{i}-{"ab" * (i % 40)}'}) for i in range(400)
+        ]
         low = encode(
-            events, json_lines(compression='gzip', compression_level=1)
+            events,
+            json_lines(compression='gzip', compression_level=1),
         )
         high = encode(
             events,
             json_lines(compression='gzip', compression_level=9),
         )
 
-        assert len(high) < len(low)
+        assert low != high
+        assert gzip.decompress(high).decode().splitlines() == events
+        assert gzip.decompress(low).decode().splitlines() == events
 
     def test_zstd_roundtrip(self):
         body = encode(EVENTS, json_lines(compression='zstd'))
 
         assert zstd.decompress(body).decode().splitlines() == EVENTS
 
-    def test_zstd_level_changes_output(self):
+    def test_zstd_level_reaches_the_codec(self):
+        """See the gzip case above for why the size is not asserted."""
         events = [
             json.dumps({'msg': f'{i}-{"ab" * (i % 40)}'}) for i in range(400)
         ]
@@ -120,8 +130,8 @@ class TestJsonLinesEncoding:
         )
 
         assert low != high
-        assert len(high) < len(low)
         assert zstd.decompress(high).decode().splitlines() == events
+        assert zstd.decompress(low).decode().splitlines() == events
 
     def test_compression_shrinks_repetitive_events(self):
         events = [json.dumps({'msg': 'x' * 500})] * 50
