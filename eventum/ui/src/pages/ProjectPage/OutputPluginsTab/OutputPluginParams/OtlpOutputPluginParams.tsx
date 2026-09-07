@@ -14,6 +14,7 @@ import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { FC } from 'react';
 
 import { ProjectFileSelect } from '../../components/ProjectFileSelect';
+import { AuthParams } from './components/AuthParams';
 import { FormatterParams } from './components/FormatterParams';
 import {
   OTLP_COMPRESSIONS,
@@ -130,6 +131,13 @@ export const OtlpOutputPluginParams: FC<OtlpOutputPluginParamsProps> = ({
         }}
         error={form.errors.headers}
       />
+
+      <Paper withBorder p="sm">
+        <AuthParams
+          value={form.getValues().auth ?? undefined}
+          onChange={(auth) => form.setFieldValue('auth', auth)}
+        />
+      </Paper>
 
       <JsonInput
         label="Resource attributes"
