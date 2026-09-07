@@ -14,6 +14,11 @@ All notable changes to this project will be documented in this file.
 
 - **Added `obstore` and `pyarrow`** — the storage client of the `s3` output plugin and the Parquet encoder behind its columnar objects. Both are loaded when a generator opens the plugin rather than at startup, so an installation that writes nowhere near object storage keeps them out of its resident memory, though they are installed either way
 
+### 🐛 Bug Fixes
+
+- **Accepted an endpoint at an IP address, `localhost` or a container name** — Studio checked the address of the `http`, `opensearch` and `otlp` outputs, their proxies and the OAuth2 token endpoint against a domain name alone, so a project pointing at a service on a local network refused to open with "Unexpected server response" while the generator itself ran against it happily. The token endpoint, in turn, now refuses a plaintext address in the form rather than at generator start
+- **Opened the file editor on a configuration Studio cannot read** — recovery mode exists so the file that locked the user out can be fixed by hand, but it was reached only when the server failed the request. A configuration the server returns and Studio does not accept left a dead-end error page with the file out of reach
+
 ### 📝 Other Changes
 
 - **Moved the `username` and `password` of the `http` output into the `auth` section** — a configuration still carrying the flat keys is rejected, with an error naming the section to write instead. A password given without a user name used to load and authenticate with nothing, which the section makes impossible, and an `Authorization` header written by hand alongside `auth` is now refused rather than silently overridden

@@ -31,4 +31,31 @@ describe('OtlpOutputPluginConfigSchema', () => {
 
     expect(result.success).toBe(true);
   });
+
+  // a collector usually runs beside the generator, so the endpoint the
+  // server serves back is a local address more often than a domain
+  it('takes an endpoint at a local address', () => {
+    const result = OtlpOutputPluginConfigSchema.safeParse({
+      endpoint: 'http://otelcol:4318',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('takes a proxy at a local address', () => {
+    const result = OtlpOutputPluginConfigSchema.safeParse({
+      ...base,
+      proxy_url: 'http://10.0.0.1:3128',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('refuses an endpoint that is not a url', () => {
+    const result = OtlpOutputPluginConfigSchema.safeParse({
+      endpoint: 'not-a-url',
+    });
+
+    expect(result.success).toBe(false);
+  });
 });

@@ -1,6 +1,7 @@
 import z from 'zod';
 
 import { orPlaceholder } from '../../../placeholder';
+import { HttpUrlSchema } from '../../../url';
 import { HTTPAuthConfigSchema } from '../auth';
 import { BaseOutputPluginConfigSchema } from '../base-config';
 
@@ -15,7 +16,7 @@ export const HTTP_METHODS = [
 ];
 
 export const HTTPOutputPluginConfigShape = BaseOutputPluginConfigSchema.extend({
-  url: orPlaceholder(z.httpUrl()),
+  url: orPlaceholder(HttpUrlSchema),
   method: orPlaceholder(z.enum(HTTP_METHODS)).optional(),
   success_code: orPlaceholder(z.number().int().gte(100).lt(600)).optional(),
   headers: z.record(z.string().min(1), z.string()).optional(),
@@ -26,7 +27,7 @@ export const HTTPOutputPluginConfigShape = BaseOutputPluginConfigSchema.extend({
   ca_cert: z.string().min(1).nullable().optional(),
   client_cert: z.string().min(1).nullable().optional(),
   client_cert_key: z.string().min(1).nullable().optional(),
-  proxy_url: orPlaceholder(z.httpUrl()).nullable().optional(),
+  proxy_url: orPlaceholder(HttpUrlSchema).nullable().optional(),
   concurrency: orPlaceholder(z.number().int().gte(1)).optional(),
 });
 

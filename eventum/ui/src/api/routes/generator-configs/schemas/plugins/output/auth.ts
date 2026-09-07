@@ -1,6 +1,7 @@
 import z from 'zod';
 
 import { orPlaceholder } from '../../placeholder';
+import { HttpsUrlSchema } from '../../url';
 
 export const enum AuthType {
   Basic = 'basic',
@@ -28,7 +29,9 @@ const BearerAuthConfigSchema = z.object({
 
 const OAuth2ClientCredentialsAuthConfigSchema = z.object({
   type: z.literal(AuthType.OAuth2ClientCredentials),
-  token_url: orPlaceholder(z.httpUrl()),
+  // the backend refuses a plaintext token endpoint, since the client
+  // secret travels the request to it
+  token_url: orPlaceholder(HttpsUrlSchema),
   client_id: z.string().min(1),
   client_secret: z.string().min(1),
   client_auth_method: orPlaceholder(z.enum(CLIENT_AUTH_METHODS)).optional(),
