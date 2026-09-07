@@ -11,6 +11,7 @@ from eventum.plugins.output.fields import (
     FormatterConfigT,
     SimpleFormatterConfig,
 )
+from eventum.plugins.output.http_auth.config import HttpAuthConfigT
 
 BATCH_FORMATS = frozenset(
     {
@@ -41,6 +42,10 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
         Extra request headers. A `Content-Type` or `Content-Encoding`
         entry is overridden, since both are dictated by `protocol`
         and `compression`.
+
+    auth : HttpAuthConfigT | None, default=None
+        Authentication used for requests, no authentication is
+        performed when it is omitted.
 
     connect_timeout : int, default=10
         Connection timeout in seconds.
@@ -109,6 +114,10 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
     )
     compression: Literal['none', 'gzip'] = Field(default='none')
     headers: dict[str, str] = Field(default_factory=dict)
+    auth: HttpAuthConfigT | None = Field(
+        default=None,
+        discriminator='type',
+    )
     connect_timeout: int = Field(default=10, ge=1)
     request_timeout: int = Field(default=300, ge=1)
     verify: bool = Field(default=True)
@@ -142,6 +151,21 @@ class OtlpOutputPluginConfig(OutputPluginConfig, frozen=True):
             raise ValueError(msg)
 
         return v
+
+    @model_validator(mode='after')
+    def validate_authorization_header(self) -> Self:  # noqa: D102
+        if self.auth is None:
+            return self
+
+        for header in self.headers:
+            if header.lower() == 'authorization':
+                msg = (
+                    'The `Authorization` header cannot be set together '
+                    'with `auth`; keep one of them'
+                )
+                raise ValueError(msg)
+
+        return self
 
     @model_validator(mode='after')
     def validate_client_cert(self) -> Self:  # noqa: D102

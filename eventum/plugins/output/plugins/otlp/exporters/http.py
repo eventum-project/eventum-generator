@@ -2,6 +2,8 @@
 
 import gzip
 import ssl
+from collections.abc import Mapping
+from typing import Any
 
 import httpx
 from google.protobuf import json_format
@@ -10,6 +12,13 @@ from opentelemetry.proto.collector.logs.v1.logs_service_pb2 import (
     ExportLogsServiceResponse,
 )
 
+from eventum.plugins.output.exceptions import PluginOpenError
+from eventum.plugins.output.http_auth import (
+    AuthenticationError,
+    HttpAuthenticator,
+    HttpAuthenticatorParams,
+    create_authenticator,
+)
 from eventum.plugins.output.http_client import create_client
 from eventum.plugins.output.plugins.otlp.config import OtlpOutputPluginConfig
 from eventum.plugins.output.plugins.otlp.exporters.base import (
@@ -20,6 +29,7 @@ from eventum.plugins.output.plugins.otlp.exporters.base import (
 PROTOBUF_CONTENT_TYPE = 'application/x-protobuf'
 JSON_CONTENT_TYPE = 'application/json'
 GZIP_CONTENT_ENCODING = 'gzip'
+_UNAUTHORIZED_STATUS = 401
 
 
 class HttpExporter:
@@ -55,9 +65,17 @@ class HttpExporter:
         self._ssl_context = ssl_context
         self._url = url
         self._client: httpx.AsyncClient
+        self._authenticator: HttpAuthenticator[Any] | None = None
 
     async def open(self) -> None:
-        """Acquire the resources of the transport."""
+        """Acquire the resources of the transport.
+
+        Raises
+        ------
+        PluginOpenError
+            If credentials cannot be acquired.
+
+        """
         content_type = (
             JSON_CONTENT_TYPE
             if self._config.protocol == 'http/json'
@@ -84,8 +102,29 @@ class HttpExporter:
             ),
         )
 
+        if self._config.auth is not None:
+            # the plugin is not opened, so `close` never runs and the
+            # client would be left behind
+            try:
+                self._authenticator = create_authenticator(
+                    config=self._config.auth,
+                    params=HttpAuthenticatorParams(client=self._client),
+                )
+                await self._authenticator.open()
+            except AuthenticationError as e:
+                await self._client.aclose()
+
+                msg = 'Failed to authenticate'
+                raise PluginOpenError(msg, context=e.context) from None
+            except BaseException:
+                await self._client.aclose()
+                raise
+
     async def close(self) -> None:
         """Release the resources of the transport."""
+        if self._authenticator is not None:
+            await self._authenticator.close()
+
         await self._client.aclose()
 
     def encode(self, request: ExportLogsServiceRequest) -> bytes:
@@ -155,6 +194,51 @@ class HttpExporter:
             False,
         )
 
+    async def _send_once(
+        self,
+        body: bytes,
+    ) -> tuple[httpx.Response, Mapping[str, str]] | ExportFailure:
+        """Send a single request with authentication applied.
+
+        Parameters
+        ----------
+        body : bytes
+            Serialized body of the request to send.
+
+        Returns
+        -------
+        tuple[httpx.Response, Mapping[str, str]] | ExportFailure
+            Response of the receiver, of any status code, and the
+            authentication headers the request carried; an
+            `ExportFailure` instead when credentials could not be
+            acquired or the request could not be sent.
+
+        """
+        credentials: Mapping[str, str] = {}
+
+        if self._authenticator is not None:
+            try:
+                credentials = await self._authenticator.headers()
+            except AuthenticationError as e:
+                return ExportFailure(
+                    message='Failed to authenticate',
+                    context=e.context,
+                )
+
+        try:
+            response = await self._client.post(
+                self._url,
+                content=body,
+                headers=credentials,
+            )
+        except httpx.RequestError as e:
+            return ExportFailure(
+                message='Request to OTLP receiver failed',
+                context={'reason': str(e), 'url': self._url},
+            )
+
+        return response, credentials
+
     async def send(self, body: bytes, records: int) -> ExportResult:
         """Deliver an encoded request carrying `records` records.
 
@@ -173,21 +257,34 @@ class HttpExporter:
             `accepted` and `rejected` split `records` according to
             the partial success the receiver reported (none of it
             when the response carries none); `failure` is populated
-            and nothing is counted as accepted on a transport error
-            or an unsuccessful response.
+            and nothing is counted as accepted on a transport error,
+            a failure to authenticate, or an unsuccessful response.
+
+        Notes
+        -----
+        A response rejected as unauthorized is given one more
+        attempt with refreshed credentials, exactly once.
 
         """
-        try:
-            response = await self._client.post(self._url, content=body)
-        except httpx.RequestError as e:
-            return ExportResult(
-                accepted=0,
-                rejected=0,
-                failure=ExportFailure(
-                    message='Request to OTLP receiver failed',
-                    context={'reason': str(e), 'url': self._url},
-                ),
-            )
+        result = await self._send_once(body)
+
+        if isinstance(result, ExportFailure):
+            return ExportResult(accepted=0, rejected=0, failure=result)
+
+        response, sent = result
+
+        if (
+            not response.is_success
+            and response.status_code == _UNAUTHORIZED_STATUS
+            and self._authenticator is not None
+            and await self._authenticator.handle_unauthorized(sent)
+        ):
+            result = await self._send_once(body)
+
+            if isinstance(result, ExportFailure):
+                return ExportResult(accepted=0, rejected=0, failure=result)
+
+            response, sent = result
 
         if response.is_success:
             content = await response.aread()

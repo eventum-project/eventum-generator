@@ -103,3 +103,21 @@ def test_config_rejects_unknown_compression():
             endpoint=HttpUrl('http://localhost:4318'),
             compression='br',
         )
+
+
+def test_config_auth_defaults_to_none():
+    config = OtlpOutputPluginConfig(endpoint=HttpUrl('http://localhost:4318'))
+    assert config.auth is None
+
+
+@pytest.mark.parametrize(
+    'header',
+    ['Authorization', 'authorization', 'AUTHORIZATION'],
+)
+def test_config_rejects_authorization_header_with_auth(header):
+    with pytest.raises(ValidationError, match='Authorization'):
+        OtlpOutputPluginConfig(
+            endpoint=HttpUrl('http://localhost:4318'),
+            headers={header: 'Bearer abc'},
+            auth={'type': 'bearer', 'token': 'abc'},
+        )

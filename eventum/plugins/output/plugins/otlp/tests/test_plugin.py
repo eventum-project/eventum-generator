@@ -1,6 +1,9 @@
+import asyncio
 import gzip
 import json
+from base64 import b64encode
 
+import httpx
 import pytest
 import structlog
 from opentelemetry.proto.collector.logs.v1.logs_service_pb2 import (
@@ -10,7 +13,8 @@ from opentelemetry.proto.collector.logs.v1.logs_service_pb2 import (
 from pydantic import HttpUrl
 from pytest_httpx import HTTPXMock
 
-from eventum.plugins.output.exceptions import PluginWriteError
+from eventum.plugins.output.exceptions import PluginOpenError, PluginWriteError
+from eventum.plugins.output.http_auth import authenticators
 from eventum.plugins.output.plugins.otlp.config import OtlpOutputPluginConfig
 from eventum.plugins.output.plugins.otlp.plugin import (
     OtlpOutputPlugin,
@@ -19,10 +23,23 @@ from eventum.plugins.output.plugins.otlp.plugin import (
 
 _ENDPOINT = 'http://localhost:4318'
 _LOGS_URL = 'http://localhost:4318/v1/logs'
+_TOKEN_URL = 'https://login.example.com/token'  # noqa: S105
+_UNAUTHORIZED = 401
+_BAD_REQUEST = 400
 
 
 def _config(**kwargs) -> OtlpOutputPluginConfig:
     return OtlpOutputPluginConfig(**{'endpoint': HttpUrl(_ENDPOINT), **kwargs})
+
+
+def _oauth2_auth() -> dict:
+    """Build an auth section pointing at the mocked token endpoint."""
+    return {
+        'type': 'oauth2_client_credentials',
+        'token_url': _TOKEN_URL,
+        'client_id': 'id',
+        'client_secret': 'secret',
+    }
 
 
 def _sent_request(httpx_mock: HTTPXMock) -> ExportLogsServiceRequest:
@@ -600,3 +617,144 @@ async def test_plugin_reports_unparsable_success_body(httpx_mock: HTTPXMock):
     ]
     assert len(warnings) == 1
     assert warnings[0]['count'] == 1
+
+
+@pytest.mark.asyncio
+async def test_plugin_sends_static_bearer_token(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(auth={'type': 'bearer', 'token': 'abc'}),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    await plugin.write(['{"a": 1}'])
+    await plugin.close()
+
+    request = httpx_mock.get_requests()[0]
+    assert request.headers['Authorization'] == 'Bearer abc'
+
+
+@pytest.mark.asyncio
+async def test_plugin_sends_basic_credentials(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url=_LOGS_URL, status_code=200)
+
+    plugin = OtlpOutputPlugin(
+        config=_config(
+            auth={'type': 'basic', 'username': 'user', 'password': 'pass'},
+        ),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    await plugin.write(['{"a": 1}'])
+    await plugin.close()
+
+    expected = b64encode(b'user:pass').decode()
+    request = httpx_mock.get_requests()[0]
+    assert request.headers['Authorization'] == f'Basic {expected}'
+
+
+@pytest.mark.asyncio
+async def test_plugin_refreshes_token_on_unauthorized(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setattr(
+        authenticators,
+        'MIN_REJECTED_TOKEN_AGE_SECONDS',
+        0.0,
+    )
+    tokens = iter(['stale', 'fresh'])
+    httpx_mock.add_callback(
+        lambda _request: httpx.Response(
+            status_code=200,
+            json={'access_token': next(tokens), 'expires_in': 3600},
+        ),
+        method='POST',
+        url=_TOKEN_URL,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        lambda request: httpx.Response(
+            status_code=(
+                200
+                if request.headers['Authorization'] == 'Bearer fresh'
+                else _UNAUTHORIZED
+            ),
+        ),
+        url=_LOGS_URL,
+        is_reusable=True,
+    )
+
+    plugin = OtlpOutputPlugin(
+        config=_config(auth=_oauth2_auth()),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    written = await plugin.write(['{"a": 1}'])
+    await plugin.close()
+
+    assert written == 1
+    assert plugin.write_failed == 0
+
+
+@pytest.mark.asyncio
+async def test_plugin_fails_to_open_without_a_token(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        method='POST',
+        url=_TOKEN_URL,
+        status_code=_BAD_REQUEST,
+        text='invalid_client',
+    )
+
+    plugin = OtlpOutputPlugin(
+        config=_config(auth=_oauth2_auth()),
+        params={'id': 1},
+    )
+
+    with pytest.raises(PluginOpenError) as info:
+        await plugin.open()
+
+    assert info.value.context['http_status'] == _BAD_REQUEST
+
+
+@pytest.mark.asyncio
+async def test_plugin_reports_authentication_failure_while_sending(
+    httpx_mock: HTTPXMock,
+):
+    # the token minted at open time expires almost immediately, so the
+    # write below asks the token endpoint again and meets its failure
+    answers = iter(
+        [
+            httpx.Response(
+                status_code=200,
+                json={'access_token': 'tok', 'expires_in': 0.001},
+            ),
+        ],
+    )
+    httpx_mock.add_callback(
+        lambda _request: next(
+            answers,
+            httpx.Response(status_code=_BAD_REQUEST, text='invalid_client'),
+        ),
+        method='POST',
+        url=_TOKEN_URL,
+        is_reusable=True,
+    )
+
+    plugin = OtlpOutputPlugin(
+        config=_config(auth=_oauth2_auth()),
+        params={'id': 1},
+    )
+
+    await plugin.open()
+    await asyncio.sleep(0.01)
+    written = await plugin.write(['{"a": 1}'])
+    await plugin.close()
+
+    assert written == 0
+    assert plugin.write_failed == 1
+    assert len(httpx_mock.get_requests(url=_LOGS_URL)) == 0
