@@ -7,7 +7,10 @@ import pytest
 from pydantic import ValidationError
 
 from eventum.plugins.output.exceptions import PluginOpenError, PluginWriteError
-from eventum.plugins.output.plugins.tcp.config import TcpOutputPluginConfig
+from eventum.plugins.output.plugins.tcp.config import (
+    TcpFraming,
+    TcpOutputPluginConfig,
+)
 from eventum.plugins.output.plugins.tcp.plugin import TcpOutputPlugin
 
 # --- Config tests ---
@@ -134,6 +137,71 @@ def test_client_cert_without_ssl():
             client_cert='cert.pem',  # type: ignore
             client_cert_key='key.pem',  # type: ignore
         )
+
+
+def test_default_framing():
+    config = TcpOutputPluginConfig(host='localhost', port=514)
+    assert config.framing is TcpFraming.DELIMITER
+
+
+def test_octet_counting_framing():
+    config = TcpOutputPluginConfig(
+        host='localhost',
+        port=514,
+        framing='octet_counting',
+    )
+    assert config.framing is TcpFraming.OCTET_COUNTING
+
+
+def test_invalid_framing():
+    with pytest.raises(ValidationError):
+        TcpOutputPluginConfig(
+            host='localhost',
+            port=514,
+            framing='octet-counting',  # type: ignore[arg-type]
+        )
+
+
+def test_octet_counting_framing_with_separator():
+    with pytest.raises(ValidationError, match='octet counting'):
+        TcpOutputPluginConfig(
+            host='localhost',
+            port=514,
+            framing='octet_counting',
+            separator='|',
+        )
+
+
+def test_octet_counting_framing_with_default_separator():
+    # The default separator is what a config dumped in full carries,
+    # so it must not be read as one set alongside octet counting.
+    config = TcpOutputPluginConfig(
+        host='localhost',
+        port=514,
+        framing='octet_counting',
+        separator='\n',
+    )
+    assert config.framing is TcpFraming.OCTET_COUNTING
+
+
+def test_octet_counting_config_survives_a_full_dump():
+    config = TcpOutputPluginConfig(
+        host='localhost',
+        port=514,
+        framing='octet_counting',
+    )
+
+    assert TcpOutputPluginConfig.model_validate(config.model_dump()) == config
+
+
+def test_delimiter_framing_with_separator():
+    config = TcpOutputPluginConfig(
+        host='localhost',
+        port=514,
+        framing='delimiter',
+        separator='|',
+    )
+    assert config.separator == '|'
 
 
 # --- Plugin tests ---
@@ -479,3 +547,148 @@ async def test_plugin_close_gives_up_on_undelivered_data(mock_open_conn):
     await asyncio.wait_for(plugin.close(), timeout=2)
 
     writer.transport.abort.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch(
+    'eventum.plugins.output.plugins.tcp.plugin.asyncio.open_connection',
+)
+async def test_plugin_octet_counting_framing(mock_open_conn):
+    writer = _make_mock_writer()
+    mock_open_conn.return_value = (MagicMock(), writer)
+
+    config = _make_config(framing='octet_counting')
+    plugin = TcpOutputPlugin(config=config, params={'id': 1})
+
+    await plugin.open()
+    written = await plugin.write(events=['abc', 'de'])
+
+    assert written == 2
+    assert writer.write.call_args[0][0] == b'3 abc2 de'
+
+    await plugin.close()
+
+
+@pytest.mark.asyncio
+@patch(
+    'eventum.plugins.output.plugins.tcp.plugin.asyncio.open_connection',
+)
+async def test_plugin_octet_counting_counts_bytes_not_characters(
+    mock_open_conn,
+):
+    writer = _make_mock_writer()
+    mock_open_conn.return_value = (MagicMock(), writer)
+
+    config = _make_config(framing='octet_counting')
+    plugin = TcpOutputPlugin(config=config, params={'id': 1})
+
+    await plugin.open()
+    await plugin.write(events=['\u0441\u043b\u043e\u0432\u043e'])
+
+    assert writer.write.call_args[0][0] == (
+        b'10 \xd1\x81\xd0\xbb\xd0\xbe\xd0\xb2\xd0\xbe'
+    )
+
+    await plugin.close()
+
+
+@pytest.mark.asyncio
+@patch(
+    'eventum.plugins.output.plugins.tcp.plugin.asyncio.open_connection',
+)
+async def test_plugin_octet_counting_encoding_error(mock_open_conn):
+    writer = _make_mock_writer()
+    mock_open_conn.return_value = (MagicMock(), writer)
+
+    config = _make_config(framing='octet_counting', encoding='ascii')
+    plugin = TcpOutputPlugin(config=config, params={'id': 1})
+
+    await plugin.open()
+
+    with pytest.raises(PluginWriteError):
+        await plugin.write(events=['\u0441\u043b\u043e\u0432\u043e'])
+
+    await plugin.close()
+
+
+@pytest.mark.asyncio
+@patch(
+    'eventum.plugins.output.plugins.tcp.plugin.asyncio.open_connection',
+)
+async def test_plugin_octet_counting_leaves_out_empty_events(mock_open_conn):
+    writer = _make_mock_writer()
+    mock_open_conn.return_value = (MagicMock(), writer)
+
+    config = _make_config(framing='octet_counting')
+    plugin = TcpOutputPlugin(config=config, params={'id': 1})
+
+    await plugin.open()
+    written = await plugin.write(events=['abc', '', 'de'])
+
+    # A frame of zero length ends the stream for a strict receiver, so
+    # the empty event is left out and counted as not written.
+    assert writer.write.call_args[0][0] == b'3 abc2 de'
+    assert written == 2
+    assert plugin.write_failed == 1
+
+    await plugin.close()
+
+
+@pytest.mark.asyncio
+@patch(
+    'eventum.plugins.output.plugins.tcp.plugin.asyncio.open_connection',
+)
+async def test_plugin_reports_events_it_leaves_unframed(mock_open_conn):
+    writer = _make_mock_writer()
+    mock_open_conn.return_value = (MagicMock(), writer)
+
+    config = _make_config(framing='octet_counting')
+    plugin = TcpOutputPlugin(config=config, params={'id': 1})
+
+    await plugin.open()
+
+    # Otherwise the failed writes are a number with nothing behind it.
+    with patch.object(plugin, '_logger') as logger:
+        logger.awarning = AsyncMock()
+        await plugin.write(events=['abc', '', ''])
+
+    logger.awarning.assert_awaited_once()
+    assert logger.awarning.await_args.kwargs['count'] == 2
+
+    await plugin.close()
+
+
+@pytest.mark.asyncio
+@patch(
+    'eventum.plugins.output.plugins.tcp.plugin.asyncio.open_connection',
+)
+async def test_plugin_frames_syslog_messages(mock_open_conn):
+    writer = _make_mock_writer()
+    mock_open_conn.return_value = (MagicMock(), writer)
+
+    config = _make_config(
+        framing='octet_counting',
+        formatter={
+            'format': 'syslog',
+            'facility': 'local0',
+            'severity': 'notice',
+            'hostname': 'web-01',
+            'app_name': 'nginx',
+            'timestamp': {'field': 'ts'},
+            'message_field': 'msg',
+        },
+    )
+    plugin = TcpOutputPlugin(config=config, params={'id': 1})
+
+    await plugin.open()
+    written = await plugin.write(
+        events=['{"ts": "2026-02-20T10:00:00Z", "msg": "first"}'],
+    )
+
+    message = b'<133>1 2026-02-20T10:00:00Z web-01 nginx - - - first'
+    assert writer.write.call_args[0][0] == (
+        f'{len(message)} '.encode('ascii') + message
+    )
+    assert written == 1
+
+    await plugin.close()

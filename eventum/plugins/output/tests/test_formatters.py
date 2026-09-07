@@ -9,14 +9,17 @@ from eventum.plugins.output.fields import (
     SimpleFormatterConfig,
     TemplateFormatterConfig,
 )
+from eventum.plugins.output.syslog import SyslogFormatterConfig
 from eventum.plugins.output.formatters import (
     EventumHttpInputFormatter,
     FormattingResult,
     JsonBatchFormatter,
     JsonFormatter,
     PlainFormatter,
+    SyslogFormatter,
     TemplateBatchFormatter,
     TemplateFormatter,
+    get_formatter_class,
 )
 
 
@@ -223,3 +226,55 @@ def test_eventum_http_input_formatter():
     assert result == FormattingResult(
         events=['{"count": 3}'], formatted_count=3, errors=[]
     )
+
+
+def test_syslog_formatter():
+    formatter = SyslogFormatter(
+        config=SyslogFormatterConfig(
+            format=Format.SYSLOG,
+            facility='local0',
+            severity='notice',
+            hostname={'field': 'host'},
+            app_name='nginx',
+            timestamp={'field': 'ts'},
+            message_field='msg',
+        ),
+        params={'base_path': Path.cwd()},
+    )
+
+    events = [
+        '{"ts": "2026-02-20T10:00:00Z", "host": "web-01", "msg": "first"}',
+        'not json',
+        '{"ts": "2026-02-20T10:00:01Z", "host": "web-02", "msg": "second"}',
+    ]
+
+    result = formatter.format_events(events)
+
+    assert result.events == [
+        '<133>1 2026-02-20T10:00:00Z web-01 nginx - - - first',
+        '<133>1 2026-02-20T10:00:01Z web-02 nginx - - - second',
+    ]
+    assert result.formatted_count == 2
+    assert len(result.errors) == 1
+    assert isinstance(result.errors[0], FormatError)
+    assert result.errors[0].original_event == 'not json'
+
+
+def test_syslog_formatter_is_registered():
+    assert get_formatter_class(Format.SYSLOG) is SyslogFormatter
+
+
+def test_syslog_formatter_with_every_event_rejected():
+    formatter = SyslogFormatter(
+        config=SyslogFormatterConfig(
+            format=Format.SYSLOG,
+            hostname={'field': 'host'},
+        ),
+        params={'base_path': Path.cwd()},
+    )
+
+    result = formatter.format_events(['not json', 'also not json'])
+
+    assert result.events == []
+    assert result.formatted_count == 0
+    assert len(result.errors) == 2

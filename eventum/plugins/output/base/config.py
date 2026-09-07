@@ -7,9 +7,19 @@ from pydantic import Field
 from eventum.plugins.base.config import PluginConfig
 from eventum.plugins.output.fields import (
     Format,
-    FormatterConfigT,
+    JsonFormatterConfig,
     SimpleFormatterConfig,
+    TemplateFormatterConfig,
 )
+from eventum.plugins.output.syslog import SyslogFormatterConfig
+
+FormatterConfigT = (
+    SimpleFormatterConfig
+    | JsonFormatterConfig
+    | TemplateFormatterConfig
+    | SyslogFormatterConfig
+)
+"""Configuration of any formatter an output plugin can be given."""
 
 
 class OutputPluginConfig(PluginConfig, ABC, frozen=True):

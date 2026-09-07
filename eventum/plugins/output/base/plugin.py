@@ -9,9 +9,11 @@ from pydantic import RootModel
 
 from eventum.plugins.base.plugin import Plugin, PluginParams
 from eventum.plugins.exceptions import PluginConfigurationError
-from eventum.plugins.output.base.config import OutputPluginConfig
+from eventum.plugins.output.base.config import (
+    FormatterConfigT,
+    OutputPluginConfig,
+)
 from eventum.plugins.output.exceptions import PluginWriteError
-from eventum.plugins.output.fields import FormatterConfigT
 from eventum.plugins.output.formatters import (
     Formatter,
     FormatterParams,

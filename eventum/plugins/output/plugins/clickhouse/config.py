@@ -5,10 +5,12 @@ from typing import Literal, Self
 
 from pydantic import ClickHouseDsn, Field, HttpUrl, model_validator
 
-from eventum.plugins.output.base.config import OutputPluginConfig
+from eventum.plugins.output.base.config import (
+    FormatterConfigT,
+    OutputPluginConfig,
+)
 from eventum.plugins.output.fields import (
     Format,
-    FormatterConfigT,
     JsonFormatterConfig,
 )
 from eventum.plugins.output.plugins.clickhouse.fields import (
