@@ -1,22 +1,27 @@
 import {
   ActionIcon,
+  Badge,
   Button,
   Code,
   Group,
+  Select,
   Text,
   Textarea,
   Tooltip,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import {
   IconArrowsLeftRight,
   IconFileText,
   IconPlus,
+  IconRefresh,
   IconX,
 } from '@tabler/icons-react';
+import isEqual from 'lodash/isEqual';
 import { nanoid } from 'nanoid';
-import { FC, useState } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 
 import { useProjectName } from '../../hooks/useProjectName';
 import {
@@ -28,19 +33,61 @@ import {
 } from '../../studio/panels/console/primitives';
 import { FormatterParams } from '../OutputPluginParams/components/FormatterParams';
 import { useFormatEventsMutation } from '@/api/hooks/usePreview';
+import { OUTPUT_PLUGIN_DEFAULT_FORMATTERS } from '@/api/routes/generator-configs/modules/plugins/registry';
+import { OutputPluginsNamedConfig } from '@/api/routes/generator-configs/schemas';
+import { OutputPluginConfig } from '@/api/routes/generator-configs/schemas/plugins/output';
+import { OutputPluginName } from '@/api/routes/generator-configs/schemas/plugins/output/base-config';
 import {
   Format,
   FormatterConfig,
 } from '@/api/routes/generator-configs/schemas/plugins/output/formatters';
 import { FormattingResult } from '@/api/routes/preview/schemas';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
+import { CONFIRM } from '@/theme/copy';
 
-export const FormatterTab: FC = () => {
+interface FormatterTabProps {
+  outputPlugins: OutputPluginsNamedConfig;
+  outputPluginNames: string[];
+  outputPluginIds: string[];
+  selectedOutputPluginId: string | undefined;
+  debuggerEvents?: string[];
+  onSetOutputPluginFormatter: (id: string, formatter: FormatterConfig) => void;
+}
+
+function getFormatterConfig(
+  outputPlugin: OutputPluginsNamedConfig[number]
+): FormatterConfig {
+  const [name, config] = Object.entries(outputPlugin)[0] as [
+    OutputPluginName,
+    OutputPluginConfig,
+  ];
+  return config.formatter ?? OUTPUT_PLUGIN_DEFAULT_FORMATTERS[name];
+}
+
+function cloneFormatter(
+  formatter: FormatterConfig | undefined
+): FormatterConfig | undefined {
+  return formatter === undefined ? undefined : structuredClone(formatter);
+}
+
+export const FormatterTab: FC<FormatterTabProps> = ({
+  outputPlugins,
+  outputPluginNames,
+  outputPluginIds,
+  selectedOutputPluginId,
+  debuggerEvents,
+  onSetOutputPluginFormatter,
+}) => {
+  const initialFormatterSource =
+    selectedOutputPluginId ?? outputPluginIds[0] ?? '';
+  const initialOutputPlugin =
+    outputPlugins[outputPluginIds.indexOf(initialFormatterSource)];
+  const initialFormatter = initialOutputPlugin
+    ? cloneFormatter(getFormatterConfig(initialOutputPlugin))
+    : { format: Format.Plain };
   const form = useForm<{ formatter?: FormatterConfig }>({
     initialValues: {
-      formatter: {
-        format: Format.Plain,
-      },
+      formatter: initialFormatter,
     },
   });
 
@@ -50,8 +97,172 @@ export const FormatterTab: FC = () => {
   const [events, setEvents] = useState<{ id: string; content: string }[]>([
     { id: nanoid(), content: '' },
   ]);
+  const [formatterSource, setFormatterSource] = useState(
+    initialFormatterSource
+  );
+  const [formatterBaseline, setFormatterBaseline] = useState<
+    FormatterConfig | undefined
+  >(cloneFormatter(initialFormatter));
+  const formatterSourceRef = useRef(formatterSource);
+  formatterSourceRef.current = formatterSource;
+  const loadFormatterSourceRef = useRef<((sourceId: string) => void) | null>(
+    null
+  );
+  const requestFormatterSourceRef = useRef<((sourceId: string) => void) | null>(
+    null
+  );
+  const syncFormatterSourceRef = useRef<(() => void) | null>(null);
   const [formattingResult, setFormattingResult] =
     useState<FormattingResult | null>(null);
+
+  const formatterSourceOptions = outputPluginNames.map((name, index) => ({
+    value: outputPluginIds[index]!,
+    label: `${name} #${index + 1}`,
+  }));
+  const formatterSourceIndex = outputPluginIds.indexOf(formatterSource);
+  const formatterSourceLabel =
+    formatterSourceOptions.find(({ value }) => value === formatterSource)
+      ?.label ?? 'output plugin';
+  const sourceOutputPlugin = outputPlugins[formatterSourceIndex];
+  const formatterMatchesSource =
+    sourceOutputPlugin !== undefined &&
+    isEqual(form.values.formatter, getFormatterConfig(sourceOutputPlugin));
+  const formatterModified = !isEqual(form.values.formatter, formatterBaseline);
+
+  useEffect(() => {
+    if (selectedOutputPluginId !== undefined) {
+      requestFormatterSourceRef.current?.(selectedOutputPluginId);
+    }
+  }, [selectedOutputPluginId]);
+
+  useEffect(() => {
+    if (outputPluginIds.includes(formatterSourceRef.current)) {
+      return;
+    }
+
+    const nextSource = selectedOutputPluginId ?? outputPluginIds[0];
+    if (nextSource !== undefined) {
+      loadFormatterSourceRef.current?.(nextSource);
+    }
+  }, [outputPluginIds, selectedOutputPluginId]);
+
+  useEffect(() => {
+    syncFormatterSourceRef.current?.();
+  }, [sourceOutputPlugin]);
+
+  function loadFormatterSource(sourceId: string) {
+    const index = outputPluginIds.indexOf(sourceId);
+    const outputPlugin = outputPlugins[index];
+    if (outputPlugin === undefined) {
+      return;
+    }
+
+    const formatter = structuredClone(getFormatterConfig(outputPlugin));
+    formatterSourceRef.current = sourceId;
+    form.setFieldValue('formatter', formatter);
+    setFormatterBaseline(structuredClone(formatter));
+    setFormatterSource(sourceId);
+  }
+
+  loadFormatterSourceRef.current = loadFormatterSource;
+
+  function requestFormatterSource(sourceId: string) {
+    if (sourceId === formatterSource) {
+      return;
+    }
+
+    if (!outputPluginIds.includes(formatterSource) || !formatterModified) {
+      loadFormatterSource(sourceId);
+      return;
+    }
+
+    const label =
+      formatterSourceOptions.find(({ value }) => value === sourceId)?.label ??
+      'selected output';
+    modals.openConfirmModal({
+      title: CONFIRM.loadAnotherFormatter.title,
+      children: (
+        <Text size="sm">{CONFIRM.loadAnotherFormatter.body(label)}</Text>
+      ),
+      labels: {
+        cancel: CONFIRM.loadAnotherFormatter.cancel,
+        confirm: CONFIRM.loadAnotherFormatter.confirm,
+      },
+      onConfirm: () => {
+        loadFormatterSourceRef.current?.(sourceId);
+        modals.closeAll();
+      },
+    });
+  }
+
+  requestFormatterSourceRef.current = requestFormatterSource;
+
+  function syncFormatterSource() {
+    if (
+      sourceOutputPlugin === undefined ||
+      formatterSourceRef.current !== formatterSource
+    ) {
+      return;
+    }
+
+    const formatter = structuredClone(getFormatterConfig(sourceOutputPlugin));
+    if (!formatterModified && !isEqual(form.values.formatter, formatter)) {
+      form.setFieldValue('formatter', formatter);
+    }
+    if (!isEqual(formatterBaseline, formatter)) {
+      setFormatterBaseline(structuredClone(formatter));
+    }
+  }
+
+  syncFormatterSourceRef.current = syncFormatterSource;
+
+  function handleResetFormatter() {
+    if (sourceOutputPlugin === undefined) {
+      return;
+    }
+
+    const formatter = structuredClone(getFormatterConfig(sourceOutputPlugin));
+    form.setFieldValue('formatter', formatter);
+    setFormatterBaseline(structuredClone(formatter));
+  }
+
+  function handleApplyFormatter() {
+    const formatter = form.values.formatter;
+    if (formatter === undefined || sourceOutputPlugin === undefined) {
+      return;
+    }
+
+    modals.openConfirmModal({
+      title: CONFIRM.applyFormatter.title,
+      children: (
+        <Text size="sm">
+          {CONFIRM.applyFormatter.body(formatterSourceLabel)}
+        </Text>
+      ),
+      labels: {
+        cancel: CONFIRM.applyFormatter.cancel,
+        confirm: CONFIRM.applyFormatter.confirm,
+      },
+      onConfirm: () => {
+        onSetOutputPluginFormatter(formatterSource, structuredClone(formatter));
+        setFormatterBaseline(structuredClone(formatter));
+        modals.closeAll();
+      },
+    });
+  }
+
+  function handleLoadDebuggerEvents() {
+    if (debuggerEvents === undefined) {
+      return;
+    }
+
+    setEvents(
+      debuggerEvents.map((content) => ({
+        id: nanoid(),
+        content,
+      }))
+    );
+  }
 
   function handleFormatEvents(values: typeof form.values) {
     if (values.formatter === undefined) {
@@ -111,7 +322,65 @@ export const FormatterTab: FC = () => {
       }
     >
       <ToolBody>
-        <ToolPane title="Formatter" grow={0} basis={300}>
+        <ToolPane
+          title={
+            <Group gap={6} wrap="nowrap">
+              <span>Formatter</span>
+              <Badge
+                size="xs"
+                variant="light"
+                color={formatterMatchesSource ? 'green' : 'yellow'}
+              >
+                {formatterMatchesSource ? 'Loaded' : 'Custom'}
+              </Badge>
+            </Group>
+          }
+          grow={0}
+          basis={380}
+          actions={
+            <Group gap={4} wrap="nowrap">
+              <Select
+                aria-label="Output plugin formatter source"
+                data={formatterSourceOptions}
+                value={formatterSource}
+                onChange={(value) => {
+                  if (value !== null) {
+                    requestFormatterSource(value);
+                  }
+                }}
+                allowDeselect={false}
+                size="xs"
+                w={115}
+              />
+              {formatterModified && (
+                <>
+                  <Tooltip label="Reset formatter changes" withArrow>
+                    <ActionIcon
+                      variant="default"
+                      size={30}
+                      aria-label="Reset formatter changes"
+                      onClick={handleResetFormatter}
+                    >
+                      <IconRefresh size={15} />
+                    </ActionIcon>
+                  </Tooltip>
+                  <Button
+                    aria-label={`Apply formatter to ${formatterSourceLabel}`}
+                    variant="default"
+                    size="xs"
+                    disabled={
+                      form.values.formatter === undefined ||
+                      sourceOutputPlugin === undefined
+                    }
+                    onClick={handleApplyFormatter}
+                  >
+                    Apply
+                  </Button>
+                </>
+              )}
+            </Group>
+          }
+        >
           <FormatterParams
             value={form.values.formatter}
             errors={form.errors}
@@ -125,18 +394,38 @@ export const FormatterTab: FC = () => {
           title="Events"
           grow={1}
           actions={
-            <Tooltip label="Add event" withArrow>
-              <ActionIcon
+            <Group gap={4} wrap="nowrap">
+              <Button
                 variant="default"
-                size="sm"
-                aria-label="Add event"
-                onClick={() =>
-                  setEvents((prev) => [...prev, { id: nanoid(), content: '' }])
+                size="xs"
+                aria-label={
+                  debuggerEvents === undefined
+                    ? 'No debugger events to load'
+                    : `Replace with ${debuggerEvents.length} debugger events`
                 }
+                disabled={debuggerEvents === undefined}
+                onClick={handleLoadDebuggerEvents}
               >
-                <IconPlus size={15} />
-              </ActionIcon>
-            </Tooltip>
+                {debuggerEvents === undefined
+                  ? 'No debugger events'
+                  : `Replace with ${debuggerEvents.length} debugger events`}
+              </Button>
+              <Tooltip label="Add event" withArrow>
+                <ActionIcon
+                  variant="default"
+                  size={30}
+                  aria-label="Add event"
+                  onClick={() =>
+                    setEvents((prev) => [
+                      ...prev,
+                      { id: nanoid(), content: '' },
+                    ])
+                  }
+                >
+                  <IconPlus size={15} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
           }
         >
           {events.length > 0 ? (

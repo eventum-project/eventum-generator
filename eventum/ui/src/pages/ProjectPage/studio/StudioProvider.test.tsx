@@ -12,6 +12,7 @@ import {
 import { useUpdateGeneratorConfigMutation } from '@/api/hooks/useGeneratorConfigs';
 import { PLUGIN_DEFAULT_CONFIGS } from '@/api/routes/generator-configs/modules/plugins/registry';
 import { GeneratorConfig } from '@/api/routes/generator-configs/schemas';
+import { Format } from '@/api/routes/generator-configs/schemas/plugins/output/formatters';
 import { FileTreeProvider } from '@/pages/ProjectPage/context/FileTreeContext';
 import { ProjectNameProvider } from '@/pages/ProjectPage/context/ProjectNameContext';
 
@@ -105,6 +106,39 @@ describe('StudioProvider', () => {
     // The identity is what the inspector keys its form on, so the second
     // plugin must not answer to the first one's.
     expect(studio.config.input.selectedId).not.toBe(first);
+  });
+
+  it('keeps output identities aligned when a preceding plugin is removed', () => {
+    setup();
+
+    act(() => studio.config.output.add('http'));
+    const second = studio.config.output.ids[1];
+    act(() => studio.config.output.remove(0));
+
+    expect(studio.config.output.names).toEqual(['http']);
+    expect(studio.config.output.ids).toEqual([second]);
+  });
+
+  it('updates the formatter by output identity without changing other fields', () => {
+    setup();
+    const outputId = studio.config.output.ids[0]!;
+    const formRevision = studio.config.output.formRevision;
+
+    act(() =>
+      studio.config.output.setFormatter(outputId, {
+        format: Format.JSON,
+        indent: 2,
+      })
+    );
+
+    expect(studio.config.config.output[0]).toEqual({
+      file: {
+        path: './output/events.log',
+        formatter: { format: 'json', indent: 2 },
+      },
+    });
+    expect(studio.config.isConfigDirty).toBe(true);
+    expect(studio.config.output.formRevision).toBe(formRevision + 1);
   });
 
   it('writes an edit into the plugin the inspector is on', () => {

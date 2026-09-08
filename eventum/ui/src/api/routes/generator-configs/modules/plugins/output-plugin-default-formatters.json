@@ -1,0 +1,12 @@
+{
+  "clickhouse": { "format": "json", "indent": 0 },
+  "file": { "format": "plain" },
+  "http": { "format": "json-batch", "indent": 0 },
+  "kafka": { "format": "json", "indent": 0 },
+  "opensearch": { "format": "json", "indent": 0 },
+  "otlp": { "format": "plain" },
+  "s3": { "format": "json", "indent": 0 },
+  "stdout": { "format": "plain" },
+  "tcp": { "format": "plain" },
+  "udp": { "format": "plain" }
+}

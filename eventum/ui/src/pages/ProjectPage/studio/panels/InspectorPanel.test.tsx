@@ -7,10 +7,15 @@ import { describe, expect, it } from 'vitest';
 import { InspectorPanel } from './InspectorPanel';
 import { PLUGIN_DEFAULT_CONFIGS } from '@/api/routes/generator-configs/modules/plugins/registry';
 import { GeneratorConfig } from '@/api/routes/generator-configs/schemas';
+import { Format } from '@/api/routes/generator-configs/schemas/plugins/output/formatters';
 import { FileTreeProvider } from '@/pages/ProjectPage/context/FileTreeContext';
 import { ProjectNameProvider } from '@/pages/ProjectPage/context/ProjectNameContext';
 import { StudioProvider } from '@/pages/ProjectPage/studio/StudioProvider';
-import { Stage, useStudioShell } from '@/pages/ProjectPage/studio/context';
+import {
+  Stage,
+  useStudioConfig,
+  useStudioShell,
+} from '@/pages/ProjectPage/studio/context';
 import { renderWithProviders } from '@/test/render';
 
 const CONFIG: GeneratorConfig = {
@@ -32,6 +37,23 @@ const OpenStage: FC<{ stage: Stage }> = ({ stage }) => {
   return null;
 };
 
+const ApplyFormatter: FC = () => {
+  const { output } = useStudioConfig();
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        output.setFormatter(output.ids[0]!, {
+          format: Format.JSON,
+          indent: 2,
+        })
+      }
+    >
+      apply formatter
+    </button>
+  );
+};
+
 function renderInspector(stage: Stage): void {
   renderWithProviders(
     <ProjectNameProvider initialProjectName="demo">
@@ -39,6 +61,7 @@ function renderInspector(stage: Stage): void {
         <StudioProvider serverConfig={CONFIG}>
           <ModalsProvider>
             <OpenStage stage={stage} />
+            <ApplyFormatter />
             <InspectorPanel />
           </ModalsProvider>
         </StudioProvider>
@@ -107,6 +130,17 @@ describe('InspectorPanel plugin deletion', () => {
     expect(screen.getByPlaceholderText('file path')).toHaveValue(
       './output/second.log'
     );
+  });
+
+  it('reloads output parameters after an external formatter update', async () => {
+    const user = userEvent.setup();
+    renderInspector('output');
+
+    expect(screen.getByPlaceholderText('format')).toHaveValue('');
+
+    await user.click(screen.getByText('apply formatter'));
+
+    expect(screen.getByPlaceholderText('format')).toHaveValue('json');
   });
 
   it('drops the parameters form when the last plugin is deleted', async () => {

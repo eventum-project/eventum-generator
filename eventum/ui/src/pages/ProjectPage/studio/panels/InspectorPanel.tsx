@@ -130,7 +130,7 @@ const StageBody: FC = () => {
       <Section title="Parameters">
         {cfg ? (
           <OutputPluginParams
-            key={output.selectedId}
+            key={`${output.selectedId}:${output.formRevision}`}
             outputPluginConfig={cfg}
             onChange={output.change}
           />
