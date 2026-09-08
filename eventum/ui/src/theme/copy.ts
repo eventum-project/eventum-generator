@@ -105,6 +105,24 @@ export const CONFIRM = {
     confirm: 'Delete',
     cancel: 'Cancel',
   },
+  applyFormatter: {
+    title: 'Applying formatter',
+    body: (label: string) =>
+      emphasize(
+        'Replace formatter settings for ',
+        label,
+        ' with the current preview?'
+      ),
+    confirm: 'Apply',
+    cancel: 'Cancel',
+  },
+  loadAnotherFormatter: {
+    title: 'Discard preview changes?',
+    body: (label: string) =>
+      emphasize('Discard preview changes and load formatter from ', label, '?'),
+    confirm: 'Load',
+    cancel: 'Cancel',
+  },
   /** `UnsavedChangesPrompt`'s page-leave guard - its own Stay/Leave
    *  buttons are a different convention from confirm/cancel and stay
    *  defined on the component. */

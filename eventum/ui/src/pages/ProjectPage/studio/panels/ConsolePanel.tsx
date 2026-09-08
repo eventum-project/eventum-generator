@@ -218,6 +218,7 @@ export const ConsolePanel: FC<ConsolePanelProps> = ({
               outputPluginIds={output.ids}
               selectedOutputPluginId={output.selectedId}
               debuggerEvents={debuggerEvents}
+              onSetOutputPluginFormatter={output.setFormatter}
             />
           ) : (
             <StageEmpty message="Add an output plugin to preview formatted events." />

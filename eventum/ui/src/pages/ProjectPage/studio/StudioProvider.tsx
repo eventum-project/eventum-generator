@@ -35,6 +35,12 @@ import {
 } from '@/api/routes/generator-configs/schemas';
 import { EventPluginNamedConfig } from '@/api/routes/generator-configs/schemas/plugins/event';
 import { EventPluginName } from '@/api/routes/generator-configs/schemas/plugins/event/base-config';
+import {
+  OutputPluginConfig,
+  OutputPluginNamedConfig,
+} from '@/api/routes/generator-configs/schemas/plugins/output';
+import { OutputPluginName } from '@/api/routes/generator-configs/schemas/plugins/output/base-config';
+import { FormatterConfig } from '@/api/routes/generator-configs/schemas/plugins/output/formatters';
 import { ShowErrorDetailsAnchor } from '@/components/ui/ShowErrorDetailsAnchor';
 
 interface StudioProviderProps {
@@ -64,6 +70,17 @@ const withoutIndex = <T,>(items: T[], index: number): T[] => [
   ...items.slice(0, index),
   ...items.slice(index + 1),
 ];
+
+const withFormatter = (
+  outputPlugin: OutputPluginNamedConfig,
+  formatter: FormatterConfig
+): OutputPluginNamedConfig => {
+  const [name, config] = Object.entries(outputPlugin)[0] as [
+    OutputPluginName,
+    OutputPluginConfig,
+  ];
+  return { [name]: { ...config, formatter } } as OutputPluginNamedConfig;
+};
 
 // A structurally-valid but empty config, used only to satisfy the config
 // context type while in recovery mode. It is never persisted - saveConfig is
@@ -99,6 +116,9 @@ export const StudioProvider: FC<StudioProviderProps> = ({
   const [outputIds, setOutputIds] = useState<string[]>(() =>
     pluginIds(serverConfig?.output.length ?? 0)
   );
+  const [outputFormRevisions, setOutputFormRevisions] = useState<
+    Record<string, number>
+  >({});
   const [inputSelected, setInputSelected] = useState(0);
   const [outputSelected, setOutputSelected] = useState(0);
 
@@ -183,6 +203,7 @@ export const StudioProvider: FC<StudioProviderProps> = ({
       ids: outputIds,
       selected: outputSelected,
       selectedId: outputIds[outputSelected],
+      formRevision: outputFormRevisions[outputIds[outputSelected] ?? ''] ?? 0,
       setSelected: setOutputSelected,
       add: (name) => {
         setOutputConfig(
@@ -207,8 +228,29 @@ export const StudioProvider: FC<StudioProviderProps> = ({
           next[outputSelected] = cfg;
           return next;
         }),
+      setFormatter: (id, formatter) => {
+        if (!outputIds.includes(id)) {
+          return;
+        }
+
+        setOutputConfig((prev) => {
+          const index = outputIds.indexOf(id);
+          const outputPlugin = prev[index];
+          if (outputPlugin === undefined) {
+            return prev;
+          }
+
+          const next = [...prev];
+          next[index] = withFormatter(outputPlugin, formatter);
+          return next;
+        });
+        setOutputFormRevisions((prev) => ({
+          ...prev,
+          [id]: (prev[id] ?? 0) + 1,
+        }));
+      },
     }),
-    [outputConfig, outputIds, outputSelected]
+    [outputConfig, outputFormRevisions, outputIds, outputSelected]
   );
 
   const updateConfig = useUpdateGeneratorConfigMutation();

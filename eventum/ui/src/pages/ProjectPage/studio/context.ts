@@ -12,6 +12,7 @@ import { InputPluginNamedConfig } from '@/api/routes/generator-configs/schemas/p
 import { InputPluginName } from '@/api/routes/generator-configs/schemas/plugins/input/base-config';
 import { OutputPluginNamedConfig } from '@/api/routes/generator-configs/schemas/plugins/output';
 import { OutputPluginName } from '@/api/routes/generator-configs/schemas/plugins/output/base-config';
+import { FormatterConfig } from '@/api/routes/generator-configs/schemas/plugins/output/formatters';
 
 export type Stage = 'input' | 'event' | 'output';
 
@@ -45,10 +46,12 @@ export interface OutputStage {
   ids: string[];
   selected: number;
   selectedId: string | undefined;
+  formRevision: number;
   setSelected: (index: number) => void;
   add: (name: OutputPluginName) => void;
   remove: (index: number) => void;
   change: (config: OutputPluginNamedConfig) => void;
+  setFormatter: (id: string, formatter: FormatterConfig) => void;
 }
 
 export interface StudioConfigValue {

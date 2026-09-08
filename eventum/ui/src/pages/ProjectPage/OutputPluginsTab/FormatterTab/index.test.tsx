@@ -1,10 +1,12 @@
-import { screen } from '@testing-library/react';
+import { ModalsProvider } from '@mantine/modals';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Mock, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FormatterTab } from './index';
 import { useFormatEventsMutation } from '@/api/hooks/usePreview';
 import { OutputPluginsNamedConfig } from '@/api/routes/generator-configs/schemas';
+import { FormatterConfig } from '@/api/routes/generator-configs/schemas/plugins/output/formatters';
 import { FormattingResult } from '@/api/routes/preview/schemas';
 import { ProjectNameProvider } from '@/pages/ProjectPage/context/ProjectNameContext';
 import { renderWithProviders } from '@/test/render';
@@ -15,6 +17,9 @@ let format: {
   mutate: ReturnType<typeof vi.fn>;
   isPending: boolean;
 };
+let setOutputPluginFormatter: Mock<
+  (id: string, formatter: FormatterConfig) => void
+>;
 
 function result(
   events: string[],
@@ -70,21 +75,25 @@ function setup({
     ),
     isPending: false,
   };
+  setOutputPluginFormatter = vi.fn();
 
   vi.mocked(useFormatEventsMutation).mockReturnValue(
     format as unknown as ReturnType<typeof useFormatEventsMutation>
   );
 
   return renderWithProviders(
-    <ProjectNameProvider initialProjectName="web">
-      <FormatterTab
-        outputPlugins={outputPlugins}
-        outputPluginNames={outputPluginNames}
-        outputPluginIds={outputPluginIds}
-        selectedOutputPluginId={outputPluginIds[selectedOutputPlugin]}
-        debuggerEvents={debuggerEvents}
-      />
-    </ProjectNameProvider>
+    <ModalsProvider>
+      <ProjectNameProvider initialProjectName="web">
+        <FormatterTab
+          outputPlugins={outputPlugins}
+          outputPluginNames={outputPluginNames}
+          outputPluginIds={outputPluginIds}
+          selectedOutputPluginId={outputPluginIds[selectedOutputPlugin]}
+          debuggerEvents={debuggerEvents}
+          onSetOutputPluginFormatter={setOutputPluginFormatter}
+        />
+      </ProjectNameProvider>
+    </ModalsProvider>
   );
 }
 
@@ -170,7 +179,10 @@ describe('FormatterTab', () => {
       body: { formatter_config: { format: string } };
     };
 
-    expect(sent.body.formatter_config.format).toBe('plain');
+    expect(sent.body.formatter_config).toEqual({
+      format: 'template',
+      template: '{{ event }}',
+    });
   });
 
   it('defaults the formatter source to the selected output plugin', () => {
@@ -181,7 +193,7 @@ describe('FormatterTab', () => {
     ).toHaveValue('http #2');
   });
 
-  it('follows a new output selection without replacing manual settings', async () => {
+  it('loads a newly selected output after confirming preview replacement', async () => {
     const user = userEvent.setup();
     const view = setup();
 
@@ -193,22 +205,44 @@ describe('FormatterTab', () => {
     await user.type(indent, '4');
 
     view.rerender(
-      <ProjectNameProvider initialProjectName="web">
-        <FormatterTab
-          outputPlugins={OUTPUT_PLUGINS}
-          outputPluginNames={['file', 'http']}
-          outputPluginIds={['file-id', 'http-id']}
-          selectedOutputPluginId="http-id"
-        />
-      </ProjectNameProvider>
+      <ModalsProvider>
+        <ProjectNameProvider initialProjectName="web">
+          <FormatterTab
+            outputPlugins={OUTPUT_PLUGINS}
+            outputPluginNames={['file', 'http']}
+            outputPluginIds={['output-0', 'output-1']}
+            selectedOutputPluginId="output-1"
+            onSetOutputPluginFormatter={setOutputPluginFormatter}
+          />
+        </ProjectNameProvider>
+      </ModalsProvider>
     );
 
-    expect(await screen.findByDisplayValue('http #2')).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByText('Discard preview changes?')).toBeVisible()
+    );
+    expect(
+      screen.getByRole('textbox', {
+        name: 'Output plugin formatter source',
+      })
+    ).toHaveValue('file #1');
     expect(screen.getByRole('textbox', { name: /Format/ })).toHaveValue('json');
     expect(screen.getByRole('textbox', { name: /Indent/ })).toHaveValue('4');
+
+    await user.click(screen.getByRole('button', { name: 'Load' }));
+
+    expect(
+      screen.getByRole('textbox', {
+        name: 'Output plugin formatter source',
+      })
+    ).toHaveValue('http #2');
+    expect(screen.getByRole('textbox', { name: /Format/ })).toHaveValue(
+      'json-batch'
+    );
+    expect(screen.getByRole('textbox', { name: /Indent/ })).toHaveValue('2');
   });
 
-  it('loads a chosen output formatter without changing its source', async () => {
+  it('switches formatter sources without changing their settings', async () => {
     const user = userEvent.setup();
     setup();
 
@@ -217,9 +251,6 @@ describe('FormatterTab', () => {
     });
     await user.click(source);
     await pickSelectOption(user, 'http #2');
-    await user.click(
-      screen.getByRole('button', { name: 'Load formatter from http #2' })
-    );
 
     expect(source).toHaveValue('http #2');
     expect(screen.getByRole('textbox', { name: /Format/ })).toHaveValue(
@@ -273,19 +304,19 @@ describe('FormatterTab', () => {
     await pickSelectOption(user, 'http #2');
 
     view.rerender(
-      <ProjectNameProvider initialProjectName="web">
-        <FormatterTab
-          outputPlugins={outputs.slice(1)}
-          outputPluginNames={['http', 'kafka']}
-          outputPluginIds={['http-id', 'kafka-id']}
-          selectedOutputPluginId="kafka-id"
-        />
-      </ProjectNameProvider>
+      <ModalsProvider>
+        <ProjectNameProvider initialProjectName="web">
+          <FormatterTab
+            outputPlugins={outputs.slice(1)}
+            outputPluginNames={['http', 'kafka']}
+            outputPluginIds={['http-id', 'kafka-id']}
+            selectedOutputPluginId="kafka-id"
+            onSetOutputPluginFormatter={setOutputPluginFormatter}
+          />
+        </ProjectNameProvider>
+      </ModalsProvider>
     );
 
-    await user.click(
-      screen.getByRole('button', { name: 'Load formatter from http #1' })
-    );
     await user.click(screen.getByRole('button', { name: /^Format$/ }));
 
     const sent = format.mutate.mock.calls[0]?.[0] as {
@@ -312,15 +343,227 @@ describe('FormatterTab', () => {
       outputPluginNames: [name],
     });
 
-    await user.click(
-      screen.getByRole('button', { name: `Load formatter from ${name} #1` })
-    );
     await user.click(screen.getByRole('button', { name: /Format/ }));
 
     const sent = format.mutate.mock.calls[0]?.[0] as {
       body: { formatter_config: unknown };
     };
     expect(sent.body.formatter_config).toEqual(expected);
+  });
+
+  it('marks the preview as loaded only while it matches the source', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    expect(screen.getByText('Loaded')).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: 'Reset formatter changes' })
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Apply formatter to file #1' })
+    ).toBeNull();
+
+    await user.click(screen.getByRole('textbox', { name: /Format/ }));
+    await pickSelectOption(user, 'plain');
+
+    expect(screen.getByText('Custom')).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Reset formatter changes' })
+    ).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Apply formatter to file #1' })
+    ).toBeVisible();
+  });
+
+  it('resets manual formatter changes to the source', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole('textbox', { name: /Format/ }));
+    await pickSelectOption(user, 'json');
+    await user.click(
+      screen.getByRole('button', { name: 'Reset formatter changes' })
+    );
+
+    expect(screen.getByRole('textbox', { name: /Format/ })).toHaveValue(
+      'template'
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Reset formatter changes' })
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Apply formatter to file #1' })
+    ).toBeNull();
+  });
+
+  it('loads another clean formatter source immediately', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    const source = screen.getByRole('textbox', {
+      name: 'Output plugin formatter source',
+    });
+    await user.click(source);
+    await pickSelectOption(user, 'http #2');
+
+    expect(source).toHaveValue('http #2');
+    expect(screen.getByRole('textbox', { name: /Format/ })).toHaveValue(
+      'json-batch'
+    );
+    expect(screen.getByRole('textbox', { name: /Indent/ })).toHaveValue('2');
+    expect(screen.getByText('Loaded')).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: 'Reset formatter changes' })
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Apply formatter to http #2' })
+    ).toBeNull();
+  });
+
+  it('keeps manual preview changes when source replacement is canceled', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole('textbox', { name: /Format/ }));
+    await pickSelectOption(user, 'json');
+    const source = screen.getByRole('textbox', {
+      name: 'Output plugin formatter source',
+    });
+    await user.click(source);
+    await pickSelectOption(user, 'http #2');
+
+    await waitFor(() =>
+      expect(screen.getByText('Discard preview changes?')).toBeVisible()
+    );
+    expect(screen.getByRole('dialog')).toHaveTextContent(
+      'Discard preview changes and load formatter from http #2?'
+    );
+    expect(source).toHaveValue('file #1');
+    expect(screen.getByRole('textbox', { name: /Format/ })).toHaveValue('json');
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(source).toHaveValue('file #1');
+    expect(screen.getByRole('textbox', { name: /Format/ })).toHaveValue('json');
+    expect(
+      screen.getByRole('button', { name: 'Apply formatter to file #1' })
+    ).toBeVisible();
+  });
+
+  it('follows an external output change while the preview is clean', async () => {
+    const view = setup();
+    const changedOutputs = [
+      {
+        file: {
+          path: './output/events.log',
+          formatter: { format: 'json', indent: 2 },
+        },
+      },
+      OUTPUT_PLUGINS[1],
+    ] as OutputPluginsNamedConfig;
+
+    view.rerender(
+      <ModalsProvider>
+        <ProjectNameProvider initialProjectName="web">
+          <FormatterTab
+            outputPlugins={changedOutputs}
+            outputPluginNames={['file', 'http']}
+            outputPluginIds={['output-0', 'output-1']}
+            selectedOutputPluginId="output-0"
+            onSetOutputPluginFormatter={setOutputPluginFormatter}
+          />
+        </ProjectNameProvider>
+      </ModalsProvider>
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: /Format/ })).toHaveValue(
+        'json'
+      )
+    );
+    expect(screen.getByRole('textbox', { name: /Indent/ })).toHaveValue('2');
+    expect(screen.getByText('Loaded')).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: 'Apply formatter to file #1' })
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Reset formatter changes' })
+    ).toBeNull();
+  });
+
+  it('resets a dirty preview to the latest output settings', async () => {
+    const user = userEvent.setup();
+    const view = setup();
+
+    await user.click(screen.getByRole('textbox', { name: /Format/ }));
+    await pickSelectOption(user, 'json');
+    const indent = screen.getByRole('textbox', { name: /Indent/ });
+    await user.clear(indent);
+    await user.type(indent, '4');
+
+    const changedOutputs = [
+      {
+        file: {
+          path: './output/events.log',
+          formatter: { format: 'json', indent: 2 },
+        },
+      },
+      OUTPUT_PLUGINS[1],
+    ] as OutputPluginsNamedConfig;
+    view.rerender(
+      <ModalsProvider>
+        <ProjectNameProvider initialProjectName="web">
+          <FormatterTab
+            outputPlugins={changedOutputs}
+            outputPluginNames={['file', 'http']}
+            outputPluginIds={['output-0', 'output-1']}
+            selectedOutputPluginId="output-0"
+            onSetOutputPluginFormatter={setOutputPluginFormatter}
+          />
+        </ProjectNameProvider>
+      </ModalsProvider>
+    );
+
+    expect(screen.getByRole('textbox', { name: /Indent/ })).toHaveValue('4');
+    await user.click(
+      screen.getByRole('button', { name: 'Reset formatter changes' })
+    );
+
+    expect(screen.getByRole('textbox', { name: /Indent/ })).toHaveValue('2');
+    expect(screen.getByText('Loaded')).toBeVisible();
+  });
+
+  it('applies a custom formatter to its source after confirmation', async () => {
+    const user = userEvent.setup();
+    setup({ selectedOutputPlugin: 1 });
+
+    await user.click(screen.getByRole('textbox', { name: /Format/ }));
+    await pickSelectOption(user, 'plain');
+    const apply = screen.getByRole('button', {
+      name: 'Apply formatter to http #2',
+    });
+    expect(apply).toBeEnabled();
+    await user.click(apply);
+
+    expect(setOutputPluginFormatter).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.getByText('Applying formatter')).toBeVisible()
+    );
+    expect(screen.getByRole('dialog')).toHaveTextContent(
+      'Replace formatter settings for http #2 with the current preview?'
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(setOutputPluginFormatter).toHaveBeenCalledWith('output-1', {
+      format: 'plain',
+    });
+    expect(
+      screen.queryByRole('button', { name: 'Reset formatter changes' })
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Apply formatter to http #2' })
+    ).toBeNull();
   });
 
   it('replaces manually entered events with the debugger events', async () => {
@@ -365,15 +608,18 @@ describe('FormatterTab', () => {
     const view = setup();
 
     view.rerender(
-      <ProjectNameProvider initialProjectName="web">
-        <FormatterTab
-          outputPlugins={OUTPUT_PLUGINS}
-          outputPluginNames={['file', 'http']}
-          outputPluginIds={['file-id', 'http-id']}
-          selectedOutputPluginId="file-id"
-          debuggerEvents={['produced later']}
-        />
-      </ProjectNameProvider>
+      <ModalsProvider>
+        <ProjectNameProvider initialProjectName="web">
+          <FormatterTab
+            outputPlugins={OUTPUT_PLUGINS}
+            outputPluginNames={['file', 'http']}
+            outputPluginIds={['file-id', 'http-id']}
+            selectedOutputPluginId="file-id"
+            debuggerEvents={['produced later']}
+            onSetOutputPluginFormatter={setOutputPluginFormatter}
+          />
+        </ProjectNameProvider>
+      </ModalsProvider>
     );
 
     await user.click(

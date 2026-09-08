@@ -15,6 +15,8 @@ import { ConsolePanel } from './ConsolePanel';
 import { PLUGIN_DEFAULT_CONFIGS } from '@/api/routes/generator-configs/modules/plugins/registry';
 import { renderWithProviders } from '@/test/render';
 
+const outputSetFormatter = vi.fn();
+
 // The tools the console hosts each talk to the backend and draw with
 // measurements jsdom does not take. What is under test here is which of
 // them the console shows, so each stands in as its own name.
@@ -59,12 +61,14 @@ vi.mock('../../OutputPluginsTab/FormatterTab', () => ({
     outputPluginIds,
     selectedOutputPluginId,
     debuggerEvents,
+    onSetOutputPluginFormatter,
   }: {
     outputPlugins: unknown[];
     outputPluginNames: string[];
     outputPluginIds: string[];
     selectedOutputPluginId: string | undefined;
     debuggerEvents?: string[];
+    onSetOutputPluginFormatter: (id: string, formatter: never) => void;
   }) => (
     <>
       <div>formatter tool</div>
@@ -75,6 +79,16 @@ vi.mock('../../OutputPluginsTab/FormatterTab', () => ({
       <div>
         formatter debugger events: {debuggerEvents?.join(',') ?? 'none'}
       </div>
+      <button
+        type="button"
+        onClick={() =>
+          onSetOutputPluginFormatter('output-0', {
+            format: 'json',
+          } as never)
+        }
+      >
+        apply mocked formatter
+      </button>
     </>
   ),
 }));
@@ -91,6 +105,7 @@ interface Options {
 }
 
 function setup(options: Options = {}) {
+  outputSetFormatter.mockClear();
   const {
     stage = 'input',
     inputPlugins = 1,
@@ -147,10 +162,12 @@ function setup(options: Options = {}) {
       ),
       selected: 0,
       selectedId: outputPlugins > 0 ? 'output-0' : undefined,
+      formRevision: 0,
       setSelected: vi.fn(),
       add: vi.fn(),
       remove: vi.fn(),
       change: vi.fn(),
+      setFormatter: outputSetFormatter,
     },
   };
 
@@ -222,6 +239,19 @@ describe('ConsolePanel', () => {
         'formatter sources: 2:file,file:output-0,output-1:output-0'
       )
     ).toBeVisible();
+  });
+
+  it('lets the formatter update its output plugin', async () => {
+    const user = userEvent.setup();
+    setup({ stage: 'output' });
+
+    await user.click(
+      screen.getByRole('button', { name: 'apply mocked formatter' })
+    );
+
+    expect(outputSetFormatter).toHaveBeenCalledWith('output-0', {
+      format: 'json',
+    });
   });
 
   it('passes the last debugger events to the formatter', async () => {
