@@ -17,7 +17,7 @@ from pydantic import (
 )
 
 from eventum.plugins.output.event_fields import EventFieldRef, lookup_field
-from eventum.plugins.output.exceptions import FormatError
+from eventum.plugins.output.exceptions import FormatError, FormatErrorKind
 from eventum.plugins.output.fields import BaseFormatterConfig, Format
 
 SYSLOG_NILVALUE = '-'
@@ -535,11 +535,20 @@ class SyslogRenderer:
             data = msgspec.json.decode(event)
         except msgspec.DecodeError as e:
             msg = f'Cannot read fields of the event: {e}'
-            raise FormatError(msg, original_event=event) from None
+            raise FormatError(
+                msg,
+                original_event=event,
+                kind=FormatErrorKind.SYSLOG_DECODE,
+                report_reason='Cannot read fields of the event: invalid JSON',
+            ) from None
 
         if not isinstance(data, dict):
             msg = 'Cannot read fields of the event: it is not a JSON object'
-            raise FormatError(msg, original_event=event) from None
+            raise FormatError(
+                msg,
+                original_event=event,
+                kind=FormatErrorKind.SYSLOG_EVENT_TYPE,
+            ) from None
 
         return data
 
@@ -608,7 +617,12 @@ class SyslogRenderer:
                     pass
 
         msg = f'Field `{field}` does not hold a syslog facility'
-        raise FormatError(msg, original_event=event)
+        raise FormatError(
+            msg,
+            original_event=event,
+            kind=FormatErrorKind.SYSLOG_FACILITY,
+            source=field,
+        )
 
     def _resolve_severity(
         self,
@@ -638,7 +652,12 @@ class SyslogRenderer:
                     pass
 
         msg = f'Field `{field}` does not hold a syslog severity'
-        raise FormatError(msg, original_event=event)
+        raise FormatError(
+            msg,
+            original_event=event,
+            kind=FormatErrorKind.SYSLOG_SEVERITY,
+            source=field,
+        )
 
     def _resolve_timestamp(
         self,
@@ -668,7 +687,12 @@ class SyslogRenderer:
                     f'Field `{reference.field}` does not hold a time in '
                     f'ISO 8601 format'
                 )
-                raise FormatError(msg, original_event=event) from None
+                raise FormatError(
+                    msg,
+                    original_event=event,
+                    kind=FormatErrorKind.SYSLOG_TIMESTAMP_ISO,
+                    source=reference.field,
+                ) from None
         elif isinstance(value, int | float) and not isinstance(value, bool):
             try:
                 timestamp = datetime.fromtimestamp(value, tz=UTC)
@@ -677,10 +701,20 @@ class SyslogRenderer:
                     f'Field `{reference.field}` does not hold a time in '
                     f'seconds since the epoch'
                 )
-                raise FormatError(msg, original_event=event) from None
+                raise FormatError(
+                    msg,
+                    original_event=event,
+                    kind=FormatErrorKind.SYSLOG_TIMESTAMP_EPOCH,
+                    source=reference.field,
+                ) from None
         else:
             msg = f'Field `{reference.field}` does not hold a time'
-            raise FormatError(msg, original_event=event)
+            raise FormatError(
+                msg,
+                original_event=event,
+                kind=FormatErrorKind.SYSLOG_TIMESTAMP_TYPE,
+                source=reference.field,
+            )
 
         if timestamp.tzinfo is None:
             return timestamp.astimezone()
@@ -721,14 +755,24 @@ class SyslogRenderer:
                 f'Field `{value.field}` holds a value with characters no '
                 f'syslog header part can carry'
             )
-            raise FormatError(msg, original_event=event)
+            raise FormatError(
+                msg,
+                original_event=event,
+                kind=FormatErrorKind.SYSLOG_HEADER_CHARACTERS,
+                source=part,
+            )
 
         if len(text) > SYSLOG_HEADER_LIMITS[part]:
             msg = (
                 f'Field `{value.field}` holds a value longer than the '
                 f'{SYSLOG_HEADER_LIMITS[part]} characters `{part}` carries'
             )
-            raise FormatError(msg, original_event=event)
+            raise FormatError(
+                msg,
+                original_event=event,
+                kind=FormatErrorKind.SYSLOG_HEADER_LENGTH,
+                source=part,
+            )
 
         return text
 
@@ -777,7 +821,12 @@ class SyslogRenderer:
                         f'control character, which would end the message '
                         f'it is written into'
                     )
-                    raise FormatError(msg, original_event=event)
+                    raise FormatError(
+                        msg,
+                        original_event=event,
+                        kind=(FormatErrorKind.SYSLOG_STRUCTURED_DATA_CONTROL),
+                        source=value.field,
+                    )
             else:
                 text = value
 
@@ -801,7 +850,12 @@ class SyslogRenderer:
 
             if value is None:
                 msg = f'Event does not carry field `{config.message_field}`'
-                raise FormatError(msg, original_event=event)
+                raise FormatError(
+                    msg,
+                    original_event=event,
+                    kind=FormatErrorKind.SYSLOG_MESSAGE_FIELD,
+                    source=config.message_field,
+                )
 
             message = (
                 value
@@ -813,7 +867,12 @@ class SyslogRenderer:
                 message = msgspec.json.format(event, indent=-1)
             except msgspec.DecodeError as e:
                 msg = f'Cannot render event as JSON message: {e}'
-                raise FormatError(msg, original_event=event) from None
+                raise FormatError(
+                    msg,
+                    original_event=event,
+                    kind=FormatErrorKind.SYSLOG_JSON_MESSAGE,
+                    report_reason='Cannot render event as JSON message',
+                ) from None
         else:
             message = event
 
@@ -846,7 +905,12 @@ class SyslogRenderer:
             return str(value)
 
         msg = f'Field `{field}` holds a value that is not a scalar one'
-        raise FormatError(msg, original_event=event)
+        raise FormatError(
+            msg,
+            original_event=event,
+            kind=FormatErrorKind.SYSLOG_SCALAR,
+            source=field,
+        )
 
 
 def _render_rfc5424(parts: _MessageParts) -> str:

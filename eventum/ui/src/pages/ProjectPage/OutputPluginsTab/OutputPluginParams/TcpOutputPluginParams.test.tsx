@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { TcpOutputPluginParams } from './TcpOutputPluginParams';
 import { TcpOutputPluginConfig } from '@/api/routes/generator-configs/schemas/plugins/output/configs/tcp';
+import { Format } from '@/api/routes/generator-configs/schemas/plugins/output/formatters';
 import { ProjectNameProvider } from '@/pages/ProjectPage/context/ProjectNameContext';
 import { renderWithProviders } from '@/test/render';
 
@@ -47,6 +48,25 @@ async function pick(
  * that cannot be saved.
  */
 describe('TcpOutputPluginParams', () => {
+  it('shows formatter validation errors on their fields', async () => {
+    const user = userEvent.setup();
+
+    renderForm(
+      {
+        host: 'localhost',
+        port: 514,
+        formatter: { format: Format.Syslog, hostname: 'web-01' },
+      },
+      vi.fn()
+    );
+
+    const hostname = screen.getByRole('textbox', { name: /Hostname/ });
+
+    await user.type(hostname, ' ');
+
+    expect(hostname).toHaveAttribute('aria-invalid', 'true');
+  });
+
   it('drops the separator when octet counting is picked', async () => {
     const onChange = vi.fn();
     const user = userEvent.setup();

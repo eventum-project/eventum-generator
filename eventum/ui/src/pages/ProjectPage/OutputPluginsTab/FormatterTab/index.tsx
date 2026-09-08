@@ -383,6 +383,7 @@ export const FormatterTab: FC<FormatterTabProps> = ({
         >
           <FormatterParams
             value={form.values.formatter}
+            errors={form.errors}
             onChange={(config) => {
               form.setFieldValue('formatter', config);
             }}

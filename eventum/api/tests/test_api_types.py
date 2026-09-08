@@ -6,13 +6,37 @@ values (``${params.*}`` / ``${secrets.*}``), while rejecting invalid
 strings and preserving constraint validation for real values.
 """
 
-from typing import Literal
+from collections.abc import Iterator
+from typing import (
+    Annotated,
+    Any,
+    Literal,
+    Self,
+    TypeAliasType,
+    get_args,
+    get_origin,
+)
 
 import pytest
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import (
+    BaseModel,
+    Field,
+    ModelWrapValidatorHandler,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
-from eventum.api.routers.generator_configs.api_types import relax_model
+from eventum.api.routers.generator_configs.api_types import (
+    ApiGeneratorConfig,
+    PlaceholderString,
+    SubstitutionString,
+    relax_model,
+)
 from eventum.plugins.loader import (
+    get_event_plugin_names,
+    get_input_plugin_names,
+    get_output_plugin_names,
     load_event_plugin,
     load_input_plugin,
     load_output_plugin,
@@ -43,6 +67,152 @@ def _rejects(cls: type[BaseModel], data: dict) -> None:
     """Assert that data is rejected."""
     with pytest.raises(ValidationError):
         cls.model_validate(data)
+
+
+def _plugin_config_models() -> set[type[BaseModel]]:
+    """Collect every model reachable from a registered plugin config."""
+    roots = [
+        *(
+            load_input_plugin(name).config_cls
+            for name in get_input_plugin_names()
+        ),
+        *(
+            load_event_plugin(name).config_cls
+            for name in get_event_plugin_names()
+        ),
+        *(
+            load_output_plugin(name).config_cls
+            for name in get_output_plugin_names()
+        ),
+    ]
+    models: set[type[BaseModel]] = set()
+
+    def collect(annotation: Any) -> None:
+        if isinstance(annotation, TypeAliasType):
+            collect(annotation.__value__)
+            return
+
+        if isinstance(annotation, type) and issubclass(annotation, BaseModel):
+            if annotation in models:
+                return
+            models.add(annotation)
+            for field in annotation.model_fields.values():
+                collect(field.annotation)
+            return
+
+        for argument in get_args(annotation):
+            collect(argument)
+
+    for root in roots:
+        collect(root)
+
+    return models
+
+
+def _reachable_models(*annotations: Any) -> set[type[BaseModel]]:
+    """Collect model classes wired into the given annotations."""
+    models: set[type[BaseModel]] = set()
+
+    def collect(annotation: Any) -> None:
+        if isinstance(annotation, TypeAliasType):
+            collect(annotation.__value__)
+            return
+
+        if isinstance(annotation, type) and issubclass(annotation, BaseModel):
+            if annotation in models:
+                return
+            models.add(annotation)
+            for field in annotation.model_fields.values():
+                collect(field.annotation)
+            return
+
+        for argument in get_args(annotation):
+            collect(argument)
+
+    for annotation in annotations:
+        collect(annotation)
+
+    return models
+
+
+def _annotation_metadata(annotation: Any) -> Iterator[Any]:
+    """Yield metadata held at any depth in an annotation."""
+    if isinstance(annotation, TypeAliasType):
+        yield from _annotation_metadata(annotation.__value__)
+        return
+
+    if get_origin(annotation) is Annotated:
+        base, *metadata = get_args(annotation)
+        yield from metadata
+        yield from _annotation_metadata(base)
+        return
+
+    for argument in get_args(annotation):
+        yield from _annotation_metadata(argument)
+
+
+def _concrete_annotation_metadata(annotation: Any) -> Iterator[Any]:
+    """Yield metadata outside the added substitution branches."""
+    if annotation in (PlaceholderString, SubstitutionString):
+        return
+
+    if isinstance(annotation, TypeAliasType):
+        yield from _concrete_annotation_metadata(annotation.__value__)
+        return
+
+    if get_origin(annotation) is Annotated:
+        base, *metadata = get_args(annotation)
+        yield from metadata
+        yield from _concrete_annotation_metadata(base)
+        return
+
+    for argument in get_args(annotation):
+        yield from _concrete_annotation_metadata(argument)
+
+
+def _annotation_metadata_groups(
+    annotation: Any,
+    *,
+    concrete_only: bool = False,
+) -> Iterator[tuple[Any, ...]]:
+    """Yield each ordered Annotated metadata group."""
+    if concrete_only and annotation in (
+        PlaceholderString,
+        SubstitutionString,
+    ):
+        return
+
+    if isinstance(annotation, TypeAliasType):
+        yield from _annotation_metadata_groups(
+            annotation.__value__,
+            concrete_only=concrete_only,
+        )
+        return
+
+    if get_origin(annotation) is Annotated:
+        base, *metadata = get_args(annotation)
+        yield tuple(metadata)
+        yield from _annotation_metadata_groups(
+            base,
+            concrete_only=concrete_only,
+        )
+        return
+
+    for argument in get_args(annotation):
+        yield from _annotation_metadata_groups(
+            argument,
+            concrete_only=concrete_only,
+        )
+
+
+def _is_subsequence(
+    expected: tuple[Any, ...], actual: tuple[Any, ...]
+) -> bool:
+    """Return whether expected occurs in actual in the same order."""
+    remaining = iter(actual)
+    return all(
+        any(item == candidate for candidate in remaining) for item in expected
+    )
 
 
 # - opensearch (bool, int+Ge, list[HttpUrl], Path|None, HttpUrl|None,
@@ -368,6 +538,9 @@ class TestTimestampsPlaceholders:
     def test_source_path(self, timestamps):
         _valid(timestamps, {'source': '/data/ts.txt'})
 
+    def test_source_list_item_placeholder(self, timestamps):
+        _valid(timestamps, {'source': [PH]})
+
 
 # - placeholder string validation -----------------------------------
 
@@ -423,7 +596,8 @@ class TestPlaceholderValidation:
 
 class TestRelaxModelCaching:
     """Verify that relax_model returns the same object for the same
-    input class (caching works)."""
+    input class (caching works).
+    """
 
     def test_same_class_returns_same_result(self):
         cls = load_output_plugin('opensearch').config_cls
@@ -442,7 +616,8 @@ class TestRelaxModelCaching:
 
 class TestRelaxModelSynthetic:
     """Test relax_model with small synthetic Pydantic models to
-    isolate specific type patterns."""
+    isolate specific type patterns.
+    """
 
     def test_int_field_accepts_placeholder(self):
         class M(BaseModel):
@@ -500,6 +675,44 @@ class TestRelaxModelSynthetic:
         assert _valid(relaxed, {'inner': {'val': 1}})
         assert _valid(relaxed, {'inner': {'val': PH}})
 
+    def test_annotated_nested_model_field_is_relaxed(self):
+        class Inner(BaseModel):
+            value: int
+
+        class Outer(BaseModel):
+            inner: Annotated[Inner, object()]
+
+        _valid(relax_model(Outer), {'inner': {'value': PH}})
+
+    def test_recursive_model_uses_its_relaxed_copy(self):
+        class Node(BaseModel):
+            value: int
+            child: Node | None = None
+
+        relaxed = relax_model(Node)
+
+        _valid(
+            relaxed,
+            {
+                'value': 1,
+                'child': {'value': PH},
+            },
+        )
+
+    def test_plain_validator_accepts_recursive_field_placeholder(self):
+        class Node(BaseModel):
+            value: int
+            child: Node | None = None
+
+            @field_validator('child', mode='plain')
+            @classmethod
+            def validate_child(cls, value: Any) -> Any:
+                return value
+
+        relaxed = relax_model(Node)
+
+        _valid(relaxed, {'value': 1, 'child': PH})
+
     def test_list_of_int_placeholder(self):
         class M(BaseModel):
             xs: list[int]
@@ -507,6 +720,41 @@ class TestRelaxModelSynthetic:
         relaxed = relax_model(M)
         assert _valid(relaxed, {'xs': [1, PH, 3]})
         assert _valid(relaxed, {'xs': PH})
+
+    @pytest.mark.parametrize(
+        'annotation,value',
+        [
+            (tuple[int, ...], (PH,)),
+            (tuple[int, str], (PH, 'value')),
+            (set[int], {PH}),
+            (frozenset[int], frozenset({PH})),
+        ],
+    )
+    def test_other_container_elements_accept_placeholders(
+        self,
+        annotation,
+        value,
+    ):
+        model = type(
+            'ContainerModel',
+            (BaseModel,),
+            {'__annotations__': {'value': annotation}},
+        )
+
+        _valid(relax_model(model), {'value': value})
+
+    def test_validator_waits_for_placeholder_inside_frozenset(self):
+        class Model(BaseModel):
+            values: frozenset[int]
+
+            @field_validator('values')
+            @classmethod
+            def reject_values(cls, value: frozenset[int]) -> frozenset[int]:
+                raise ValueError('values are forbidden')
+
+        relaxed = relax_model(Model)
+
+        _valid(relaxed, {'values': frozenset({PH})})
 
     def test_dict_field_unchanged(self):
         class M(BaseModel):
@@ -614,3 +862,517 @@ class TestCrossFieldRules:
                 'count': 10,
             },
         )
+
+
+class TestPluginFieldRules:
+    """Concrete plugin field rules hold in their relaxed copies."""
+
+    def test_api_rejects_short_nested_field(self):
+        data = {
+            'input': [{'timer': {'seconds': 1, 'count': 1}}],
+            'event': {'replay': {'path': 'events.json'}},
+            'output': [
+                {
+                    'tcp': {
+                        'host': 'localhost',
+                        'port': 514,
+                        'formatter': {
+                            'format': 'syslog',
+                            'structured_data': [{'id': '', 'params': {}}],
+                        },
+                    },
+                },
+            ],
+        }
+
+        _rejects(ApiGeneratorConfig, data)
+
+    def test_nested_field_validator_rejects_concrete_value(self):
+        cls = _relaxed('output', 'tcp')
+
+        _rejects(
+            cls,
+            {
+                'host': 'localhost',
+                'port': 514,
+                'formatter': {
+                    'format': 'syslog',
+                    'structured_data': [
+                        {'id': 'invalid id', 'params': {}},
+                    ],
+                },
+            },
+        )
+
+    def test_field_validator_waits_for_placeholder(self):
+        cls = _relaxed('input', 'cron')
+
+        _valid(cls, {'expression': PH, 'count': 1})
+
+    @pytest.mark.parametrize('expression', ['${invalid.x}', '${params}'])
+    def test_field_validator_rejects_an_invalid_token(self, expression):
+        cls = _relaxed('input', 'cron')
+
+        _rejects(cls, {'expression': expression, 'count': 1})
+
+    def test_field_validator_waits_for_placeholder_in_mapping_key(self):
+        cls = _relaxed('output', 'tcp')
+
+        _valid(
+            cls,
+            {
+                'host': 'localhost',
+                'port': 514,
+                'formatter': {
+                    'format': 'syslog',
+                    'structured_data': [
+                        {
+                            'id': 'example',
+                            'params': {
+                                '${params.a_long_structured_data_name}': 'v',
+                            },
+                        },
+                    ],
+                },
+            },
+        )
+
+    def test_before_model_validator_is_preserved(self):
+        cls = _relaxed('output', 'http')
+
+        with pytest.raises(ValidationError, match='moved into the `auth`'):
+            cls.model_validate(
+                {
+                    'url': 'https://example.com',
+                    'username': 'user',
+                },
+            )
+
+    def test_s3_validators_accept_relaxed_default_models(self):
+        cls = _relaxed('output', 's3')
+
+        _valid(cls, {'bucket': 'events'})
+        _rejects(
+            cls,
+            {
+                'bucket': 'events',
+                'formatter': {'format': 'json-batch', 'indent': 0},
+            },
+        )
+
+    def test_api_defers_a_validator_nested_inside_a_mapping(self):
+        data = {
+            'input': [{'timer': {'seconds': 1, 'count': 1}}],
+            'event': {
+                'template': {
+                    'mode': 'all',
+                    'templates': [
+                        {
+                            'example': {
+                                'template': '${params.path}',
+                                'vars': {},
+                            },
+                        },
+                    ],
+                },
+            },
+            'output': [{'stdout': {}}],
+        }
+
+        _valid(ApiGeneratorConfig, data)
+
+
+class TestRegisteredPluginRules:
+    """Every rule reachable from a registered config is preserved."""
+
+    def test_validator_declarations_are_preserved(self):
+        for model in _plugin_config_models():
+            relaxed = relax_model(model)
+            original = model.__pydantic_decorators__
+            copied = relaxed.__pydantic_decorators__
+
+            original_field = {
+                name: (
+                    decorator.info.fields,
+                    decorator.info.mode,
+                    decorator.info.check_fields,
+                    repr(decorator.info.json_schema_input_type),
+                )
+                for name, decorator in original.field_validators.items()
+            }
+            copied_field = {
+                name: (
+                    decorator.info.fields,
+                    decorator.info.mode,
+                    decorator.info.check_fields,
+                    repr(decorator.info.json_schema_input_type),
+                )
+                for name, decorator in copied.field_validators.items()
+            }
+            original_model = {
+                name: decorator.info.mode
+                for name, decorator in original.model_validators.items()
+            }
+            copied_model = {
+                name: decorator.info.mode
+                for name, decorator in copied.model_validators.items()
+            }
+
+            assert copied_field == original_field, model
+            assert copied_model == original_model, model
+
+            for name, decorator in original.field_validators.items():
+                copied_validator = copied.field_validators[name].func
+                assert (
+                    copied_validator.__eventum_original_validator__
+                    is decorator.func
+                ), (model, name)
+
+            for name, decorator in original.model_validators.items():
+                copied_validator = copied.model_validators[name].func
+                assert (
+                    copied_validator.__eventum_original_validator__
+                    is decorator.func
+                ), (model, name)
+
+    def test_validation_metadata_is_preserved(self):
+        for model in _plugin_config_models():
+            relaxed = relax_model(model)
+
+            for name, field in model.model_fields.items():
+                expected_groups = [
+                    *_annotation_metadata_groups(field.annotation),
+                    *((tuple(field.metadata),) if field.metadata else ()),
+                ]
+                if not expected_groups:
+                    continue
+
+                relaxed_field = relaxed.model_fields[name]
+                actual_groups = list(
+                    _annotation_metadata_groups(
+                        relaxed_field.annotation,
+                        concrete_only=True,
+                    ),
+                )
+
+                assert all(
+                    any(
+                        _is_subsequence(expected, actual)
+                        for actual in actual_groups
+                    )
+                    for expected in expected_groups
+                ), (model, name, expected_groups, actual_groups)
+
+                expected_items = [
+                    item for group in expected_groups for item in group
+                ]
+                actual_items = list(
+                    _concrete_annotation_metadata(relaxed_field.annotation),
+                )
+                for expected in expected_items:
+                    matching_index = next(
+                        (
+                            index
+                            for index, actual in enumerate(actual_items)
+                            if actual == expected
+                        ),
+                        None,
+                    )
+                    assert matching_index is not None, (model, name, expected)
+                    actual_items.pop(matching_index)
+
+    def test_field_and_model_validation_settings_are_preserved(self):
+        for model in _plugin_config_models():
+            relaxed = relax_model(model)
+
+            for key, value in model.model_config.items():
+                assert relaxed.model_config.get(key) == value, (model, key)
+
+            for name, field in model.model_fields.items():
+                relaxed_field = relaxed.model_fields[name]
+                assert relaxed_field.validate_default == field.validate_default
+
+    def test_every_relaxed_plugin_model_is_wired_into_the_api(self):
+        reachable = _reachable_models(
+            *(
+                field.annotation
+                for field in ApiGeneratorConfig.model_fields.values()
+            ),
+        )
+
+        for model in _plugin_config_models():
+            assert relax_model(model) in reachable, model
+
+
+class TestRelaxedRuleModes:
+    """Every Pydantic validator mode keeps its concrete behaviour."""
+
+    @pytest.mark.parametrize('mode', ['before', 'after', 'plain', 'wrap'])
+    def test_field_validator_mode(self, mode):
+        def reject(value: Any) -> Any:
+            if value == 13:
+                raise ValueError('thirteen is forbidden')
+            return value
+
+        if mode == 'wrap':
+
+            def validate(value, handler):
+                return reject(handler(value))
+
+        else:
+            validate = reject
+
+        validator = field_validator('value', mode=mode)(validate)
+        model = type(
+            f'FieldValidator{mode.title()}Model',
+            (BaseModel,),
+            {
+                '__annotations__': {'value': int},
+                f'validate_{mode}': validator,
+            },
+        )
+        relaxed = relax_model(model)
+
+        _rejects(relaxed, {'value': 13})
+        _valid(relaxed, {'value': PH})
+
+        if mode == 'plain':
+            _rejects(relaxed, {'value': f'prefix-{PH}'})
+
+    def test_before_model_validator(self):
+        class Model(BaseModel):
+            value: int
+
+            @model_validator(mode='before')
+            @classmethod
+            def reject_thirteen(cls, data: Any) -> Any:
+                if isinstance(data, dict) and data.get('value') == 13:
+                    raise ValueError('thirteen is forbidden')
+                return data
+
+        relaxed = relax_model(Model)
+
+        _rejects(relaxed, {'value': 13})
+        _valid(relaxed, {'value': PH})
+
+    def test_after_model_validator(self):
+        class Model(BaseModel):
+            value: int
+
+            @model_validator(mode='after')
+            def reject_thirteen(self) -> Self:
+                if self.value == 13:
+                    raise ValueError('thirteen is forbidden')
+                return self
+
+        relaxed = relax_model(Model)
+
+        _rejects(relaxed, {'value': 13})
+        _valid(relaxed, {'value': PH})
+
+    def test_wrap_model_validator(self):
+        class Model(BaseModel):
+            value: int
+
+            @model_validator(mode='wrap')
+            @classmethod
+            def reject_thirteen(
+                cls,
+                data: Any,
+                handler: ModelWrapValidatorHandler[Self],
+            ) -> Self:
+                model = handler(data)
+                if model.value == 13:
+                    raise ValueError('thirteen is forbidden')
+                return model
+
+        relaxed = relax_model(Model)
+
+        _rejects(relaxed, {'value': 13})
+        _valid(relaxed, {'value': PH})
+
+    def test_wrap_field_validator_keeps_relaxed_shape_validation(self):
+        class Model(BaseModel):
+            value: list[int]
+
+            @field_validator('value', mode='wrap')
+            @classmethod
+            def validate_value(cls, value, handler):
+                return handler(value)
+
+        relaxed = relax_model(Model)
+
+        _rejects(relaxed, {'value': [PH, []]})
+
+    def test_wrap_model_validator_keeps_relaxed_shape_validation(self):
+        class Model(BaseModel):
+            value: int
+            other: int
+
+            @model_validator(mode='wrap')
+            @classmethod
+            def validate_model(
+                cls,
+                data: Any,
+                handler: ModelWrapValidatorHandler[Self],
+            ) -> Self:
+                return handler(data)
+
+        relaxed = relax_model(Model)
+
+        _rejects(relaxed, {'value': PH, 'other': []})
+
+    def test_validated_default_keeps_its_rule(self):
+        class Model(BaseModel):
+            value: int = Field(default=0, ge=1, validate_default=True)
+
+        relaxed = relax_model(Model)
+
+        _rejects(relaxed, {})
+
+    def test_validated_nested_default_uses_the_relaxed_model(self):
+        class Inner(BaseModel):
+            value: int
+
+        class Model(BaseModel):
+            inner: Inner = Field(
+                default_factory=lambda: Inner(value=1),
+                validate_default=True,
+            )
+
+        instance = _valid(relax_model(Model), {})
+
+        assert instance.inner.value == 1
+
+    def test_validated_nested_default_uses_validation_alias(self):
+        class Inner(BaseModel):
+            value: int = Field(validation_alias='incoming')
+
+        class Model(BaseModel):
+            inner: Inner = Field(
+                default_factory=lambda: Inner(incoming=1),
+                validate_default=True,
+            )
+
+        instance = _valid(relax_model(Model), {})
+
+        assert instance.inner.value == 1
+
+    def test_field_validator_keeps_keyword_only_parameters(self):
+        class Model(BaseModel):
+            value: int
+
+            @field_validator('value')
+            @classmethod
+            def validate_value(cls, value: int, *, limit: int = 5) -> int:
+                if value > limit:
+                    raise ValueError('value is too large')
+                return value
+
+        relaxed = relax_model(Model)
+
+        _valid(relaxed, {'value': 5})
+        _rejects(relaxed, {'value': 6})
+
+    def test_field_validator_waits_for_placeholder_in_prior_field(self):
+        class Model(BaseModel):
+            start: int
+            end: int
+
+            @field_validator('end')
+            @classmethod
+            def validate_order(cls, value: int, info: Any) -> int:
+                if value <= info.data['start']:
+                    raise ValueError('end must be after start')
+                return value
+
+        relaxed = relax_model(Model)
+
+        _valid(relaxed, {'start': PH, 'end': 1})
+        _rejects(relaxed, {'start': 2, 'end': 1})
+
+    def test_optional_validator_parameter_is_not_treated_as_info(self):
+        class Model(BaseModel):
+            value: int
+
+            @field_validator('value')
+            @classmethod
+            def validate_value(
+                cls,
+                value: int,
+                info: Any = None,
+            ) -> int:
+                if info is not None:
+                    raise ValueError('optional parameter was supplied')
+                return value
+
+        relaxed = relax_model(Model)
+
+        _valid(relaxed, {'value': 1})
+
+    def test_json_schema_input_type_is_relaxed(self):
+        class Model(BaseModel):
+            value: int
+
+            @field_validator(
+                'value',
+                mode='before',
+                json_schema_input_type=int,
+            )
+            @classmethod
+            def validate_value(cls, value: Any) -> Any:
+                return value
+
+        schema = relax_model(Model).model_json_schema()['properties']['value']
+
+        assert 'anyOf' in schema
+        assert any(
+            branch.get('type') == 'string' and 'pattern' in branch
+            for branch in schema['anyOf']
+        )
+
+    def test_original_field_name_is_kept_with_an_alias(self):
+        class Model(BaseModel):
+            value_: int = Field(alias='value')
+
+            model_config = {'populate_by_name': True}
+
+        relaxed = relax_model(Model)
+
+        _valid(relaxed, {'value': 1})
+        _valid(relaxed, {'value_': 1})
+
+    def test_string_constraints_apply_only_to_concrete_values(self):
+        class Model(BaseModel):
+            value: str = Field(min_length=2, max_length=3, pattern='^[a-z]+$')
+
+        relaxed = relax_model(Model)
+
+        _rejects(relaxed, {'value': ''})
+        _rejects(relaxed, {'value': 'four'})
+        _rejects(relaxed, {'value': '12'})
+        _valid(relaxed, {'value': 'abc'})
+        _valid(relaxed, {'value': '${params.a_long_name}'})
+        _valid(relaxed, {'value': 'prefix-${params.name}'})
+
+    @pytest.mark.parametrize(
+        'value',
+        ['${invalid.x}', 'prefix-${invalid.x}', '${params}'],
+    )
+    def test_string_constraints_reject_invalid_tokens(self, value):
+        class Model(BaseModel):
+            value: str = Field(min_length=2, max_length=3)
+
+        relaxed = relax_model(Model)
+
+        _rejects(relaxed, {'value': value})
+
+    def test_substitution_string_is_constrained_in_json_schema(self):
+        class Model(BaseModel):
+            value: str = Field(min_length=2, max_length=3)
+
+        branches = relax_model(Model).model_json_schema()['properties'][
+            'value'
+        ]['anyOf']
+
+        assert {'type': 'string'} not in branches

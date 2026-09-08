@@ -1,5 +1,5 @@
 import { ModalsProvider } from '@mantine/modals';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
@@ -70,6 +70,21 @@ function isPanelVisible(kind: 'explorer' | 'editor'): boolean {
   return panel(kind).style.display !== 'none';
 }
 
+function mockPointerCapture(element: HTMLElement): void {
+  let capturedPointer: number | null = null;
+
+  element.setPointerCapture = (pointerId: number) => {
+    capturedPointer = pointerId;
+  };
+  element.hasPointerCapture = (pointerId: number) =>
+    capturedPointer === pointerId;
+  element.releasePointerCapture = (pointerId: number) => {
+    if (capturedPointer === pointerId) {
+      capturedPointer = null;
+    }
+  };
+}
+
 describe('StudioShell layout', () => {
   it('shares the row and offers no switcher on a wide viewport', () => {
     renderShell(1440);
@@ -79,6 +94,24 @@ describe('StudioShell layout', () => {
     expect(panel('editor').style.minWidth).toBe('360px');
     expect(screen.queryByRole('radio', { name: 'Explorer' })).toBeNull();
     expect(document.querySelector('.studio-resizer')).not.toBeNull();
+  });
+
+  it('drags a dock within its width bounds', () => {
+    renderShell(1440);
+    const resizer = document.querySelector<HTMLElement>(
+      '.studio-body > .studio-resizer'
+    );
+    if (resizer === null) {
+      throw new Error('the explorer resize handle is not mounted');
+    }
+    mockPointerCapture(resizer);
+
+    fireEvent.pointerDown(resizer, { pointerId: 4, clientX: 100 });
+    fireEvent.pointerMove(resizer, { pointerId: 4, clientX: 200 });
+    expect(panel('explorer')).toHaveStyle({ width: '348px' });
+
+    fireEvent.pointerMove(resizer, { pointerId: 4, clientX: -500 });
+    expect(panel('explorer')).toHaveStyle({ width: '190px' });
   });
 
   it('shows one panel at a time below the wide breakpoint', () => {

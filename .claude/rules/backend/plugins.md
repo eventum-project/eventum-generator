@@ -19,6 +19,7 @@ Common rules for all plugin types. Type-specific plugin contracts live in `.clau
 - Inherit the category config: `InputPluginConfig` / `EventPluginConfig` / `OutputPluginConfig`.
 - Always `frozen=True, extra='forbid'`.
 - Cross-field validation via `@model_validator`.
+- Field constraints and `@field_validator` / `@model_validator` rules in every mode are enforced by the API for concrete values. A validator waits until load time only when the value it judges still carries a `${params.*}` or `${secrets.*}` placeholder.
 - Multi-mode configs: `RootModel` + `Field(discriminator=...)`.
 
 ## Init
@@ -27,6 +28,12 @@ Common rules for all plugin types. Type-specific plugin contracts live in `.clau
 - `__init__` is for validation and setup - acquiring runtime resources happens in the type-specific lifecycle.
 - Resolve relative user paths via `self.resolve_path(cfg_path_field)`.
 - Raise `PluginConfigurationError` for problems Pydantic can't catch.
+
+## Runtime dependencies
+
+- Import a runtime client in the lifecycle method where its resource is acquired, not at module scope. For an output plugin, this is normally `_open`.
+- Keep imports needed only by annotations under `TYPE_CHECKING`.
+- Add heavy dependencies deferred by output plugins to `eventum/plugins/output/tests/test_imports.py`, which guards the startup-import contract in a clean interpreter.
 
 ## Directory layout
 

@@ -2,6 +2,7 @@
 
 import asyncio
 from abc import abstractmethod
+from collections import Counter, defaultdict
 from collections.abc import Sequence
 from typing import NotRequired, TypeVar, assert_never, override
 
@@ -13,13 +14,22 @@ from eventum.plugins.output.base.config import (
     FormatterConfigT,
     OutputPluginConfig,
 )
-from eventum.plugins.output.exceptions import PluginWriteError
+from eventum.plugins.output.exceptions import (
+    FormatError,
+    FormatErrorKind,
+    PluginWriteError,
+)
+from eventum.plugins.output.fields import Format
 from eventum.plugins.output.formatters import (
     Formatter,
     FormatterParams,
     FormattingResult,
     get_formatter_class,
 )
+from eventum.utils.throttler import AsyncThrottler
+
+_FORMAT_ERROR_LOG_PERIOD = 10.0
+type _FormatErrorKey = tuple[Format, FormatErrorKind, str | None]
 
 
 class OutputPluginParams(PluginParams):
@@ -59,6 +69,23 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         self._written = 0
         self._format_failed = 0
         self._write_failed = 0
+
+        self._format_error_counts: Counter[_FormatErrorKey] = Counter()
+        self._format_error_throttlers: defaultdict[
+            _FormatErrorKey,
+            AsyncThrottler,
+        ] = defaultdict(
+            lambda: AsyncThrottler(
+                limit=1,
+                period=_FORMAT_ERROR_LOG_PERIOD,
+            ),
+        )
+        self._format_error_reasons: dict[_FormatErrorKey, str] = {}
+        self._format_error_reported_counts: dict[_FormatErrorKey, int] = {}
+        self._format_error_locks: defaultdict[
+            _FormatErrorKey,
+            asyncio.Lock,
+        ] = defaultdict(asyncio.Lock)
 
     def _get_formatter_config(self) -> FormatterConfigT:
         """Get formatter config.
@@ -122,6 +149,11 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
             self._written = 0
             self._format_failed = 0
             self._write_failed = 0
+            self._format_error_counts.clear()
+            self._format_error_throttlers.clear()
+            self._format_error_reasons.clear()
+            self._format_error_reported_counts.clear()
+            self._format_error_locks.clear()
 
         await self._logger.adebug('Plugin is opened for writing')
 
@@ -130,7 +162,10 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
         flushing events.
         """
         if self._is_opened:
-            await self._close()
+            try:
+                await self._close()
+            finally:
+                await self._flush_format_error_reports()
             self._is_opened = False
 
         await self._logger.adebug('Plugin is closed')
@@ -150,35 +185,90 @@ class OutputPlugin(Plugin[ConfigT, ParamsT], register=False):
 
         Notes
         -----
-        All errors from formatting result are logged.
+        Formatting errors are reported once per kind and interval.
 
         """
         formatting_result = await asyncio.to_thread(
             lambda: self._formatter.format_events(events),
         )
 
-        if formatting_result.errors:
-            contexts: list[dict] = []
-
-            for error in formatting_result.errors:
-                context = {
-                    'format': self._formatter_config.format,
-                    'reason': str(error),
-                }
-
-                if error.original_event is not None:
-                    context['original_event'] = error.original_event
-
-                contexts.append(context)
-
-            await asyncio.gather(
-                *[
-                    self._logger.aerror('Failed to format event', **context)
-                    for context in contexts
-                ],
-            )
+        await self._report_format_errors(formatting_result.errors)
 
         return formatting_result
+
+    async def _report_format_errors(
+        self,
+        errors: Sequence[FormatError],
+    ) -> None:
+        """Report formatting errors without logging every event."""
+        first_errors: dict[_FormatErrorKey, FormatError] = {}
+
+        for error in errors:
+            key = (
+                self._formatter_config.format,
+                error.kind,
+                error.source,
+            )
+            self._format_error_counts[key] += error.rejected_count
+            self._format_error_reasons.setdefault(key, error.report_reason)
+            first_errors.setdefault(key, error)
+
+        for key, error in first_errors.items():
+            async with self._format_error_locks[key]:
+                format_, _, _ = key
+                first_report = key not in self._format_error_reported_counts
+                count = self._format_error_counts[key]
+                context: dict[str, object] = {
+                    'format': format_,
+                    'reason': (
+                        str(error)
+                        if first_report
+                        else self._format_error_reasons[key]
+                    ),
+                    'count': count,
+                }
+
+                if first_report and error.original_event is not None:
+                    context['original_event'] = error.original_event
+
+                await self._format_error_throttlers[key](
+                    self._log_format_error_report,
+                    key,
+                    count,
+                    context,
+                )
+
+    async def _log_format_error_report(
+        self,
+        key: _FormatErrorKey,
+        count: int,
+        context: dict[str, object],
+    ) -> None:
+        """Write one formatter rejection report."""
+        await self._logger.aerror(
+            'Failed to format event',
+            **context,
+        )
+        self._format_error_reported_counts[key] = max(
+            count,
+            self._format_error_reported_counts.get(key, 0),
+        )
+
+    async def _flush_format_error_reports(self) -> None:
+        """Report formatter rejection totals not logged yet."""
+        for key, count in self._format_error_counts.items():
+            async with self._format_error_locks[key]:
+                if self._format_error_reported_counts.get(key) == count:
+                    continue
+
+                format_, _, _ = key
+                await self._logger.aerror(
+                    'Failed to format event',
+                    format=format_,
+                    reason=self._format_error_reasons[key],
+                    count=count,
+                )
+                self._format_error_reported_counts[key] = count
 
     async def write(self, events: Sequence[str]) -> int:
         """Write events.

@@ -301,6 +301,11 @@
     <th>Description</th>
     <th>Data type</th>
     <tr>
+        <td>format</td>
+        <td>Output event format</td>
+        <td>str</td>
+    </tr>
+    <tr>
         <td>original_event</td>
         <td>Original event</td>
         <td>str</td>
